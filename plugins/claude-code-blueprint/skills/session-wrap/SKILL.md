@@ -94,6 +94,7 @@ Use the template in `references/templates.md` § Step 4 Session Continuity templ
 - Include file paths and test names
 - If there are failing tests, list them by name
 - "Start here" should be a single actionable instruction, not a list
+- Remaining Work ends on a closable next action: something the reader can start now (a file to open, a command to run, a failing test to fix), never a topic such as "look into auth"
 - **Never summarize summaries.** Regenerate this section from actual project state (git log, test results, file system), not from the previous Session Continuity content. Summaries drift from reality like a photocopy of a photocopy — each compression loses information. The codebase and git history are the lossless source of truth; always reconcile against them.
 
 ## Step 5: Update docs/learnings/LEARNINGS.md

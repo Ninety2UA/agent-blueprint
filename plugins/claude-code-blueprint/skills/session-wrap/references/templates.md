@@ -107,7 +107,7 @@ ls -la *.tmp *.bak *~ 2>/dev/null
 - [etc.]
 
 **What's remaining:**
-- [Next task 1 — enough detail to start immediately]
+- [Next task 1 — an action the reader can start now: a file, a command, or a failing test, not a topic]
 - [Next task 2]
 - [etc.]
 
@@ -152,7 +152,7 @@ ls -la *.tmp *.bak *~ 2>/dev/null
 - Current branch: [branch name]
 
 **Remaining Work**
-- Immediate next steps (what the next session should start with, in order)
+- Immediate next steps (what the next session should start with, in order), the first one closable: an action the reader can start now
 - Items for backlog (bugs found, ideas sparked, follow-ups)
 - Open questions that need human input
 - Blocked items and what unblocks them
