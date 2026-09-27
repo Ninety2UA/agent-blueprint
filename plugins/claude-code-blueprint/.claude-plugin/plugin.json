@@ -1,7 +1,7 @@
 {
   "name": "claude-code-blueprint",
   "description": "Production-grade development toolkit for AI-assisted engineering. 55 skills, 29 agents, and 10 hooks covering the full development lifecycle — from brainstorming through verified deployment, with agent swarms, agent teams, wave orchestration, and knowledge compounding.",
-  "version": "3.7.1",
+  "version": "3.8.0",
   "author": {
     "name": "Ninety2UA"
   },

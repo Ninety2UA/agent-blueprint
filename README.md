@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="#how-does-this-compare">Compare</a> ·
-  <a href="#whats-new-in-v371--size-sweep-and-fixes">What's New</a> ·
+  <a href="#whats-new-in-v380--plans-as-decisions-and-opus-55-currency">What's New</a> ·
   <a href="#quick-start">Quick Start</a> ·
   <a href="#what-you-get">What You Get</a> ·
   <a href="#workflow">Workflow</a> ·
@@ -86,6 +86,21 @@ v3.4.0 and v3.5.0 were produced by a single **platform-sync cycle** — one init
 <p align="center">
   <img src="docs/images/platform-sync-cycle.png" alt="Platform-sync cycle — Audit (68 CLI versions) → Gate 1 → Adopt + verify (Part 1, v3.4.0) → Delta sweep (Part 2, 4 repos) → Gate 2 → Import + close (v3.5.0), codified into the /cli-watch + /repo-watch watchers" width="90%">
 </p>
+
+### What's New in v3.8.0 — Plans as Decisions and Opus 5.5 Currency
+
+A combined watcher cycle. `/repo-watch` compared six watched repositories against their September baselines and grafted twenty-five ideas onto existing skills and agents; `/cli-watch` re-verified every platform claim against Claude Code 2.1.283. No new skills, agents, or hooks. Verdicts, provenance, and deferrals: `docs/learnings/2026-09-27-cli-and-repo-watch-verdicts.md`.
+
+- **Plans record decisions, not code** — `writing-plans` names the test and its assertions, the signature, and the spec values, with a code body only for an algorithm those leave open. Plans end with a Review Focus list pinned to tests, and the handoff recommends one execution option with its reason and cost. The user reviews the saved plan before execution, because approving the design approved only the scope. `plan-checker` and `deepen-plan` no longer push code back into plans.
+- **Security findings can't vanish silently** — `findings-validator` rejects an auth, injection, data-loss, or secrets finding only with a quoted refutation; a finding it can neither confirm nor refute is kept as advisory with a human owner.
+- **Sharper reviews** — review ranges start at the merge base and refuse empty ranges; untracked files are in scope; a raised maximum counts as a loosened threshold; spec-silent behavior is judged by what a reasonable user expects, and invented rules go to a human; `test-coverage-reviewer` asks whether a test would still pass with the code broken; `security-sentinel` adds SameSite cookies, signature audits, data retention, LLM tool-argument validation, and flag bypass; review depth follows consequence, not size.
+- **Green means the whole suite** — TDD, the SDD implementer, and verification require the project's test command, with every failure named; `executing-plans` runs the final whole-branch review its cleanup step already referred to.
+- **Loops that stay honest** — ship-pipeline routes bugs and questions away from shipping and re-verifies a plan it finds on disk; an advisory pre-flight danger scan runs before autonomous runs; completion reports state the run's numbers; declined review findings aren't raised again; `pr-workflow` checks the pushed HEAD and refuses to merge onto a red main; `team-lead` judges progress by artifacts.
+- **Lighter knowledge capture** — `knowledge-compounding` records only what the code and tests don't already preserve, with an optional `retire_when:`; session-wrap ends on an action the next session can start; context-checkpoint has a keep-and-cut order.
+- **Opus 5.5 currency** — Opus 5.5 is the default model on every plan and starts sessions at `medium` effort. A new "Session model and effort: your choice" section explains how agent tiers interact with the session level and how to set both; the blueprint doesn't prescribe a level. Workflow facts (under 10 agents, adjustable concurrency) and `/goal` retry notes are refreshed, and `writing-skills` points at `claude plugin eval`.
+- **Two new structure checks** — the collision gate fails on frontmatter that isn't valid YAML and on `references/` pointers, links, or `§` headings that don't resolve.
+
+**Evaluated and deferred:** a `claude plugin eval` pilot suite, `/doctor prompt-audit` sweep, `omitClaudeMd` on validators, skill-level `effort:` (it would override a higher level you chose), the size-headroom listing, the PR babysit loop, and every multi-host portability item (routed to a separate brainstorm).
 
 ### What's New in v3.7.1 — Size Sweep and Fixes
 

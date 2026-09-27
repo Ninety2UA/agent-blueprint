@@ -2252,7 +2252,7 @@
       <div class="hero__content">
         <div class="hero__badge">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-          v3.7.1 &mdash; Size Sweep
+          v3.8.0 &mdash; Plans as Decisions
         </div>
         <h1>Claude Code<br><span class="gradient-text">Blueprint</span></h1>
         <p class="hero__tagline">"Each unit of engineering work should make subsequent units easier &mdash; not harder."</p>
@@ -3544,8 +3544,33 @@
   <!-- ===== WHAT'S NEW ===== -->
   <section class="whats-new" id="whats-new">
     <div class="container">
-      <!-- v3.7.1 -->
+      <!-- v3.8.0 -->
       <div class="section-header reveal">
+        <span class="new__badge">v3.8.0</span>
+        <h2>What's New</h2>
+        <p>A combined watcher cycle &mdash; twenty-five ideas from six watched repositories grafted onto existing skills and agents, and every platform claim re-verified against Claude Code 2.1.283 for Opus 5.5</p>
+      </div>
+      <div class="grid-4 reveal reveal-stagger">
+        <div class="new-card">
+          <h3>Plans Record Decisions</h3>
+          <p>writing-plans names the test and what it asserts, the signature, and the spec values, and writes a code body only for an algorithm those leave open. Plans end with a Review Focus list, and the user reviews the saved plan before anything runs.</p>
+        </div>
+        <div class="new-card">
+          <h3>Security Findings Stay Visible</h3>
+          <p>Rejecting an auth, injection, data-loss, or secrets finding now needs a quoted refutation. Findings that can be neither confirmed nor refuted reach the report as advisory with a human owner instead of being dropped.</p>
+        </div>
+        <div class="new-card">
+          <h3>Sharper Reviews</h3>
+          <p>Merge-base review ranges with an empty-range guard, untracked files in scope, threshold direction rules, reasonable-user judgment on spec-silent behavior, a falsifiability check for tests, and a final whole-branch review in executing-plans.</p>
+        </div>
+        <div class="new-card">
+          <h3>Your Model, Your Effort</h3>
+          <p>Opus 5.5 is the default model and starts sessions at medium effort. The blueprint doesn't pick a level for you: the README explains how agent tiers interact with the session level and shows how to set both.</p>
+        </div>
+      </div>
+
+      <!-- v3.7.1 -->
+      <div class="section-header reveal" style="margin-top: 4rem;">
         <span class="new__badge">v3.7.1</span>
         <h2>What's New</h2>
         <p>Size sweep and fixes &mdash; the four largest skills now load a lean body and pull procedures from references on demand; two finishing-path defects and two resume-session edge cases closed</p>
