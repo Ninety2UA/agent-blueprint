@@ -155,7 +155,7 @@ Respond to each comment thread indicating how it was addressed.
 ### Phase 3: Merging
 
 After approval:
-0. Check the base branch's CI first (`gh run list --branch main --limit 1 --json conclusion`). If main is red, don't merge onto it: report it. A red base hides whether your change broke anything
+0. Check the base branch's CI first: `gh run list --branch main --workflow <ci-workflow> --limit 1 --json status,conclusion` (name the CI workflow, or the newest run of any workflow answers). If main is red, don't merge onto it: report it, because a red base hides whether your change broke anything. A run still in progress is not green; wait for it
 1. Rebase onto the latest main (if needed)
 2. Verify tests still pass after rebase
 3. Squash or merge per project convention

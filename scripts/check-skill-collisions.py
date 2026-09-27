@@ -31,8 +31,10 @@ Two structure checks FAIL the run (exit 1):
   - Reference pointers resolve: in each SKILL.md and references/*.md, every
     backticked `references/<file>.md` pointer and every relative Markdown
     link must name a file that exists, and a `§ Heading` cited right after a
-    pointer must match a heading in that file. Fenced code blocks are skipped;
-    single-letter placeholders such as `references/X.md` are ignored.
+    pointer must match a heading in that file. Fenced code blocks (indented
+    ones included) are skipped; single-letter placeholders such as
+    `references/X.md` are ignored. Not covered: bare "other-skill § heading"
+    citations between skills, and agent files.
 
 Usage: check-skill-collisions.py [repo-root]   (default: parent of this script's dir)
 Exit:  0 = clean · 1 = collision(s) >= FAIL or a structure check failed · 2 = no skills found
@@ -67,9 +69,10 @@ such can may might must shall do does did done here there where which who whom w
 
 TOKEN = re.compile(r"[a-z0-9]+")
 
-FENCE = re.compile(r"^(```|~~~).*?^\1", re.DOTALL | re.MULTILINE)
-POINTER = re.compile(r"`(references/[A-Za-z0-9._/-]+\.md)`(?:\s*§\s*([^.,;:)`\n—]+))?")
-MD_LINK = re.compile(r"\]\(([^)\s]+)\)")
+FENCE = re.compile(r"^[ \t]*(```|~~~).*?^[ \t]*\1", re.DOTALL | re.MULTILINE)
+# The § capture stops at sentence punctuation but keeps a dot between digits ("Step 2.9").
+POINTER = re.compile(r"`(references/[A-Za-z0-9._/-]+\.md)`(?:,?\s*§\s*((?:[^.,;:)`\n—]|\.(?=\d))+))?")
+MD_LINK = re.compile(r"\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*$", re.MULTILINE)
 PLACEHOLDER = re.compile(r"references/[A-Z]\.md$")
 
@@ -164,6 +167,15 @@ def yaml_failures(paths, repo):
     return failures, False
 
 
+def prefix_at_boundary(text, prefix):
+    """True when text starts with prefix and the prefix ends on a word boundary:
+    "step 17" does not match "step 1", and "step 2.5" does not match "step 2.9"."""
+    if not text.startswith(prefix):
+        return False
+    rest = text[len(prefix):]
+    return not rest or not (rest[0].isalnum() or (rest[0] == "." and rest[1:2].isdigit()))
+
+
 def pointer_failures(skill_dirs, repo):
     """Unresolvable references/ pointers, relative links, and § headings."""
     failures = []
@@ -188,7 +200,7 @@ def pointer_failures(skill_dirs, repo):
                     # The citation ends wherever the sentence resumes, so accept a
                     # heading that starts with the cited text or the cited text
                     # that starts with a whole heading ("§ Step 17 verification (no …").
-                    if not any(h.startswith(cited) or cited.startswith(h + " ") for h in headings):
+                    if not any(prefix_at_boundary(h, cited) or prefix_at_boundary(cited, h) for h in headings):
                         failures.append("%s: cites %s § %s, but no heading there starts with it"
                                         % (name, rel, section.strip()))
             for m in MD_LINK.finditer(text):

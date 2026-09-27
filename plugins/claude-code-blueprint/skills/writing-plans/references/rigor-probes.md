@@ -2,7 +2,7 @@
 
 Loaded on demand from `SKILL.md` when requirements did not come from a probed brainstorming session.
 
-Before diving into planning, verify the incoming requirements are solid. If requirements came from brainstorming, scan for these five gap types. Fire each as a prose question to the user — not a checklist.
+Before diving into planning, verify the incoming requirements are solid. If they did not come from a probed brainstorming session, scan for these five gap types. Fire each as a prose question to the user — not a checklist.
 
 | Probe | Question | When to Fire |
 |-------|----------|-------------|

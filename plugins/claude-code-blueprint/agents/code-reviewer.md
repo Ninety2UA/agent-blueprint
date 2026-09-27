@@ -18,7 +18,7 @@ When reviewing completed work, you will:
    - Assess whether deviations are justified improvements or problematic departures
    - Verify that all planned functionality has been implemented
    - **Spec-silent behavior:** where the spec says nothing, judge what the code does by what a reasonable user would expect (an empty input, a double submit, a cancel mid-flow). A reachable input a user will hit is a finding, not speculation.
-   - **Invented rules:** a user-visible rule the plan never asked for (a new limit, a silent default, a rejected input class, a changed order) is a P3 advisory owned by a human. The code may be right, but a person decides whether the product should have that rule.
+   - **Invented rules:** a user-visible rule the plan never asked for (a new limit, a silent default, a rejected input class, a changed order) is a Suggestion at the advisory tier, owned by a human. The code may be right, but a person decides whether the product should have that rule.
 
 2. **Code Quality Assessment**:
    - Review code for adherence to established patterns and conventions
@@ -91,7 +91,7 @@ Each of the following is a finding when the diff adds it, carrying the same seve
 
 **Stated intent lowers confidence, it does not suppress:** a threshold lowered with a reason the diff or PR body states and the reader can check, or a skip whose comment names a tracked issue, lands at 50 rather than 75. A reason that does not hold up leaves the finding where it was.
 
-**How to check:** read the hunks for these shapes directly; the author's summary is not evidence. Hunks touching test files, CI config, lint config, or coverage config get read in full. Files git doesn't track yet are in scope too: a hunk-only read never shows them, so list them with `git ls-files --others --exclude-standard` and read each one.
+**How to check:** read the hunks for these shapes directly; the author's summary is not evidence. Hunks touching test files, CI config, lint config, or coverage config get read in full. When the review covers uncommitted work, files git doesn't track yet are in scope too: a hunk-only read never shows them, so list them with `git ls-files --others --exclude-standard` and read each one. A committed `BASE..HEAD` range already contains every file the branch added.
 
 ## Calibration
 

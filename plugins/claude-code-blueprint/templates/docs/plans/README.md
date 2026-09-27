@@ -2,7 +2,7 @@
 
 Store implementation plans as: `YYYY-MM-DD-feature-name.md`
 
-Plans are created by the `writing-plans` skill after a brainstorming session produces an approved design. They should be detailed enough for an engineer (or agent) with zero project context to follow — exact file paths, exact code, exact test commands.
+Plans are created by the `writing-plans` skill after a brainstorming session produces an approved design. They record decisions, not code: enough for a capable engineer (or agent) new to this project to follow — exact file paths, each test and what it asserts, signatures, exact test commands.
 
 ## Lifecycle
 

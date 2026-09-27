@@ -81,7 +81,7 @@ Return ONLY this JSON structure, no prose:
   "unresolved": [
     {
       "finding_id": "<from input>",
-      "validated": false,
+      "status": "unresolved",
       "subject": "auth | injection | data-loss | secrets",
       "reason": "<one sentence: what could not be confirmed or refuted, and why>"
     }

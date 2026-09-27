@@ -171,7 +171,7 @@ The three-tier framing is sharper than a generic "be careful" — at decision ti
 
 ## Execution Handoff
 
-The user reviews the *saved* plan before anything runs. Approving the design in brainstorming approved the scope, not this plan. Then recommend one option below with a one-line reason and its cost (e.g. "Subagent-Driven: 4 sequential tasks, one review per task"), and close with:
+The user reviews the *saved* plan before anything runs. Approving the design in brainstorming approved the scope, not this plan. Under an autonomous pipeline (`/ship-pipeline`), skip the review request and the question: its plan-checker loop is the review, and the pipeline chooses execution itself. Then recommend one option below with a one-line reason and its cost (e.g. "Subagent-Driven: 4 sequential tasks, one review per task"), and close with:
 
 **"Plan saved to `docs/plans/<filename>.md` — please review it before anything runs.**
 

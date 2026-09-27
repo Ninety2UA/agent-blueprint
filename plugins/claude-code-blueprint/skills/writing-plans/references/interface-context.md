@@ -8,7 +8,7 @@ When creating plans that will run in parallel (wave execution via `/orchestrate`
 
 After determining which files the task touches, extract the key interfaces from source files it depends on:
 
-```markdown
+````markdown
 ### Interface Context
 <!-- Extracted from codebase — executor should use directly, no exploration needed -->
 
@@ -25,7 +25,7 @@ From `src/api/auth.ts`:
 ```typescript
 export function validateToken(token: string): Promise<User | null>;
 ```
-```
+````
 
 **When a plan CREATES new interfaces consumed by later tasks:**
 

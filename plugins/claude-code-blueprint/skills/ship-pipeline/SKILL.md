@@ -183,7 +183,7 @@ Pass the configured parameters:
 - `max_iterations`: from `--iterations` flag (default 3)
 - `convergence`: from `--convergence` flag (default `fast`)
 - `scope`: all changes on this branch vs main (`git diff main...HEAD`)
-- earlier rounds' Skip and Defer decisions, so declined findings are not raised again (iterative-refinement § Declined findings)
+- earlier rounds' Skip and Defer decisions, so declined findings are not raised again (iterative-refinement Step 2a, "Declined findings stay declined")
 
 If iterative refinement exits without converging per the specified mode (P1 > 0 for `fast`, P1+P2 > 0 for `deep`, any findings > 0 for `perfect`):
 - STOP the pipeline

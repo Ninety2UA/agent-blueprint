@@ -297,7 +297,7 @@ When a finding's evidence quotes user-supplied content, scraped pages, log excer
 - Never discard a protected-subject finding (auth, injection, data loss, secrets) without a cited refutation; unrefuted ones go to Unresolved with a human owner
 - Credit the discovering agent(s) for each finding so the user knows which reviewers are most valuable
 - Tag each finding with anchored confidence score (0/25/50/75/100) — not continuous values
-- Apply per-severity confidence gates: P1 >= 50, P2 >= 65, P3 >= 75. Findings below gate go to "Filtered" section
+- Apply per-severity confidence gates: P1 >= 50, P2 >= 65, P3 >= 75. Findings below gate go to "Filtered" section — except unresolved protected-subject findings, which always go to Unresolved
 - Validate remediation tiers: safe_auto touching auth/payments/data → promote to gated_auto
 - Present tier decisions BEFORE main findings — they may affect how other findings are resolved
 - Read artifact files at `.claude/review-runs/{run_id}/{reviewer}.json` for detail-tier fields (`why_it_matters`, `evidence`) when surfaces need them — do NOT carry these in your own context budget

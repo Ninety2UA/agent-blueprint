@@ -27,8 +27,9 @@ Dispatch code-reviewer subagent to catch issues before they cascade.
 
 **1. Get git SHAs:**
 ```bash
+# Pick ONE base:
 BASE_SHA=$(git rev-parse HEAD~1)                # one task's commit
-BASE_SHA=$(git merge-base origin/main HEAD)     # a whole branch
+# BASE_SHA=$(git merge-base origin/main HEAD)   # or: a whole branch
 HEAD_SHA=$(git rev-parse HEAD)
 git merge-base --is-ancestor "$BASE_SHA" "$HEAD_SHA" && [ -n "$(git rev-list "$BASE_SHA..$HEAD_SHA")" ] \
   || echo "Refusing: $BASE_SHA..$HEAD_SHA is empty or not a descendant range"
