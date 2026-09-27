@@ -88,13 +88,13 @@ When all reviewers return, the flow has two synthesis stages:
 
 ### 5a: Independent validation (optional, recommended for >5 findings)
 
-Dispatch the **findings-validator** agent with the merged compact returns. The validator does an independent re-verification per surviving finding (3 questions: real in current code? introduced by this diff? not handled elsewhere?) and returns `{validated, reason}` per finding. Conservative bias — when in doubt, reject.
+Dispatch the **findings-validator** agent with the merged compact returns. The validator does an independent re-verification per surviving finding (3 questions: real in current code? introduced by this diff? not handled elsewhere?) and returns validated, rejected, or unresolved per finding with a reason. Conservative bias — when in doubt, reject — except on protected subjects (auth, injection, data loss, secrets), where a rejection must quote the refuting line.
 
 ```
 Task("findings-validator: Validate these findings against the diff. run_id={run_id}. [merged finding list]")
 ```
 
-This step is an FP backstop. Findings the validator rejects are dropped before synthesis. Skip when the swarm produced ≤5 findings (validator overhead exceeds the benefit on small sets).
+This step is an FP backstop. Rejected findings are dropped before synthesis. **Unresolved** findings (a protected subject the validator could neither confirm nor refute) are never dropped: pass them to the synthesizer marked unresolved, and they reach the report as advisory with a human owner. Skip when the swarm produced ≤5 findings (validator overhead exceeds the benefit on small sets).
 
 ### 5b: Synthesis
 
