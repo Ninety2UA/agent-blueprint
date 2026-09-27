@@ -157,7 +157,7 @@ Track progress and report periodically:
 - Blockers: [list or "none"]
 ```
 
-If a worker is stuck (3+ minutes with no progress):
+Judge progress by artifacts, not the clock. A worker whose commits or expected files keep landing is making progress, however long it takes; don't steer it. It is stuck when nothing new has landed across two consecutive checks. Then:
 1. Check what they're working on
 2. Provide additional context or guidance
 3. If still stuck, reassign the task to a different worker
@@ -166,7 +166,7 @@ If a worker is stuck (3+ minutes with no progress):
 
 A `NEEDS_INPUT` return is a decision, not a failure — route it, never re-dispatch with a narrower scope. Supervised: put the worker's options to the user (AskUserQuestion Format). Under ship-pipeline: take the conservative option and lock it in `docs/context/DECISIONS.md` (ship-pipeline Stage 1's locked-decision rule). Either way, send the decision back to the worker — message it by name, or re-dispatch it with the decision in its prompt if it has gone. A `BLOCKED` return that describes a sub-task the worker wanted a subagent for is yours to decide: dispatch it as its own task or fold it into another.
 
-When a worker returns without completing its task (incomplete output, wrong files modified, or returns errors):
+When a worker returns without completing its task (incomplete output, wrong files modified, or returns errors), reconcile before classifying: check `git log` on its branch or worktree and the files the task expected. Work that landed despite a garbled or missing report counts as done once its verification passes; only what is actually missing is a failure.
 
 1. **Retry once with reduced scope.** Simplify the task: narrow the file list, break it into a smaller piece, add more explicit context about what went wrong.
 2. **If retry fails, skip and continue.** Mark the task as `blocked: worker failure` and proceed with remaining tasks. Do NOT attempt a third time — two failures indicate the task needs human input or a different approach.

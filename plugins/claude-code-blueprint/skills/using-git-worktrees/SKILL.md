@@ -129,6 +129,8 @@ pytest
 go test ./...
 ```
 
+Run it from the worktree path, and keep every verification command inside it: no absolute paths into the main checkout, no `cd ..` out of the worktree, no `--prefix`/`-C` pointing at another tree. A test run that reads the main checkout reports on code the worktree didn't change.
+
 **If tests fail:** Report failures, ask whether to proceed or investigate.
 
 **If tests pass:** Report ready.
