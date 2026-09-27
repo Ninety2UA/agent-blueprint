@@ -147,6 +147,8 @@ Announce: "Refinement iteration [i]/[max] — dispatching review swarm."
 
 Invoke the `/review-swarm` command (via the Skill tool if available, or by following the review-swarm command instructions directly). This dispatches all configured review agents in parallel and synthesizes findings. Collect the synthesized findings with P1/P2/P3 counts.
 
+**Declined findings stay declined.** Keep a running list of findings already settled in earlier iterations: the user's Skip or Defer, a present-tier choice already made, a fix reverted as deferred in 2e. Pass the list to each new review round, and drop a re-raised finding that matches one by `file` + title fingerprint unless the code at that location changed since. Dropped re-raises don't count toward convergence.
+
 #### 2b. Check Convergence
 
 Evaluate against the convergence mode:

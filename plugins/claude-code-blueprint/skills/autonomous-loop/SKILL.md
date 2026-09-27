@@ -38,6 +38,8 @@ Read the plan file and parse all tasks. Each task should have:
 - A clear completion criteria (how to verify it's done)
 - A checkbox status (`- [ ]` pending, `- [x]` complete)
 
+**Pre-flight danger scan (advisory):** before the first task, scan the plan for irreversible operations (deleting data, shared-database migrations, force-push, publishing outside the repo), protected-branch pushes, and deleting or skipping tests. Route each hit through the decision boundary; the scan never stops the loop by itself.
+
 If the plan doesn't have checkboxes, add them:
 ```markdown
 - [ ] Task 1: Implement user model
@@ -283,7 +285,7 @@ wtf_score = 0%
 
 **Note:** Test commits (regression tests, new test files) do NOT count toward wtf_score. Only production code changes accumulate risk.
 
-**Native `/loop` does not replace this machinery.** Claude Code's native `/loop` and ScheduleWakeup provide interval and scheduled *recurring invocation*, but `/loop` is session-scoped: it does not reset context, circuit-break, or detect degradation between runs. The circuit breaker (Step 5) and the degradation signals (rising difficulty, hot files, WTF score) are what keep autonomous multi-task execution safe — so this skill stays necessary and complementary even when a native loop schedules the run.
+Native `/loop` schedules runs but does not circuit-break or detect degradation, so it complements this skill rather than replacing it (`references/final-report.md` § Native /loop).
 
 ### Step 6: Loop Termination
 
@@ -291,7 +293,7 @@ The loop ends when one of these conditions is met:
 
 | Condition | Action |
 |-----------|--------|
-| **All tasks complete** | Report success, run final verification |
+| **All tasks complete** | Run final verification, report success with the run's numbers (Step 7) |
 | **Fatal error** | Stop, report using structured escalation format (trying/tried/think/need) |
 | **Max retries exhausted** on a blocking task | Stop, report using structured escalation format |
 | **Circuit breaker triggered** | Stop, report using structured escalation format |
@@ -312,22 +314,7 @@ When all tasks are complete, run a full verification pass:
 [lint command]
 ```
 
-Report the final state:
-
-```markdown
-## Loop Complete: [total/total] tasks done
-
-### Final Verification
-- Tests: [X passing, Y failing]
-- Build: [pass/fail]
-- Lint: [pass/fail]
-
-### Summary of Changes
-- Files created: [count]
-- Files modified: [count]
-- Tests added: [count]
-- Commits made: [list]
-```
+Report the final state in the shape in `references/final-report.md` § Final report: verification results, the run's numbers (tasks done, retries, escalations, blocked tasks with reasons), and the changes made.
 
 **Deslop pass:** Before reporting completion, run a deslop pass on all files modified during this session — remove AI text patterns (over-hedged language, filler transitions, restating-the-obvious comments, redundant type annotations). See iterative-refinement Step 0 for the full checklist. Verify tests still pass after deslop changes.
 
