@@ -583,7 +583,7 @@ Beyond the workflow gates above, two exact-match gates run in CI to keep the rep
 </p>
 
 - **Drift gate** (`scripts/check-drift.sh`) — derives skill/agent/hook counts from the filesystem and checks them against every manifest, doc, installer, and **website widget**, plus exact version-string equality. It retired the manual count sweeps that drifted three times.
-- **Skill-collision gate** (`scripts/check-skill-collisions.py`) — computes pairwise description overlap (Jaccard) across all skills and fails on near-duplicates (warn ≥50%, fail ≥75%) that would route ambiguously — a failure a single-skill trigger test can't catch.
+- **Skill-collision gate** (`scripts/check-skill-collisions.py`) — computes pairwise description overlap (Jaccard) across all skills and fails on near-duplicates (warn ≥50%, fail ≥75%) that would route ambiguously — a failure a single-skill trigger test can't catch. The same script fails on skill structure: frontmatter that isn't valid YAML, and a `references/` pointer, relative link, or cited `§ heading` that doesn't resolve.
 
 A third CI job validates the plugin and marketplace manifests with the CLI's own validator (`claude plugin validate --strict`).
 
