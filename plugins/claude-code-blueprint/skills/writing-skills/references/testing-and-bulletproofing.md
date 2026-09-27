@@ -167,3 +167,15 @@ Different skill types need different test approaches:
 - Gap testing: Are common use cases covered?
 
 **Success criteria:** Agent finds and correctly applies reference information
+
+## Native runner: `claude plugin eval`
+
+`claude plugin eval` (CLI 2.1.269+; git 2.31+ from 2.1.283) measures what this methodology designs. Each case runs in a fresh, non-interactive session with only the plugin loaded, three runs by default, next to a no-plugin baseline arm, and reports with, without, and the delta. Graders: `regex`, `tool_used` (including `Skill`, so it can score whether a skill triggered), `tool_order`, `file_exists`, `llm`, and `baseline`; there are no custom-code graders. `claude plugin eval init` drafts cases, and `--json`, `--threshold` (exit 1 below it), and `--max-cost-usd` (exit 2 over it) make it usable in CI.
+
+Before relying on it:
+
+- **It bills real calls:** cases × runs × two arms, plus judge calls for each `llm` or `baseline` grader per run.
+- **Its case format is its own.** skill-creator's `evals/evals.json` is not interchangeable.
+- **Keep suites out of the plugin directory.** A default `evals/` inside the plugin root ships into every user's plugin cache; the `experimental.evals` manifest key that relocates it is experimental.
+
+The fresh process per run gives it cleaner isolation than subagent-based testing, which inherits the tester's session context. It doesn't replace the scenario design above (pressure types, the 20-query trigger sets, why one run misleads); it runs those scenarios reproducibly. The blueprint ships no suite and no CI gate, because a gate would bill every push and need an API-key secret in a public repository.
