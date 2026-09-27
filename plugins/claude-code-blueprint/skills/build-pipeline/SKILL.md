@@ -110,7 +110,7 @@ Only proceed with deployment if the verdict is GO or CONDITIONAL GO. If NO-GO, s
 
 ### Stage 8: Compound (Knowledge Capture)
 
-If the implementation involved solving a non-trivial problem (debugging, framework gotcha, architectural decision), invoke the knowledge-compounding skill to document it in `docs/solutions/`. This makes the solution searchable for future planning.
+If the implementation involved solving a non-trivial problem (debugging, framework gotcha, architectural decision) whose lesson the code and tests don't already preserve, invoke the knowledge-compounding skill to document it in `docs/solutions/`. This makes the solution searchable for future planning.
 
 Skip this stage if the work was straightforward with no novel insights. See the knowledge-compounding skill for detailed guidance on what qualifies as non-trivial.
 

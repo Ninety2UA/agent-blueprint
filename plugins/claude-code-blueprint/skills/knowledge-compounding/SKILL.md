@@ -1,6 +1,6 @@
 ---
 name: knowledge-compounding
-description: "Trigger this skill after solving any non-trivial problem — even if the user doesn't explicitly ask to document it. Trigger when the user says 'compound', 'document this', 'save this solution', 'remember this', 'we should capture this', 'that was tricky', 'don't want to hit that again', or 'how did we fix this last time'. Trigger after debugging sessions that uncovered non-obvious root causes, after discovering framework gotchas or version-specific behavior, after implementing a reusable pattern, after making architectural decisions with significant trade-offs, and after any hard-won solution. Proactively suggest documenting if the solution took more than a few minutes to figure out — future sessions will thank you. Documents the problem, approach, and solution as institutional knowledge in docs/solutions/ that future planning can search and learn from. DO NOT TRIGGER for trivial fixes like typos, import corrections, or config changes already well-documented in framework docs."
+description: "Trigger this skill when a solved problem left knowledge that the code, tests, and commit message don't already preserve. Trigger when the user says 'compound', 'document this', 'save this solution', 'remember this', 'we should capture this', 'that was tricky', 'don't want to hit that again', or 'how did we fix this last time'. Trigger after debugging sessions that uncovered non-obvious root causes, after discovering framework gotchas or version-specific behavior, after implementing a reusable pattern, after making architectural decisions with significant trade-offs, and after any hard-won solution whose lesson a future reader couldn't recover from the code. Documents the problem, approach, and solution as institutional knowledge in docs/solutions/ that future planning can search and learn from. DO NOT TRIGGER for trivial fixes like typos, import corrections, or config changes already well-documented in framework docs, or when a regression test or an explanatory comment already carries the lesson."
 argument-hint: "<brief description of what was solved>"
 ---
 
@@ -36,6 +36,7 @@ Ask yourself:
 3. **What did we try that didn't work?** (Failed approaches save future time)
 4. **What would we do differently?** (Retrospective insight)
 5. **When would this apply again?** (Searchable keywords)
+6. **Do the code and tests already preserve this?** If a regression test fails when someone repeats the mistake, or a comment beside the fix explains it, a solution doc adds nothing. Capture only what a future reader couldn't recover from the code, the tests, and the commit message.
 
 If nothing here clears the bar — the fix was trivial, or it's already covered in framework docs — say so explicitly (e.g. "nothing from this session is worth a solution doc") rather than ending silently. This skill stays conditionally triggered: being invoked doesn't obligate a new file.
 
@@ -49,6 +50,7 @@ title: [Descriptive title]
 date: YYYY-MM-DD
 tags: [technology, pattern, domain]
 applies-to: [what part of the codebase or what type of work]
+retire_when: [optional — the condition that makes this obsolete, e.g. "we drop Node 18" or "upstream fixes the bug"]
 ---
 
 # [Title]
@@ -139,6 +141,7 @@ Compounding isn't only additive — the existing knowledge base needs periodic w
 
 - **Orphans** — solution docs nothing links to and nothing would search for; fold the insight into a doc that gets found, or drop the orphan.
 - **Stale content** — a solution describing a version, API, or pattern the codebase no longer uses.
+- **Retirement conditions met** — a doc whose `retire_when:` condition now holds; remove it, or rewrite it for what is true now.
 - **Broken cross-references** — links to ADRs, other solutions, or CONVENTIONS.md entries that were renamed, merged, or deleted since.
 - **Oversized pages** — a solution that grew past a research paper; split it or trim it back toward the 50-100 line target.
 - **Contradictions** — two solutions, or a solution and a CLAUDE.md Key Learning, that recommend opposite approaches to the same problem.

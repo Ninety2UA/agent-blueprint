@@ -83,6 +83,7 @@ Based on feedback:
 ### Step 5: Complete Development
 
 After all tasks complete and verified:
+- **Final whole-branch review:** run requesting-code-review once over the whole branch (base `git merge-base origin/main HEAD`, head `HEAD`), with the plan as the requirements and its Review Focus list as the reviewer's checklist. Use review-swarm instead when the branch touches auth, money, data, or a public contract. Fix Critical and Important findings and review again; the review is clean when it returns none.
 - Delete the progress file (`.claude/plans/<plan-basename>.progress.local.md`) — every box is ticked and the final review is clean, so nothing is left to resume
 - Announce: "I'm using the finishing-a-development-branch skill to complete this work."
 - **REQUIRED SUB-SKILL:** Use finishing-a-development-branch, passing the plan path (`docs/plans/<plan-basename>.md`) so its plan audit reads this plan

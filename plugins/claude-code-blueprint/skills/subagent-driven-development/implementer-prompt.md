@@ -83,7 +83,7 @@ Task tool (general-purpose):
     - What you implemented
     - Reuse search: what you checked (repository helper, standard library, platform guarantee, installed dependency) before writing new code, and what you reused or why nothing applied
     - RED run: the failing test command you ran before the fix, and its failure line
-    - What you tested and test results
+    - What you tested, and the project suite's result: the full test command you ran and every failing test by name, including ones your change didn't cause
     - Files changed
     - Self-review findings (if any)
     - Any issues or concerns
