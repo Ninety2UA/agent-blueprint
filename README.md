@@ -929,11 +929,25 @@ The shipped default stays `model: inherit` on every agent, so agents ride whatev
 |-------------|------------------------|
 | `low` | Haiku 4.5 |
 | `medium` | Sonnet 5 |
-| `high` | Opus 5 / Fable 5.1 |
+| `high` | Opus 5.5 / Fable 5.1 |
 
 This mapping is documentation, not shipped configuration — leaving `model: inherit` in place is the supported default.
 
 Effort tiers are honored on every model from CLI 2.1.267. Earlier CLIs silently ignored per-agent `effort:` whenever the session ran Opus 4.7, Opus 4.8, or Fable 5 — which affects `model: inherit` agents on those sessions, so a CLI upgrade, not a model pin, is what restores the tiers. The `maxEffortLevel` setting caps every tier from above. To give subagents a different default model without editing agent files, set `CLAUDE_CODE_SUBAGENT_MODEL`; an agent's own `model:` line and a per-spawn model still take precedence over it, and `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` overrides all of them.
+
+#### Session model and effort: your choice
+
+The blueprint never picks a model or an effort level for you, in Claude Code or in any other tool. Agents set a tier in frontmatter, which overrides the session level (still capped by `maxEffortLevel`), so all 29 agents run at their tier whatever the session uses. Skills set no `effort:`, so a main-session pipeline (`/ship-pipeline`, `/build-pipeline`, `/lfg`-style runs) reasons at whatever level your session runs. A skill-level `effort:` would override a higher level you chose, which is why skills don't carry one.
+
+Opus 5.5 is the default model on every plan from CLI 2.1.280, and it **starts sessions at `medium` effort** (other current models start at `high`). An `effortLevel` saved in user settings before per-model `/effort` does not carry over to Opus 5.5. From 2.1.280, Opus 4.7, Opus 4.8, and Fable 5 no longer hold their launch default over the level set by settings, `--settings`, or `-p`. Some reference points:
+
+| Session setting | Fits |
+|-----------------|------|
+| Opus 5.5 at `high` | A solid default for pipeline runs |
+| Opus 5.5 at `xhigh`, or Fable 5.1 at `high` | More careful on hard or high-stakes work; slower and costlier |
+| Opus 5.5 at `medium` (its starting level) or lower | Fine for small tasks, quick fixes, and questions |
+
+Set them in a session with `/model` and `/effort`, or at launch with `claude --model <model> --effort <level>`. `scripts/ship.sh` passes no `--model` or `--effort` of its own, so its runs use your saved defaults.
 
 ### Platform currency (2026-07 sync, refreshed 2026-09)
 
@@ -948,10 +962,10 @@ The blueprint tracks new Claude Code platform features and adopts them as **opt-
 | **Effort tiers** (`effort: low/medium/high`) | Shipped on every bundled agent (see "Effort tiers & opt-in model mapping" above) | None — an unrecognized key is ignored by older CLIs |
 | **`/goal`** (condition-based completion) | Opt-in complement to the ship loop's Stop-hook guard | None; generally available in the CLI |
 | **Native `/loop` + ScheduleWakeup** | Add interval/scheduled reruns, but `/loop` is session-scoped and does **not** reset context, circuit-break, or detect degradation — so `autonomous-loop` keeps its own circuit breaker and degradation detection | None; complementary, not a replacement |
-| **Workflow tool / `/workflows` / ultracode** | Opt-in for very large autonomous fan-outs — default size guideline `medium` (under 15 agents), runtime caps of 16 concurrent agents and 1,000 per run, no mid-run user input; wave orchestration stays the ungated, portable default | Available on all paid plans, the API, and Bedrock/Vertex/Foundry (Pro enables it in `/config`); runs in `claude -p`/SDK only behind a `Workflow` allow rule, auto or bypass mode, or a PreToolUse hook; disable-able per user (`disableWorkflows` / `CLAUDE_CODE_DISABLE_WORKFLOWS=1`) and org-wide |
-| **Fast mode** | Opt-in only | Gated: Opus 5 and Opus 4.8 only; research preview, pricing subject to change |
-| **Claude 5 lineup** (Opus 5, Sonnet 5, Fable 5.1, Haiku 4.5) | Every agent ships `model: inherit`, so agents ride the session model automatically — no per-agent pins. Opus 5 is the default on Max / Team Premium / Enterprise / API, Sonnet 5 on Pro / Team Standard; Fable 5.1 answers to the `fable` alias | None; opt-in model mapping documented above |
-| **Per-session caps** | Large swarms and research sweeps stay within the native limits — there is no per-session subagent total since CLI 2.1.224, only a concurrency cap and a nesting depth | 20 concurrent subagents by default (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`), nested spawns to depth 3 (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`), 200 WebSearches per session unchanged |
+| **Workflow tool / `/workflows` / ultracode** | Opt-in for very large autonomous fan-outs — default size guideline `medium` (under 10 agents; Pro defaults to `small`, under 5), 16 concurrent agents by default (adjustable 1–256 via `CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS`) and 1,000 per run, runs pause and resume across a usage-limit reset in interactive subscription sessions (not `-p`), no mid-run user input; wave orchestration stays the ungated, portable default | Available on all paid plans, the API, and Bedrock/Vertex/Foundry (Pro enables it in `/config`); runs in `claude -p`/SDK only behind a `Workflow` allow rule, auto or bypass mode, or a PreToolUse hook; disable-able per user (`disableWorkflows` / `CLAUDE_CODE_DISABLE_WORKFLOWS=1`) and org-wide |
+| **Fast mode** | Opt-in only | Gated: Opus 5.5 (the default), Opus 5, and Opus 4.8 only; research preview, pricing subject to change |
+| **Claude 5 lineup** (Opus 5.5, Opus 5, Sonnet 5, Fable 5.1, Haiku 4.5) | Every agent ships `model: inherit`, so agents ride the session model automatically — no per-agent pins. Opus 5.5 (`claude-opus-5-5`, CLI 2.1.280+) is the default on every plan, Pro and Team Standard included, and starts sessions at `medium` effort (see "Session model and effort" above); Fable 5.1 answers to the `fable` alias | None; opt-in model mapping documented above |
+| **Per-session caps** | Large swarms and research sweeps stay within the native limits — there is no per-session subagent total since CLI 2.1.224, only a concurrency cap and a nesting depth (ultracode sessions are exempt from the concurrency cap) | 20 concurrent subagents by default (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`), nested spawns to depth 3 (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`), 200 WebSearches per session unchanged |
 | **Native injection hardening** (Agent tool, CLI v2.1.210) | Reinforces — does not replace — the template's custom read/prompt scanners and `<<DATA_START>>`/`<<DATA_END>>` markers, which still cover the main-session Write/Edit and Read surfaces native hardening does not observe | None; defense-in-depth |
 | **Bundled `/deep-research` workflow** | Claude Code bundles a web-search fan-out workflow of that name (manual-invoke only); the blueprint's `deep-research` skill is the five-agent research swarm. When the slash menu shows both, `/claude-code-blueprint:deep-research` is the swarm | None; custom skills override bundled skills of the same name — precedence over the bundled workflow is unverified |
 
