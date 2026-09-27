@@ -66,7 +66,7 @@ For each section of the plan, add a `### Research Notes` subsection containing:
 - Do NOT change the plan's structure, tasks, or ordering
 - Do NOT add new tasks — only add research context to existing ones
 - Do NOT remove anything from the original plan
-- Add findings as supplementary notes that inform implementation
+- Add findings as supplementary notes that inform implementation: constraints, citations, gotchas. Don't paste implementation code into the plan; a plan records decisions, and the executor writes the code
 - If researchers contradict each other, note both perspectives and flag for the implementer
 - If a researcher found nothing relevant for a section, omit that section's entry (no empty notes)
 

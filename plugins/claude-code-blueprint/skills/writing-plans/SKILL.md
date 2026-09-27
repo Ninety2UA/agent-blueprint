@@ -1,13 +1,13 @@
 ---
 name: writing-plans
-description: "Trigger this skill when converting an approved design or spec into a detailed implementation plan with exact file paths, code snippets, dependency ordering, and test strategies. Trigger when the user says 'write a plan', 'create a plan', 'implementation steps', 'break this down into tasks', 'how do we implement this', 'plan out the work', or 'turn this design into tasks'. Trigger after brainstorming produces an approved design — even if the user doesn't explicitly ask for a plan, suggest this skill once a design is approved. Also trigger when the user has a clear spec from any source and needs it decomposed into bite-sized executable steps. DO NOT TRIGGER when the user hasn't brainstormed or designed yet — use brainstorming first to produce an approved design. DO NOT TRIGGER for executing an existing plan — use executing-plans instead. DO NOT TRIGGER for enriching a plan with research — use deepen-plan instead."
+description: "Trigger this skill when converting an approved design or spec into an implementation plan that records the decisions — exact file paths, the tests and what they assert, signatures, dependency ordering. Trigger when the user says 'write a plan', 'create a plan', 'implementation steps', 'break this down into tasks', 'how do we implement this', 'plan out the work', or 'turn this design into tasks'. Trigger after brainstorming produces an approved design — even if the user doesn't explicitly ask for a plan, suggest this skill once a design is approved. Also trigger when the user has a clear spec from any source and needs it decomposed into bite-sized executable steps. DO NOT TRIGGER when the user hasn't brainstormed or designed yet — use brainstorming first to produce an approved design. DO NOT TRIGGER for executing an existing plan — use executing-plans instead. DO NOT TRIGGER for enriching a plan with research — use deepen-plan instead."
 ---
 
 # Writing Plans
 
 ## Overview
 
-Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
+A plan records decisions, not a transcript of the code. For each task it names the files, the test and what it asserts, the signatures and spec values the code must honor, the order, and the command that proves it done. The executor is a capable engineer who lacks this codebase's context, so supply the context (paths, conventions, contracts, commands) and leave out the code those decisions already determine. DRY. YAGNI. TDD. Frequent commits.
 
 ## When NOT to Use
 
@@ -15,9 +15,10 @@ Write comprehensive implementation plans assuming the engineer has zero context 
 - **The change qualifies as a quick fix** (< 3 files, obvious root cause) — use `/quick-fix` and skip the plan document.
 - **You're triaging open work** — use `/backlog-triage`; `/writing-plans` produces *one* plan for *one* change.
 - **You're researching feasibility** — use `/spike-exploration` or `/deep-research`; the plan is the artifact *after* feasibility is settled.
+- **A costly-to-reverse choice is still open after research** (storage engine, public API shape, a vendor) — compare the options in `/spike-exploration` first; the plan commits to the one that wins.
 - **You're fixing a regression** — use `/systematic-debugging`; debug-first then plan if the fix is non-trivial.
 
-Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
+Assume a skilled developer who knows almost nothing about our toolset or problem domain. Test design is where executors most often drift, so the plan settles it: every test is named with the behavior it asserts.
 
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
@@ -27,31 +28,18 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 ## Requirements Quality Check (Rigor Probes)
 
-Before diving into planning, verify the incoming requirements are solid. If requirements came from brainstorming, scan for these five gap types. Fire each as a prose question to the user — not a checklist.
-
-| Probe | Question | When to Fire |
-|-------|----------|-------------|
-| **Evidence gap** | "What evidence do we have that this is actually the problem?" | Requirements assert a problem without citing user data, logs, or incidents |
-| **Specificity gap** | "Can you give a concrete example of when this would happen?" | Requirements describe abstract scenarios without grounding in real use cases |
-| **Counterfactual gap** | "What if we didn't do this — what breaks?" | Requirements lack a clear cost-of-inaction; the feature might be nice-to-have |
-| **Attachment gap** | "Are we attached to this solution, or is there a simpler approach?" | Requirements prescribe a specific implementation rather than describing the problem |
-| **Durability gap** | "Will this still matter in 6 months?" | Requirements address a transient pain point that may resolve itself |
-
-**Rules:**
-- Fire at most 2-3 probes per planning session — don't interrogate
-- Skip probes where the answer is obvious from the requirements doc
-- If requirements came from a rigorous brainstorming session with probes already applied, skip this section entirely
-- Probes that surface real gaps → pause planning, send the user back to refine requirements
-- Probes that are satisfactorily answered → proceed to planning
+Requirements that came from a probed brainstorming session skip this. Otherwise, before planning, scan them for five gaps (evidence, specificity, counterfactual, attachment, durability) and ask at most two or three of those questions in prose. A real gap sends the user back to refine the requirements. The probe table and rules are in `references/rigor-probes.md`.
 
 ## Bite-Sized Task Granularity
 
-**Each step is one action (2-5 minutes):**
-- "Write the failing test" - step
-- "Run it to make sure it fails" - step
-- "Implement the minimal code to make the test pass" - step
-- "Run the tests and make sure they pass" - step
+**Each step is one action with a checkable result:**
+- "Write the failing test `test_x` asserting Y" - step
+- "Run it and see it fail for the expected reason" - step
+- "Implement `f(a) -> B` in `path/file.py` until it passes" - step
+- "Run the project suite and see it green" - step
 - "Commit" - step
+
+A step's detail is the decision it pins: the test and its assertions, or the signature, file, and spec values. Write a code body only for an algorithm those don't determine (a tricky parse, a non-obvious formula). Everything else the executor writes against the real code.
 
 ## Plan Document Header
 
@@ -87,37 +75,16 @@ The plan-completion audit (`finishing-a-development-branch` Step 3) reads `### T
 - Modify: `exact/path/to/existing.py:123-145`
 - Test: `tests/exact/path/to/test.py`
 
-**Step 1: Write the failing test**
+**Step 1: Write the failing test** `test_rejects_expired_token` — an expired token returns `None` and logs `token.expired`.
 
-```python
-def test_specific_behavior():
-    result = function(input)
-    assert result == expected
-```
+**Step 2: Run it to verify it fails**
+Run: `pytest tests/path/test.py::test_rejects_expired_token -v` → Expected: FAIL (`validate_token` not defined)
 
-**Step 2: Run test to verify it fails**
+**Step 3: Implement** `validate_token(token: str) -> User | None` in `src/path/file.py`; expiry uses the `exp` claim with the 30 s clock skew from the spec.
 
-Run: `pytest tests/path/test.py::test_name -v`
-Expected: FAIL with "function not defined"
+**Step 4: Run the project suite** → Expected: PASS, with any failure named, including ones this task didn't cause
 
-**Step 3: Write minimal implementation**
-
-```python
-def function(input):
-    return expected
-```
-
-**Step 4: Run test to verify it passes**
-
-Run: `pytest tests/path/test.py::test_name -v`
-Expected: PASS
-
-**Step 5: Commit**
-
-```bash
-git add tests/path/test.py src/path/file.py
-git commit -m "feat: add specific feature"
-```
+**Step 5: Commit** `feat(auth): reject expired tokens`
 ````
 
 ## Shadow Path Tracing
@@ -147,52 +114,13 @@ Service#call          | API timeout          | ?        | ?
 
 Any "?" in the HANDLED column becomes a sub-task. Every external call must have its failure mode explicitly addressed in the plan.
 
+## Review Focus
+
+End the plan with a `## Review Focus` section: at most five inputs or failure modes the spec implies but no task's test exercises yet (Shadow Path Tracing and the Error/Rescue Map are where they surface). Give each one a test in the task that owns it, and list it here so the final reviewer checks it on purpose instead of by luck.
+
 ## Interface Context for Parallel Executors
 
-When creating plans that will run in parallel (wave execution via `/orchestrate`), embed key types/interfaces/exports from the codebase directly in the plan. This prevents executors from wasting context exploring the codebase to discover contracts.
-
-**When a plan USES existing code:**
-
-After determining which files the task touches, extract the key interfaces from source files it depends on:
-
-```markdown
-### Interface Context
-<!-- Extracted from codebase — executor should use directly, no exploration needed -->
-
-From `src/types/user.ts`:
-```typescript
-export interface User {
-  id: string;
-  email: string;
-  role: 'admin' | 'member';
-}
-```
-
-From `src/api/auth.ts`:
-```typescript
-export function validateToken(token: string): Promise<User | null>;
-```
-```
-
-**When a plan CREATES new interfaces consumed by later tasks:**
-
-Add a "Task 0: Define contracts" step that creates type files before implementation:
-
-```markdown
-### Task 0: Define interface contracts
-
-**Files:**
-- Create: `src/types/newFeature.ts`
-
-**Step 1:** Create type definitions that downstream tasks will implement against.
-These are the contracts — implementation comes in later tasks.
-
-**Step 2:** Commit: `chore: define newFeature type contracts`
-```
-
-**When to include:** Plan touches files that import from other modules, creates a new API endpoint, modifies a component's props, or depends on a previous wave's output.
-
-**When to skip:** Plan is self-contained (creates everything from scratch), pure configuration, or all patterns are already established.
+When the plan will run in parallel waves (`/orchestrate`, `/team-execution`), embed the contracts executors need (key types, exports, signatures) in the plan so they don't explore the codebase to find them, and add a "Task 0: Define contracts" when later tasks consume new interfaces. When to include or skip it, and the block shapes, are in `references/interface-context.md`.
 
 ## Verification Commands
 
@@ -208,7 +136,7 @@ If no automated verification exists yet, say so explicitly: `No automated verifi
 
 ## Remember
 - Exact file paths always
-- Complete code in plan (not "add validation")
+- Decisions, not code: name the test and its assertions, the signature, the spec values (not "add validation"); a code body only for an algorithm those leave open
 - Exact commands with expected output
 - Reference relevant skills with @ syntax
 - DRY, YAGNI, TDD, frequent commits
@@ -227,18 +155,25 @@ The three-tier framing is sharper than a generic "be careful" — at decision ti
 
 | Rationalization | Reality |
 |---|---|
-| "The plan is obvious, I'll just describe the steps" | Vague plans become vague code. Exact file paths, exact commands, and inline code prevent the executor from improvising. |
+| "The plan is obvious, I'll just describe the steps" | Vague plans become vague code. Exact file paths, exact commands, named tests with their assertions, and signatures keep the executor from improvising. |
+| "I'll write the code into the plan to save the executor time" | The executor rewrites it against the real code anyway, and pasted code goes stale at the first deviation. Planning in code also drifts into building the project during planning. Record the decision. |
 | "I'll skip verification commands and figure them out at run-time" | The executor will skip verification too. If the plan-author can't articulate "Expected: PASS," neither will the implementer. |
 | "Interface contracts are implementation details" | When parallel executors share a contract, the contract IS the spec. Skipping the interface section creates Wave-N integration breakage. |
 | "Plans are overhead — let me start coding" | Planning IS the task. Implementation without a plan is typing, not engineering. The cost of the plan is paid back many times over in fewer wrong turns. |
 | "I'll write the plan after the design — they're the same thing" | Brainstorming produces a *what*; the plan produces a *how with file paths and commands*. Conflating them loses the executable detail. |
 | "Boundaries are for big projects" | Boundaries are cheapest to declare on small plans (3 lines per list) and most expensive to recover from when missing. |
 
+## Self-Review Before Handoff
+
+- **Step scan** — every step is one action with a checkable result; no step body repeats what its test and signature already determine.
+- **Proportion check** — a plan much longer than the spec it implements is usually transcribing code. Cut it back to decisions.
+- **Review Focus** — present, five items or fewer, each pinned by a test in its owning task.
+
 ## Execution Handoff
 
-After saving the plan, offer execution choice:
+The user reviews the *saved* plan before anything runs. Approving the design in brainstorming approved the scope, not this plan. Then recommend one option below with a one-line reason and its cost (e.g. "Subagent-Driven: 4 sequential tasks, one review per task"), and close with:
 
-**"Plan complete and saved to `docs/plans/<filename>.md`. What's next?**
+**"Plan saved to `docs/plans/<filename>.md` — please review it before anything runs.**
 
 **1. Deepen the plan (`/deepen-plan`)** — Dispatch parallel research agents to enrich each section with best practices, prior solutions, and framework docs before executing
 
@@ -248,7 +183,7 @@ After saving the plan, offer execution choice:
 
 **4. Agent Teams (`/team-execution`)** — Collaborative teammates with file ownership and shared task list. Best for 4+ tasks touching different areas. Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`.
 
-**Which approach?"**
+**I recommend [option] because [reason]. Which approach?"**
 
 **If Deepen chosen:**
 - Invoke `/deepen-plan` with the plan file path

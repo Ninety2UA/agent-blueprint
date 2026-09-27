@@ -498,7 +498,7 @@ Every feature follows this flow:
 
 **3. Design** — Brainstorm options with `/brainstorming`. Present tradeoffs. Get human approval before any code is written.
 
-**4. Plan** — Break approved design into bite-sized tasks (2-5 min each) with exact file paths, code snippets, and test strategies. After the plan is written, choose: deepen with research (`/deepen-plan`), execute sequentially (subagent-driven), execute in parallel (`/orchestrate`), or execute with Agent Teams (`/team-execution`).
+**4. Plan** — Break the approved design into tasks that record decisions, not code: exact file paths, each test and what it asserts, signatures, and a Review Focus list of spec-implied edge cases. The user reviews the saved plan before it runs. After the plan is written, choose: deepen with research (`/deepen-plan`), execute sequentially (subagent-driven), execute in parallel (`/orchestrate`), or execute with Agent Teams (`/team-execution`).
 
 **5. Build** — Execute using TDD (red-green-refactor). Verify with evidence. Dispatch code review agents.
 

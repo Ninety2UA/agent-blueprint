@@ -32,7 +32,7 @@ Every plan MUST include:
 
 ### Task 1: [Component Name]
 **Files:** Create/Modify/Test paths
-**Steps:** Bite-sized steps with exact code and test commands
+**Steps:** One action per step, each with a checkable result: the test and what it asserts, the signature, the command
 
 ### Task 2: ...
 ```
@@ -40,11 +40,12 @@ Every plan MUST include:
 ## Rules
 
 - Exact file paths for every file touched
-- Complete code in the plan (not "add validation" — show the actual code)
+- Decisions, not code: name the test and its assertions, the signature, the spec values (not "add validation"); a code body only for an algorithm those leave open
 - Exact test commands with expected output
 - Tasks ordered by dependency
 - Each task independently verifiable with a clean commit
-- Plans are prompts, not documents that become prompts — write them as if the executor has zero context
+- Plans are prompts, not documents that become prompts — supply the codebase context a capable executor lacks, and leave out the code the decisions already determine
+- End with a `## Review Focus` list: at most five spec-implied inputs or failure modes, each pinned by a test in its owning task
 
 ## Updating During Execution
 

@@ -61,7 +61,8 @@ Trace verification *backward from the phase goal*: what must the user observe â†
 - Does every new route/endpoint have corresponding tests planned?
 - Does every new component have imports where it's used?
 - Are error handling paths covered?
-- Are edge cases addressed?
+- Are edge cases addressed? Does the plan's Review Focus list pin each spec-implied input or failure mode to a test in its owning task?
+- A step without a code body is not incomplete when its test, signature, and spec values pin the result. Plans record decisions, not code, so don't ask for implementation bodies the plan leaves out on purpose.
 
 ### 5. Contradiction & Ambiguity Checks
 - Do any acceptance criteria conflict with each other? (e.g., "RESTful API" + "real-time push updates")

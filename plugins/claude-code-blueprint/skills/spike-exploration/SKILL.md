@@ -15,6 +15,7 @@ A spike is a timeboxed investigation to reduce uncertainty. The output is knowle
 
 - You don't know if an approach is feasible
 - You need to choose between two or more technologies or architectures
+- A costly-to-reverse choice (storage engine, public API shape, a vendor) is still open after research: compare the options here before a plan commits to one
 - You're integrating with an unfamiliar API or system
 - The team is debating an approach and no one has evidence
 - A task estimate feels like a guess because the unknowns are too large
@@ -124,7 +125,7 @@ Save the report to: `docs/research/spikes/YYYY-MM-DD-[topic].md`
 
 ### A/B Comparison Spike
 
-Comparing two approaches:
+Comparing two approaches. Fix the criteria before building anything, then build one throwaway artifact per option to the same depth, so neither wins on polish. Score both against those criteria. The artifacts are deleted; the matrix and the reason go into the report and the plan.
 
 ```markdown
 ## Spike: PostgreSQL vs. SQLite for local-first sync
