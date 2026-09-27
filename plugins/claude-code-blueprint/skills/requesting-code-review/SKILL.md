@@ -16,6 +16,8 @@ Dispatch code-reviewer subagent to catch issues before they cascade.
 - After completing major feature
 - Before merge to main
 
+**Size the review by consequence, not line count.** Ask whether a wrong change would fail loudly at the change site (a type error, a failing test) or silently somewhere else (a wrong total, a leaked record, a caller in another module). A change that fails silently, or touches auth, money, data, or a public contract, gets `/review-swarm` whatever its size; this single-reviewer pass is for changes that would fail loudly.
+
 **Optional but valuable:**
 - When stuck (fresh perspective)
 - Before refactoring (baseline check)
