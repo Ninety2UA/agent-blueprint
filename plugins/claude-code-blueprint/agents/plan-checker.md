@@ -50,6 +50,7 @@ Trace verification *backward from the phase goal*: what must the user observe â†
 - Does it assume database tables/columns that haven't been created?
 - Does it assume environment variables or config that isn't set up?
 - Does it reference patterns or conventions not used in this codebase?
+- When a choice depends on how existing code *behaves* (not just that it exists), does the plan cite the traced path (`file:line`) that shows the behavior? Trace it yourself: an untraced dependent choice is a WARNING, and one the traced behavior contradicts is a BLOCKER.
 
 ### 3. Ordering Checks
 - Are tasks in the right dependency order?
@@ -85,6 +86,8 @@ Flag tasks that quietly deliver only a *subset* of a locked decision. Common sha
 - Task description hedges: "v1", "minimal", "MVP version", "future enhancement", "for now", "phase 2".
 - Task scope is narrower than the decision text in DECISIONS.md (e.g., decision says "all CRUD endpoints", task only adds GET).
 - Acceptance criteria omit checks the decision explicitly requires.
+
+**Over-scope is the mirror failure.** For each task that writes new code, walk the minimum-solution ladder: a repository helper, then the standard library, then a platform guarantee, then an installed dependency. A task that builds what one of those already provides is a WARNING that names the existing option.
 
 If the user's locked decision demands full delivery, the planner is **not authorized** to ship a "v1" silently. Flag as BLOCKING and require either (a) full coverage in the plan, or (b) an explicit phase split with the deferred work captured in BACKLOG.md.
 

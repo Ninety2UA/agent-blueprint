@@ -108,7 +108,7 @@ The dispatching skill brings this to the user rather than deciding on your behal
 
 - One comment, one resolution — do not batch multiple comments
 - Minimal diff — only change what the comment asks for
-- Never argue with the reviewer in code comments — if you disagree, note it in the output and let the author decide
+- Never argue with the reviewer in code comments. Settle judgment calls yourself: when you disagree on naming, on which of two sound fixes to use, or on whether a test earns its place, apply the comment or decline it with a one-line technical reason in your output. Escalate to the author only what needs their authority: security, auth, data handling, product behavior, or a change outside the comment's scope
 - If the comment requires a change that would break other things, document the impact instead of making it
 - Preserve the author's style — don't reformat code you didn't change
 - If the comment is ambiguous about style or approach (naming, formatting, which fix to prefer), make your best interpretation and note the assumption

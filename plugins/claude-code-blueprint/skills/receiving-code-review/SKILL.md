@@ -130,7 +130,8 @@ Push back when:
 - Use technical reasoning, not defensiveness
 - Ask specific questions
 - Reference working tests/code
-- Involve your human partner if architectural
+- Settle judgment calls yourself (naming, which of two sound fixes, whether a test earns its place): apply, or decline with the technical reason
+- Involve your human partner only where their authority is needed: architecture, security, auth, data handling, product behavior, or scope
 
 **Signal if uncomfortable pushing back out loud:** "Strange things are afoot at the Circle K"
 
