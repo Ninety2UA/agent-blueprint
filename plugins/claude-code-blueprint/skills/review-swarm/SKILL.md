@@ -14,8 +14,8 @@ Dispatch a swarm of specialized review agents in parallel, then synthesize their
 
 Identify what to review:
 - If arguments specify files or scope, use that
-- Otherwise, review uncommitted changes (`git diff`) or the last commit (`git diff HEAD~1`)
-- For a PR review, use `git diff main...HEAD`
+- Otherwise, review uncommitted changes (`git diff` plus untracked files from `git ls-files --others --exclude-standard`) or the last commit (`git diff HEAD~1`)
+- For a PR or branch review, diff from the merge base: `git diff $(git merge-base origin/main HEAD)..HEAD` (the three-dot `origin/main...HEAD` is the same range), never a two-dot range against bare `origin/main`, which shows main's newer files as phantom deletions. If the range is empty or the base is not an ancestor of HEAD, stop and report the range instead of reviewing nothing
 
 ## Step 2: Select Reviewers (Conditional Activation)
 

@@ -25,9 +25,14 @@ Dispatch code-reviewer subagent to catch issues before they cascade.
 
 **1. Get git SHAs:**
 ```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
+BASE_SHA=$(git rev-parse HEAD~1)                # one task's commit
+BASE_SHA=$(git merge-base origin/main HEAD)     # a whole branch
 HEAD_SHA=$(git rev-parse HEAD)
+git merge-base --is-ancestor "$BASE_SHA" "$HEAD_SHA" && [ -n "$(git rev-list "$BASE_SHA..$HEAD_SHA")" ] \
+  || echo "Refusing: $BASE_SHA..$HEAD_SHA is empty or not a descendant range"
 ```
+
+Never use bare `origin/main` as the base: once main moves past your branch point, its new files show up as phantom deletions in the diff. If the guard refuses, fix the range; don't review an empty or unrelated diff.
 
 **2. Dispatch code-reviewer subagent:**
 
