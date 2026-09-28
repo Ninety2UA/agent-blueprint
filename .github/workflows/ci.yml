@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, release/v4]
+  # No base-branch filter: v4 phase PRs stack on release/v4 and on each other.
   pull_request:
-    branches: [main]
 
 jobs:
   lint-markdown:
