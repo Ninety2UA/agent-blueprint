@@ -142,6 +142,40 @@ jobs:
           REQUIRE_YAML: "1"
         run: python3 scripts/check-skill-collisions.py
 
+  portability-gates:
+    name: Portability Gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the allowlist-base check reads the PR base's allowlist
+
+      - name: Install PyYAML
+        run: python3 -c 'import yaml' 2>/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q python3-yaml; }
+
+      # On pull requests, an allowlist entry that the base branch does not have
+      # fails: the allowlists only shrink (KTD5).
+      - name: Skill portability gate
+        env:
+          REQUIRE_YAML: "1"
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            python3 scripts/check-portability.py --allowlist-base "origin/$BASE_REF"
+          else
+            python3 scripts/check-portability.py
+          fi
+
+      - name: Manifest gate
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            python3 scripts/check-manifests.py --allowlist-base "origin/$BASE_REF"
+          else
+            python3 scripts/check-manifests.py
+          fi
+
       - name: Gate unit tests
         run: python3 -m unittest discover -s tests/gates -v
 
