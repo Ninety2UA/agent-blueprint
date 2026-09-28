@@ -30,7 +30,7 @@ Interpret as optional context:
 
 If no argument, proceed with open-ended ideation.
 
-Default volume: ~8-10 ideas per agent (yielding ~25 raw, ~15-20 after dedupe), keep 5-7 survivors. Honor clear overrides.
+Default volume: ~8-10 ideas per helper (yielding ~25 raw, ~15-20 after dedupe), keep 5-7 survivors. Honor clear overrides.
 
 ## Phase 0: Resume & Scope
 
@@ -44,15 +44,16 @@ Parse the focus hint into: focus context, volume override.
 
 ## Phase 1: Codebase Scan
 
-Use the Task tool to dispatch 3 existing agents **in parallel** (foreground — results needed before proceeding):
+Dispatch 3 helpers **in parallel** and wait for them (results needed before proceeding).
 
-```
-Task("learnings-researcher: Search docs/solutions/, docs/learnings/, and docs/context/DECISIONS.md for known pain points, recurring issues, and areas flagged for improvement. Focus: {focus_hint}")
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Task("codebase-context-mapper: Map project structure, patterns, conventions, and gaps. Identify areas with high complexity, missing tests, or unclear architecture. Focus: {focus_hint}")
+Prompt files and inputs:
+- `references/agents/learnings-researcher.md`: Search docs/solutions/, docs/learnings/, and docs/context/DECISIONS.md for known pain points, recurring issues, and areas flagged for improvement. Focus: {focus_hint}
+- `references/agents/codebase-context-mapper.md`: Map project structure, patterns, conventions, and gaps. Identify areas with high complexity, missing tests, or unclear architecture. Focus: {focus_hint}
+- `references/agents/git-history-analyzer.md`: Analyze recent git history (last 30 days). Find: hot files (most changed), recurring fix patterns, areas with frequent churn, recent refactors that may have follow-up work. Focus: {focus_hint}
 
-Task("git-history-analyzer: Analyze recent git history (last 30 days). Find: hot files (most changed), recurring fix patterns, areas with frequent churn, recent refactors that may have follow-up work. Focus: {focus_hint}")
-```
+**Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
 Consolidate results into a **grounding summary**:
 - **Project shape** — language, framework, structure, key patterns
@@ -64,28 +65,28 @@ Consolidate results into a **grounding summary**:
 
 Generate the full candidate list **before** critiquing any idea.
 
-Use the Task tool to dispatch 3 parallel ideation subagents (inherited model). Each gets: the grounding summary, the focus hint, and a per-agent volume target (~8-10 ideas). Instruct each to generate raw candidates only — no critique.
+Dispatch 3 parallel ideation helpers.
+
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+
+These have no prompt file: each helper's prompt is its frame text below. Each gets: the grounding summary, the focus hint, and a per-helper volume target (~8-10 ideas). Instruct each to generate raw candidates only — no critique.
 
 Assign each a different **ideation frame** as a starting bias (not a constraint — cross-cutting ideas are valuable):
 
-```
-Task("Ideation agent (friction frame): Generate ~{volume} concrete improvement ideas for this project, grounded in the codebase scan below. Start from this frame: User/developer friction — What's painful, slow, confusing, or error-prone? Where do people waste time? Follow any promising thread. Every idea must be grounded in the actual codebase — no abstract product advice. For each idea, return: title, summary (2-3 sentences), why_it_matters (1 sentence), grounding_evidence (what in the scan supports this). Focus hint: {focus_hint}. Grounding summary: {grounding_summary}")
+- Friction frame: Generate ~{volume} concrete improvement ideas for this project, grounded in the codebase scan below. Start from this frame: User/developer friction — What's painful, slow, confusing, or error-prone? Where do people waste time? Follow any promising thread. Every idea must be grounded in the actual codebase — no abstract product advice. For each idea, return: title, summary (2-3 sentences), why_it_matters (1 sentence), grounding_evidence (what in the scan supports this). Focus hint: {focus_hint}. Grounding summary: {grounding_summary}
+- Inversion frame: Generate ~{volume} concrete improvement ideas for this project, grounded in the codebase scan below. Start from this frame: Inversion and removal — What can be eliminated, automated, or simplified? What would happen if we removed this entirely? Follow any promising thread. Every idea must be grounded in the actual codebase — no abstract product advice. For each idea, return: title, summary (2-3 sentences), why_it_matters (1 sentence), grounding_evidence (what in the scan supports this). Focus hint: {focus_hint}. Grounding summary: {grounding_summary}
+- Leverage frame: Generate ~{volume} concrete improvement ideas for this project, grounded in the codebase scan below. Start from this frame: Leverage and compounding — What small change would make many future changes easier? Where does effort compound? Follow any promising thread. Every idea must be grounded in the actual codebase — no abstract product advice. For each idea, return: title, summary (2-3 sentences), why_it_matters (1 sentence), grounding_evidence (what in the scan supports this). Focus hint: {focus_hint}. Grounding summary: {grounding_summary}
 
-Task("Ideation agent (inversion frame): Generate ~{volume} concrete improvement ideas for this project, grounded in the codebase scan below. Start from this frame: Inversion and removal — What can be eliminated, automated, or simplified? What would happen if we removed this entirely? Follow any promising thread. Every idea must be grounded in the actual codebase — no abstract product advice. For each idea, return: title, summary (2-3 sentences), why_it_matters (1 sentence), grounding_evidence (what in the scan supports this). Focus hint: {focus_hint}. Grounding summary: {grounding_summary}")
+**Important:** Start ALL 3 at once to maximize parallelism.
 
-Task("Ideation agent (leverage frame): Generate ~{volume} concrete improvement ideas for this project, grounded in the codebase scan below. Start from this frame: Leverage and compounding — What small change would make many future changes easier? Where does effort compound? Follow any promising thread. Every idea must be grounded in the actual codebase — no abstract product advice. For each idea, return: title, summary (2-3 sentences), why_it_matters (1 sentence), grounding_evidence (what in the scan supports this). Focus hint: {focus_hint}. Grounding summary: {grounding_summary}")
-```
-
-**Important:** Dispatch ALL 3 in a single message to maximize parallelism.
-
-After all agents return:
+After all helpers return:
 1. Merge and dedupe into one master list
 2. Synthesize cross-cutting combinations — scan for ideas from different frames that combine into something stronger (expect 2-4 additions)
 3. If a focus was provided, weight toward it without excluding stronger adjacent ideas
 
 ## Phase 3: Adversarial Filtering
 
-The orchestrator (you) reviews every candidate directly — do not dispatch subagents for critique.
+The orchestrator (you) reviews every candidate directly — do not dispatch helpers for critique.
 
 For each rejected idea, write a one-line reason.
 

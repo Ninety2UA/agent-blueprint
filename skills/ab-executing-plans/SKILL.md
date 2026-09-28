@@ -27,7 +27,14 @@ Load plan, review critically, execute tasks in batches, report for review betwee
 1. Read plan file
 2. Review critically - identify any questions or concerns about the plan
 3. If concerns: Raise them with your human partner before starting
-4. **Pattern mapping (optional but recommended for plans with 3+ new files):** dispatch the `pattern-mapper` agent to produce `.claude/plans/PATTERNS.md` mapping each new file to existing analogs with line-numbered excerpts. Read PATTERNS.md before each task — it grounds new code in existing conventions and prevents structural drift.
+4. **Pattern mapping (optional but recommended for plans with 3+ new files):** produce `.claude/plans/PATTERNS.md` mapping each new file to existing analogs with line-numbered excerpts. Read PATTERNS.md before each task — it grounds new code in existing conventions and prevents structural drift.
+
+   **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+
+   Prompt: `references/agents/pattern-mapper.md`. Inputs: the plan file path, the codebase root, and the output path `.claude/plans/PATTERNS.md`.
+
+   **Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
+
 5. If no concerns: create the progress file (below) and proceed
 
 **Progress file — `.claude/plans/<plan-basename>.progress.local.md`** (`<plan-basename>` is the plan's filename without `.md`):
@@ -91,7 +98,7 @@ After all tasks complete and verified:
 
 ## Decision Boundary
 
-One rule settles decide-versus-stop; it refines CLAUDE.md's "when in doubt, ask" rule rather than replacing it. Check CLAUDE.md's must-ask categories first: a decision inside one stops for a human wherever the running pipeline's contract allows stopping (this skill and ab-build-pipeline ask; ab-autonomous-loop stops with its structured escalation; ab-ship-pipeline, whose contract cannot stop, decides conservatively and locks the decision in `docs/context/DECISIONS.md`). Outside them, when you can both detect it and roll it back — name the rollback action — decide, record the choice under `### Assumptions` (see Assumption Tracking) plus a `BACKLOG.md` line when it defers work, and continue. Otherwise the posture decides: an interactive session asks in one sentence with two or three options; an autonomous session takes the conservative option and records it the same way; a subagent returns `NEEDS_INPUT` with the options, and team-lead routes that return instead of retrying with a narrower scope. A claim that something is impossible, blocked, or needs a credential requires evidence — a verbatim error, a documentation citation, or a live probe.
+One rule settles decide-versus-stop; it refines CLAUDE.md's "when in doubt, ask" rule rather than replacing it. Check CLAUDE.md's must-ask categories first: a decision inside one stops for a human wherever the running pipeline's contract allows stopping (this skill and ab-build-pipeline ask; ab-autonomous-loop stops with its structured escalation; ab-ship-pipeline, whose contract cannot stop, decides conservatively and locks the decision in `docs/context/DECISIONS.md`). Outside them, when you can both detect it and roll it back — name the rollback action — decide, record the choice under `### Assumptions` (see Assumption Tracking) plus a `BACKLOG.md` line when it defers work, and continue. Otherwise the posture decides: an interactive session asks in one sentence with two or three options; an autonomous session takes the conservative option and records it the same way; a helper returns `NEEDS_INPUT` with the options, and the coordinating session routes that return instead of retrying with a narrower scope. A claim that something is impossible, blocked, or needs a credential requires evidence — a verbatim error, a documentation citation, or a live probe.
 
 Examples: a migration is a must-ask category, so every posture stops (ab-ship-pipeline alone decides conservatively and records, because it cannot stop). A helper's default value is detectable with a grep and revertible with one edit, so it is decided, recorded, and continued.
 

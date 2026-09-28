@@ -58,7 +58,7 @@ digraph process {
 
     "Read plan, extract all tasks with full text, note context, create progress file" [shape=box];
     "More tasks remain?" [shape=diamond];
-    "Dispatch final code reviewer subagent for entire implementation" [shape=box];
+    "Dispatch final code reviewer helper for entire implementation" [shape=box];
     "Use ab-finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
     "Read plan, extract all tasks with full text, note context, create progress file" -> "Dispatch implementer subagent (./implementer-prompt.md)";
@@ -77,8 +77,8 @@ digraph process {
     "Code quality reviewer subagent approves?" -> "Tick task in progress file" [label="yes"];
     "Tick task in progress file" -> "More tasks remain?";
     "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
-    "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
-    "Dispatch final code reviewer subagent for entire implementation" -> "Use ab-finishing-a-development-branch";
+    "More tasks remain?" -> "Dispatch final code reviewer helper for entire implementation" [label="no"];
+    "Dispatch final code reviewer helper for entire implementation" -> "Use ab-finishing-a-development-branch";
 }
 ```
 
@@ -119,6 +119,12 @@ git check-ignore -q "$progress" || {   # projects scaffolded before v3.6.0 lack 
 - `./implementer-prompt.md` - Dispatch implementer subagent
 - `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
 - `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+
+Final code review, after all tasks:
+
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+
+Prompt: `references/agents/code-reviewer.md`. Inputs: the plan path and the whole implementation's range (the commit before the first task to HEAD).
 
 ## Example Workflow
 

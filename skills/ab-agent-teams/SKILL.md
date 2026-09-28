@@ -11,6 +11,8 @@ Agent Teams are fully independent Claude Code instances that collaborate through
 
 **Requires:** `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"` in settings.json (experimental feature).
 
+**Lead:** the main session is the team lead. It coordinates by the coordinator instructions in the ab-orchestrate skill, in team mode, and spawns every teammate itself; teammates start no helpers of their own.
+
 ## When to Use Agent Teams vs Swarms vs Waves
 
 | Pattern | Best For | Communication | File Modification |

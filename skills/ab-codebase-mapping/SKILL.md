@@ -27,7 +27,11 @@ Do NOT modify any source code, tests, or configuration until the codebase map is
 
 ### Step 1: Dispatch the Mapper
 
-Dispatch the **codebase-mapper** agent with the scope of the mapping:
+Dispatch the **codebase-mapper** helper with the scope of the mapping.
+
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+
+Prompt: `references/agents/codebase-mapper.md`. Inputs:
 
 ```
 Task: Map the [project/module] codebase.
@@ -35,11 +39,13 @@ Focus area: [specific area if provided, or "full project"]
 Save findings in the format specified by your output template.
 ```
 
-If the codebase is large, dispatch multiple mapper agents in parallel — one per major module or directory.
+**Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
+
+If the codebase is large, dispatch multiple mapper helpers in parallel — one per major module or directory.
 
 ### Step 2: Review the Map
 
-When the agent returns, review the map for:
+When the helper returns, review the map for:
 - Completeness — are all major modules covered?
 - Accuracy — do the descriptions match what you see in the code?
 - Actionability — can a developer use this to navigate the codebase?

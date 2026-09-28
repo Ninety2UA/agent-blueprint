@@ -55,7 +55,7 @@ Report completion in this shape:
 |-------|--------|----------|
 | Requirements | Locked [N] decisions | — |
 | Plan | Written + verified ([N] checker passes) | — |
-| Deepen | Enriched by [N] research agents | — |
+| Deepen | Enriched by [N] research helpers | — |
 | Execute | [wave/swarm] — [N] tasks completed | — |
 | Review | [N] iterations, converged at iteration [N] | — |
 | Compound | [captured/skipped] | — |

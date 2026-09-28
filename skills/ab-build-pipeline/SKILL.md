@@ -51,25 +51,26 @@ Explore 2-3 design alternatives. Present trade-offs. Get user approval before pr
 
 ### Stage 3: Plan (Implementation Steps)
 
-Before planning, use the Task tool to dispatch research agents in parallel:
+Before planning, dispatch research helpers in parallel:
 
-```
-Task("learnings-researcher: Search docs/solutions/ for relevant prior work related to: [feature]. Return findings as bullet points.")
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Task("framework-docs-researcher: Gather current documentation for [frameworks involved]. Focus on API patterns, version constraints, and gotchas.")
+Prompt files and inputs:
+- `references/agents/learnings-researcher.md`: Search docs/solutions/ for relevant prior work related to: [feature]. Return findings as bullet points.
+- `references/agents/framework-docs-researcher.md`: Gather current documentation for [frameworks involved]. Focus on API patterns, version constraints, and gotchas.
+- `references/agents/codebase-context-mapper.md`: Map all files and dependencies affected by: [feature description]. Identify integration points and potential conflicts.
 
-Task("codebase-context-mapper: Map all files and dependencies affected by: [feature description]. Identify integration points and potential conflicts.")
-```
+**Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
 Incorporate findings into the plan.
 
 Invoke the ab-writing-plans skill. Convert the approved design into actionable steps.
 
-After the plan is written, use the Task tool to dispatch the **plan-checker** agent:
+After the plan is written, dispatch the **plan-checker** helper:
 
-```
-Task("plan-checker: Verify the implementation plan at [plan file path]. Report BLOCKING issues only.")
-```
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+
+Prompt: `references/agents/plan-checker.md`. Inputs: Verify the implementation plan at [plan file path]. Report BLOCKING issues only.
 
 Fix any BLOCKING issues (issues that prevent implementation: missing dependencies, architectural conflicts, unresolvable ambiguity) before proceeding.
 
@@ -83,14 +84,14 @@ Choose the execution method based on plan complexity:
 Invoke the ab-executing-plans skill. Execute the plan in batches with checkpoints.
 
 **For complex plans (4+ tasks with mixed dependencies):**
-Invoke the ab-orchestrate skill with `--no-review`. This dispatches a team-lead agent that coordinates wave-based parallel execution. Review is handled by Stage 5, not the team-lead.
+Invoke the ab-orchestrate skill with `--no-review`. That skill coordinates the wave-based parallel execution from the main session. Review is handled by Stage 5, not by that skill.
 
 **For collaborative work (user requests `--team`):**
-Invoke the ab-team-execution skill with `--no-review`. This dispatches a team-lead agent that spawns teammates for collaborative implementation. Review is handled by Stage 5.
+Invoke the ab-team-execution skill with `--no-review`. That skill coordinates the execution from the main session and spawns teammates for collaborative implementation. Review is handled by Stage 5.
 
 ### Stage 5: Review (Quality Check)
 
-Invoke the ab-review-swarm skill to dispatch the full review agent swarm in parallel. This dispatches all configured review agents (code-reviewer, security-sentinel, performance-oracle, code-simplicity-reviewer, convention-enforcer, test-coverage-reviewer, plus conditional agents based on changes), then synthesizes findings via the findings-synthesizer.
+Invoke the ab-review-swarm skill to run its full review helper swarm in parallel. That skill dispatches all its configured review helpers (code-reviewer, security-sentinel, performance-oracle, code-simplicity-reviewer, convention-enforcer, test-coverage-reviewer, plus conditional helpers based on changes), then synthesizes findings via its findings-synthesizer.
 
 Address all P1 (critical) and P2 (important) findings before proceeding. Use ab-resolve-in-parallel to fix independent findings (different files, no shared state) concurrently.
 
@@ -104,7 +105,7 @@ Run all tests. Verify all acceptance criteria from the plan are met. Confirm no 
 
 If the user requested `--deploy`:
 
-Invoke the ab-deployment-verification skill. Dispatch the **deployment-verifier** agent to check all 8 verification areas.
+Invoke the ab-deployment-verification skill; its **deployment-verifier** helper checks all 8 verification areas.
 
 Only proceed with deployment if the verdict is GO or CONDITIONAL GO. If NO-GO, stop and report the blocking issues.
 

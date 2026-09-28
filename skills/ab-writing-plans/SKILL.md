@@ -175,7 +175,7 @@ The user reviews the *saved* plan before anything runs. Approving the design in 
 
 **"Plan saved to `docs/plans/<filename>.md` — please review it before anything runs.**
 
-**1. Deepen the plan (`ab-deepen-plan`)** — Dispatch parallel research agents to enrich each section with best practices, prior solutions, and framework docs before executing
+**1. Deepen the plan (`ab-deepen-plan`)** — Dispatch parallel research helpers to enrich each section with best practices, prior solutions, and framework docs before executing
 
 **2. Subagent-Driven (this session)** — I dispatch a fresh subagent per task, review between tasks, fast iteration. Good for hands-on oversight.
 
@@ -196,8 +196,8 @@ The user reviews the *saved* plan before anything runs. Approving the design in 
 
 **If Parallel Orchestration chosen:**
 - Invoke `ab-orchestrate` with the plan file path
-- Team-lead agent handles wave grouping and parallel dispatch
+- The skill handles wave grouping and parallel dispatch from the main session
 
 **If Agent Teams chosen:**
 - Invoke `ab-team-execution` with the plan file path
-- Team-lead agent designs team structure and assigns file ownership
+- The skill designs team structure and assigns file ownership from the main session

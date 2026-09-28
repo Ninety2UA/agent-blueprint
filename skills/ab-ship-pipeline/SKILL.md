@@ -114,15 +114,16 @@ For **brownfield** tasks (modifying existing code), add a 4th dimension — **Co
 
 #### 2a. Parallel Research
 
-Use the Task tool to dispatch these agents simultaneously:
+Dispatch these helpers simultaneously:
 
-```
-Task("learnings-researcher: Search docs/solutions/ for relevant prior work related to: [feature]. Return findings as bullet points.")
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Task("framework-docs-researcher: Gather current documentation for [frameworks involved]. Focus on API patterns, version constraints, and gotchas.")
+Prompt files and inputs:
+- `references/agents/learnings-researcher.md`: Search docs/solutions/ for relevant prior work related to: [feature]. Return findings as bullet points.
+- `references/agents/framework-docs-researcher.md`: Gather current documentation for [frameworks involved]. Focus on API patterns, version constraints, and gotchas.
+- `references/agents/codebase-context-mapper.md`: Map all files and dependencies affected by: [feature description]. Identify integration points and potential conflicts.
 
-Task("codebase-context-mapper: Map all files and dependencies affected by: [feature description]. Identify integration points and potential conflicts.")
-```
+**Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
 Collect all research results.
 
@@ -132,7 +133,13 @@ Invoke the ab-writing-plans skill and follow it. Incorporate all research findin
 
 #### 2c. Plan Verification Loop
 
-Use the Task tool to dispatch the **plan-checker** agent to verify the plan. BLOCKING issues are those that prevent implementation (missing dependencies, architectural conflicts, unresolvable ambiguity). If the plan-checker reports BLOCKING issues:
+Dispatch the **plan-checker** helper to verify the plan.
+
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+
+Prompt: `references/agents/plan-checker.md`. Inputs: the plan file from 2b.
+
+BLOCKING issues are those that prevent implementation (missing dependencies, architectural conflicts, unresolvable ambiguity). If the plan-checker reports BLOCKING issues:
 
 ```
 for pass in 1..3:
@@ -151,21 +158,21 @@ Before execution, scan the verified plan for irreversible operations (deleting d
 
 ### Stage 3: Deepen Plan
 
-Invoke the ab-deepen-plan skill on the plan file. This enriches the plan with parallel research from all configured research agents.
+Invoke the ab-deepen-plan skill on the plan file. This enriches the plan with parallel research from all its configured research helpers.
 
 ---
 
 ### Stage 4: Execute
 
-Both modes dispatch a dedicated **team-lead agent** that coordinates all execution in its own 200K context. The team-lead delegates all implementation to workers, monitors progress, runs integration checks, and reports back. Review is handled by Stage 5 (not the team-lead), so both modes pass `--no-review`.
+In both modes the invoked skill coordinates all execution from the main session: it delegates all implementation to workers, monitors progress, runs integration checks, and reports back. Review is handled by Stage 5 (not by that skill), so both modes pass `--no-review`.
 
 **Default mode (no `--swarm` flag):**
-Invoke the ab-orchestrate skill with the plan file and `--no-review` flag. The team-lead agent groups tasks into dependency-ordered waves and dispatches parallel workers with worktree isolation.
+Invoke the ab-orchestrate skill with the plan file and `--no-review` flag. It groups tasks into dependency-ordered waves and dispatches parallel workers with worktree isolation.
 
 **Swarm mode (`--swarm` flag):**
-Invoke the ab-team-execution skill with the plan file and `--no-review` flag. The team-lead agent designs the team structure, spawns teammates, and coordinates execution autonomously (no user approval needed — plan is already verified by plan-checker).
+Invoke the ab-team-execution skill with the plan file and `--no-review` flag. It designs the team structure, spawns teammates, and coordinates execution autonomously (no user approval needed — plan is already verified by plan-checker).
 
-After the team-lead reports execution complete, proceed to Stage 5.
+After that skill reports execution complete, proceed to Stage 5.
 
 ---
 
@@ -216,11 +223,13 @@ Skip if the work was straightforward.
 
    If ab-pr-workflow's plan audit blocks the PR (a NOT DONE or PARTIAL row): STOP the pipeline, report the blocking rows per Error Recovery, clean up loop state, and open no PR — steps 3-6 do not run and no completion signal is emitted.
 
-3. **Deploy check** (if `--deploy` flag): Use the Task tool to dispatch the **deployment-verifier** agent to verify deployment readiness. Report the go/no-go checklist in the completion report.
+3. **Deploy check** (if `--deploy` flag): Dispatch the **deployment-verifier** helper to verify deployment readiness. Report the go/no-go checklist in the completion report.
 
-   ```
-   Task("deployment-verifier: Verify deployment readiness for this PR. Check build, tests, security, migrations, configuration, dependencies, rollback plan, and monitoring.")
-   ```
+   **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+
+   Prompt: `references/agents/deployment-verifier.md`. Inputs: Verify deployment readiness for this PR. Check build, tests, security, migrations, configuration, dependencies, rollback plan, and monitoring.
+
+   **Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
 4. **Report completion** with the Pipeline Summary table and Quality block from `references/modes-and-reports.md` § Completion report.
 

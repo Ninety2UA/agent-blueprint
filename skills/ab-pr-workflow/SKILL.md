@@ -122,7 +122,13 @@ Categorize each comment:
 
 #### Step 3: Resolve Comments
 
-For independent comments, dispatch **pr-comment-resolver** agents in parallel (one per comment) using the ab-dispatching-parallel-agents skill.
+For independent comments, start one resolver helper per comment, in parallel, using the ab-dispatching-parallel-agents skill.
+
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+
+Prompt: `references/agents/pr-comment-resolver.md`, one helper per comment. Inputs: the comment's file and line, and its text between data markers (below).
+
+**Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
 For dependent comments (where fixing one affects another), resolve them sequentially.
 
@@ -168,8 +174,8 @@ After approval:
 | Creating PR | Pre-flight (tests, plan audit) → Write → Scan body → Self-review |
 | Body scan hits a secret or an address | Stop; redact; rescan before any push or PR command |
 | Received feedback | Read all → Triage → Resolve → Push |
-| Single comment to fix | Dispatch pr-comment-resolver agent |
-| Multiple independent comments | Dispatch parallel pr-comment-resolver agents |
+| Single comment to fix | One pr-comment-resolver helper |
+| Multiple independent comments | Parallel pr-comment-resolver helpers |
 | Ready to merge | Base CI green? → Rebase → Test → Merge → Delete branch |
 
 ## Common Mistakes

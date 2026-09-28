@@ -48,16 +48,13 @@ jobs:
 
           echo "Checking .claude/ structure..."
           test -d /tmp/blueprint-test/.claude/skills
-          test -d /tmp/blueprint-test/.claude/agents
           test -d /tmp/blueprint-test/.claude/hooks
 
           # Count installed components
-          AGENTS=$(find /tmp/blueprint-test/.claude/agents -name '*.md' | wc -l | tr -d ' ')
           SKILLS=$(find /tmp/blueprint-test/.claude/skills -name 'SKILL.md' | wc -l | tr -d ' ')
 
-          echo "Agents: $AGENTS, Skills: $SKILLS"
+          echo "Skills: $SKILLS"
 
-          test "$AGENTS" -ge 24 || { echo "Expected >= 24 agents, got $AGENTS"; exit 1; }
           test "$SKILLS" -ge 45 || { echo "Expected >= 45 skills, got $SKILLS"; exit 1; }
 
           echo "Checking docs/ structure..."
@@ -104,7 +101,7 @@ jobs:
 
           echo "Checking plugin components..."
           test -d skills
-          test -d agents
+          test ! -e agents   # v4: helper prompts live in skills/*/references/agents/
           test -d hooks
           test -f hooks/hooks.json
 

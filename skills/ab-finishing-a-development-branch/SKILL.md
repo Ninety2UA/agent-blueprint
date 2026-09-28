@@ -48,7 +48,7 @@ Or ask: "This branch split from main - is that correct?"
 
 ### Step 3: Plan Audit
 
-A fresh-context, read-only agent classifies every plan item against the branch diff before any option is offered. This step owns the audit procedure. `ab-pr-workflow` renders the result; `ab-executing-plans` and `ab-subagent-driven-development` pass the plan path.
+A fresh-context, read-only helper classifies every plan item against the branch diff before any option is offered. This step owns the audit procedure. `ab-pr-workflow` renders the result; `ab-executing-plans` and `ab-subagent-driven-development` pass the plan path.
 
 **Plan path.** Use the path the caller passed. Without one, take the newest `docs/plans/*.md` file added or modified on the branch, skipping design documents:
 
@@ -58,27 +58,30 @@ git log --name-only --format= <base-branch>..HEAD -- docs/plans/ | grep -v -- '-
 
 Plan items are `### U<N>.` headings, `### Task N:` headings, or checklist lines. No plan file, or a file with no items, reports `NO PLAN`. Show that line, skip the table, and continue to Step 4 — a missing plan never blocks.
 
-**Dispatch.** Dispatch a fresh `code-reviewer` subagent with this prompt and nothing else (its tool grant includes Bash; the prompt, not the grant, holds it to reads):
+**Dispatch.** Dispatch a fresh `code-reviewer` helper for the audit.
+
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+
+Prompt: `references/agents/code-reviewer.md`. Inputs: this request and nothing else; its task and output rules replace the prompt file's review:
 
 ```
-Task tool (code-reviewer):
-  Plan audit. Classify; do not review. Read only.
+Plan audit. Classify; do not review. Read only.
 
-  PLAN_FILE: <plan-path>
-  DIFF: git diff <base-branch>...HEAD
-  ITEMS: every `### U<N>.` heading, `### Task N:` heading, and checklist line in PLAN_FILE
+PLAN_FILE: <plan-path>
+DIFF: git diff <base-branch>...HEAD
+ITEMS: every `### U<N>.` heading, `### Task N:` heading, and checklist line in PLAN_FILE
 
-  Output one table row per item: | Item | State | Evidence |
-  State is exactly one of DONE, CHANGED, PARTIAL, NOT DONE, DEFERRED, UNVERIFIABLE.
-  CHANGED states the reason. DEFERRED names the BACKLOG.md line or the plan's
-  Assumptions entry that defers it. Evidence is one line: a path and hunk, a
-  commit, or the sentence that decided the call.
+Output one table row per item: | Item | State | Evidence |
+State is exactly one of DONE, CHANGED, PARTIAL, NOT DONE, DEFERRED, UNVERIFIABLE.
+CHANGED states the reason. DEFERRED names the BACKLOG.md line or the plan's
+Assumptions entry that defers it. Evidence is one line: a path and hunk, a
+commit, or the sentence that decided the call.
 
-  Then, under the heading "Unplanned diff work", list every change in DIFF that
-  no item covers, one line each, or the single word "none". Never list
-  PLAN_FILE or .claude/plans/*.progress.local.md there.
+Then, under the heading "Unplanned diff work", list every change in DIFF that
+no item covers, one line each, or the single word "none". Never list
+PLAN_FILE or .claude/plans/*.progress.local.md there.
 
-  Output the table and that list only. No strengths, no issues, no assessment.
+Output the table and that list only. No strengths, no issues, no assessment.
 ```
 
 **States and their evidence:**
@@ -287,4 +290,4 @@ No force flag, ever — ab-using-git-worktrees, "Removing a Worktree", owns that
 **Pairs with:**
 - **ab-using-git-worktrees** - "Removing a Worktree" owns the never-force rule and the refusal branch that Step 6 and the discard path follow
 - **ab-pr-workflow** - Option 2 delegates PR creation and passes the audit table and unplanned-work list for its `## Plan audit` section
-- **code-reviewer** (agent) - Step 3 dispatches it read-only for the classification table
+- **code-reviewer** (helper) - Step 3 dispatches it read-only for the classification table

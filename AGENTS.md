@@ -22,7 +22,7 @@ Quality over speed. Small steps compound. The patterns you establish will be cop
 
 **Current state of the code:**
 - Build: n/a (template repo, no build step)
-- Gates: drift gate (promo source, site grids + badge integrity, repo-count claims, README agents table, version equality, README nav anchor) + skill-collision gate (fails on invalid frontmatter YAML and unresolved `references/` pointers) + portability gate (`scripts/check-portability.py`: agentskills frontmatter, `ab-` names, 8,000-byte SKILL.md cap, no host variables or slash references, Hermes-safe text, shrink-only allowlist in `scripts/portability-allowlist.json`) + manifest gate (`scripts/check-manifests.py`) + snippet sync check (`scripts/sync-shared.py --check`) + the `tests/gates` unit suite + plugin-validate job green; markdownlint + shellcheck clean locally
+- Gates: drift gate (promo source, site grids + badge integrity, repo-count claims, README helper-prompts table, version equality, README nav anchor) + skill-collision gate (fails on invalid frontmatter YAML and unresolved `references/` pointers) + portability gate (`scripts/check-portability.py`: agentskills frontmatter, `ab-` names, 8,000-byte SKILL.md cap, no host variables or slash references, Hermes-safe text, shrink-only allowlist in `scripts/portability-allowlist.json`) + manifest gate (`scripts/check-manifests.py`) + snippet sync check (`scripts/sync-shared.py --check`) + the `tests/gates` unit suite + plugin-validate job green; markdownlint + shellcheck clean locally
 - Website: live at <https://ninety2ua.github.io/agent-blueprint/>
 - Uncommitted changes: none
 
@@ -51,7 +51,6 @@ Run `/ab-project-start` after install to configure `docs/context/CONVENTIONS.md`
 ```
 .claude-plugin/                          # Plugin + marketplace manifests (the repo root is the plugin root)
 skills/                                  # 55 skills (slash commands + workflows)
-agents/                                  # 29 specialized subagents
 hooks/hooks.json                         # Hook definitions (${CLAUDE_PLUGIN_ROOT})
 hooks/handlers/                          # Hook scripts (session-start, context-monitor, etc.)
 templates/                               # Project scaffolding source (scaffolded by install.sh / /ab-project-start)
@@ -63,9 +62,9 @@ docs/images/                             # README images (repo-only)
 install.sh                               # Plugin installer + legacy mode
 ```
 
-Skills and agents are self-describing via frontmatter — read their files for when/how to use them.
+Skills are self-describing via frontmatter — read their files for when/how to use them. Helper prompts live in each dispatching skill's `references/agents/`; shared ones have an owner and byte-identical copies listed in `scripts/prompt-owners.json`.
 
-Each agent carries an `effort:` tier (`low`/`medium`/`high`) in frontmatter, set by reasoning depth (mechanical validators → `low`; workers/researchers → `medium`; reviewers/synthesizers/oracles/orchestrator → `high`). Default stays `model: inherit` so agents ride the session model; an opt-in per-agent model mapping (`low`→Haiku 4.5, `medium`→Sonnet 5, `high`→Opus 5.5 / Fable 5.1) is documented in README under "Effort tiers & opt-in model mapping" — apply only if your plan tier supports it. Tiers are honored on every model from CLI 2.1.267 (earlier CLIs silently ignored per-agent `effort:` whenever the session ran Opus 4.7, Opus 4.8, or Fable 5 — which affects `model: inherit` agents on those sessions). The session model and effort are the user's choice; the blueprint never prescribes one and skills carry no `effort:`. Opus 5.5, the default model from CLI 2.1.280, starts sessions at `medium`, so main-session pipelines run at that level unless the user picks another (README "Session model and effort").
+Helper prompts carry no `effort:` tier and skills carry no `effort:` or `model:`: the session model and effort are the user's choice, and helpers inherit them (verified for Claude Code's general-purpose helper in 2.1.284). A prompt whose role header says it is safe at lower effort may run lower only where the host takes a per-helper effort and the user has not asked otherwise.
 
 ## Behavioral Rules
 

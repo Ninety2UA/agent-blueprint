@@ -184,16 +184,14 @@ if [ "$LEGACY" = true ]; then
     info "Legacy mode — installing all files into ${BOLD}$TARGET_DIR${NC}"
     echo ""
 
-    # Install engine files (skills, agents, hooks)
-    for dir in skills agents; do
-        if [ -d "$PLUGIN_DIR/$dir" ]; then
-            find "$PLUGIN_DIR/$dir" -type f | while read -r file; do
-                rel="${file#"$PLUGIN_DIR"/}"
-                copy_item "$file" "$TARGET_DIR/.claude/$rel"
-            done
-            success ".claude/$dir/ installed"
-        fi
-    done
+    # Install engine files (skills; their helper prompts ride inside them)
+    if [ -d "$PLUGIN_DIR/skills" ]; then
+        find "$PLUGIN_DIR/skills" -type f | while read -r file; do
+            rel="${file#"$PLUGIN_DIR"/}"
+            copy_item "$file" "$TARGET_DIR/.claude/$rel"
+        done
+        success ".claude/skills/ installed"
+    fi
 
     # Hook handlers
     if [ -d "$PLUGIN_DIR/hooks/handlers" ]; then
@@ -287,7 +285,7 @@ if [ "$SCAFFOLD_ONLY" = false ]; then
     if [ "$DRY_RUN" = false ]; then
         mkdir -p "$CACHE_DIR"
         # Copy the plugin engine files from the repository root
-        for dir in skills agents hooks templates; do
+        for dir in skills hooks templates; do
             if [ -d "$PLUGIN_DIR/$dir" ]; then
                 cp -R "$PLUGIN_DIR/$dir" "$CACHE_DIR/$dir"
             fi
@@ -423,7 +421,7 @@ elif [ -n "$TARGET_DIR" ]; then
     echo -e "  ${DIM}2.${NC} claude"
     echo -e "  ${DIM}3.${NC} /ab-project-start ${DIM}← interactive project setup${NC}"
     echo ""
-    echo -e "  ${DIM}Plugin provides: 55 skills · 29 agents · 10 hooks${NC}"
+    echo -e "  ${DIM}Plugin provides: 55 skills · 10 hooks${NC}"
     echo -e "  ${DIM}Quick start: /ab-build-pipeline · /ab-ship-pipeline · /ab-brainstorming · /ab-review-swarm · /ab-deep-research${NC}"
 else
     echo -e "  ${GREEN}${BOLD}Plugin installed!${NC}"
@@ -433,7 +431,7 @@ else
     echo -e "  ${DIM}2.${NC} claude"
     echo -e "  ${DIM}3.${NC} /ab-project-start ${DIM}← scaffolds project + interactive setup${NC}"
     echo ""
-    echo -e "  ${DIM}Plugin provides: 55 skills · 29 agents · 10 hooks${NC}"
+    echo -e "  ${DIM}Plugin provides: 55 skills · 10 hooks${NC}"
     echo -e "  ${DIM}Available in all projects — no per-project installation needed${NC}"
 fi
 

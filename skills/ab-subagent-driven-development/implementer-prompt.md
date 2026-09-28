@@ -1,9 +1,9 @@
 # Implementer Subagent Prompt Template
 
-Use this template when dispatching an implementer subagent.
+Use this template when starting an implementer helper.
 
 ```
-Task tool (general-purpose):
+Helper (its prompt is the text below):
   description: "Implement Task N: [task name]"
   prompt: |
     You are implementing Task N: [task name]

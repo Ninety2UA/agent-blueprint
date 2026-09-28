@@ -44,7 +44,7 @@ Controller (you)
 
 ### Review Swarm
 
-Used by `ab-review-swarm`. Dispatches:
+Run by the ab-review-swarm skill, which carries these reviewers' prompt files:
 - code-reviewer
 - security-sentinel
 - performance-oracle
@@ -56,7 +56,7 @@ Synthesized by: **findings-synthesizer**
 
 ### Research Swarm
 
-Used by `ab-deep-research`. Dispatches:
+Run by the ab-deep-research skill, which carries these researchers' prompt files:
 - learnings-researcher
 - framework-docs-researcher
 - best-practices-researcher
@@ -67,15 +67,15 @@ Synthesized by: **research-synthesizer**
 
 ### Custom Swarms
 
-You can compose custom swarms for specific needs:
+You can compose custom swarms for specific needs. Each specialist runs through the skill that carries its prompt file; this skill carries only `references/agents/integration-checker.md`.
 
-**Migration Swarm:**
+**Migration Swarm** (the ab-review-swarm skill's reviewers, plus the ab-deployment-verification skill's verifier):
 - data-integrity-guardian (migration safety)
 - schema-drift-detector (unrelated schema changes)
 - performance-oracle (query performance impact)
 - deployment-verifier (deployment safety)
 
-**Architecture Swarm:**
+**Architecture Swarm** (the ab-review-swarm skill's reviewers, plus this skill's integration checker):
 - architecture-strategist (pattern compliance)
 - code-simplicity-reviewer (complexity assessment)
 - performance-oracle (scalability)
@@ -100,15 +100,17 @@ All agents in a swarm need the same base context:
 
 ### Step 3: Dispatch All Simultaneously
 
+Review and research specialists start through the skills that carry them. Start the members this skill runs itself all at once:
+
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+
+Prompt: `references/agents/integration-checker.md` for the integration checker; for any other member, the task packet below, one per member. Inputs: the member's focus and the shared context from Step 2.
+
 ```
-// All in a single message for maximum parallelism
-Task("agent-A: [focus]. Context: [shared context]. Report findings as P1/P2/P3 with file:line locations.")
-Task("agent-B: [focus]. Context: [shared context]. Report findings as P1/P2/P3 with file:line locations.")
-Task("agent-C: [focus]. Context: [shared context]. Report findings as P1/P2/P3 with file:line locations.")
-Task("agent-D: [focus]. Context: [shared context]. Report findings as P1/P2/P3 with file:line locations.")
+[member]: [focus]. Context: [shared context]. Report findings as P1/P2/P3 with file:line locations.
 ```
 
-**Critical:** Dispatch ALL in one message. Sequential dispatch negates the benefit.
+**Critical:** Start ALL at once. Sequential dispatch negates the benefit.
 
 ### Step 4: Collect Results
 
@@ -116,9 +118,9 @@ Wait for all agents to return. Do not act on partial results — the synthesizer
 
 ### Step 5: Synthesize
 
-Dispatch the appropriate synthesizer agent with ALL outputs:
-- For review swarms → **findings-synthesizer**
-- For research swarms → **research-synthesizer**
+Hand ALL outputs to the synthesizer of the skill that carries it:
+- For review swarms → the ab-review-swarm skill's **findings-synthesizer**
+- For research swarms → the ab-deep-research skill's **research-synthesizer**
 
 The synthesizer de-duplicates, resolves contradictions, and produces one unified report.
 
@@ -148,7 +150,7 @@ For small changes (< 50 lines), a single code-reviewer is usually sufficient. Re
 
 ## Common Mistakes
 
-**Sequential dispatch** — Dispatching agents one at a time defeats the purpose. Use a single message with all Task() calls.
+**Sequential dispatch** — Dispatching agents one at a time defeats the purpose. Start every helper at once.
 
 **Missing synthesizer** — Raw outputs from 6 agents are noisy and duplicative. Always synthesize.
 

@@ -1,13 +1,13 @@
 ---
 name: ab-deployment-verification
-description: "Trigger this skill before ANY production deployment — even if the user seems confident everything is fine. Trigger when the user says 'deploy', 'deploy check', 'ready to deploy', 'go live', 'production ready', 'pre-deploy', 'ship it', 'push to prod', 'release to production', 'launch', or 'can we deploy this'. Trigger even for 'just a small change' deployments — small changes cause outages too. Verifies build, tests, security, migrations, configuration, dependencies, rollback plan, and monitoring readiness. Dispatches the deployment-verifier agent for a systematic go/no-go checklist. DO NOT TRIGGER for deploying to local dev environments. DO NOT TRIGGER for creating PRs — use ab-pr-workflow instead."
+description: "Trigger this skill before ANY production deployment — even if the user seems confident everything is fine. Trigger when the user says 'deploy', 'deploy check', 'ready to deploy', 'go live', 'production ready', 'pre-deploy', 'ship it', 'push to prod', 'release to production', 'launch', or 'can we deploy this'. Trigger even for 'just a small change' deployments — small changes cause outages too. Verifies build, tests, security, migrations, configuration, dependencies, rollback plan, and monitoring readiness. Dispatches the deployment-verifier helper for a systematic go/no-go checklist. DO NOT TRIGGER for deploying to local dev environments. DO NOT TRIGGER for creating PRs — use ab-pr-workflow instead."
 ---
 
 # Deployment Verification
 
 ## Overview
 
-Systematic go/no-go checklist for production deployments. Dispatches the deployment-verifier agent to check all critical areas and produces a clear recommendation.
+Systematic go/no-go checklist for production deployments. Dispatches the deployment-verifier helper to check all critical areas and produces a clear recommendation.
 
 ## When to Use
 
@@ -26,10 +26,14 @@ NO DEPLOYMENT WITHOUT A GREEN CHECKLIST. If any blocking issue is found, the dep
 
 ### Step 1: Dispatch the Verifier
 
-Dispatch the **deployment-verifier** agent:
+Dispatch the **deployment-verifier** helper:
+
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+
+Prompt: `references/agents/deployment-verifier.md`. Inputs:
 
 ```
-Task: Verify deployment readiness for [project/service].
+Verify deployment readiness for [project/service].
 
 Context:
 - Deploying from branch: [branch name]
@@ -40,9 +44,11 @@ Context:
 Run all 8 verification areas and produce a go/no-go recommendation.
 ```
 
+**Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
+
 ### Step 2: Review the Report
 
-When the agent returns, review:
+When the helper returns, review:
 - **Verdict:** GO, NO-GO, or CONDITIONAL GO
 - **Blocking issues:** Must be resolved before deployment
 - **Warnings:** Should be resolved soon but don't block deployment

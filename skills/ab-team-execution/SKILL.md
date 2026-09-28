@@ -6,13 +6,13 @@ argument-hint: "<plan file or task description> [--no-review] [--iterations N] [
 
 # Team Execution — Collaborative Agent Team
 
-Spawn a team of independent Claude Code instances that coordinate through a shared task list and messaging. A dedicated **team-lead agent** manages the entire lifecycle: designs the team structure, enforces plan approval before coding, monitors progress, resolves blockers, and (unless `--no-review`) reviews the combined output and signs off.
+Spawn a team of independent Claude Code instances that coordinate through a shared task list and messaging. This session is the team lead and manages the entire lifecycle, following the coordinator instructions in the ab-orchestrate skill in team mode (the Claude Code Agent Teams option): it designs the team structure, enforces plan approval before coding, monitors progress, resolves blockers, and (unless `--no-review`) reviews the combined output and signs off. Only this session spawns teammates; teammates start no helpers of their own.
 
-**Announce at start:** "Setting up Agent Team — dispatching team-lead agent."
+**Announce at start:** "Setting up Agent Team — coordinating from this session."
 
 ## Activate Team State
 
-Before dispatching the team-lead, create the state file so Agent Teams hooks (TeammateIdle, TaskCompleted) know a team is active:
+Before spawning teammates, create the state file so Agent Teams hooks (TeammateIdle, TaskCompleted) know a team is active:
 
 ```bash
 mkdir -p .claude
@@ -24,55 +24,45 @@ echo "active: true" > .claude/team-active.local.md
 ## Parse Arguments
 
 - **Plan file or task description:** From arguments
-- **`--no-review`:** Skip the team-lead's built-in review and sign-off (used when called from ab-ship-pipeline or ab-build-pipeline, which handle review themselves)
-- **`--iterations N`:** Max review-improve iterations (default: 1 = single pass, max: 10). When > 1, team-lead uses ab-iterative-refinement skill instead of single ab-review-swarm pass.
+- **`--no-review`:** Skip the built-in review and sign-off (used when called from ab-ship-pipeline or ab-build-pipeline, which handle review themselves)
+- **`--iterations N`:** Max review-improve iterations (default: 1 = single pass, max: 10). When > 1, the review uses the ab-iterative-refinement skill instead of a single ab-review-swarm pass.
 - **`--convergence fast|deep|perfect`:** Review convergence mode (default: `fast`). `fast` = exit when P1=0, `deep` = exit when P1+P2=0, `perfect` = exit when all findings=0. Only applies when `--iterations` > 1.
 
-## Dispatch Team Lead
+## Coordinate
 
-Dispatch the **team-lead** agent with a full context prompt:
+Follow the coordinator instructions in the ab-orchestrate skill, in team mode, with these settings (this skill's steps replace that skill's own wave-run steps):
 
-```
-Task("team-lead: Execute this plan using TEAM mode (Agent Teams).
+- Execution mode: team (Agent Teams)
+- Plan file / task: [path or description]
+- Review mode: [with-review | no-review]
+- Review iterations: [N] (default 1)
+- Review convergence: [fast|deep|perfect] (default fast)
+- Autonomous mode: [autonomous if called from ab-ship-pipeline, supervised otherwise]
+- Project conventions: docs/context/CONVENTIONS.md; agent config: blueprint.local.md
 
-Plan file / task: [path or description]
-Review mode: [with-review | no-review]
-Review iterations: [N] (default 1)
-Review convergence: [fast|deep|perfect] (default fast)
-Autonomous mode: [autonomous if called from ab-ship-pipeline, supervised otherwise]
+The run: read the plan file completely. Design a team of 3-5 teammates. Assign file ownership (NO overlap between teammates). Break work into 5-6 tasks per teammate. Spawn teammates, enforce the plan approval gate, then monitor execution. After all tasks complete, run tests + build + lint. Then:
+- If no-review: report execution results only.
+- If with-review AND iterations=1: run the ab-review-swarm skill, fix P1 findings, sign off.
+- If with-review AND iterations>1: run the ab-iterative-refinement skill with max_iterations=[N] and convergence=[mode]. Sign off when converged.
 
-Read the plan file completely. Design a team of 3-5 teammates.
-Assign file ownership (NO overlap between teammates).
-Break work into 5-6 tasks per teammate.
-Spawn teammates, enforce plan approval gate, then monitor execution.
-After all tasks complete, run tests + build + lint.
-[If no-review: Report execution results only.]
-[If with-review AND iterations=1: Run ab-review-swarm skill, fix P1 findings, sign off.]
-[If with-review AND iterations>1: Run ab-iterative-refinement skill with max_iterations=[N] and convergence=[mode]. Sign off when converged.]
-
-Follow the team-lead agent instructions and ab-agent-teams skill exactly.
+Follow the coordinator instructions and the ab-agent-teams skill exactly.
 
 CRITICAL: You are the coordinator. Do NOT write code yourself.
 If something needs fixing, assign it to a teammate.
 
-Project conventions: docs/context/CONVENTIONS.md
-Agent config: blueprint.local.md")
-```
+## Finish
 
-## Wait for Team Lead
+When the coordinator's report is ready:
 
-The team-lead agent runs autonomously in its own 200K context window. When it returns:
+1. Present the team performance summary to the user
+2. If you signed off (with-review mode): report the sign-off status
+3. If the report lists blockers: present them and ask the user how to proceed, as the coordinator instructions' report phase says
 
-1. Read the team-lead's report
-2. Present the team performance summary to the user
-3. If team-lead signed off (with-review mode): report the sign-off status
-4. If team-lead reports blockers: present them and ask the user how to proceed
+## Coordinator Responsibilities
 
-## Team Lead Responsibilities
+As coordinator, this session handles:
 
-The team-lead agent handles all the coordination that the main session previously did:
-
-| Responsibility | What Team Lead Does |
+| Responsibility | What the Coordinator Does |
 |----------------|--------------------|
 | **Team design** | Determines team size, responsibility domains, file ownership |
 | **Spawn teammates** | Creates team, spawns each with detailed context prompts |
@@ -80,16 +70,16 @@ The team-lead agent handles all the coordination that the main session previousl
 | **Monitor progress** | Watches task list, intervenes on blockers, relays info |
 | **Delegate mode** | Never writes code — creates tasks and assigns to teammates |
 | **Integration check** | Runs tests + build + lint after all teammates complete |
-| **Review (if enabled)** | Dispatches ab-review-swarm, evaluates findings, creates fix tasks |
+| **Review (if enabled)** | Runs ab-review-swarm, evaluates findings, creates fix tasks |
 | **Sign-off** | Reports APPROVED, APPROVED WITH NOTES, or NOT APPROVED |
 
 ## Standalone vs Pipeline Usage
 
 | Context | --no-review | Review happens in |
 |---------|-------------|-------------------|
-| Team-execution (standalone) | No (default) | Team-lead: single ab-review-swarm pass |
-| Team-execution `--iterations 5` | No | Team-lead: ab-iterative-refinement (up to 5 cycles) |
-| Team-execution `--iterations 5 --convergence deep` | No | Team-lead: ab-iterative-refinement (exit when P1+P2=0) |
+| Team-execution (standalone) | No (default) | This session: single ab-review-swarm pass |
+| Team-execution `--iterations 5` | No | This session: ab-iterative-refinement (up to 5 cycles) |
+| Team-execution `--iterations 5 --convergence deep` | No | This session: ab-iterative-refinement (exit when P1+P2=0) |
 | Called from ab-ship-pipeline | Yes | ab-ship-pipeline Stage 5 (ab-iterative-refinement) |
 | Called from ab-ship-pipeline `--swarm` | Yes | ab-ship-pipeline Stage 5 (parallel review + test) |
 | Called from ab-build-pipeline | Yes | ab-build-pipeline Stage 5 (ab-review-swarm) |

@@ -1,6 +1,6 @@
 ---
 name: ab-source-driven-development
-description: "Trigger this skill when writing framework- or library-specific code (forms, routing, data fetching, state management, auth, hooks, components, ORM queries, framework config). Trigger when the user asks for code that follows current best practices, asks for verified or documented implementation, or expects the code to be correct against a specific version. Trigger when about to write framework-specific code from memory, when generating boilerplate or starter patterns that will be copied across the project, or when implementing features where the framework's recommended approach matters. DO NOT TRIGGER for pure logic that works the same across versions (loops, conditionals, data structures), file reorganization, typo fixes, or when the user explicitly says 'just do it quickly'. Companion to framework-docs-researcher (which gathers docs before planning); this skill governs how docs are used at write-time."
+description: "Trigger this skill when writing framework- or library-specific code (forms, routing, data fetching, state management, auth, hooks, components, ORM queries, framework config). Trigger when the user asks for code that follows current best practices, asks for verified or documented implementation, or expects the code to be correct against a specific version. Trigger when about to write framework-specific code from memory, when generating boilerplate or starter patterns that will be copied across the project, or when implementing features where the framework's recommended approach matters. DO NOT TRIGGER for pure logic that works the same across versions (loops, conditionals, data structures), file reorganization, typo fixes, or when the user explicitly says 'just do it quickly'. Companion to ab-deep-research's framework-docs-researcher helper (which gathers docs before planning); this skill governs how docs are used at write-time."
 ---
 
 # Source-Driven Development
@@ -170,9 +170,9 @@ Verify before using in production.
 
 ## Composition
 
-- **Before:** `framework-docs-researcher` agent gathers a research brief at planning time. This skill governs how those docs are used at write-time.
+- **Before:** the `ab-deep-research` skill's `framework-docs-researcher` helper gathers a research brief at planning time. This skill governs how those docs are used at write-time.
 - **During:** Use within `ab-executing-plans` and `ab-iterative-refinement` whenever a step touches framework code.
-- **After:** `code-reviewer` and `findings-synthesizer` should flag uncited framework patterns and `UNVERIFIED:` blocks left in shipped code.
+- **After:** the `ab-review-swarm` skill's `code-reviewer` and `findings-synthesizer` helpers should flag uncited framework patterns and `UNVERIFIED:` blocks left in shipped code.
 
 ## Common Rationalizations
 

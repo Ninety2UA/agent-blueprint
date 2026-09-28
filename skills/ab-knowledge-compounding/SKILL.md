@@ -8,7 +8,7 @@ argument-hint: "<brief description of what was solved>"
 
 ## Overview
 
-Each solved problem should make future problems easier. This skill captures solved problems as structured documents in `docs/solutions/`, creating a searchable knowledge base that the learnings-researcher agent and `ab-writing-plans` skill automatically consult.
+Each solved problem should make future problems easier. This skill captures solved problems as structured documents in `docs/solutions/`, creating a searchable knowledge base that the `ab-deep-research` skill's learnings-researcher helper and `ab-writing-plans` skill automatically consult.
 
 **Core principle:** Solve a problem once; benefit every time a similar problem arises.
 
@@ -96,7 +96,7 @@ Check if this solution relates to:
 
 ### Step 4: Verify Searchability
 
-Ensure the document can be found by the learnings-researcher agent:
+Ensure the document can be found by the learnings-researcher helper:
 - Title contains the key technology or pattern name
 - Tags cover the relevant domains
 - Problem description includes the error message or symptom text

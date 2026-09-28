@@ -48,7 +48,7 @@ Run `/ab-project-start` after install to configure `docs/context/CONVENTIONS.md`
 ## Architecture
 
 ```
-# Plugin-provided (55 skills, 29 agents, 10 hooks)
+# Plugin-provided (55 skills, 10 hooks)
 # Available automatically — no per-project files needed
 
 # Project-local (your project state)
@@ -64,7 +64,7 @@ blueprint.local.md   # Per-project agent config (gitignored)
 BACKLOG.md           # Quick capture inbox
 ```
 
-Skills and agents are self-describing via frontmatter — read their files for when/how to use them.
+Skills are self-describing via frontmatter; their helper prompts live in each skill's `references/agents/` — read their files for when/how to use them.
 
 ## Behavioral Rules
 

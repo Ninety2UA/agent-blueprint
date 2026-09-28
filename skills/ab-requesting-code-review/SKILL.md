@@ -1,11 +1,11 @@
 ---
 name: ab-requesting-code-review
-description: "Trigger this skill when the user says 'review', 'review my code', 'code review', 'check my changes', 'look at this', 'does this look right', or wants a quick quality check on recent work. Trigger after completing any task or before merging, even if the user doesn't explicitly ask for a review — quality gates matter and catching issues early prevents cascading problems. Also trigger before committing, after fixing a bug, after refactoring, or when the user seems done implementing but hasn't verified quality. Dispatches the code-reviewer agent against current changes for a fast, single-perspective review. DO NOT TRIGGER when the user wants multi-perspective review from multiple agents, says 'thorough review', 'comprehensive review', or 'review swarm' — use ab-review-swarm instead."
+description: "Trigger this skill when the user says 'review', 'review my code', 'code review', 'check my changes', 'look at this', 'does this look right', or wants a quick quality check on recent work. Trigger after completing any task or before merging, even if the user doesn't explicitly ask for a review — quality gates matter and catching issues early prevents cascading problems. Also trigger before committing, after fixing a bug, after refactoring, or when the user seems done implementing but hasn't verified quality. Dispatches the code-reviewer helper against current changes for a fast, single-perspective review. DO NOT TRIGGER when the user wants multi-perspective review from multiple agents, says 'thorough review', 'comprehensive review', or 'review swarm' — use ab-review-swarm instead."
 ---
 
 # Requesting Code Review
 
-Dispatch code-reviewer subagent to catch issues before they cascade.
+Dispatch the code-reviewer helper to catch issues before they cascade.
 
 **Core principle:** Review early, review often.
 
@@ -37,9 +37,11 @@ git merge-base --is-ancestor "$BASE_SHA" "$HEAD_SHA" && [ -n "$(git rev-list "$B
 
 Never use bare `origin/main` as the base: once main moves past your branch point, its new files show up as phantom deletions in the diff. If the guard refuses, fix the range; don't review an empty or unrelated diff.
 
-**2. Dispatch code-reviewer subagent:**
+**2. Dispatch the code-reviewer helper:**
 
-Use Task tool with code-reviewer type, fill template at `code-reviewer.md`
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+
+Prompt: `references/agents/code-reviewer.md` (the helper's instructions). Inputs: the review request, which is the template at `code-reviewer.md` with its placeholders filled in.
 
 **Placeholders:**
 - `{WHAT_WAS_IMPLEMENTED}` - What you just built
@@ -64,14 +66,14 @@ You: Let me request code review before proceeding.
 BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | awk '{print $1}')
 HEAD_SHA=$(git rev-parse HEAD)
 
-[Dispatch code-reviewer subagent]
+[Dispatch code-reviewer helper]
   WHAT_WAS_IMPLEMENTED: Verification and repair functions for conversation index
   PLAN_OR_REQUIREMENTS: Task 2 from docs/plans/deployment-plan.md
   BASE_SHA: a7981ec
   HEAD_SHA: 3df7661
   DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
 
-[Subagent returns]:
+[Helper returns]:
   Strengths: Clean architecture, real tests
   Issues:
     Important: Missing progress indicators

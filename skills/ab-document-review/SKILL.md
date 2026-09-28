@@ -30,7 +30,13 @@ Focus exclusively on whether the content is correct.
 - Outdated information (references to deprecated APIs, old patterns)
 - Incorrect references (file paths that don't exist, broken links)
 
-**For docs that name files, commands, endpoints, functions, or dependencies:** dispatch the `doc-claim-verifier` agent (via the Agent tool) to extract and verify every factual claim against the filesystem. Its PASS/FAIL/UNVERIFIABLE report becomes the authoritative input to Pass 1. Manual reading misses drift; the agent doesn't.
+**For docs that name files, commands, endpoints, functions, or dependencies:** dispatch the `doc-claim-verifier` helper to extract and verify every factual claim against the filesystem. Its PASS/FAIL/UNVERIFIABLE report becomes the authoritative input to Pass 1. Manual reading misses drift; the helper doesn't.
+
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+
+Prompt: `references/agents/doc-claim-verifier.md`. Inputs: the path of the document under review.
+
+**Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
 **Do NOT check for:** Grammar, formatting, tone, or completeness — those come later.
 
