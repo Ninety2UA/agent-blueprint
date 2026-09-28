@@ -169,7 +169,7 @@ skills/
 - [ ] Is the block always executed when this phase is reached? If yes, lean toward inlining.
 - [ ] Does the block carry routing for an interactive menu? If yes, the bare per-option action belongs inline.
 - [ ] Could an agent that skips the reference still complete the skill correctly? If no, the content is load-bearing — inline it.
-- [ ] Is the language platform-explicit? Name the primitive (Skill tool) and the argument shape.
+- [ ] Does the routing line say to start the other skill now, by name in prose, with its input? A slash form or a single host's tool name works in some hosts only.
 
 ## Anti-Patterns
 

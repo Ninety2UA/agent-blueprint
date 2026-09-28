@@ -234,23 +234,6 @@ def line_of(text, pos):
     return text.count("\n", 0, pos) + 1
 
 
-def paragraphs(text):
-    """(start_line, paragraph_text) for blank-line-separated blocks outside fences."""
-    out, buf, start = [], [], 0
-    lines = strip_fences(text).split("\n")
-    for i, line in enumerate(lines, 1):
-        if line.strip():
-            if not buf:
-                start = i
-            buf.append(line)
-        elif buf:
-            out.append((start, "\n".join(buf)))
-            buf = []
-    if buf:
-        out.append((start, "\n".join(buf)))
-    return out
-
-
 # ── inventory ──────────────────────────────────────────────────
 
 def skill_dirs(repo):
@@ -286,13 +269,6 @@ def instruction_files(repo):
         if os.path.isfile(p) and not os.path.islink(p):
             out.append(p)
     return out
-
-
-def load_registry(repo):
-    p = os.path.join(repo, "scripts", "prompt-owners.json")
-    if not os.path.isfile(p):
-        return {}
-    return json.loads(read(p))
 
 
 # ── rules ──────────────────────────────────────────────────────
@@ -423,61 +399,15 @@ def check_stray_skill_md(repo, add):
                     "name fixtures SKILL.fixture.md")
 
 
-def snippet_texts(repo, registry):
-    """{label: (owner_path, canonical_paragraph)} from the snippet owner file."""
-    owner = registry.get("snippet_owner")
-    if not owner:
-        return {}, None
-    path = os.path.join(repo, owner)
-    if not os.path.isfile(path):
-        return {}, owner
-    out = {}
-    text = read(path)
-    for section in re.split(r"^## .*$", strip_fences(text), flags=re.MULTILINE)[1:]:
-        paras = [p for _, p in paragraphs(section)]
-        if paras:
-            label = re.match(r"^\*\*[^*\n]+\*\*", paras[0])
-            if label:
-                out[label.group(0)] = (path, paras[0])
-    return out, None
-
-
-def check_shared(repo, registry, add):
-    snippets, missing = snippet_texts(repo, registry)
-    if missing:
-        add(os.path.join(repo, missing), "owner-missing", "snippet owner file does not exist")
-    owner_path = os.path.join(repo, registry["snippet_owner"]) if registry.get("snippet_owner") else None
-    if snippets:
-        for skill_dir in skill_dirs(repo):
-            for path in prose_files(skill_dir):
-                if owner_path and os.path.samefile(path, owner_path):
-                    continue
-                for line, para in paragraphs(read(path)):
-                    for label, (_, canon) in snippets.items():
-                        if para.startswith(label):
-                            if para != canon:
-                                add(path, "snippet-drift", "line %d: the %s snippet differs from its owner; run "
-                                    "python3 scripts/sync-shared.py" % (line, label))
-                            continue
-                        for k, text_line in enumerate(para.split("\n")[1:], 1):
-                            if re.sub(r"^\s*(?:[-*+]\s+|\d+[.)]\s+|>\s*)*", "", text_line).startswith(label):
-                                add(path, "snippet-drift", "line %d: the %s snippet must be a paragraph of its "
-                                    "own, with a blank line before and after" % (line + k, label))
-    for entry in registry.get("shared", []):
-        owner = os.path.join(repo, entry["owner"])
-        if not os.path.isfile(owner):
-            add(owner, "owner-missing", "registered owner does not exist")
-            continue
-        body = open(owner, "rb").read()
-        for copy in entry.get("copies", []):
-            cp = os.path.join(repo, copy)
-            parts = copy.split("/")
-            if parts[0] == "skills" and len(parts) > 2 and not os.path.isdir(os.path.join(repo, "skills", parts[1])):
-                add(cp, "owner-missing", "copy location's skill does not exist")
-            elif not os.path.isfile(cp):
-                add(cp, "copy-drift", "registered copy is missing; run python3 scripts/sync-shared.py")
-            elif open(cp, "rb").read() != body:
-                add(cp, "copy-drift", "differs from its owner %s; run python3 scripts/sync-shared.py" % entry["owner"])
+def check_shared(repo, add):
+    """Snippet and shared-file copies, checked by sync-shared.py's own --check logic."""
+    import importlib.util
+    here = os.path.dirname(os.path.abspath(__file__))
+    spec = importlib.util.spec_from_file_location("sync_shared", os.path.join(here, "sync-shared.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    for path, rule, msg in mod.find_drift(repo):
+        add(path, rule, msg)
 
 
 def openai_implicit_off(skill_dir):
@@ -544,7 +474,7 @@ def collect(repo):
     check_hermes(repo, instruction_files(repo), add)
     check_instruction_length(repo, add)
     check_stray_skill_md(repo, add)
-    check_shared(repo, load_registry(repo), add)
+    check_shared(repo, add)
     check_manual_only(repo, fm_by_skill, add)
     return found, len(dirs)
 

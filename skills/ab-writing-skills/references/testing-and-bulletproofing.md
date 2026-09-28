@@ -176,6 +176,19 @@ Before relying on it:
 
 - **It bills real calls:** cases × runs × two arms, plus judge calls for each `llm` or `baseline` grader per run.
 - **Its case format is its own.** skill-creator's `evals/evals.json` is not interchangeable.
-- **Keep suites out of the plugin directory.** A default `evals/` inside the plugin root ships into every user's plugin cache; the `experimental.evals` manifest key that relocates it is experimental.
+- **Keep suites out of the installed tree's skill folders.** The whole Agent Blueprint repository installs as the plugin, so an eval suite ships to every user wherever it sits; keep it under `tests/`, and never name a fixture `SKILL.md`, or recursive installers pick it up as a skill.
 
 The fresh process per run gives it cleaner isolation than subagent-based testing, which inherits the tester's session context. It doesn't replace the scenario design above (pressure types, the 20-query trigger sets, why one run misleads); it runs those scenarios reproducibly. The blueprint ships no suite and no CI gate, because a gate would bill every push and need an API-key secret in a public repository.
+
+## Common rationalizations for skipping testing
+
+| Excuse | Reality |
+|--------|---------|
+| "The skill is obviously clear" | Clear to you is not clear to other agents. Test it. |
+| "It's just a reference" | References have gaps and unclear sections too. Test retrieval. |
+| "Testing is overkill" | Untested skills have issues. Fifteen minutes of testing saves hours. |
+| "I'll test if problems emerge" | Problems mean agents can't use the skill. Test before deploying. |
+| "Too tedious to test" | Less tedious than debugging a bad skill in production. |
+| "I'm confident it's good" | Confidence is not evidence. Test anyway. |
+| "Academic review is enough" | Reading is not using. Test application scenarios. |
+| "No time to test" | An untested skill costs more time fixing later. |

@@ -176,6 +176,9 @@ jobs:
             python3 scripts/check-manifests.py
           fi
 
+      - name: Shared-text copies match their owners
+        run: python3 scripts/sync-shared.py --check
+
       - name: Gate unit tests
         run: python3 -m unittest discover -s tests/gates -v
 

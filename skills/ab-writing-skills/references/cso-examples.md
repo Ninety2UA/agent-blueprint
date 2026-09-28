@@ -2,21 +2,18 @@
 
 Loaded on demand from `SKILL.md`; nothing here is needed on every invocation.
 
-## Platform-explicit invocation language
+## Invoking another skill
 
-**Platform-explicit invocation language:** When a routing line says "Call `/foo`," ask whether an agent could read it as "tell the user to type" rather than "fire the tool now." Name the platform primitive and the argument shape:
+A routing line that hands off to another skill names it in prose and says to start it now, so it cannot be read as "tell the user to type something":
 
 ```
-❌ Bad:  "Start /ce-work" → "Call /ce-work with the plan path"
-            (Reads as "tell the user to invoke /ce-work")
+❌ Weak:  "Next, /ab-other-skill"
+            (a slash form works in some hosts only, and reads as advice to the user)
 
-✅ Good: "Invoke the ce-work skill via the platform's skill-invocation primitive
-          (Skill in Claude Code), passing the plan path as the skill argument.
-          Do NOT merely tell the user to type /ce-work — fire the invocation now
-          so the plan executes in this session."
+✅ Good:  "Now use the ab-writing-plans skill, passing it the approved design."
 ```
 
-**Why this matters:** The agent that skipped your reference is still going to render the menu. If you didn't put the routing inline, the menu becomes a dead end.
+Name the capability, not one host's tool: "invoke the skill the way this host runs skills" works everywhere, while a single host's tool name works in one.
 
 ## Token-efficiency techniques and naming
 
@@ -61,9 +58,9 @@ You: Searching...
 
 **Verification:**
 ```bash
-wc -c skills/path/SKILL.md
-# body budget: aim for under 8,192 bytes (subtract the frontmatter);
-# check-skill-collisions.py's size report flags anything over
+wc -c skills/ab-name/SKILL.md
+# the whole file, frontmatter included, stays within 8,000 bytes;
+# check-portability.py fails anything over
 ```
 
 **Name by what you DO or core insight:**
@@ -78,47 +75,35 @@ wc -c skills/path/SKILL.md
 
 ## Description examples
 
+Lead with what the skill does and how, then "Use when ..." with the situations that call for it. Tools such as Codex and Amp choose a skill from a one-line catalog entry, so a description that only lists triggers leaves them guessing what the skill is.
+
 ```yaml
-# ❌ BAD: Too abstract, vague, doesn't include when to use
+# ❌ Weak: too abstract, says neither what nor when
 description: For async testing
 
-# ❌ BAD: First person
+# ❌ Weak: first person
 description: I can help you with async tests when they're flaky
 
-# ❌ BAD: Mentions technology but skill isn't specific to it
-description: Use when tests use setTimeout/sleep and are flaky
+# ❌ Weak: triggers only; a catalog reader cannot tell what the skill does
+description: Use when tests have race conditions or pass and fail inconsistently
 
-# ✅ GOOD: Starts with "Use when", describes problem, no workflow
-description: Use when tests have race conditions, timing dependencies, or pass/fail inconsistently
+# ✅ Good: the mechanism, then when to use it
+description: Replaces fixed sleeps in tests with polling for the condition the test waits on. Use when tests have race conditions, timing dependencies, or pass and fail inconsistently.
 
-# ✅ GOOD: Technology-specific skill with explicit trigger
-description: Use when using React Router and handling authentication redirects
+# ✅ Good: technology-specific, and says so
+description: Handles authentication redirects in React Router with a loader-level guard. Use when a React Router app sends signed-out users to a login page.
 ```
 
-## Description = when, not what
+## What, then when, never the whole workflow
 
-**CRITICAL: Description = When to Use, NOT What the Skill Does**
-
-The description should ONLY describe triggering conditions. Do NOT summarize the skill's process or workflow in the description.
-
-**Why this matters:** Testing revealed that when a description summarizes the skill's workflow, Claude may follow the description instead of reading the full skill content. A description saying "code review between tasks" caused Claude to do ONE review, even though the skill's flowchart clearly showed TWO reviews (spec compliance then code quality).
-
-When the description was changed to just "Use when executing implementation plans with independent tasks" (no workflow summary), Claude correctly read the flowchart and followed the two-stage review process.
-
-**The trap:** Descriptions that summarize workflow create a shortcut Claude will take. The skill body becomes documentation Claude skips.
+A description names the mechanism in one clause; it does not walk through the steps. When a description summarized a skill's process ("code review between tasks"), agents followed the description and skipped the body: they ran one review where the skill's flowchart had two. Say what the skill does and when to use it, and leave the how to the body.
 
 ```yaml
-# ❌ BAD: Summarizes workflow - Claude may follow this instead of reading skill
-description: Use when executing plans - dispatches subagent per task with code review between tasks
+# ❌ Weak: walks through the workflow; agents follow this instead of the skill
+description: Executes plans by dispatching a subagent per task, then reviewing spec compliance, then code quality
 
-# ❌ BAD: Too much process detail
-description: Use for TDD - write test first, watch it fail, write minimal code, refactor
-
-# ✅ GOOD: Just triggering conditions, no workflow summary
-description: Use when executing implementation plans with independent tasks in the current session
-
-# ✅ GOOD: Triggering conditions only
-description: Use when implementing any feature or bugfix, before writing implementation code
+# ✅ Good: what it does in one clause, then when
+description: Executes an implementation plan with a fresh helper per task and two reviews each. Use when a written plan has independent tasks to run in this session.
 ```
 
 ## Discovery Workflow

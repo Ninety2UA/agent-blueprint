@@ -1,0 +1,5 @@
+{
+  "_comment": "Owners of text that skills share (KTD2, KTD3, KTD14, KTD17). snippet_owner holds the capability snippets; shared lists whole files kept byte-identical to their owner. Edit the owner, then run python3 scripts/sync-shared.py.",
+  "snippet_owner": "skills/ab-writing-skills/references/capability-snippets.md",
+  "shared": []
+}

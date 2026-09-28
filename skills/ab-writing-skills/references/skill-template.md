@@ -6,14 +6,14 @@ Loaded on demand from `SKILL.md`; nothing here is needed on every invocation.
 
 ```markdown
 ---
-name: Skill-Name-With-Hyphens
-description: Use when [specific triggering conditions and symptoms]
+name: ab-<skill-name-with-hyphens>
+description: "[What the skill does, and how, in one clause.] Use when [specific triggering conditions and symptoms]."
 ---
 
 # Skill Name
 
 ## Overview
-What is this? Core principle in 1-2 sentences.
+The outcome: what the skill produces and how the reader knows it is done, in 1-2 sentences.
 
 ## When to Use
 [Small inline flowchart IF decision non-obvious]
@@ -63,10 +63,12 @@ Concrete results
 - [ ] Identify patterns in rationalizations/failures
 
 **GREEN Phase - Write Minimal Skill:**
-- [ ] Name uses only letters, numbers, hyphens (no parentheses/special chars)
-- [ ] YAML frontmatter with required name and description (max 1024 chars); optional `allowed-tools`/`disallowed-tools` only if scoping tools
-- [ ] Description starts with "Use when..." and includes specific triggers/symptoms
+- [ ] Name is `ab-` plus lowercase words joined by hyphens, equal to the folder name
+- [ ] Frontmatter uses only the agentskills keys plus `argument-hint` and `disable-model-invocation`; no `effort` or `model`
+- [ ] Description (at most 1,024 characters) names what the skill does first, then "Use when ..." with specific triggers and symptoms
 - [ ] Description written in third person
+- [ ] Host-dependent steps use the capability snippets, each as its own paragraph
+- [ ] Whole SKILL.md within 8,000 bytes; detail moved to `references/`
 - [ ] Keywords throughout for search (errors, symptoms, tools)
 - [ ] Clear overview with core principle
 - [ ] Address specific baseline failures identified in RED
@@ -89,5 +91,6 @@ Concrete results
 - [ ] Supporting files only for tools or heavy reference
 
 **Deployment:**
+- [ ] Portability gate, snippet sync check and collision gate pass (in the Agent Blueprint repository)
 - [ ] Commit skill to git and push to your fork (if configured)
 - [ ] Consider contributing back via PR (if broadly useful)
