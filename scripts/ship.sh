@@ -179,7 +179,7 @@ if [[ -z "$FEATURE" ]]; then
   echo ""
   echo "  ${DIM}Flags:${NC}"
   echo "    --max N              Max outer loop iterations ${DIM}(default: 10)${NC}"
-  echo "    --swarm              Use parallel team execution"
+  echo "    --swarm              Run review and browser testing in parallel"
   echo "    --iterations N       Max review-improve iterations"
   echo "    --convergence MODE   ${DIM}fast${NC} | ${DIM}deep${NC} | ${DIM}perfect${NC}"
   echo ""

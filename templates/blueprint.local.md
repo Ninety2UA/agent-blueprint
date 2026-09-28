@@ -21,8 +21,7 @@ review-agents:
   # - schema-drift-detector      # Uncomment for projects with ORM schemas
 
 # Specialized agents (auto-dispatched by pipelines — not user-configurable)
-# These agents are used internally by /ab-build-pipeline, /ab-ship-pipeline, /ab-orchestrate, and /ab-team-execution:
-#   - team-lead               # Orchestrates /ab-orchestrate and /ab-team-execution workflows
+# These agents are used internally by /ab-build-pipeline, /ab-ship-pipeline, and /ab-orchestrate:
 #   - plan-checker             # Verifies plans are achievable before execution
 #   - integration-verifier     # Verifies tasks work together after each wave
 #   - deployment-verifier      # Pre-deployment verification (8 areas)
@@ -46,14 +45,10 @@ research-agents:
 # Options: web-fullstack, api-backend, cli-tool, library, mobile, data-pipeline
 project-type: web-fullstack
 
-# Agent Teams configuration (experimental — /ab-team-execution)
-# Requires CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1" in settings.json
-ab-agent-teams:
-  enabled: false  # Set to true after enabling the experimental feature
-  default-team-size: 3  # 3-5 recommended
-  quality-gates:
-    teammate-idle: true   # Run tests/lint before teammate goes idle
-    task-completed: true  # Check syntax/debug artifacts on task completion
+# Team work (/ab-orchestrate) needs no setting here: pass --wave-size N to change
+# the helpers per wave (default 4). It uses Claude Code Agent Teams when
+# CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS is "1" in an interactive session, and Codex
+# multi_agent_v2 when that feature is on; the tool's own switch is the only setting.
 
 # Tech stack (informational — helps agents focus)
 # languages: [typescript, python, ruby, go, rust, etc.]

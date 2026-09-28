@@ -1,6 +1,6 @@
 ---
 name: ab-dispatching-parallel-agents
-description: "Trigger this skill when facing 2+ independent tasks that can be worked on concurrently without shared state or sequential dependencies. Trigger when multiple unrelated failures need investigation (different test files, different subsystems, different bugs), when independent code changes can be made in parallel, or when separate analyses can run simultaneously. Usually invoked internally by other skills, not directly by users. Guides proper dispatch of parallel subagents — one agent per independent problem domain. DO NOT TRIGGER for tasks that modify shared state — use ab-wave-orchestration instead. DO NOT TRIGGER for a single task — just do it directly."
+description: "Trigger this skill when facing 2+ independent tasks that can be worked on concurrently without shared state or sequential dependencies. Trigger when multiple unrelated failures need investigation (different test files, different subsystems, different bugs), when independent code changes can be made in parallel, or when separate analyses can run simultaneously. Usually invoked internally by other skills, not directly by users. Guides proper dispatch of parallel subagents — one agent per independent problem domain. DO NOT TRIGGER for tasks that modify shared state or for running a plan as team work — use ab-orchestrate instead. DO NOT TRIGGER for a single task — just do it directly."
 ---
 
 # Dispatching Parallel Agents

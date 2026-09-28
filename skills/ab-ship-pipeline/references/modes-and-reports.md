@@ -6,7 +6,7 @@ Loaded on demand from `SKILL.md`; nothing here is needed on every invocation.
 
 | Flag | Effect |
 |------|--------|
-| `--swarm` | Use ab-team-execution skill with parallel execution + parallel review/test (SLFG pattern) |
+| `--swarm` | Run review and browser testing in parallel at Stage 5 (SLFG pattern); execution goes through ab-orchestrate in every mode |
 | `--iterations N` | Set max review-improve iterations (default 3, max 10) |
 | `--convergence fast` | Exit review loop when P1 = 0 (default) |
 | `--convergence deep` | Exit review loop when P1 + P2 = 0 |

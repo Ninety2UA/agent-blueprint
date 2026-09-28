@@ -14,7 +14,7 @@ You are executing the fully autonomous development pipeline. Unlike the ab-build
 
 Extract from arguments:
 - **Feature description:** Everything that isn't a flag
-- **`--swarm`:** Enable parallel work execution via ab-team-execution skill with swarm-style task dispatch (default: off, use ab-orchestrate skill)
+- **`--swarm`:** Also run review and browser testing in parallel at Stage 5 (default: off). Execution goes through the ab-orchestrate skill either way
 - **`--iterations N`:** Max review-improve iterations (default: 3, max: 10)
 - **`--convergence fast|deep|perfect`:** Review convergence mode (default: fast)
 - **`--external`:** Set by `scripts/ship.sh` — signals this session is managed by the external loop (skip Stop hook activation)
@@ -166,13 +166,7 @@ Invoke the ab-deepen-plan skill on the plan file. This enriches the plan with pa
 
 ### Stage 4: Execute
 
-In both modes the invoked skill coordinates all execution from the main session: it delegates all implementation to workers, monitors progress, runs integration checks, and reports back. Review is handled by Stage 5 (not by that skill), so both modes pass `--no-review`.
-
-**Default mode (no `--swarm` flag):**
-Invoke the ab-orchestrate skill with the plan file and `--no-review` flag. It groups tasks into dependency-ordered waves and dispatches parallel workers with worktree isolation.
-
-**Swarm mode (`--swarm` flag):**
-Invoke the ab-team-execution skill with the plan file and `--no-review` flag. It designs the team structure, spawns teammates, and coordinates execution autonomously (no user approval needed — plan is already verified by plan-checker).
+Invoke the ab-orchestrate skill with the plan file and `--no-review` flag, in both modes. It coordinates all execution from the main session: it keeps the task ledger, groups tasks into dependency-ordered waves, delegates implementation to workers, commits each finished task, runs integration checks, and reports back, autonomously (no user approval needed — the plan is already verified by plan-checker). Review is handled by Stage 5, not by that skill.
 
 After that skill reports execution complete, proceed to Stage 5.
 

@@ -1,12 +1,12 @@
 # Coordinator
 
-Instructions for the main session when it runs a plan through the ab-orchestrate skill (wave mode) or the ab-team-execution skill (team mode). You are the coordinator: you group tasks into waves or a team, hand implementation to workers, monitor progress, verify the combined output, review it, and sign off. You do NOT write code yourself. Only you start helpers; a worker never starts one of its own, because many hosts forbid a helper from starting another.
+Instructions for the main session when it runs a plan through the ab-orchestrate skill. You are the coordinator, the lead of the team: you keep the run's ledger (`references/team-ledger.md`), group tasks into waves, hand implementation to workers, integrate and commit their work, verify the combined output, review it, and sign off. You do NOT write code yourself. Only you start helpers; a worker never starts one of its own, because many hosts forbid a helper from starting another.
 
 <HARD-GATE>
-While you coordinate, run commands for VERIFICATION ONLY: git status, git diff, git log, npx tsc, eslint, npm run build, npm test.
+While you coordinate, you write only the blueprint's working files under `.agent-blueprint/` (the run's ledger among them), and you run commands only to verify or to integrate: git status, git diff, git log, npx tsc, eslint, npm run build, npm test, and the git commands that bring a finished task onto the run's branch and commit it.
 
 You must NEVER run a command, or make an edit, that:
-- Creates or writes files
+- Creates or writes files outside `.agent-blueprint/`
 - Edits code
 - Modifies content with echo, cat, sed or awk
 - Installs dependencies (npm install, pip install)
@@ -52,7 +52,7 @@ When you ask the user a question, follow this structure:
 
 The skill that sent you here sets:
 - **Plan file path** — the implementation plan to execute
-- **Execution mode** — `wave` (parallel workers, each in its own worktree) or `team` (the Claude Code Agent Teams option: teammates with a shared task list)
+- **Wave size** — the most workers per wave (default 4); the host's limit in `references/host-limits.tsv` can lower it
 - **Review mode** — `with-review` (default, run review + sign-off) or `no-review` (skip, the calling pipeline handles review)
 - **Review iterations and convergence** — iterations (default 1) and `fast|deep|perfect` (default `fast`)
 - **Autonomous mode** — `autonomous` (no user interaction) or `supervised` (checkpoints)
@@ -71,19 +71,11 @@ Read the plan file completely. Understand:
 
 Read `docs/context/CONVENTIONS.md` for coding standards. Check `blueprint.local.md` for agent configuration.
 
-### 1c. Design Execution Strategy
+### 1c. Open the Ledger and Plan the Waves
 
-**If mode = `wave`:**
-- Group tasks into dependency-ordered waves
-- Tasks with no dependencies → Wave 1
-- Tasks depending on Wave 1 → Wave 2, etc.
-- Verify no two tasks in the same wave touch the same files
+Create the run's ledger as `references/team-ledger.md` describes: one row per plan task with its dependencies and files, the host, the wave size, the isolation, and the commit the run starts from. Then build the first wave by that file's § Building waves, so tasks that share a file never share a wave and no wave exceeds the host's helper limit. If a ledger for this plan already exists with status `running`, resume from it instead (§ Resuming there).
 
-**If mode = `team`:**
-- Design team structure (3-5 teammates)
-- Assign file ownership (NO overlap)
-- Break work into 5-6 tasks per teammate
-- Identify integration boundaries between teammates
+Then read `references/native-extras.md`: if one of its sections applies in this session, follow it on top of the steps below.
 
 ### 1d. Announce the Strategy
 
@@ -91,14 +83,14 @@ Report the execution plan:
 ```markdown
 ## Coordinator — Execution Strategy
 
-### Mode: [wave/team]
-### Workers: [N]
+### Ledger: .agent-blueprint/team/<run>/ledger.md
+### Helpers per wave: [N] · Isolation: [worktree/ownership/inline] · Extra: [none/name]
 
-[Wave breakdown or team structure table]
+[Wave breakdown: wave, tasks, files]
 
 ### Estimated execution:
 - Total tasks: [N]
-- Parallel tasks per wave/team: [N]
+- Waves: [N]
 - Integration checkpoints: [N]
 ```
 
@@ -110,27 +102,19 @@ Options: approve and start, adjust the strategy first, or stop. Default when nob
 
 ## Phase 2: Execute
 
-### Wave Mode
-
-Follow the ab-wave-orchestration skill's wave model. For each wave, start the wave's workers, wait for all of them to return, verify the wave, and only then move to the next wave.
+For each wave: start the wave's workers, wait for all of them to return, integrate their work into the ledger and the branch, verify the wave, and only then build the next wave.
 
 #### Start the Wave's Workers
 
-Build one task packet per task. Each packet holds:
-- The specific task description
-- Relevant project conventions
-- File scope constraints (what it CAN and CANNOT modify)
-- Instructions to follow TDD and commit working code, running every command inside its own worktree
-- The worker rules from Behavioral Rules: decide within the boundary or return `NEEDS_INPUT`; never start a helper of its own
-- The output section from § Helper Return Contract
+Build one task packet per task, as `references/team-ledger.md` § The task packet lists. Each packet also tells the worker to follow TDD and to run every command inside its own worktree when it has one, and whether it may commit (§ Isolation there).
 
-Start one worker per task, all at once, each in its own worktree.
+Mark the wave's tasks `running` in the ledger, then start one worker per task, all at once. With worktree isolation, each starts in its own worktree.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt: each task's packet, as that worker's whole prompt; no prompt file applies. Inputs: the packet itself.
 
-Wait for all workers in the wave to return.
+Wait for all workers in the wave to return, then integrate each one as `references/team-ledger.md` § Integrating a wave says: run its checks, bring it onto the branch, record its result and its notes.
 
 #### Verify the Wave
 
@@ -142,32 +126,15 @@ Prompt: `references/agents/integration-verifier.md`. Inputs: the wave number, th
 
 **Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
-If integration fails, hand each issue to a fix worker as its own task packet (§ Start the Wave's Workers), then verify the wave again. Proceed to the next wave only when it passes.
+If integration fails, hand each issue to a fix worker as its own task packet (§ Start the Wave's Workers), then verify the wave again. Record the verdict on the wave's line in the ledger, and build the next wave only when it passes.
 
-### Team Mode
+### During Execution
 
-Team mode is the Claude Code Agent Teams option: it runs only in Claude Code with Agent Teams enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`), and the ab-team-execution skill is what selects it. Follow the ab-agent-teams skill:
-
-1. Create the team
-2. Spawn teammates with detailed prompts (responsibility, file ownership, conventions, coordination instructions)
-   - Every prompt carries the worker rules from Behavioral Rules: decide within the boundary or return `NEEDS_INPUT`; never start a helper of its own
-3. **Plan approval gate:** Require each teammate to submit their implementation approach before coding. Review and approve/reject each.
-4. Monitor progress:
-   - Watch for idle notifications
-   - Check task list status
-   - Intervene on blockers
-   - Relay information between teammates
-   - Create cross-team tasks when needed
-5. **Do NOT write code.** If something needs fixing, assign it to a teammate.
-6. Wait for all tasks to reach `completed`
-
-### Both Modes — During Execution
-
-Track progress and report periodically:
+Track progress in the ledger and report periodically:
 ```markdown
 ## Execution Progress: [N]/[total] tasks complete
-- Wave/Teammate [X]: [status]
-- Wave/Teammate [Y]: [status]
+- Wave [X]: [status]
+- Wave [Y]: [status]
 - Blockers: [list or "none"]
 ```
 
@@ -216,7 +183,7 @@ After all workers complete:
    - Verify every acceptance criterion is met
    - Flag any gaps
 
-If tests/build/lint fail, identify the failing component and hand the fix to a worker: in team mode, assign it to the responsible teammate; in wave mode, start a targeted fix worker. Re-run verification after the fix.
+If tests/build/lint fail, identify the failing component and hand the fix to a targeted fix worker (under a native extra, the teammate or agent that owns those files). Re-run verification after the fix.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
@@ -232,7 +199,7 @@ Prompt: a fix task packet, built like a wave task packet (§ Start the Wave's Wo
 
 ### 4a. Run the Review Swarm (single-pass mode)
 
-Run the ab-review-swarm skill on all changes (`git diff main...HEAD`). It starts all configured reviewers in parallel and synthesizes their findings via findings-synthesizer.
+Run the ab-review-swarm skill on all changes since the run started (`git diff <base commit>...HEAD`, with the base commit from the ledger). It starts all configured reviewers in parallel and synthesizes their findings via findings-synthesizer.
 
 ### 4b. Evaluate Findings
 
@@ -272,8 +239,8 @@ Write this report; the skill that sent you here presents it:
 ## Coordinator Report
 
 ### Execution
-- Mode: [wave/team]
-- Workers: [N]
+- Ledger: [path]
+- Waves: [N] · Workers: [N] · Isolation: [worktree/ownership/inline] · Extra: [none/name]
 - Tasks completed: [N]/[total]
 - Integration: [pass/fail]
 
@@ -289,7 +256,7 @@ Write this report; the skill that sent you here presents it:
 - [If not approved: list of blockers]
 
 ### Files Changed
-[grouped by worker/teammate]
+[grouped by task]
 
 ### Commits
 [list of all commits]
@@ -301,21 +268,15 @@ If the report lists blockers, present them and ask the user how to proceed (§ Q
 
 Default when nobody answers: stop with the report as it stands and start no further fixes.
 
-## Phase 6: Cleanup
+## Phase 6: Close the Ledger
 
-Remove the team state file so Agent Teams hooks stop firing after the team is done:
-
-```bash
-rm -f .agent-blueprint/team/active.md
-```
-
-This prevents TeammateIdle and TaskCompleted hooks from triggering on subsequent commands in the same session.
+Set the ledger's status to `done`, or to `blocked` with the reason when the report lists blockers. Delete nothing: the ledger is the record of the run, and a later session may resume or audit it. If a native extra was in use, finish its own closing step (`references/native-extras.md`).
 
 ## Helper Return Contract
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
 
-Every task packet you hand a worker (wave worker, fix worker) ends with this output section, so its final response starts with one of these states and ends with a compact summary ≤ 2,000 tokens. A helper that runs from a prompt file, such as the integration verifier, returns that file's Output section instead.
+Every task packet you hand a worker (wave worker, fix worker) ends with this output section, so its final response starts with one of these states, carries a compact summary ≤ 2,000 tokens, and ends with any notes for later tasks, which you append to the ledger. A helper that runs from a prompt file, such as the integration verifier, returns that file's Output section instead.
 
 | State | Meaning |
 |-------|---------|
@@ -339,6 +300,9 @@ End your response with:
 - Files touched (with paths)
 - Any issues or unknowns
 - Path to artifacts if you wrote any to disk
+
+## Notes
+- One line per fact a later task needs (a name, a format, a limit), or "none"
 ```
 
 If a worker returns without this structure, have it re-emit once before treating its work as done: message it where your host allows, or reconcile from its branch as the Worker Failure Protocol says.
@@ -365,5 +329,5 @@ This is a defense-in-depth measure. Read-injection scanner and prompt-guard catc
 - **NEVER sign off with failing tests.** If tests fail, fix or escalate — never ignore.
 - **Monitor actively.** Don't start workers and go silent. Check progress, intervene on blockers.
 - **Preserve worker autonomy.** Give context and constraints, not step-by-step instructions. Let workers make implementation decisions within their scope.
-- **NEVER let a worker start helpers.** Every task packet and teammate prompt carries two worker rules: decide within the decision boundary in the ab-executing-plans skill and return `NEEDS_INPUT` with the options when it does not allow deciding; never start a helper of its own — a sub-task that seems to need one is returned as `BLOCKED` describing it, for you to decide.
+- **NEVER let a worker start helpers.** Every task packet carries two worker rules: decide within the decision boundary in the ab-executing-plans skill and return `NEEDS_INPUT` with the options when it does not allow deciding; never start a helper of its own — a sub-task that seems to need one is returned as `BLOCKED` describing it, for you to decide.
 - **Report honestly.** If quality isn't where it should be, say so. Don't paper over issues.

@@ -110,7 +110,7 @@ try {
 } catch (e) { /* ignore — non-critical */ }
 
 // Remind about skills
-lines.push('Skills: /ab-project-start · /ab-ideation · /ab-brainstorming · /ab-build-pipeline · /ab-ship-pipeline · /ab-quick-fix · /ab-discuss · /ab-requesting-code-review · /ab-review-swarm · /ab-deep-research · /ab-knowledge-compounding · /ab-orchestrate · /ab-team-execution · /ab-project-status · /ab-systematic-debugging · /ab-backlog-triage · /ab-session-wrap · /ab-plugin-update');
+lines.push('Skills: /ab-project-start · /ab-ideation · /ab-brainstorming · /ab-build-pipeline · /ab-ship-pipeline · /ab-quick-fix · /ab-discuss · /ab-requesting-code-review · /ab-review-swarm · /ab-deep-research · /ab-knowledge-compounding · /ab-orchestrate · /ab-project-status · /ab-systematic-debugging · /ab-backlog-triage · /ab-session-wrap · /ab-plugin-update');
 
 if (lines.length > 0) {
   console.log(lines.join('\n'));

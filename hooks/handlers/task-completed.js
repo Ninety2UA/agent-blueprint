@@ -9,16 +9,21 @@
  *   0 — Allow task completion
  *   2 — Prevent completion with feedback (issues found)
  *
- * To enable: Add to your Claude Code settings.json under hooks.TaskCompleted
+ * Part of ab-orchestrate's Claude Code Agent Teams extra; registered in hooks.json.
  */
 
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-// Guard: only run during active /ab-team-execution sessions
-const stateFile = path.join(process.cwd(), '.claude', 'team-active.local.md');
-if (!fs.existsSync(stateFile)) {
+// Guard: only act while ab-orchestrate runs the Agent Teams extra, which writes
+// "active: true" to this file at the start and "active: false" at the end.
+const stateFile = path.join(process.cwd(), '.agent-blueprint', 'team', 'active.md');
+let teamActive = false;
+try {
+  teamActive = /^active:\s*true\s*$/m.test(fs.readFileSync(stateFile, 'utf-8'));
+} catch (e) { /* no marker: no active team */ }
+if (!teamActive) {
   process.exit(0); // No active team — allow completion silently
 }
 

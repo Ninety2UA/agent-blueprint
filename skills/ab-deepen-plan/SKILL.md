@@ -108,8 +108,6 @@ Plan updated: [path to plan file]
 
 **1. Subagent-Driven (this session)** — I dispatch a fresh subagent per task, review between tasks, fast iteration. Good for hands-on oversight.
 
-**2. Parallel Orchestration (ab-orchestrate skill)** — Executes the wave plan: independent tasks run in parallel within each wave. Faster total time for plans with concurrent tasks.
-
-**3. Agent Teams (ab-team-execution skill)** — Collaborative teammates with file ownership and shared task list. Best for 4+ tasks touching different areas. Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`.
+**2. Team work (ab-orchestrate skill)** — Runs the plan in waves through a task ledger: independent tasks run in parallel within each wave, each helper owns its files, and the lead commits. Uses Claude Code Agent Teams or Codex multi_agent_v2 when switched on. Faster total time for plans with concurrent tasks.
 
 **Which approach?"**

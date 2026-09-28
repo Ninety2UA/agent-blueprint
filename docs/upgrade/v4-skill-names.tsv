@@ -1,6 +1,6 @@
 v3_name	v4_name	note
 add-tests	ab-add-tests	
-agent-teams	ab-agent-teams	
+agent-teams	ab-orchestrate	merged into ab-orchestrate: team work with the Claude Code Agent Teams extra
 autonomous-loop	ab-autonomous-loop	
 backlog-triage	ab-backlog-triage	
 brainstorming	ab-brainstorming	
@@ -47,7 +47,7 @@ spike-exploration	ab-spike-exploration
 subagent-driven-development	ab-subagent-driven-development	
 swarm-orchestration	ab-swarm-orchestration	
 systematic-debugging	ab-systematic-debugging	
-team-execution	ab-team-execution	
+team-execution	ab-orchestrate	merged into ab-orchestrate: team work in every tool
 test-driven-development	ab-test-driven-development	
 using-git-worktrees	ab-using-git-worktrees	
 verification-before-completion	ab-verification-before-completion	

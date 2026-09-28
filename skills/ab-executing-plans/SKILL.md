@@ -1,6 +1,6 @@
 ---
 name: ab-executing-plans
-description: "Trigger this skill when executing a written plan sequentially with human review checkpoints between batches. Trigger scenarios: 'execute the plan', 'implement the plan', 'work through the tasks', 'follow this plan', 'run through the plan step by step', 'execute sequentially', or when the user has a plan file and wants controlled, checkpoint-based execution with human review between batches. Even if the user doesn't explicitly mention checkpoints, trigger this skill when they want sequential plan execution with oversight rather than autonomous or parallel approaches. DO NOT TRIGGER when tasks can run in parallel and speed matters — use ab-orchestrate instead. DO NOT TRIGGER when spawning collaborative teammates with shared task lists — use ab-team-execution instead. DO NOT TRIGGER for fully autonomous execution without human checkpoints — use ab-autonomous-loop instead."
+description: "Trigger this skill when executing a written plan sequentially with human review checkpoints between batches. Trigger scenarios: 'execute the plan', 'implement the plan', 'work through the tasks', 'follow this plan', 'run through the plan step by step', 'execute sequentially', or when the user has a plan file and wants controlled, checkpoint-based execution with human review between batches. Even if the user doesn't explicitly mention checkpoints, trigger this skill when they want sequential plan execution with oversight rather than autonomous or parallel approaches. DO NOT TRIGGER when tasks can run in parallel or as team work — use ab-orchestrate instead. DO NOT TRIGGER for fully autonomous execution without human checkpoints — use ab-autonomous-loop instead."
 ---
 
 # Executing Plans
@@ -15,8 +15,7 @@ Load plan, review critically, execute tasks in batches, report for review betwee
 
 ## When NOT to Use
 
-- **Tasks can run in parallel and speed matters** — use `ab-orchestrate` for wave-based parallelism.
-- **Spawning collaborative teammates with shared task list** — use `ab-team-execution`.
+- **Tasks can run in parallel, or the user wants team work** — use `ab-orchestrate` for waves through a task ledger.
 - **Fully autonomous, no checkpoints** — use `ab-autonomous-loop` or `ab-ship-pipeline`.
 - **No written plan exists** — write one with `ab-writing-plans` first.
 - **One task only, change is trivial** — execute directly with `ab-quick-fix`.

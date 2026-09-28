@@ -38,8 +38,7 @@ No build step (template repo). Key skills for installed projects:
 | `/ab-brainstorming` | Brainstorm before building |
 | `/ab-review-swarm` | Multi-agent parallel code review |
 | `/ab-deep-research` | Multi-agent parallel research |
-| `/ab-orchestrate` | Wave-based parallel execution (dependency-ordered) |
-| `/ab-team-execution` | Collaborative agent team (shared task list + messaging) |
+| `/ab-orchestrate` | Team work in dependency-ordered waves through a task ledger (any tool; Agent Teams when switched on) |
 | `./scripts/ship.sh "feature"` | External loop — fresh context per iteration |
 | `/ab-plugin-update` | Update plugin to latest version from GitHub |
 
@@ -48,7 +47,7 @@ Run `/ab-project-start` after install to configure `docs/context/CONVENTIONS.md`
 ## Architecture
 
 ```
-# Plugin-provided (55 skills, 10 hooks)
+# Plugin-provided (53 skills, 10 hooks)
 # Available automatically — no per-project files needed
 
 # Project-local (your project state)
@@ -155,7 +154,7 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `style`, `perf`
 ## Gotchas
 
 - Stop hook `"decision": "block"` does NOT reset context — use `scripts/ship.sh` for true context refresh between iterations
-- Each Agent Teams teammate MUST own specific files — concurrent modification causes conflicts
+- Every helper in a team wave owns specific files, and only the lead commits — concurrent edits to one file cause conflicts
 - Use `execFileSync` not `execSync` in hook scripts to prevent shell injection
 - `docs/images/*` excluded from install — only for template's GitHub README display
 

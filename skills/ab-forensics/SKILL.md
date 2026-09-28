@@ -8,7 +8,7 @@ argument-hint: "[run id, log path, or symptom]"
 
 ## Overview
 
-When `ab-ship-pipeline`, `ab-orchestrate`, `ab-team-execution`, or any iterative pipeline ends without delivering, the operator needs to know *why* before retrying. Re-running blindly often produces the same failure, just slower. This skill performs read-only post-mortem diagnosis against logs, git state, and planning artifacts.
+When `ab-ship-pipeline`, `ab-orchestrate`, or any iterative pipeline ends without delivering, the operator needs to know *why* before retrying. Re-running blindly often produces the same failure, just slower. This skill performs read-only post-mortem diagnosis against logs, git state, and planning artifacts.
 
 **Core principle:** Ground every conclusion in specific evidence — commits, log lines, file timestamps, planning artifacts. Speculation without evidence is worse than "unknown".
 

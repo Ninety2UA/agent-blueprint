@@ -1,46 +1,53 @@
 ---
 name: ab-orchestrate
-description: "Trigger this skill when executing plans with parallelizable tasks using dependency-ordered waves. Trigger scenarios: 'parallel', 'waves', 'orchestrate', 'run tasks in parallel', 'speed up execution', 'parallel execution', 'wave execution', 'execute this plan fast', 'run these concurrently', or any request where the user has a plan with independent tasks and wants faster execution. Even if the user doesn't explicitly ask for parallelism, trigger this skill when a plan contains tasks that can clearly run concurrently in dependency-ordered waves. The main session groups tasks into waves and dispatches worktree-isolated workers. DO NOT TRIGGER for collaborative multi-file work needing shared task lists and inter-agent messaging — use ab-team-execution instead. DO NOT TRIGGER for sequential single-task execution with human review checkpoints between batches — use ab-executing-plans instead."
-argument-hint: "[path to plan file] [--no-review] [--iterations N] [--convergence fast|deep|perfect]"
+description: "Runs a plan as team work: a task ledger, dependency-ordered waves of parallel helpers with file ownership or worktrees, integration checks between waves, lead-only commits, then review and sign-off. Works in every tool: helpers where the tool has them, one task after another where it does not, and Claude Code Agent Teams or Codex multi_agent_v2 when the user has switched them on. Use when a plan has four or more tasks, some of them independent, or when the user asks for parallel, team, wave or collaborative execution. Not for a sequential plan with review checkpoints between batches (ab-executing-plans) or a change under three files (ab-quick-fix)."
+argument-hint: "[path to plan file] [--no-review] [--wave-size N] [--iterations N] [--convergence fast|deep|perfect]"
 ---
 
-# Orchestrate — Wave-Based Parallel Execution
+# Orchestrate — Team Work in Waves
 
-Execute a plan using dependency-aware wave orchestration. This session coordinates the whole run by following `references/coordinator.md`: it groups tasks into waves, dispatches parallel workers, each in its own worktree, runs integration verification between waves, and (unless `--no-review`) reviews the combined output and signs off. Only this session starts helpers; workers never start their own.
+Execute a plan as a team, with this session as the lead. The lead follows `references/coordinator.md`: it keeps the run's task ledger (`references/team-ledger.md`), groups tasks into waves so no two tasks in a wave share a file, starts one worker per task, integrates and commits each finished task itself, verifies every wave, and (unless `--no-review`) reviews the combined output and signs off. Only the lead starts helpers; workers never start their own.
 
-**Announce at start:** "Starting wave orchestration — coordinating from this session."
+The same run works everywhere. Where the tool can start helpers, a wave's workers run in parallel. Where it cannot, the lead does each task itself, one after another, through the same ledger, so the result has the same shape. Where the user has switched on a native team feature, the lead uses it on top of the ledger (`references/native-extras.md`).
+
+**Announce at start:** "Starting team run — coordinating from this session."
 
 ## Parse Arguments
 
 - **Plan file:** Path from arguments (if not provided, look for the most recent plan in `docs/plans/`)
 - **`--no-review`:** Skip the built-in review and sign-off (used when called from ab-ship-pipeline or ab-build-pipeline, which handle review themselves)
+- **`--wave-size N`:** Most workers per wave (default 4). The host's limit in `references/host-limits.tsv` can lower it, never raise it.
 - **`--iterations N`:** Max review-improve iterations (default: 1 = single pass, max: 10). When > 1, the review uses the ab-iterative-refinement skill instead of a single ab-review-swarm pass.
 - **`--convergence fast|deep|perfect`:** Review convergence mode (default: `fast`). `fast` = exit when P1=0, `deep` = exit when P1+P2=0, `perfect` = exit when all findings=0. Only applies when `--iterations` > 1.
 
 ## Coordinate
 
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+
+The ledger lives in `.agent-blueprint/team/<run>/ledger.md`.
+
 Read `references/coordinator.md` and follow it with these settings:
 
-- Execution mode: wave
 - Plan file: [path to plan file]
+- Wave size: [N] (default 4)
 - Review mode: [with-review | no-review]
 - Review iterations: [N] (default 1)
 - Review convergence: [fast|deep|perfect] (default fast)
 - Autonomous mode: [autonomous if called from ab-ship-pipeline, supervised otherwise]
 - Project conventions: docs/context/CONVENTIONS.md; agent config: blueprint.local.md
 
-The run: read the plan file completely and group tasks into dependency-ordered waves. For each wave, start parallel workers with worktree isolation, and run the integration verifier between waves. After all waves complete, run tests + build + lint. Then:
+The run: read the plan completely, open the ledger, and build the first wave. For each wave, start the workers, integrate each finished task (checks, commit, ledger), and run the integration verifier. After the last wave, run tests + build + lint. Then:
 - If no-review: report execution results only.
 - If with-review AND iterations=1: run the ab-review-swarm skill, fix P1 findings, sign off.
 - If with-review AND iterations>1: run the ab-iterative-refinement skill with max_iterations=[N] and convergence=[mode]. Sign off when converged.
 
-Follow the coordinator instructions and the ab-wave-orchestration skill exactly.
+If a ledger for the same plan is still `running`, the run resumes from it rather than starting over.
 
 ## Finish
 
 When the coordinator's report is ready:
 
-1. Present the execution summary to the user
+1. Present the execution summary to the user, with the ledger's path
 2. If you signed off (with-review mode): report the sign-off status
 3. If the report lists blockers: present them and ask the user how to proceed (`references/coordinator.md` § Phase 5)
 

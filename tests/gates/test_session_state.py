@@ -12,7 +12,7 @@ HOST_OWNED = ("skills", "agents", "commands", "hooks", "plugins", "settings.json
 CLAUDE_PATH = re.compile(r"\.claude/([A-Za-z0-9_.*<>{}-]+)")
 WRITERS = ["ab-brainstorming", "ab-executing-plans", "ab-review-swarm", "ab-iterative-refinement",
            "ab-ship-pipeline", "ab-subagent-driven-development", "ab-systematic-debugging",
-           "ab-team-execution", "ab-writing-skills", "ab-forensics", "ab-orchestrate"]
+           "ab-writing-skills", "ab-forensics", "ab-orchestrate"]
 
 
 def read(path):

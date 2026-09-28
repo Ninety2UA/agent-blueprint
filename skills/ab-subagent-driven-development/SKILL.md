@@ -1,6 +1,6 @@
 ---
 name: ab-subagent-driven-development
-description: "Trigger this skill when executing plans with independent tasks in the current session using fresh subagents per task — for isolation and clean context on each task. Trigger when you have an implementation plan with mostly independent tasks and want to stay in the current session rather than using parallel worktrees. Dispatches a fresh subagent per task with two-stage review after each (spec compliance then code quality). Usually invoked internally by ab-executing-plans — not typically called directly by users. DO NOT TRIGGER for tightly coupled tasks that share state — use sequential execution instead. DO NOT TRIGGER when parallel session execution is preferred — use ab-executing-plans with ab-orchestrate instead."
+description: "Trigger this skill when executing plans with independent tasks in the current session using fresh subagents per task — for isolation and clean context on each task. Trigger when you have an implementation plan with mostly independent tasks and want to stay in the current session rather than using parallel worktrees. Dispatches a fresh subagent per task with two-stage review after each (spec compliance then code quality). Usually invoked internally by ab-executing-plans — not typically called directly by users. DO NOT TRIGGER for tightly coupled tasks that share state — use sequential execution instead. DO NOT TRIGGER when the tasks should run in parallel as team work — use ab-orchestrate instead."
 ---
 
 # Subagent-Driven Development

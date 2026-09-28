@@ -83,11 +83,8 @@ Choose the execution method based on plan complexity:
 **Default (< 4 tasks or all sequential):**
 Invoke the ab-executing-plans skill. Execute the plan in batches with checkpoints.
 
-**For complex plans (4+ tasks with mixed dependencies):**
-Invoke the ab-orchestrate skill with `--no-review`. That skill coordinates the wave-based parallel execution from the main session. Review is handled by Stage 5, not by that skill.
-
-**For collaborative work (user requests `--team`):**
-Invoke the ab-team-execution skill with `--no-review`. That skill coordinates the execution from the main session and spawns teammates for collaborative implementation. Review is handled by Stage 5.
+**For complex plans (4+ tasks with mixed dependencies), or when the user requests `--team`:**
+Invoke the ab-orchestrate skill with `--no-review`. That skill runs the plan as team work from the main session: a task ledger, dependency-ordered waves, and a native team feature where the user has switched one on. Review is handled by Stage 5, not by that skill.
 
 ### Stage 5: Review (Quality Check)
 

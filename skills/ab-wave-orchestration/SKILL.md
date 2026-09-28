@@ -1,6 +1,6 @@
 ---
 name: ab-wave-orchestration
-description: "Trigger this skill when executing dependency-ordered task groups — tasks that have a mix of independent and dependent relationships. Groups tasks into waves: independent tasks run in parallel within each wave, dependent tasks wait for prior waves. Verifies integration between waves before proceeding. Usually followed by the main session inside the ab-orchestrate skill — not typically called directly by users. DO NOT TRIGGER when all tasks are sequential (use ab-autonomous-loop instead). DO NOT TRIGGER when all tasks are independent with no dependencies (use ab-resolve-in-parallel instead). DO NOT TRIGGER for plans with fewer than 4 tasks (overhead not worth it)."
+description: "Trigger this skill when executing dependency-ordered task groups — tasks that have a mix of independent and dependent relationships. Groups tasks into waves: independent tasks run in parallel within each wave, dependent tasks wait for prior waves. Verifies integration between waves before proceeding. To run a whole plan as team work with a task ledger and lead-only commits, use ab-orchestrate. DO NOT TRIGGER when all tasks are sequential (use ab-autonomous-loop instead). DO NOT TRIGGER when all tasks are independent with no dependencies (use ab-resolve-in-parallel instead). DO NOT TRIGGER for plans with fewer than 4 tasks (overhead not worth it)."
 ---
 
 # Wave Orchestration

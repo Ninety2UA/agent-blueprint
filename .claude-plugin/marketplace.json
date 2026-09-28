@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "agent-blueprint",
-      "description": "55 skills and 10 hooks covering the full development lifecycle",
+      "description": "53 skills and 10 hooks covering the full development lifecycle",
       "source": "./",
       "category": "productivity"
     }

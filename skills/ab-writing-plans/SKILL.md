@@ -120,7 +120,7 @@ End the plan with a `## Review Focus` section: at most five inputs or failure mo
 
 ## Interface Context for Parallel Executors
 
-When the plan will run in parallel waves (`ab-orchestrate`, `ab-team-execution`), embed the contracts executors need (key types, exports, signatures) in the plan so they don't explore the codebase to find them, and add a "Task 0: Define contracts" when later tasks consume new interfaces. When to include or skip it, and the block shapes, are in `references/interface-context.md`.
+When the plan will run in parallel waves (`ab-orchestrate`), embed the contracts executors need (key types, exports, signatures) in the plan so they don't explore the codebase to find them, and add a "Task 0: Define contracts" when later tasks consume new interfaces. When to include or skip it, and the block shapes, are in `references/interface-context.md`.
 
 ## Verification Commands
 
@@ -179,25 +179,19 @@ The user reviews the *saved* plan before anything runs. Approving the design in 
 
 **2. Subagent-Driven (this session)** — I dispatch a fresh subagent per task, review between tasks, fast iteration. Good for hands-on oversight.
 
-**3. Parallel Orchestration (`ab-orchestrate`)** — Executes the wave plan: independent tasks run in parallel within each wave. Faster total time for plans with concurrent tasks.
-
-**4. Agent Teams (`ab-team-execution`)** — Collaborative teammates with file ownership and shared task list. Best for 4+ tasks touching different areas. Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`.
+**3. Team work (`ab-orchestrate`)** — Runs the plan in waves through a task ledger: independent tasks run in parallel within each wave, each helper owns its files, and the lead commits. Uses Claude Code Agent Teams or Codex multi_agent_v2 when switched on. Faster total time for plans with concurrent tasks.
 
 **I recommend [option] because [reason]. Which approach?"**
 
 **If Deepen chosen:**
 - Invoke `ab-deepen-plan` with the plan file path
-- After deepening, re-present execution options (2-4)
+- After deepening, re-present execution options (2-3)
 
 **If Subagent-Driven chosen:**
 - **REQUIRED SUB-SKILL:** Use ab-subagent-driven-development
 - Stay in this session
 - Fresh subagent per task + code review
 
-**If Parallel Orchestration chosen:**
+**If Team work chosen:**
 - Invoke `ab-orchestrate` with the plan file path
-- The skill handles wave grouping and parallel dispatch from the main session
-
-**If Agent Teams chosen:**
-- Invoke `ab-team-execution` with the plan file path
-- The skill designs team structure and assigns file ownership from the main session
+- The skill keeps the task ledger, groups waves and dispatches helpers from the main session

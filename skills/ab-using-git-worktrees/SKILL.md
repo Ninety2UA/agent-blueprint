@@ -1,6 +1,6 @@
 ---
 name: ab-using-git-worktrees
-description: "Trigger this skill when feature work needs isolation from the current workspace or when parallel execution benefits from worktree isolation. Trigger when the user says 'worktree', 'isolated branch', 'parallel branches', 'separate workspace', or 'work on this in isolation'. Trigger before executing implementation plans that use parallel agents in separate branches. Usually invoked internally by the ab-orchestrate and ab-team-execution skills — not typically called directly by users. Provides systematic directory selection and safety verification for reliable worktree isolation. DO NOT TRIGGER for simple branch creation — just use git checkout -b."
+description: "Trigger this skill when feature work needs isolation from the current workspace or when parallel execution benefits from worktree isolation. Trigger when the user says 'worktree', 'isolated branch', 'parallel branches', 'separate workspace', or 'work on this in isolation'. Trigger before executing implementation plans that use parallel agents in separate branches. Usually invoked internally by the ab-orchestrate skill — not typically called directly by users. Provides systematic directory selection and safety verification for reliable worktree isolation. DO NOT TRIGGER for simple branch creation — just use git checkout -b."
 ---
 
 # Using Git Worktrees

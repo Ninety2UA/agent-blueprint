@@ -13,7 +13,7 @@
   <a href="#what-you-get">What You Get</a> ·
   <a href="#workflow">Workflow</a> ·
   <a href="#autonomous-pipeline-ship-pipeline">Ship</a> ·
-  <a href="#agent-teams--swarms">Agent Teams</a> ·
+  <a href="#team-work--swarms">Team Work</a> ·
   <a href="#skills-reference">Skills</a> ·
   <a href="#agents-reference">Agents</a> ·
   <a href="#customization">Customization</a> ·
@@ -258,7 +258,7 @@ Commands were thin wrappers that couldn't load skill content due to Claude Code'
   | `/compound` | `/ab-knowledge-compounding` |
   | `/debug` | `/ab-systematic-debugging` |
   | `/update` | `/ab-plugin-update` |
-  | `/team` | `/ab-team-execution` |
+  | `/team` | `/ab-orchestrate` |
   | `/review` | `/ab-requesting-code-review` |
   | `/ideate` | `/ab-ideation` |
   | `/map` | `/ab-codebase-mapping` |
@@ -460,9 +460,9 @@ Already using the blueprint with in-project files? Install the plugin, then run 
 
 ```
 Plugin (installed globally, zero files in your project)
-├── 55 skills            /ab-build-pipeline, /ab-ship-pipeline, /ab-brainstorming, /ab-review-swarm, /ab-orchestrate, /ab-forensics, ...
+├── 53 skills            /ab-build-pipeline, /ab-ship-pipeline, /ab-brainstorming, /ab-review-swarm, /ab-orchestrate, /ab-forensics, ...
 │                        TDD, ab-wave-orchestration, swarms, ab-iterative-refinement, ...
-└── 10 hooks              session-start, context-monitor, prompt-guard, read-injection-scanner, validate-commit (opt-in), ship-loop, sdd-cache (pre/post) + 2 Agent Teams
+└── 10 hooks              session-start, context-monitor, prompt-guard, read-injection-scanner, validate-commit (opt-in), ship-loop, sdd-cache (pre/post) + 2 for the Agent Teams extra
 
 your-project/ (scaffolded by /ab-project-start)
 ├── docs/
@@ -512,7 +512,7 @@ Every feature follows this flow:
 
 **3. Design** — Brainstorm options with `/ab-brainstorming`. Present tradeoffs. Get human approval before any code is written.
 
-**4. Plan** — Break the approved design into tasks that record decisions, not code: exact file paths, each test and what it asserts, signatures, and a Review Focus list of spec-implied edge cases. The user reviews the saved plan before it runs. After the plan is written, choose: deepen with research (`/ab-deepen-plan`), execute sequentially (subagent-driven), execute in parallel (`/ab-orchestrate`), or execute with Agent Teams (`/ab-team-execution`).
+**4. Plan** — Break the approved design into tasks that record decisions, not code: exact file paths, each test and what it asserts, signatures, and a Review Focus list of spec-implied edge cases. The user reviews the saved plan before it runs. After the plan is written, choose: deepen with research (`/ab-deepen-plan`), execute sequentially (subagent-driven), or execute as team work in parallel waves (`/ab-orchestrate`).
 
 **5. Build** — Execute using TDD (red-green-refactor). Verify with evidence. Dispatch code review agents.
 
@@ -567,8 +567,7 @@ As of v3.4.0, interactive runs can also opt into the platform-native `/goal` com
 | `/ab-ship-pipeline` (interactive) | None | 3 iterative cycles | Single-context fire-and-forget |
 | `ship.sh` (external) | None | 3 iterative cycles | Large features, context exhaustion |
 | `/ab-quick-fix` | None | None | Trivial changes (< 3 files) |
-| `/ab-orchestrate` | Between waves | Single pass (or `--iterations N`) | Dependency-ordered parallel execution |
-| `/ab-team-execution` | Async (teammates) | Single pass (or `--iterations N`) | Collaborative multi-file work |
+| `/ab-orchestrate` | Between waves | Single pass (or `--iterations N`) | Team work: dependency-ordered waves through a task ledger |
 
 ### Quality gates
 
@@ -601,9 +600,9 @@ Beyond the workflow gates above, two exact-match gates run in CI to keep the rep
 
 A third CI job validates the plugin and marketplace manifests with the CLI's own validator (`claude plugin validate --strict`).
 
-## Agent Teams & Swarms
+## Team Work & Swarms
 
-Agents are organized into coordinated teams for multi-agent workflows. Four orchestration patterns are built in:
+Helpers are organized into coordinated teams for multi-helper workflows. Three orchestration patterns are built in:
 
 ### Review Swarm (`/ab-review-swarm`)
 
@@ -621,17 +620,15 @@ Spawns 5 research agents in parallel before planning, then synthesizes findings 
   <img src="docs/images/research-swarm.png" alt="Research Swarm — 5 parallel researchers → research synthesizer" width="90%">
 </p>
 
-### Wave Orchestration (`/ab-orchestrate`)
+### Team Work (`/ab-orchestrate`)
 
-Groups plan tasks by dependency into waves. Independent tasks within each wave run in parallel; an integration-verifier validates between waves.
+Runs a plan as a team with this session as the lead. The lead keeps a task ledger in `.agent-blueprint/team/<run>/`, groups tasks by dependency into waves (tasks that share a file never share a wave, and no wave exceeds the tool's helper limit), and starts one helper per task, each owning its files or working in its own worktree. It commits each finished task itself and runs an integration verifier between waves. In a tool without helpers the lead does the tasks one after another through the same ledger, and a run can resume from the ledger in another session or another tool.
 
 <p align="center">
   <img src="docs/images/wave-orchestration.png" alt="Wave Orchestration — dependency-ordered waves with integration verification" width="90%">
 </p>
 
-### Agent Teams (`/ab-team-execution`) — Experimental
-
-For complex multi-file implementations where teammates need to discuss and coordinate, Agent Teams spawns fully independent Claude Code instances with a shared task list and messaging system.
+Where the user has switched on a native team feature, team work uses it on top of the ledger: **Claude Code Agent Teams** (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"`, interactive sessions only, with the blueprint's TeammateIdle and TaskCompleted quality hooks) and **Codex `multi_agent_v2`** (`multi_agent_v2 = true` under `[features]`, long-lived helpers that take follow-up tasks).
 
 <p align="center">
   <img src="docs/images/agent-teams.png" alt="Agent Teams — collaborative instances with shared task list and messaging" width="90%">
@@ -642,10 +639,9 @@ For complex multi-file implementations where teammates need to discuss and coord
 | Pattern | Best For | Key Feature |
 |---------|----------|-------------|
 | **Swarms** (`/ab-review-swarm`, `/ab-deep-research`) | Parallel analysis — same code, different lenses | Read-only, synthesizer merges outputs |
-| **Waves** (`/ab-orchestrate`) | Dependency-ordered implementation | Worktree isolation, integration verification |
-| **Agent Teams** (`/ab-team-execution`) | Collaborative multi-file implementation | Shared task list, inter-teammate messaging |
+| **Team work** (`/ab-orchestrate`) | Implementing a plan's tasks | Task ledger, waves, file ownership or worktrees, lead-only commits |
 
-Agent Teams is an experimental Claude Code feature. Enable it with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"` in settings.json. The typical workflow combines all patterns: `/ab-deep-research` (swarm) → `/ab-brainstorming` → `/ab-team-execution` (agent teams) → `/ab-review-swarm` (swarm).
+The typical workflow combines both: `/ab-deep-research` (swarm) → `/ab-brainstorming` → `/ab-orchestrate` (team work) → `/ab-review-swarm` (swarm).
 
 ### Knowledge Loop (`/ab-knowledge-compounding`)
 
@@ -726,7 +722,6 @@ Skills are workflow modules that activate at specific development phases. They c
 |-------|-------------|---------|
 | [**ab-wave-orchestration**](skills/ab-wave-orchestration/) | Groups tasks by dependency into waves, parallel within waves, integration verification between | `/ab-orchestrate` or plans with mixed dependencies |
 | [**ab-swarm-orchestration**](skills/ab-swarm-orchestration/) | Coordinates multiple specialized agents analyzing the same input in parallel | `/ab-review-swarm`, `/ab-deep-research`, or custom swarms |
-| [**ab-agent-teams**](skills/ab-agent-teams/) | Collaborative multi-file implementation with shared task list and messaging (experimental) | `/ab-team-execution` or complex cross-layer features |
 | [**ab-knowledge-compounding**](skills/ab-knowledge-compounding/) | Documents solved problems as searchable institutional knowledge in docs/solutions/ | `/ab-knowledge-compounding` or after solving non-trivial problems |
 | [**ab-session-continuity**](skills/ab-session-continuity/) | Manages STATE.md for execution tracking across session boundaries | `/ab-pause-checkpoint`, `/ab-resume-session`, or during wave orchestration |
 
@@ -819,8 +814,7 @@ Skills are invoked as slash commands. Each skill's content loads directly — no
 | **`/ab-review-swarm`** | Multi-agent parallel review — dispatches 6-10 specialized reviewers, synthesizes findings into prioritized P1/P2/P3 report. |
 | **`/ab-deep-research`** | Multi-agent parallel research — spawns 5 research agents, synthesizes into unified brief for planning. |
 | **`/ab-knowledge-compounding`** | Document a solved problem for future reference. Creates searchable entry in docs/solutions/. |
-| **`/ab-orchestrate`** | Wave-based parallel execution — groups plan tasks by dependency, runs independent tasks in parallel per wave. Supports `--iterations N` and `--convergence fast\|deep\|perfect` for iterative review. |
-| **`/ab-team-execution`** | Spawn an Agent Team for collaborative multi-file implementation with shared task list and messaging (experimental). Supports `--iterations N` and `--convergence fast\|deep\|perfect` for iterative review. |
+| **`/ab-orchestrate`** | Team work — runs a plan through a task ledger in dependency-ordered waves, with helpers in parallel where the tool has them and Claude Code Agent Teams or Codex `multi_agent_v2` when switched on. Supports `--wave-size N`, `--iterations N` and `--convergence fast\|deep\|perfect` for iterative review. |
 | **`/ab-project-status`** | Shows current project state, goal alignment, blockers, and suggests next actions. |
 | **`/ab-systematic-debugging [issue]`** | Root cause investigation. Gathers evidence, forms hypotheses, tests them systematically. |
 | **`/ab-backlog-triage`** | Triages inbox items in BACKLOG.md into prioritized tasks using GOALS.md context. |
@@ -845,8 +839,7 @@ claude
 > /ab-ideation                                 # "What's worth building?" — AI generates ranked ideas
 > /ab-deep-research add OAuth2 login           # Research the chosen idea (5 agents in parallel)
 > /ab-brainstorming add OAuth2 login           # Design + plan based on research findings
-> /ab-orchestrate                              # Execute with wave-based parallelism
->   # OR: /ab-team-execution                   # Execute with collaborative Agent Team
+> /ab-orchestrate                              # Execute as team work in dependency-ordered waves
 > /ab-review-swarm                             # Multi-agent review (6-10 reviewers in parallel)
 > /ab-knowledge-compounding OAuth2 sessions    # Document the solution for future reference
 > /ab-session-wrap                             # Document everything for next session
@@ -1119,9 +1112,9 @@ After solving a non-trivial problem, `/ab-knowledge-compounding` saves it as a s
 </details>
 
 <details>
-<summary><strong>What are Agent Teams and how do they differ from swarms?</strong></summary>
+<summary><strong>How does team work differ from swarms?</strong></summary>
 
-Agent Teams (`/ab-team-execution`) spawn fully independent Claude Code instances that collaborate through a shared task list and messaging. Unlike swarms (which are read-only subagents reporting analysis back to a controller), Agent Teams are peers that can discuss design decisions, divide file ownership, and coordinate in real time. Use swarms for parallel analysis (review, research) and Agent Teams for collaborative implementation. Agent Teams is an experimental feature — enable with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"` in settings.json.
+Swarms are read-only helpers that analyze the same code from different angles and report back to a synthesizer. Team work (`/ab-orchestrate`) implements a plan: the lead keeps a task ledger, runs tasks in dependency-ordered waves with each helper owning its files, and commits each finished task itself. It runs in every supported tool, one task after another where the tool has no helpers, and uses Claude Code Agent Teams (an experimental feature, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"`) or Codex `multi_agent_v2` when the user has switched them on.
 </details>
 
 <details>
