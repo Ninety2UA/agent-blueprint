@@ -129,7 +129,14 @@ jobs:
       - name: Check count/version drift
         run: bash scripts/check-drift.sh
 
-      - name: Check skill-description collisions
+      # The frontmatter YAML check needs PyYAML; REQUIRE_YAML turns a missing
+      # module into a failure here instead of a local-only skip.
+      - name: Install PyYAML
+        run: python3 -c 'import yaml' 2>/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q python3-yaml; }
+
+      - name: Check skill-description collisions and skill structure
+        env:
+          REQUIRE_YAML: "1"
         run: python3 scripts/check-skill-collisions.py
 
   plugin-validate:

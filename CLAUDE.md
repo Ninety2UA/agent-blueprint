@@ -10,20 +10,19 @@ Quality over speed. Small steps compound. The patterns you establish will be cop
 
 <!-- Updated by /session-wrap. Full history: git log + docs/learnings/ -->
 
-**Last session:** 2026-09-12
+**Last session:** 2026-09-28
 
-**What was done:** The 2026-09-11 `/cli-watch` + `/repo-watch` cycle shipped two releases:
-- v3.6.0 "Platform Currency Refresh" (PR #12): platform claims re-verified against Claude Code 2.1.268; TodoWrite replaced by the plan-scoped progress ledger; native-first `plugin-update`; `plugin validate --strict` CI job; README nav-anchor drift check. Record: `docs/learnings/2026-09-11-cli-watch-cycle-verdicts.md`.
-- v3.7.0 "Ecosystem Imports": twenty-one ideas from seven watched repos grafted onto existing skills and agents — plan audit before finishing, discard only on request, one decision-boundary rule, ship-loop iteration ceiling, converging SDD fix loop, test falsifiability and a quality-bar lens, external text as data, session/knowledge hygiene, ceremony sizing, plan Objective/Means header, SKILL.md byte budget with a warn-only size report, ecosystem table refresh. Record: `docs/learnings/2026-09-11-ecosystem-import-verdicts.md`.
+**What was done:** The 2026-09-27 `/cli-watch` + `/repo-watch` cycle was implemented as v3.8.0 "Plans as Decisions and Opus 5.5 Currency" on `feat/v3.8.0-cycle-2026-09-27` (PR open, not merged): all 25 approved repo-watch grafts (plans record decisions, not code; protected-subject findings need a cited refutation; merge-base review ranges; whole-suite green; final whole-branch review; durable-only learnings; publishing gates; pre-flight danger scan; YAML and `references/` pointer checks) and cli-watch A1–A7 (Opus 5.5 lineup, session model and effort as the user's choice, workflow facts, `/goal` notes, `claude plugin eval` pointer). Record: `docs/learnings/2026-09-27-cli-and-repo-watch-verdicts.md`. Earlier cycles: `docs/learnings/2026-09-11-*`.
 
 **What's remaining:**
-- Nothing queued. Deferred items live in the two decision records above; the size sweep they deferred shipped as v3.7.1.
+- Merge the v3.8.0 PR, then tag and publish the GitHub release; only after that, advance `.claude/cli-watch/baseline.json` (2026-09-27 / 2.1.283) and the `.claude/repo-watch/registry.json` pins listed in the decision record.
+- The portability brainstorm takes the items the repo-watch report routed to it (§4), including the description-style conflict with compound-engineering #1645.
 
-**Start here:** `main` is current (v3.7.1 released: size sweep of the four largest skills into `references/`, finishing-path and resume-session fixes). Monthly watchers `/cli-watch` + `/repo-watch` stay on schedule; the next cycle starts from the baselines those records pin.
+**Start here:** open the v3.8.0 PR on GitHub, confirm CI is green, and merge it; then run the release steps above.
 
 **Current state of the code:**
 - Build: n/a (template repo, no build step)
-- Gates: drift gate (promo source, site grids + badge integrity, repo-count claims, README agents table, version equality, README nav anchor) + skill-collision gate (warn-only SKILL.md size report: no body over 16 KB since v3.7.1) + plugin-validate job green; markdownlint + shellcheck clean locally
+- Gates: drift gate (promo source, site grids + badge integrity, repo-count claims, README agents table, version equality, README nav anchor) + skill-collision gate (fails on invalid frontmatter YAML and unresolved `references/` pointers since v3.8.0; warn-only SKILL.md size report, no body over 16 KB) + plugin-validate job green; markdownlint + shellcheck clean locally
 - Website: live at <https://ninety2ua.github.io/claude-code-blueprint/>
 - Uncommitted changes: none
 
@@ -66,7 +65,7 @@ install.sh                               # Plugin installer + legacy mode
 
 Skills and agents are self-describing via frontmatter — read their files for when/how to use them.
 
-Each agent carries an `effort:` tier (`low`/`medium`/`high`) in frontmatter, set by reasoning depth (mechanical validators → `low`; workers/researchers → `medium`; reviewers/synthesizers/oracles/orchestrator → `high`). Default stays `model: inherit` so agents ride the session model; an opt-in per-agent model mapping (`low`→Haiku 4.5, `medium`→Sonnet 5, `high`→Opus 5 / Fable 5.1) is documented in README under "Effort tiers & opt-in model mapping" — apply only if your plan tier supports it. Tiers are honored on every model from CLI 2.1.267 (earlier CLIs silently ignored per-agent `effort:` whenever the session ran Opus 4.7, Opus 4.8, or Fable 5 — which affects `model: inherit` agents on those sessions).
+Each agent carries an `effort:` tier (`low`/`medium`/`high`) in frontmatter, set by reasoning depth (mechanical validators → `low`; workers/researchers → `medium`; reviewers/synthesizers/oracles/orchestrator → `high`). Default stays `model: inherit` so agents ride the session model; an opt-in per-agent model mapping (`low`→Haiku 4.5, `medium`→Sonnet 5, `high`→Opus 5.5 / Fable 5.1) is documented in README under "Effort tiers & opt-in model mapping" — apply only if your plan tier supports it. Tiers are honored on every model from CLI 2.1.267 (earlier CLIs silently ignored per-agent `effort:` whenever the session ran Opus 4.7, Opus 4.8, or Fable 5 — which affects `model: inherit` agents on those sessions). The session model and effort are the user's choice; the blueprint never prescribes one and skills carry no `effort:`. Opus 5.5, the default model from CLI 2.1.280, starts sessions at `medium`, so main-session pipelines run at that level unless the user picks another (README "Session model and effort").
 
 ## Behavioral Rules
 

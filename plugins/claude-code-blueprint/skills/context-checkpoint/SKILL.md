@@ -74,6 +74,12 @@ Create `docs/context/CHECKPOINT-[YYYY-MM-DD-HHMM].md`:
 - [anything unresolved]
 ```
 
+**Keep and cut order.** A checkpoint (and any `/compact` focus instruction you give) keeps what can't be recovered and cuts what can:
+
+- **Protect:** the user's goal and constraints, locked decisions with their reasons, the current task's acceptance criteria, the file paths and commands in play, unresolved errors verbatim.
+- **Cut first:** tool output already acted on (old test logs, file dumps), superseded plans, repeated reads of the same file.
+- **Compress before dropping:** a long log becomes its failing line plus a count, a file dump becomes `path:line` pointers, a dead-end exploration becomes one line on why it failed.
+
 ### Step 3: Confirm
 
 Tell the user: "Checkpoint saved. You can resume from this point if context is lost."

@@ -110,7 +110,8 @@ For each task in the wave, dispatch an implementer subagent using the subagent-d
 ```
 Task("Implement Task [N]: [full task description].
 Context: [relevant project context, file paths, conventions].
-Constraints: Only modify [specific files]. Follow TDD.
+Constraints: Only modify [specific files]. Follow TDD. Run every verification
+command inside your worktree; never point it at the main checkout or another path.
 Return: Summary of changes, files modified, test results.",
 isolation: "worktree")
 ```

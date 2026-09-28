@@ -19,6 +19,10 @@ Extract from arguments:
 - **`--convergence fast|deep|perfect`:** Review convergence mode (default: fast)
 - **`--external`:** Set by `scripts/ship.sh` — signals this session is managed by the external loop (skip Stop hook activation)
 
+## Intake — route before shipping
+
+Ship only what is a feature. A bug report (something broke, an error to explain) goes to systematic-debugging first; ship the fix only once the root cause is known. A question (how does X work, should we do Y) gets an answer and the run stops: no branch, no PR.
+
 ## Pipeline Stages
 
 Execute ALL stages sequentially. Do NOT stop for user input. Make all decisions autonomously.
@@ -36,7 +40,7 @@ Two loop mechanisms exist — the external bash loop (`scripts/ship.sh`) and the
 Check if this is a continuation of a previous ship pipeline run:
 
 1. Check git log on current branch for prior commits from this pipeline
-2. Check if a plan file already exists in `docs/plans/` for this feature
+2. Check if a plan file already exists in `docs/plans/` for this feature. A plan found on disk is never run unverified: confirm it describes this feature, then run it through Stage 2c's plan-checker loop before skipping ahead
 3. Check for uncommitted changes
 4. Check if `.claude/ship-progress.local.md` exists (external loop progress file). If it does:
    - Read its `Feature:` line. Another feature's name means a stale file: delete it and count from zero (no `Feature:` line means this feature).
@@ -72,7 +76,7 @@ completion_promise: "DONE"
 
 #### Optional: native `/goal` completion (interactive only, CLI v2.1.139+)
 
-An opt-in overlay only: the `ship-loop.sh` Stop hook remains the guarantee, so continue the pipeline immediately and never wait for a paste. The prompt to emit, the `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` opt-out, and the CLI-version notes are in `references/modes-and-reports.md` § Native /goal completion.
+An opt-in overlay only: the `ship-loop.sh` Stop hook remains the guarantee, so continue the pipeline immediately and never wait for a paste. The prompt to emit, the `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` opt-out (which also turns off the goal's automatic retries), and the CLI-version notes are in `references/modes-and-reports.md` § Native /goal completion.
 
 ---
 
@@ -139,6 +143,10 @@ for pass in 1..3:
 
 If blocking issues persist after 3 passes, STOP the pipeline and report: "Plan verification failed after 3 passes. Remaining blockers: [list]. Use the build-pipeline skill for supervised planning."
 
+#### 2d. Pre-flight danger scan (advisory)
+
+Before execution, scan the verified plan for irreversible operations (deleting data, migrations on shared databases, force-push or history rewrite, publishing or sending anything outside the repo), pushes to a protected branch, and deleting or skipping tests. Route each hit through the decision boundary and record it; the scan never stops the run by itself.
+
 ---
 
 ### Stage 3: Deepen Plan
@@ -175,6 +183,7 @@ Pass the configured parameters:
 - `max_iterations`: from `--iterations` flag (default 3)
 - `convergence`: from `--convergence` flag (default `fast`)
 - `scope`: all changes on this branch vs main (`git diff main...HEAD`)
+- earlier rounds' Skip and Defer decisions, so declined findings are not raised again (iterative-refinement Step 2a, "Declined findings stay declined")
 
 If iterative refinement exits without converging per the specified mode (P1 > 0 for `fast`, P1+P2 > 0 for `deep`, any findings > 0 for `perfect`):
 - STOP the pipeline

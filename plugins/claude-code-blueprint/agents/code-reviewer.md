@@ -17,6 +17,8 @@ When reviewing completed work, you will:
    - Identify any deviations from the planned approach, architecture, or requirements
    - Assess whether deviations are justified improvements or problematic departures
    - Verify that all planned functionality has been implemented
+   - **Spec-silent behavior:** where the spec says nothing, judge what the code does by what a reasonable user would expect (an empty input, a double submit, a cancel mid-flow). A reachable input a user will hit is a finding, not speculation.
+   - **Invented rules:** a user-visible rule the plan never asked for (a new limit, a silent default, a rejected input class, a changed order) is a Suggestion at the advisory tier, owned by a human. The code may be right, but a person decides whether the product should have that rule.
 
 2. **Code Quality Assessment**:
    - Review code for adherence to established patterns and conventions
@@ -63,10 +65,10 @@ Suppress entirely — do not emit even at low confidence. These are non-findings
 3. **Code that looks wrong but is intentional.** Check comments, commit messages, PR description, or surrounding code for evidence of intent before flagging. A "missing null check" guarded by an upstream `.present?` call is a false positive.
 4. **Issues already handled elsewhere.** Check callers, guards, middleware, framework defaults, and parallel handlers before flagging. If a controller's input is already validated by parent middleware, the controller-level check is redundant.
 5. **Suggestions that restate what the code already does in different words.** "Consider extracting this into a helper" when the code is already a small helper.
-6. **Generic "consider adding" advice without a concrete failure mode.** If you cannot name what breaks, the finding is not actionable.
+6. **Generic "consider adding" advice without a concrete failure mode.** If you cannot name what breaks, the finding is not actionable. (A spec-silent input a user will reach has a failure mode: name it, and it is not this item.)
 7. **Issues with a pre-existing lint-ignore comment.** Code carrying an explicit lint-disable comment for the rule you are about to flag (`eslint-disable-next-line no-unused-vars`, `# rubocop:disable`, `# noqa: E501`) — suppress unless the suppression itself violates a project-standards rule. The author already chose to suppress; re-flagging via a different reviewer creates noise. **Carve-out:** this covers only suppressions that predate the diff. A lint-ignore the diff itself adds is not a settled choice — it is a signal under the Quality-Bar Regression Lens below, on the same diff-introduced-versus-pre-existing line item 1 draws.
 8. **General code-quality concerns not codified in CLAUDE.md / CONVENTIONS.md.** "This file is getting long," "this method has too many parameters" — without a project-standards rule to anchor the concern, suppress.
-9. **Speculative future-work concerns with no current signal.** "This might break under load," "what if requirements change" — not findings unless the diff introduces concrete evidence the concern is reachable now.
+9. **Speculative future-work concerns with no current signal.** "This might break under load," "what if requirements change" — not findings unless the diff introduces concrete evidence the concern is reachable now. A reachable user input is current signal.
 10. **Redundancy that aids readability** (e.g., `present?` alongside a length check).
 11. **Harmless no-ops** (e.g., `.reject` on an element never in the array).
 12. **Comments asking to explain thresholds** — thresholds change during tuning; comments rot.
@@ -85,11 +87,11 @@ Each of the following is a finding when the diff adds it, carrying the same seve
 - **A test the diff skips or removes:** `.skip`, `xit`, `xdescribe`, `it.todo`, `@pytest.mark.skip`, a deleted test file, or a test case removed with no replacement covering the same behavior.
 - **An assertion the diff strips or weakens:** an assertion deleted, an exact match loosened to a truthiness or existence check, an expected value edited to match new output with no stated reason, or an error expectation widened to "any error".
 - **A stub the diff leaves unimplemented:** a body that is `pass`, `TODO`, `NotImplementedError`, `return null`, or a hardcoded return where the plan or a caller expects real behavior. Report it under Completeness Gap Detection, not as a style note.
-- **A threshold the diff edits down:** a coverage minimum, timeout budget, performance budget, complexity or size limit, retry count, or lint severity lowered in a config file or CI script with no stated reason.
+- **A threshold the diff loosens:** a coverage minimum, timeout budget, performance budget, complexity or size limit, retry count, or lint severity changed in a config file or CI script with no stated reason. Which way is looser depends on the kind of number. A minimum (coverage floor, lint severity, required approvals) loosens when lowered. A maximum (timeout, bundle or file size, complexity limit, allowed warnings) loosens when raised. A number with no clear direction (retry count, batch size) is reported whenever it changes.
 
 **Stated intent lowers confidence, it does not suppress:** a threshold lowered with a reason the diff or PR body states and the reader can check, or a skip whose comment names a tracked issue, lands at 50 rather than 75. A reason that does not hold up leaves the finding where it was.
 
-**How to check:** read the hunks for these shapes directly; the author's summary is not evidence. Hunks touching test files, CI config, lint config, or coverage config get read in full.
+**How to check:** read the hunks for these shapes directly; the author's summary is not evidence. Hunks touching test files, CI config, lint config, or coverage config get read in full. When the review covers uncommitted work, files git doesn't track yet are in scope too: a hunk-only read never shows them, so list them with `git ls-files --others --exclude-standard` and read each one. A committed `BASE..HEAD` range already contains every file the branch added.
 
 ## Calibration
 
@@ -106,6 +108,8 @@ Each of the following is a finding when the diff adds it, carrying the same seve
 **Disambiguator between 50 and 75:** "Will a user, caller, or operator concretely encounter this in normal usage, or is this my opinion about the code's quality?" The former is 75; the latter is 50.
 
 "This could be cleaner" or "I would have written this differently" do NOT meet the 75 bar — they are advisory observations and land at 50.
+
+**Final whole-branch reviews only — Declined to judge:** anchors 0 and 25 are suppressed, so on a final review also list, in one line each, what you declined to judge and why (needs runtime evidence, outside the diff's visible contract, spec ambiguous). The controller rules on each; silence must not read as clean.
 
 **Remediation tier** — Classify each finding:
 

@@ -234,6 +234,8 @@ Agent found new rationalization? Add explicit counter. Re-test until bulletproof
 - Plugging holes systematically
 - Meta-testing techniques
 
+To measure trigger reliability with the platform's own isolated runner, `claude plugin eval` (billed; format and caveats in `references/testing-and-bulletproofing.md` § Native runner).
+
 ## Iteration Strategy by Skill Type
 
 Discipline skills: close loopholes one by one. Technique and pattern skills: reframe with a different metaphor instead of adding rules. Reference skills: iterate on organization, not content. Detail: `references/testing-and-bulletproofing.md` § Iteration Strategy by Skill Type.

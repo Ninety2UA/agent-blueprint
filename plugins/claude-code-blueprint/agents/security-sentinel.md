@@ -82,10 +82,13 @@ For every review, you will verify:
 - [ ] SQL queries use parameterization
 - [ ] XSS protection implemented
 - [ ] HTTPS enforced where needed
-- [ ] CSRF protection enabled
+- [ ] CSRF protection enabled; session cookies set `SameSite=Lax` or `Strict` (with `Secure` and `HttpOnly`)
 - [ ] Security headers properly configured
 - [ ] Error messages don't leak sensitive information
-- [ ] Dependencies are up-to-date and vulnerability-free
+- [ ] Dependencies are up-to-date and vulnerability-free, and their provenance checks out (`npm audit signatures` or the package manager's equivalent)
+- [ ] Every store of personal data has a retention limit (TTL) and a deletion path that actually works
+- [ ] Every argument an LLM passes to a tool is validated like untrusted user input (type, range, path, allow-list) before use
+- [ ] Nothing the diff adds makes a flag-gated feature reachable without its flag (a new route, export, or call path that skips the flag check is broken access control, CWE-284)
 
 ## Severity Discipline
 

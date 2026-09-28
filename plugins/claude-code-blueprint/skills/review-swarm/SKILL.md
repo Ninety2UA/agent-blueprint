@@ -1,6 +1,6 @@
 ---
 name: review-swarm
-description: "Trigger this skill when the user says 'review swarm', 'full review', 'multi-agent review', 'comprehensive review', 'review everything', 'thorough review', or wants code reviewed from multiple perspectives simultaneously. Trigger even when the user just says 'review' if the changes are significant (touching 5+ files, multiple concerns like security + performance + quality, or crossing module boundaries) — a single reviewer cannot catch everything in large changesets. Also trigger when shipping a feature to production or before a major merge where missing issues would be costly. Dispatches 6-10 specialized review agents in parallel (security, performance, simplicity, conventions, tests, code quality), then synthesizes findings into one prioritized P1/P2/P3 report. DO NOT TRIGGER for a quick single-perspective review of small changes — use requesting-code-review instead."
+description: "Trigger this skill when the user says 'review swarm', 'full review', 'multi-agent review', 'comprehensive review', 'review everything', 'thorough review', or wants code reviewed from multiple perspectives simultaneously. Trigger even when the user just says 'review' if the changes are significant (touching 5+ files, multiple concerns like security + performance + quality, or crossing module boundaries) or consequential regardless of size (auth, money, data, a public contract, anything that would fail silently rather than at the change site) — a single reviewer cannot catch everything in large changesets. Also trigger when shipping a feature to production or before a major merge where missing issues would be costly. Dispatches 6-10 specialized review agents in parallel (security, performance, simplicity, conventions, tests, code quality), then synthesizes findings into one prioritized P1/P2/P3 report. DO NOT TRIGGER for a quick single-perspective review of small changes — use requesting-code-review instead."
 argument-hint: "[optional: specific files or scope to review]"
 ---
 
@@ -14,8 +14,8 @@ Dispatch a swarm of specialized review agents in parallel, then synthesize their
 
 Identify what to review:
 - If arguments specify files or scope, use that
-- Otherwise, review uncommitted changes (`git diff`) or the last commit (`git diff HEAD~1`)
-- For a PR review, use `git diff main...HEAD`
+- Otherwise, review uncommitted changes (`git diff` plus untracked files from `git ls-files --others --exclude-standard`) or the last commit (`git diff HEAD~1`)
+- For a PR or branch review, diff from the merge base: `git diff $(git merge-base origin/main HEAD)..HEAD` (the three-dot `origin/main...HEAD` is the same range), never a two-dot range against bare `origin/main`, which shows main's newer files as phantom deletions. If the range is empty or the base is not an ancestor of HEAD, stop and report the range instead of reviewing nothing
 
 ## Step 2: Select Reviewers (Conditional Activation)
 
@@ -88,13 +88,13 @@ When all reviewers return, the flow has two synthesis stages:
 
 ### 5a: Independent validation (optional, recommended for >5 findings)
 
-Dispatch the **findings-validator** agent with the merged compact returns. The validator does an independent re-verification per surviving finding (3 questions: real in current code? introduced by this diff? not handled elsewhere?) and returns `{validated, reason}` per finding. Conservative bias — when in doubt, reject.
+Dispatch the **findings-validator** agent with the merged compact returns. The validator does an independent re-verification per surviving finding (3 questions: real in current code? introduced by this diff? not handled elsewhere?) and returns validated, rejected, or unresolved per finding with a reason. Conservative bias — when in doubt, reject — except on protected subjects (auth, injection, data loss, secrets), where a rejection must quote the refuting line.
 
 ```
 Task("findings-validator: Validate these findings against the diff. run_id={run_id}. [merged finding list]")
 ```
 
-This step is an FP backstop. Findings the validator rejects are dropped before synthesis. Skip when the swarm produced ≤5 findings (validator overhead exceeds the benefit on small sets).
+This step is an FP backstop. Rejected findings are dropped before synthesis. **Unresolved** findings (a protected subject the validator could neither confirm nor refute) are never dropped: pass them to the synthesizer marked unresolved, and they reach the report as advisory with a human owner. Skip when the swarm produced ≤5 findings (validator overhead exceeds the benefit on small sets).
 
 ### 5b: Synthesis
 

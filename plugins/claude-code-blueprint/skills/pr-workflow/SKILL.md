@@ -29,7 +29,7 @@ Do NOT create a PR without first verifying that all tests pass. Run the test sui
 
 #### Step 1: Pre-flight Check
 
-Before creating the PR:
+Before creating the PR, run the checks the project declares in `docs/context/CONVENTIONS.md` (lint, typecheck, test, build), not a remembered subset, and run them on the exact commit you will push: commit first, note `git rev-parse HEAD`, and if HEAD moves before the push, run them again.
 ```bash
 # Ensure all tests pass
 [test command]
@@ -143,7 +143,7 @@ One comment per marker pair. Never paste a comment outside the markers, and neve
 
 After all fixes are applied:
 ```bash
-# Run tests again
+# Re-run the declared checks on the new HEAD — the one being pushed
 [test command]
 
 # Push the fixes
@@ -155,6 +155,7 @@ Respond to each comment thread indicating how it was addressed.
 ### Phase 3: Merging
 
 After approval:
+0. Check the base branch's CI first: `gh run list --branch main --workflow <ci-workflow> --limit 1 --json status,conclusion` (name the CI workflow, or the newest run of any workflow answers). If main is red, don't merge onto it: report it, because a red base hides whether your change broke anything. A run still in progress is not green; wait for it
 1. Rebase onto the latest main (if needed)
 2. Verify tests still pass after rebase
 3. Squash or merge per project convention
@@ -169,7 +170,7 @@ After approval:
 | Received feedback | Read all → Triage → Resolve → Push |
 | Single comment to fix | Dispatch pr-comment-resolver agent |
 | Multiple independent comments | Dispatch parallel pr-comment-resolver agents |
-| Ready to merge | Rebase → Test → Merge → Delete branch |
+| Ready to merge | Base CI green? → Rebase → Test → Merge → Delete branch |
 
 ## Common Mistakes
 

@@ -12,7 +12,7 @@ Help turn ideas into fully formed designs and specs through natural collaborativ
 Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design and get user approval.
 
 <HARD-GATE>
-Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it. This applies to EVERY project regardless of perceived simplicity.
+Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it. This applies to EVERY project regardless of perceived simplicity. Approving the design approves the scope only: writing-plans saves a plan that the user reviews before anything executes.
 
 Do NOT use Claude Code's native EnterPlanMode tool or enter plan mode. This skill IS the planning process — it replaces native plan mode with a structured brainstorming workflow. Stay in the normal conversation flow and follow the steps below.
 </HARD-GATE>
@@ -81,7 +81,7 @@ If the user doesn't specify, infer from context and state your assumption. Once 
 Work through these items in order, tracked as a checklist file — `.claude/plans/<topic-slug>.progress.local.md`, one checkbox per item, same convention as `executing-plans` — rather than a native task-list tool (not every model exposes one):
 
 1. **Explore project context** — check files, docs, recent commits
-2. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
+2. **Ask clarifying questions** — WHY first (the problem and who has it), then constraints and success criteria; one at a time, then write your understanding back
 3. **Propose 2-3 approaches** — with trade-offs and your recommendation
 4. **Present design** — in sections scaled to their complexity, get user approval after each section
 5. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
@@ -118,7 +118,8 @@ digraph brainstorming {
 - Ask what's left one at a time to refine the idea
 - Prefer multiple choice questions when possible, but open-ended is fine too
 - Only one question per message, with one narrow exception: once you've settled what the repository and context answer, if several genuinely residual questions remain, ask them together in a single batch rather than one at a time
-- Focus on understanding: purpose, constraints, success criteria
+- Focus on understanding: find out WHY first (the problem and who has it), then constraints and success criteria
+- Before proposing approaches, write the understanding back in a few lines, separating what the user said from what you are assuming, so the assumptions can be corrected before the design rests on them
 
 **Exploring approaches:**
 - Propose 2-3 different approaches with trade-offs

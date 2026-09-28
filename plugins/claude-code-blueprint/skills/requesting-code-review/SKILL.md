@@ -16,6 +16,8 @@ Dispatch code-reviewer subagent to catch issues before they cascade.
 - After completing major feature
 - Before merge to main
 
+**Size the review by consequence, not line count.** Ask whether a wrong change would fail loudly at the change site (a type error, a failing test) or silently somewhere else (a wrong total, a leaked record, a caller in another module). A change that fails silently, or touches auth, money, data, or a public contract, gets `/review-swarm` whatever its size; this single-reviewer pass is for changes that would fail loudly.
+
 **Optional but valuable:**
 - When stuck (fresh perspective)
 - Before refactoring (baseline check)
@@ -25,9 +27,15 @@ Dispatch code-reviewer subagent to catch issues before they cascade.
 
 **1. Get git SHAs:**
 ```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
+# Pick ONE base:
+BASE_SHA=$(git rev-parse HEAD~1)                # one task's commit
+# BASE_SHA=$(git merge-base origin/main HEAD)   # or: a whole branch
 HEAD_SHA=$(git rev-parse HEAD)
+git merge-base --is-ancestor "$BASE_SHA" "$HEAD_SHA" && [ -n "$(git rev-list "$BASE_SHA..$HEAD_SHA")" ] \
+  || echo "Refusing: $BASE_SHA..$HEAD_SHA is empty or not a descendant range"
 ```
+
+Never use bare `origin/main` as the base: once main moves past your branch point, its new files show up as phantom deletions in the diff. If the guard refuses, fix the range; don't review an empty or unrelated diff.
 
 **2. Dispatch code-reviewer subagent:**
 

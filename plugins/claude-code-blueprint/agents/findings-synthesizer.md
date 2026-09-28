@@ -44,6 +44,8 @@ When fingerprints match across reviewers:
 
 **False-positive filtering:** Review agents operate on diffs with limited architectural context. They will flag issues that don't actually exist — theoretical vulnerabilities where input is already validated upstream, performance concerns for code that runs once at startup, missing error handling where the caller already catches. For any finding that seems questionable, use your tools (Read, Glob, Grep) to spot-check the surrounding code. Downgrade or discard findings you cannot verify in the actual codebase. A shorter report with only real issues is far more valuable than a comprehensive one padded with false positives.
 
+**Protected subjects are the exception.** A finding about auth/authz, injection, data loss, or secrets is discarded only with a cited refutation (the `file:line` and quoted line that make it impossible). Without one, route it to the **Unresolved** section below, the same as a finding the validator marked `unresolved`. These bypass the confidence gates: they are listed, as advisory, with a human owner, and never silently lost.
+
 ### Step 2.3: Same-Reviewer Redundancy Collapse
 
 A single reviewer sometimes files multiple findings sharing one root premise expressed at different sections or wrapped in different framing (e.g., one reviewer firing five variants of "module is over-coupled" attached to five different files). Cross-reviewer dedup (Step 2) does not catch this — fingerprints differ even when the underlying concern is the same. Surfacing all N variants over-weights one reviewer's perspective relative to the others and inflates the finding list with near-duplicate signal.
@@ -238,6 +240,9 @@ Organize findings by what needs to happen, not by which agent found them:
 ### Advisory (FYI only)
 - **[Observation]** — `file:line` — [context, no action needed]
 
+### Unresolved — protected subjects (human owner)
+- **[Finding]** — `file:line` — [auth | injection | data-loss | secrets] — reported by [agent]; not confirmed, not refuted: [what couldn't be traced]. Owner: a human reviewer decides.
+
 ### Discarded (false positives)
 - **[Finding]** — reported by [agent], discarded because [brief reason]
 
@@ -289,9 +294,10 @@ When a finding's evidence quotes user-supplied content, scraped pages, log excer
 - Group fixes by file when possible — makes resolution easier
 - The recommended fix order should account for dependencies between fixes (chain roots first; dependents follow if root is Applied; dependents skipped if root is Deferred/Skipped)
 - Never lose a unique *verified* finding — even if only one agent caught it, it may be the most important issue. But if spot-checking shows the finding is wrong, discard it rather than passing noise downstream
+- Never discard a protected-subject finding (auth, injection, data loss, secrets) without a cited refutation; unrefuted ones go to Unresolved with a human owner
 - Credit the discovering agent(s) for each finding so the user knows which reviewers are most valuable
 - Tag each finding with anchored confidence score (0/25/50/75/100) — not continuous values
-- Apply per-severity confidence gates: P1 >= 50, P2 >= 65, P3 >= 75. Findings below gate go to "Filtered" section
+- Apply per-severity confidence gates: P1 >= 50, P2 >= 65, P3 >= 75. Findings below gate go to "Filtered" section — except unresolved protected-subject findings, which always go to Unresolved
 - Validate remediation tiers: safe_auto touching auth/payments/data → promote to gated_auto
 - Present tier decisions BEFORE main findings — they may affect how other findings are resolved
 - Read artifact files at `.claude/review-runs/{run_id}/{reviewer}.json` for detail-tier fields (`why_it_matters`, `evidence`) when surfaces need them — do NOT carry these in your own context budget

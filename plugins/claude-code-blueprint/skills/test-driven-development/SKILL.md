@@ -173,14 +173,16 @@ Don't add features, refactor other code, or "improve" beyond the test.
 npm test path/to/test.test.ts
 ```
 
+Then run the project's whole suite (the test command in `docs/context/CONVENTIONS.md`). One file passing is not green; the project suite defines green.
+
 Confirm:
 - Test passes
-- Other tests still pass
+- The whole suite passes, and every failure is reported by name, including failures you didn't cause
 - Output pristine (no errors, warnings)
 
 **Test fails?** Fix code, not test.
 
-**Other tests fail?** Fix now.
+**Other tests fail?** Fix now if your change caused them. If it didn't, name them in your report instead of calling the run green.
 
 ### REFACTOR - Clean Up
 

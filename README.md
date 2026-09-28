@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="#how-does-this-compare">Compare</a> ·
-  <a href="#whats-new-in-v371--size-sweep-and-fixes">What's New</a> ·
+  <a href="#whats-new-in-v380--plans-as-decisions-and-opus-55-currency">What's New</a> ·
   <a href="#quick-start">Quick Start</a> ·
   <a href="#what-you-get">What You Get</a> ·
   <a href="#workflow">Workflow</a> ·
@@ -86,6 +86,21 @@ v3.4.0 and v3.5.0 were produced by a single **platform-sync cycle** — one init
 <p align="center">
   <img src="docs/images/platform-sync-cycle.png" alt="Platform-sync cycle — Audit (68 CLI versions) → Gate 1 → Adopt + verify (Part 1, v3.4.0) → Delta sweep (Part 2, 4 repos) → Gate 2 → Import + close (v3.5.0), codified into the /cli-watch + /repo-watch watchers" width="90%">
 </p>
+
+### What's New in v3.8.0 — Plans as Decisions and Opus 5.5 Currency
+
+A combined watcher cycle. `/repo-watch` compared six watched repositories against their September baselines and grafted twenty-five ideas onto existing skills and agents; `/cli-watch` re-verified every platform claim against Claude Code 2.1.283. No new skills, agents, or hooks. Verdicts, provenance, and deferrals: `docs/learnings/2026-09-27-cli-and-repo-watch-verdicts.md`.
+
+- **Plans record decisions, not code** — `writing-plans` names the test and its assertions, the signature, and the spec values, with a code body only for an algorithm those leave open. Plans end with a Review Focus list pinned to tests, and the handoff recommends one execution option with its reason and cost. The user reviews the saved plan before execution, because approving the design approved only the scope. `plan-checker` and `deepen-plan` no longer push code back into plans.
+- **Security findings can't vanish silently** — `findings-validator` rejects an auth, injection, data-loss, or secrets finding only with a quoted refutation; a finding it can neither confirm nor refute is kept as advisory with a human owner.
+- **Sharper reviews** — review ranges start at the merge base and refuse empty ranges; untracked files are in scope; a raised maximum counts as a loosened threshold; spec-silent behavior is judged by what a reasonable user expects, and invented rules go to a human; `test-coverage-reviewer` asks whether a test would still pass with the code broken; `security-sentinel` adds SameSite cookies, signature audits, data retention, LLM tool-argument validation, and flag bypass; review depth follows consequence, not size.
+- **Green means the whole suite** — TDD, the SDD implementer, and verification require the project's test command, with every failure named; `executing-plans` runs the final whole-branch review its cleanup step already referred to.
+- **Loops that stay honest** — ship-pipeline routes bugs and questions away from shipping and re-verifies a plan it finds on disk; an advisory pre-flight danger scan runs before autonomous runs; completion reports state the run's numbers; declined review findings aren't raised again; `pr-workflow` checks the pushed HEAD and refuses to merge onto a red main; `team-lead` judges progress by artifacts.
+- **Lighter knowledge capture** — `knowledge-compounding` records only what the code and tests don't already preserve, with an optional `retire_when:`; session-wrap ends on an action the next session can start; context-checkpoint has a keep-and-cut order.
+- **Opus 5.5 currency** — Opus 5.5 is the default model on every plan and starts sessions at `medium` effort. A new "Session model and effort: your choice" section explains how agent tiers interact with the session level and how to set both; the blueprint doesn't prescribe a level. Workflow facts (under 10 agents, adjustable concurrency) and `/goal` retry notes are refreshed, and `writing-skills` points at `claude plugin eval`.
+- **Two new structure checks** — the collision gate fails on frontmatter that isn't valid YAML and on `references/` pointers, links, or `§` headings that don't resolve.
+
+**Evaluated and deferred:** a `claude plugin eval` pilot suite, `/doctor prompt-audit` sweep, `omitClaudeMd` on validators, skill-level `effort:` (it would override a higher level you chose), the size-headroom listing, the PR babysit loop, and every multi-host portability item (routed to a separate brainstorm).
 
 ### What's New in v3.7.1 — Size Sweep and Fixes
 
@@ -498,7 +513,7 @@ Every feature follows this flow:
 
 **3. Design** — Brainstorm options with `/brainstorming`. Present tradeoffs. Get human approval before any code is written.
 
-**4. Plan** — Break approved design into bite-sized tasks (2-5 min each) with exact file paths, code snippets, and test strategies. After the plan is written, choose: deepen with research (`/deepen-plan`), execute sequentially (subagent-driven), execute in parallel (`/orchestrate`), or execute with Agent Teams (`/team-execution`).
+**4. Plan** — Break the approved design into tasks that record decisions, not code: exact file paths, each test and what it asserts, signatures, and a Review Focus list of spec-implied edge cases. The user reviews the saved plan before it runs. After the plan is written, choose: deepen with research (`/deepen-plan`), execute sequentially (subagent-driven), execute in parallel (`/orchestrate`), or execute with Agent Teams (`/team-execution`).
 
 **5. Build** — Execute using TDD (red-green-refactor). Verify with evidence. Dispatch code review agents.
 
@@ -583,7 +598,7 @@ Beyond the workflow gates above, two exact-match gates run in CI to keep the rep
 </p>
 
 - **Drift gate** (`scripts/check-drift.sh`) — derives skill/agent/hook counts from the filesystem and checks them against every manifest, doc, installer, and **website widget**, plus exact version-string equality. It retired the manual count sweeps that drifted three times.
-- **Skill-collision gate** (`scripts/check-skill-collisions.py`) — computes pairwise description overlap (Jaccard) across all skills and fails on near-duplicates (warn ≥50%, fail ≥75%) that would route ambiguously — a failure a single-skill trigger test can't catch.
+- **Skill-collision gate** (`scripts/check-skill-collisions.py`) — computes pairwise description overlap (Jaccard) across all skills and fails on near-duplicates (warn ≥50%, fail ≥75%) that would route ambiguously — a failure a single-skill trigger test can't catch. The same script fails on skill structure: skill or agent frontmatter that isn't valid YAML, and, inside a skill, a `references/` pointer, a relative link, or a `§ heading` cited after a pointer that doesn't resolve.
 
 A third CI job validates the plugin and marketplace manifests with the CLI's own validator (`claude plugin validate --strict`).
 
@@ -929,11 +944,25 @@ The shipped default stays `model: inherit` on every agent, so agents ride whatev
 |-------------|------------------------|
 | `low` | Haiku 4.5 |
 | `medium` | Sonnet 5 |
-| `high` | Opus 5 / Fable 5.1 |
+| `high` | Opus 5.5 / Fable 5.1 |
 
 This mapping is documentation, not shipped configuration — leaving `model: inherit` in place is the supported default.
 
 Effort tiers are honored on every model from CLI 2.1.267. Earlier CLIs silently ignored per-agent `effort:` whenever the session ran Opus 4.7, Opus 4.8, or Fable 5 — which affects `model: inherit` agents on those sessions, so a CLI upgrade, not a model pin, is what restores the tiers. The `maxEffortLevel` setting caps every tier from above. To give subagents a different default model without editing agent files, set `CLAUDE_CODE_SUBAGENT_MODEL`; an agent's own `model:` line and a per-spawn model still take precedence over it, and `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` overrides all of them.
+
+#### Session model and effort: your choice
+
+The blueprint never picks a model or an effort level for you, in Claude Code or in any other tool. Agents set a tier in frontmatter, which overrides the session level (still capped by `maxEffortLevel`), so all 29 agents run at their tier whatever the session uses. Skills set no `effort:`, so a main-session pipeline (`/ship-pipeline`, `/build-pipeline`, `/lfg`-style runs) reasons at whatever level your session runs. A skill-level `effort:` would override a higher level you chose, which is why skills don't carry one.
+
+Opus 5.5 is the default model on every plan from CLI 2.1.280, and it **starts sessions at `medium` effort** (other current models start at `high`). An `effortLevel` saved in user settings before per-model `/effort` does not carry over to Opus 5.5. From 2.1.280, Opus 4.7, Opus 4.8, and Fable 5 no longer hold their launch default over the level set by settings, `--settings`, or `-p`. Some reference points:
+
+| Session setting | Fits |
+|-----------------|------|
+| Opus 5.5 at `high` | A solid default for pipeline runs |
+| Opus 5.5 at `xhigh`, or Fable 5.1 at `high` | More careful on hard or high-stakes work; slower and costlier |
+| Opus 5.5 at `medium` (its starting level) or lower | Fine for small tasks, quick fixes, and questions |
+
+Set them in a session with `/model` and `/effort`, or at launch with `claude --model <model> --effort <level>`. `scripts/ship.sh` passes no `--model` or `--effort` of its own, so its runs use your saved defaults.
 
 ### Platform currency (2026-07 sync, refreshed 2026-09)
 
@@ -948,10 +977,10 @@ The blueprint tracks new Claude Code platform features and adopts them as **opt-
 | **Effort tiers** (`effort: low/medium/high`) | Shipped on every bundled agent (see "Effort tiers & opt-in model mapping" above) | None — an unrecognized key is ignored by older CLIs |
 | **`/goal`** (condition-based completion) | Opt-in complement to the ship loop's Stop-hook guard | None; generally available in the CLI |
 | **Native `/loop` + ScheduleWakeup** | Add interval/scheduled reruns, but `/loop` is session-scoped and does **not** reset context, circuit-break, or detect degradation — so `autonomous-loop` keeps its own circuit breaker and degradation detection | None; complementary, not a replacement |
-| **Workflow tool / `/workflows` / ultracode** | Opt-in for very large autonomous fan-outs — default size guideline `medium` (under 15 agents), runtime caps of 16 concurrent agents and 1,000 per run, no mid-run user input; wave orchestration stays the ungated, portable default | Available on all paid plans, the API, and Bedrock/Vertex/Foundry (Pro enables it in `/config`); runs in `claude -p`/SDK only behind a `Workflow` allow rule, auto or bypass mode, or a PreToolUse hook; disable-able per user (`disableWorkflows` / `CLAUDE_CODE_DISABLE_WORKFLOWS=1`) and org-wide |
-| **Fast mode** | Opt-in only | Gated: Opus 5 and Opus 4.8 only; research preview, pricing subject to change |
-| **Claude 5 lineup** (Opus 5, Sonnet 5, Fable 5.1, Haiku 4.5) | Every agent ships `model: inherit`, so agents ride the session model automatically — no per-agent pins. Opus 5 is the default on Max / Team Premium / Enterprise / API, Sonnet 5 on Pro / Team Standard; Fable 5.1 answers to the `fable` alias | None; opt-in model mapping documented above |
-| **Per-session caps** | Large swarms and research sweeps stay within the native limits — there is no per-session subagent total since CLI 2.1.224, only a concurrency cap and a nesting depth | 20 concurrent subagents by default (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`), nested spawns to depth 3 (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`), 200 WebSearches per session unchanged |
+| **Workflow tool / `/workflows` / ultracode** | Opt-in for very large autonomous fan-outs — default size guideline `medium` (under 10 agents; Pro defaults to `small`, under 5), 16 concurrent agents by default (adjustable 1–256 via `CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS`) and 1,000 per run, runs pause and resume across a usage-limit reset in interactive subscription sessions (not `-p`), no mid-run user input; wave orchestration stays the ungated, portable default | Available on all paid plans, the API, and Bedrock/Vertex/Foundry (Pro enables it in `/config`); runs in `claude -p`/SDK only behind a `Workflow` allow rule, auto or bypass mode, or a PreToolUse hook; disable-able per user (`disableWorkflows` / `CLAUDE_CODE_DISABLE_WORKFLOWS=1`) and org-wide |
+| **Fast mode** | Opt-in only | Gated: Opus 5.5 (the default), Opus 5, and Opus 4.8 only; research preview, pricing subject to change |
+| **Claude 5 lineup** (Opus 5.5, Opus 5, Sonnet 5, Fable 5.1, Haiku 4.5) | Every agent ships `model: inherit`, so agents ride the session model automatically — no per-agent pins. Opus 5.5 (`claude-opus-5-5`, CLI 2.1.280+) is the default on every plan, Pro and Team Standard included, and starts sessions at `medium` effort (see "Session model and effort" above); Fable 5.1 answers to the `fable` alias | None; opt-in model mapping documented above |
+| **Per-session caps** | Large swarms and research sweeps stay within the native limits — there is no per-session subagent total since CLI 2.1.224, only a concurrency cap and a nesting depth (ultracode sessions are exempt from the concurrency cap) | 20 concurrent subagents by default (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`), nested spawns to depth 3 (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`), 200 WebSearches per session unchanged |
 | **Native injection hardening** (Agent tool, CLI v2.1.210) | Reinforces — does not replace — the template's custom read/prompt scanners and `<<DATA_START>>`/`<<DATA_END>>` markers, which still cover the main-session Write/Edit and Read surfaces native hardening does not observe | None; defense-in-depth |
 | **Bundled `/deep-research` workflow** | Claude Code bundles a web-search fan-out workflow of that name (manual-invoke only); the blueprint's `deep-research` skill is the five-agent research swarm. When the slash menu shows both, `/claude-code-blueprint:deep-research` is the swarm | None; custom skills override bundled skills of the same name — precedence over the bundled workflow is unverified |
 

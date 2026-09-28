@@ -51,7 +51,8 @@ git diff {BASE_SHA}..{HEAD_SHA}
 **Requirements:**
 - All plan requirements met?
 - Implementation matches spec?
-- No scope creep?
+- Where the spec is silent, does the code do what a reasonable user would expect? (A reachable input is a finding, not speculation.)
+- No scope creep? A user-visible rule the plan never asked for goes under Minor for a human to decide.
 - Breaking changes documented?
 
 **Production Readiness:**
@@ -84,6 +85,9 @@ git diff {BASE_SHA}..{HEAD_SHA}
 
 ### Recommendations
 [Improvements for code quality, architecture, or process]
+
+### Declined to judge (final whole-branch review only)
+[What you couldn't assess and why, one line each, so the controller rules on it]
 
 ### Assessment
 

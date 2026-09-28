@@ -70,6 +70,13 @@ Flag:
 - Tests named "should work" or "test 1" (unclear intent)
 - Newly skipped tests (`.skip`, `xit`, `it.todo`, `@pytest.mark.skip` introduced by the diff) — a skip with no tracked reason is coverage lost, not deferred
 
+### 6. Falsifiability
+
+For each test the diff adds or changes:
+- **Would it still pass with the code broken?** Name one plausible break (off-by-one, wrong branch taken, a dropped call, the error swallowed) and check that the test fails on it. If no break you can name makes it fail, the test proves nothing.
+- **Test-only production seams:** production code the diff adds only so a test can reach it (a `for_testing` flag, a public setter, an `if TEST` branch, an export used by tests alone). Production behavior must not fork on being under test; test through the real interface, or inject the dependency.
+- **Wrong-guard negative tests:** a rejection test that passes because a different guard fires than the one it names. A "rejects expired token" test fed a malformed token is rejected by the parser before expiry is checked. The assertion must pin which guard fired (error code, message, or reason field).
+
 ## Output Format
 
 ```markdown
@@ -133,6 +140,6 @@ When uncertain between tiers, choose the more conservative (higher-touch) tier.
 
 - Focus on behavioral coverage, not line coverage
 - A well-tested function with 70% line coverage is better than a poorly-tested one with 100%
-- Flag tests that would still pass if the implementation was deleted (testing mocks only)
+- Flag tests that would still pass if the implementation was deleted (testing mocks only), or with it broken in a way you can name (section 6)
 - Recommend the most impactful missing tests first (error paths and edge cases beat happy-path variants)
 - Don't recommend tests for trivial getters/setters or framework boilerplate
