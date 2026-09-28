@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ship.sh — External loop for /ship pipeline (Ralph-style fresh context per iteration)
+# ship.sh — External loop for the ab-ship-pipeline skill (Ralph-style fresh context per iteration)
 #
 # Spawns a fresh Claude process per iteration, giving each run a clean 200K context.
 # State persists via git (commits, branches), plan files, and progress.txt.
@@ -7,7 +7,7 @@
 #
 # Usage: ./scripts/ship.sh "add user authentication with JWT" [--max N] [--swarm] [--iterations N]
 #
-# All flags after the feature description are forwarded to /ship.
+# All flags after the feature description are forwarded to /ab-ship-pipeline.
 
 set -euo pipefail
 
@@ -57,13 +57,13 @@ detect_stage() {
     echo "Shipping"
   elif echo "$lines" | grep -qi "Stage 6\|Compound\|knowledge\|/compound"; then
     echo "Capturing"
-  elif echo "$lines" | grep -qi "Stage 5\|iterative.refinement\|review-swarm\|findings-synth\|P1=\|P2="; then
+  elif echo "$lines" | grep -qi "Stage 5\|iterative.refinement\|ab-review-swarm\|findings-synth\|P1=\|P2="; then
     echo "Reviewing"
   elif echo "$lines" | grep -qi "Stage 4\|Execute\|orchestrate\|team-lead\|Wave [0-9]\|/team\|implement"; then
     echo "Executing"
   elif echo "$lines" | grep -qi "Stage 3\|Deepen\|enrich\|/deepen"; then
     echo "Deepening"
-  elif echo "$lines" | grep -qi "Stage 2\|Plan\|plan-checker\|writing-plans\|docs/plans"; then
+  elif echo "$lines" | grep -qi "Stage 2\|Plan\|plan-checker\|ab-writing-plans\|docs/plans"; then
     echo "Planning"
   elif echo "$lines" | grep -qi "Stage 1\|Requirements\|DECISIONS\|CONVENTIONS"; then
     echo "Requirements"
@@ -191,8 +191,8 @@ if [[ -z "$FEATURE" ]]; then
   exit 1
 fi
 
-# Build the /ship command with all flags
-SHIP_CMD="/ship ${FEATURE} --external ${SHIP_FLAGS[*]:-}"
+# Build the /ab-ship-pipeline command with all flags
+SHIP_CMD="/ab-ship-pipeline ${FEATURE} --external ${SHIP_FLAGS[*]:-}"
 
 # ──────────────────────────────────────────────
 # Pre-flight checks

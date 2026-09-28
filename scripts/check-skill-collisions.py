@@ -17,7 +17,7 @@ separates two skills, not the template they share.
 
 The same run also prints a warn-only size report: each SKILL.md's body (the
 file content after its frontmatter — the part that loads into every triggered
-conversation) is measured against the 8,192-byte budget from writing-skills,
+conversation) is measured against the 8,192-byte budget from ab-writing-skills,
 with a second, more urgent tier at 16,384 bytes. The size report never
 affects the exit code — it is informational, the same as the WARN tier above.
 
@@ -47,7 +47,7 @@ import glob
 WARN = 0.50
 FAIL = 0.75
 
-# SKILL.md body size budget (bytes after frontmatter), from writing-skills'
+# SKILL.md body size budget (bytes after frontmatter), from ab-writing-skills'
 # Token Efficiency section. Both tiers are warn-only — see print_size_report.
 SIZE_WARN = 8192
 SIZE_WARN_URGENT = 16384

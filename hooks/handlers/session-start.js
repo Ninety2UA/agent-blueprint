@@ -56,7 +56,7 @@ if (fs.existsSync(backlogFile)) {
   } catch (e) { /* ignore */ }
 }
 
-// Check for locked decisions from /discuss
+// Check for locked decisions from /ab-discuss
 const lockedFile = path.join(cwd, 'docs', 'context', 'DECISIONS.md');
 if (fs.existsSync(lockedFile)) {
   lines.push('DECISIONS.md exists — locked decisions that MUST be honored during planning.');
@@ -110,7 +110,7 @@ try {
 } catch (e) { /* ignore — non-critical */ }
 
 // Remind about skills
-lines.push('Skills: /project-start · /ideation · /brainstorming · /build-pipeline · /ship-pipeline · /quick-fix · /discuss · /requesting-code-review · /review-swarm · /deep-research · /knowledge-compounding · /orchestrate · /team-execution · /project-status · /systematic-debugging · /backlog-triage · /session-wrap · /plugin-update');
+lines.push('Skills: /ab-project-start · /ab-ideation · /ab-brainstorming · /ab-build-pipeline · /ab-ship-pipeline · /ab-quick-fix · /ab-discuss · /ab-requesting-code-review · /ab-review-swarm · /ab-deep-research · /ab-knowledge-compounding · /ab-orchestrate · /ab-team-execution · /ab-project-status · /ab-systematic-debugging · /ab-backlog-triage · /ab-session-wrap · /ab-plugin-update');
 
 if (lines.length > 0) {
   console.log(lines.join('\n'));

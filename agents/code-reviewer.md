@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: "Use this agent when a major project step has been completed and needs to be reviewed against the original plan and coding standards. Dispatched by /review-swarm and /build-pipeline Stage 5."
+description: "Use this agent when a major project step has been completed and needs to be reviewed against the original plan and coding standards. Dispatched by `ab-review-swarm` and `ab-build-pipeline` Stage 5."
 model: inherit
 effort: high
 tools: [Read, Glob, Grep, Bash]

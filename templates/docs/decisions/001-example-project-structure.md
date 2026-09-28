@@ -29,14 +29,14 @@ The key tension: too little structure means the AI reinvents conventions every s
 
 ## Decision
 
-Option B — use the full project template. The initial overhead is a one-time cost (~15 min with `/project-start`), while the benefits compound across every session. Quality gates prevent regressions. Session continuity eliminates re-orientation time.
+Option B — use the full project template. The initial overhead is a one-time cost (~15 min with `/ab-project-start`), while the benefits compound across every session. Quality gates prevent regressions. Session continuity eliminates re-orientation time.
 
 ## Consequences
 
 ### Positive
 - Every session starts with full context from the previous one
 - Quality gates catch issues before they reach production
-- Documentation stays up-to-date via `/session-wrap`
+- Documentation stays up-to-date via `/ab-session-wrap`
 
 ### Negative
 - New team members need to learn the command/skill system
@@ -44,10 +44,10 @@ Option B — use the full project template. The initial overhead is a one-time c
 
 ### Risks
 - Risk of "template fatigue" — mitigated by making most structure optional
-- Risk of outdated docs — mitigated by session-wrap skill enforcing updates
+- Risk of outdated docs — mitigated by ab-session-wrap skill enforcing updates
 
 ## Follow-Up Actions
 
-- [x] Run `/project-start` to configure project-specific values
+- [x] Run `/ab-project-start` to configure project-specific values
 - [ ] Review and customize quality gate strictness in skill files
 - [ ] Add project-specific agents if needed

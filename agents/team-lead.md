@@ -1,6 +1,6 @@
 ---
 name: team-lead
-description: Dedicated orchestrator agent — delegates execution to workers (wave subagents or team teammates), monitors progress, reviews combined output, iterates on findings, and signs off when quality is verified. Dispatched by /orchestrate and /team-execution with a fresh 200K context dedicated entirely to coordination.
+description: Dedicated orchestrator agent — delegates execution to workers (wave subagents or team teammates), monitors progress, reviews combined output, iterates on findings, and signs off when quality is verified. Dispatched by `ab-orchestrate` and `ab-team-execution` with a fresh 200K context dedicated entirely to coordination.
 model: inherit
 effort: high
 tools: [Read, Glob, Grep, Bash, Agent]
@@ -115,7 +115,7 @@ If in supervised mode, wait for user approval. If autonomous, proceed immediatel
 
 ### Wave Mode
 
-Follow the wave-orchestration skill:
+Follow the ab-wave-orchestration skill:
 
 For each wave:
 1. Dispatch one subagent per task using the Agent tool with `isolation: worktree`
@@ -132,7 +132,7 @@ For each wave:
 
 ### Team Mode
 
-Follow the agent-teams skill:
+Follow the ab-agent-teams skill:
 
 1. Create the team
 2. Spawn teammates with detailed prompts (responsibility, file ownership, conventions, coordination instructions)
@@ -164,7 +164,7 @@ Judge progress by artifacts, not the clock. A worker whose commits or expected f
 
 ### Worker Failure Protocol
 
-A `NEEDS_INPUT` return is a decision, not a failure — route it, never re-dispatch with a narrower scope. Supervised: put the worker's options to the user (AskUserQuestion Format). Under ship-pipeline: take the conservative option and lock it in `docs/context/DECISIONS.md` (ship-pipeline Stage 1's locked-decision rule). Either way, send the decision back to the worker — message it by name, or re-dispatch it with the decision in its prompt if it has gone. A `BLOCKED` return that describes a sub-task the worker wanted a subagent for is yours to decide: dispatch it as its own task or fold it into another.
+A `NEEDS_INPUT` return is a decision, not a failure — route it, never re-dispatch with a narrower scope. Supervised: put the worker's options to the user (AskUserQuestion Format). Under ab-ship-pipeline: take the conservative option and lock it in `docs/context/DECISIONS.md` (ab-ship-pipeline Stage 1's locked-decision rule). Either way, send the decision back to the worker — message it by name, or re-dispatch it with the decision in its prompt if it has gone. A `BLOCKED` return that describes a sub-task the worker wanted a subagent for is yours to decide: dispatch it as its own task or fold it into another.
 
 When a worker returns without completing its task (incomplete output, wrong files modified, or returns errors), reconcile before classifying: check `git log` on its branch or worktree and the files the task expected. Work that landed despite a garbled or missing report counts as done once its verification passes; only what is actually missing is a failure.
 
@@ -209,11 +209,11 @@ If tests/build/lint fail:
 
 **Choose review strategy based on iteration parameters:**
 - **iterations = 1 (default):** Single-pass review (4a–4d below)
-- **iterations > 1:** Use the iterative-refinement skill instead. Pass `max_iterations` and `convergence` mode from the calling command. The skill handles the review→fix→review loop internally. Skip to 4d (Sign-Off) when it returns.
+- **iterations > 1:** Use the ab-iterative-refinement skill instead. Pass `max_iterations` and `convergence` mode from the calling command. The skill handles the review→fix→review loop internally. Skip to 4d (Sign-Off) when it returns.
 
 ### 4a. Dispatch Review Swarm (single-pass mode)
 
-Run `/review-swarm` on all changes (`git diff main...HEAD`). This dispatches all configured review agents in parallel and synthesizes findings via findings-synthesizer.
+Run `ab-review-swarm` on all changes (`git diff main...HEAD`). This dispatches all configured review agents in parallel and synthesizes findings via findings-synthesizer.
 
 ### 4b. Evaluate Findings
 
@@ -228,9 +228,9 @@ If P1 or P2 findings exist:
 
 ```
 for iteration in 1..3:
-    Dispatch fix agents (resolve-in-parallel for independent findings)
+    Dispatch fix agents (ab-resolve-in-parallel for independent findings)
     Re-run tests + build to verify fixes
-    Re-dispatch review-swarm
+    Re-dispatch ab-review-swarm
     if P1 == 0: break
 ```
 
@@ -336,5 +336,5 @@ This is a defense-in-depth measure. Read-injection scanner and prompt-guard catc
 - **NEVER sign off with failing tests.** If tests fail, fix or escalate — never ignore.
 - **Monitor actively.** Don't dispatch workers and go silent. Check progress, intervene on blockers.
 - **Preserve worker autonomy.** Give context and constraints, not step-by-step instructions. Let workers make implementation decisions within their scope.
-- **NEVER let a worker spawn subagents.** Every dispatch prompt carries two worker rules: decide within the decision boundary in executing-plans and return `NEEDS_INPUT` with the options when it does not allow deciding; never spawn a subagent — a sub-task that seems to need one is returned as `BLOCKED` describing it, for you to decide.
+- **NEVER let a worker spawn subagents.** Every dispatch prompt carries two worker rules: decide within the decision boundary in ab-executing-plans and return `NEEDS_INPUT` with the options when it does not allow deciding; never spawn a subagent — a sub-task that seems to need one is returned as `BLOCKED` describing it, for you to decide.
 - **Report honestly.** If quality isn't where it should be, say so. Don't paper over issues.

@@ -8,7 +8,7 @@ Quality over speed. Small steps compound. The patterns you establish will be cop
 
 ## Session Continuity
 
-<!-- Updated by /session-wrap. For full state: read docs/context/STATUS.md -->
+<!-- Updated by /ab-session-wrap. For full state: read docs/context/STATUS.md -->
 
 **Last session:** Not yet initialized
 
@@ -16,13 +16,13 @@ Quality over speed. Small steps compound. The patterns you establish will be cop
 - Project scaffolded with Agent Blueprint plugin
 
 **What's remaining:**
-- Run `/project-start` to configure conventions, goals, and status
+- Run `/ab-project-start` to configure conventions, goals, and status
 
-**Start here:** Run `/project-start` to set up your project.
+**Start here:** Run `/ab-project-start` to set up your project.
 
 **Current state of the code:**
-- Build: not configured (run `/project-start`)
-- Tests: not configured (run `/project-start`)
+- Build: not configured (run `/ab-project-start`)
+- Tests: not configured (run `/ab-project-start`)
 - Uncommitted changes: none
 
 ## Skills
@@ -31,19 +31,19 @@ No build step (template repo). Key skills for installed projects:
 
 | Skill | Purpose |
 |-------|---------|
-| `/build-pipeline` | Supervised pipeline — checkpoints between every stage |
-| `/ship-pipeline` | Autonomous pipeline — zero checkpoints, fire-and-forget |
-| `/quick-fix` | Fast-track small changes (< 3 files) with TDD |
-| `/ideation` | Generate and rank improvement ideas |
-| `/brainstorming` | Brainstorm before building |
-| `/review-swarm` | Multi-agent parallel code review |
-| `/deep-research` | Multi-agent parallel research |
-| `/orchestrate` | Wave-based parallel execution (dependency-ordered) |
-| `/team-execution` | Collaborative agent team (shared task list + messaging) |
+| `/ab-build-pipeline` | Supervised pipeline — checkpoints between every stage |
+| `/ab-ship-pipeline` | Autonomous pipeline — zero checkpoints, fire-and-forget |
+| `/ab-quick-fix` | Fast-track small changes (< 3 files) with TDD |
+| `/ab-ideation` | Generate and rank improvement ideas |
+| `/ab-brainstorming` | Brainstorm before building |
+| `/ab-review-swarm` | Multi-agent parallel code review |
+| `/ab-deep-research` | Multi-agent parallel research |
+| `/ab-orchestrate` | Wave-based parallel execution (dependency-ordered) |
+| `/ab-team-execution` | Collaborative agent team (shared task list + messaging) |
 | `./scripts/ship.sh "feature"` | External loop — fresh context per iteration |
-| `/plugin-update` | Update plugin to latest version from GitHub |
+| `/ab-plugin-update` | Update plugin to latest version from GitHub |
 
-Run `/project-start` after install to configure `docs/context/CONVENTIONS.md` with actual lint/test/dev commands.
+Run `/ab-project-start` after install to configure `docs/context/CONVENTIONS.md` with actual lint/test/dev commands.
 
 ## Architecture
 
@@ -54,8 +54,8 @@ Run `/project-start` after install to configure `docs/context/CONVENTIONS.md` wi
 # Project-local (your project state)
 docs/context/        # GOALS.md, STATUS.md, CONVENTIONS.md, DECISIONS.md
 docs/plans/          # Implementation plans (YYYY-MM-DD-topic.md)
-docs/solutions/      # Institutional knowledge (created by /knowledge-compounding)
-docs/learnings/      # Key learnings and gotchas (updated by /session-wrap)
+docs/solutions/      # Institutional knowledge (created by /ab-knowledge-compounding)
+docs/learnings/      # Key learnings and gotchas (updated by /ab-session-wrap)
 docs/decisions/      # Architecture decision records (ADRs)
 docs/research/       # Research findings and exploration notes
 docs/specs/          # Feature specs and requirements
@@ -98,7 +98,7 @@ When executing a plan or working autonomously:
 
 ## Error Recovery
 
-- **Failed test:** Use systematic-debugging skill — gather evidence, form hypothesis, test it
+- **Failed test:** Use ab-systematic-debugging skill — gather evidence, form hypothesis, test it
 - **Merge conflict:** Read both sides, understand intent before resolving
 - **Broken build after dep update:** Pin previous version, add BACKLOG item
 - **Corrupted worktree:** Fresh worktree from main, cherry-pick completed commits
@@ -114,7 +114,7 @@ When executing a plan or working autonomously:
 For small, well-understood changes (< 3 files, obvious root cause):
 1. Write failing test → 2. Fix → 3. Verify → 4. Commit
 
-If touching 4+ files, adding new API, or changing data models → use full workflow (`/brainstorming` → `/build-pipeline`).
+If touching 4+ files, adding new API, or changing data models → use full workflow (`/ab-brainstorming` → `/ab-build-pipeline`).
 
 ## Code Quality
 
@@ -137,9 +137,9 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `style`, `perf`
 
 | Pipeline | Checkpoints | Review | Best For |
 |----------|-------------|--------|----------|
-| `/build-pipeline` | Between every stage | Single pass (or `--iterate N`) | Features needing human guidance |
-| `/ship-pipeline` | None (fully autonomous) | Iterative (default 3 cycles) | Well-defined features, fire-and-forget |
-| `/quick-fix` | None | None | Trivial changes (< 3 files) |
+| `/ab-build-pipeline` | Between every stage | Single pass (or `--iterate N`) | Features needing human guidance |
+| `/ab-ship-pipeline` | None (fully autonomous) | Iterative (default 3 cycles) | Well-defined features, fire-and-forget |
+| `/ab-quick-fix` | None | None | Trivial changes (< 3 files) |
 
 ## Context Loading Order
 
@@ -161,4 +161,4 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `style`, `perf`
 
 ## Key Learnings
 
-See `docs/learnings/LEARNINGS.md` for project-specific patterns, gotchas, and insights. Updated by `/session-wrap`.
+See `docs/learnings/LEARNINGS.md` for project-specific patterns, gotchas, and insights. Updated by `/ab-session-wrap`.

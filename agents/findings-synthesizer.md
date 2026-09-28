@@ -1,6 +1,6 @@
 ---
 name: findings-synthesizer
-description: "Synthesizes results from a review swarm — collects findings from multiple parallel reviewers, de-duplicates, prioritizes by severity (P1/P2/P3), and produces a single actionable report. Use after /review-swarm completes."
+description: "Synthesizes results from a review swarm — collects findings from multiple parallel reviewers, de-duplicates, prioritizes by severity (P1/P2/P3), and produces a single actionable report. Use after `ab-review-swarm` completes."
 model: inherit
 effort: high
 tools: [Read, Glob, Grep]
@@ -186,7 +186,7 @@ Review agents classify findings into remediation tiers. Group the surviving (pos
 
 Organize findings by what needs to happen, not by which agent found them:
 - **Decisions Required** (present tier) — listed first, each with options
-- **Auto-fixable** (safe_auto tier) — listed with count, applied without confirmation by iterative-refinement
+- **Auto-fixable** (safe_auto tier) — listed with count, applied without confirmation by ab-iterative-refinement
 - Changes to file X (group all gated_auto issues in that file together)
 - Changes to test suite
 - Architecture/design changes

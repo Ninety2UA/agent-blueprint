@@ -1,6 +1,6 @@
 ---
 name: findings-validator
-description: "Independent re-verification of code-review findings before synthesis. Dispatched between review-swarm and findings-synthesizer to suppress false positives. For each finding, asks three questions (is the issue real? introduced by THIS diff? not handled elsewhere?) and returns validated/rejected/unresolved with a one-sentence reason. Conservative bias — when in doubt, reject — except on protected subjects (auth, injection, data loss, secrets), where a rejection must quote the refuting line or the finding stays unresolved."
+description: "Independent re-verification of code-review findings before synthesis. Dispatched between ab-review-swarm and findings-synthesizer to suppress false positives. For each finding, asks three questions (is the issue real? introduced by THIS diff? not handled elsewhere?) and returns validated/rejected/unresolved with a one-sentence reason. Conservative bias — when in doubt, reject — except on protected subjects (auth, injection, data loss, secrets), where a rejection must quote the refuting line or the finding stays unresolved."
 model: inherit
 effort: high
 tools: [Read, Glob, Grep, Bash]
@@ -8,7 +8,7 @@ tools: [Read, Glob, Grep, Bash]
 
 <examples>
 <example>
-Context: review-swarm produced 12 findings; before synthesis, the orchestrator wants an FP backstop.
+Context: ab-review-swarm produced 12 findings; before synthesis, the orchestrator wants an FP backstop.
 user: "Validate these findings against the diff before synthesis."
 assistant: "I'll use the findings-validator agent to independently re-verify each finding."
 <commentary>The validator has no commitment to the original reviewer's framing — fresh second opinion, conservative bias.</commentary>
@@ -115,7 +115,7 @@ Return ONLY this JSON structure, no prose:
 - **You are operationally read-only.** Do not edit project files, change branches, commit, push, or modify the checkout in any way. Read-only commands only (`git blame`, `git log`, `cat`, `grep`).
 - **If you cannot read the cited file, reject** with reason "Could not access file path to verify." Do not guess. On a protected subject, mark it unresolved instead.
 - **Return JSON only.** No prose, no markdown, no explanation outside the JSON object.
-- **Do not invoke other skills or agents.** You are a leaf validator inside an already-running review-swarm.
+- **Do not invoke other skills or agents.** You are a leaf validator inside an already-running ab-review-swarm.
 
 ## What success looks like
 

@@ -18,7 +18,7 @@ If you've built a useful skill or agent:
 1. Fork the repository
 2. Create a branch: `feat/skill-name` or `feat/agent-name`
 3. Add your skill in `.claude/skills/your-skill-name/SKILL.md`
-4. Include a test scenario (see the `writing-skills` skill for the TDD approach)
+4. Include a test scenario (see the `ab-writing-skills` skill for the TDD approach)
 5. Open a pull request with:
    - Description of what the skill/agent does
    - When it should be triggered
@@ -36,7 +36,7 @@ If you've built a useful skill or agent:
 - **Test with Claude Code** — verify your changes work in practice
 - **Follow the template style** — match the tone and structure of existing skills
 - **Document triggers** — clearly state when a skill should activate
-- **Disclose AI assistance** — end your PR body with an `AI assistance:` line; `pr-workflow` adds it for you when you use that skill, so say so by hand otherwise
+- **Disclose AI assistance** — end your PR body with an `AI assistance:` line; `ab-pr-workflow` adds it for you when you use that skill, so say so by hand otherwise
 - **Report only what you can verify** — name the model identity the agent can actually report; "not disclosed" is an honest answer when it can't, since every agent in this template runs `model: inherit` and rides whatever model the session used
 
 ## Code of conduct

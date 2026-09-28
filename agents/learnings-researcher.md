@@ -1,6 +1,6 @@
 ---
 name: learnings-researcher
-description: "Searches project documentation for past solutions, patterns, decisions, and learnings relevant to the current task. Dispatched by /deep-research, /deepen-plan, and /build-pipeline Stage 3 (planning)."
+description: "Searches project documentation for past solutions, patterns, decisions, and learnings relevant to the current task. Dispatched by `ab-deep-research`, `ab-deepen-plan`, and `ab-build-pipeline` Stage 3 (planning)."
 model: inherit
 effort: medium
 tools: [Read, Glob, Grep]
@@ -18,7 +18,7 @@ Search the project's institutional memory to find solutions, patterns, decisions
 
 1. **CLAUDE.md Key Learnings section** — Dated institutional memory entries
 2. **docs/decisions/** — Architecture Decision Records (ADRs)
-3. **docs/context/DECISIONS.md** — Locked decisions from /discuss sessions
+3. **docs/context/DECISIONS.md** — Locked decisions from `ab-discuss` sessions
 4. **docs/plans/** — Past implementation plans
 5. **docs/research/** — Domain research and analysis
 6. **docs/specs/** — Feature specifications

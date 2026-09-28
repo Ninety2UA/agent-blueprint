@@ -3,7 +3,7 @@
 # Customize which agents are active for this project's tech stack.
 # This file is gitignored — each developer can have their own config.
 
-# Review agents dispatched by /review-swarm
+# Review agents dispatched by /ab-review-swarm
 # Comment out agents that aren't relevant to your stack.
 review-agents:
   # Always active (language-agnostic)
@@ -21,8 +21,8 @@ review-agents:
   # - schema-drift-detector      # Uncomment for projects with ORM schemas
 
 # Specialized agents (auto-dispatched by pipelines — not user-configurable)
-# These agents are used internally by /build-pipeline, /ship-pipeline, /orchestrate, and /team-execution:
-#   - team-lead               # Orchestrates /orchestrate and /team-execution workflows
+# These agents are used internally by /ab-build-pipeline, /ab-ship-pipeline, /ab-orchestrate, and /ab-team-execution:
+#   - team-lead               # Orchestrates /ab-orchestrate and /ab-team-execution workflows
 #   - plan-checker             # Verifies plans are achievable before execution
 #   - integration-verifier     # Verifies tasks work together after each wave
 #   - deployment-verifier      # Pre-deployment verification (8 areas)
@@ -34,7 +34,7 @@ review-agents:
 #   - codebase-mapper          # Full codebase structure analysis
 #   - integration-checker      # Cross-component integration checks
 
-# Research agents dispatched by /deep-research
+# Research agents dispatched by /ab-deep-research
 research-agents:
   - learnings-researcher
   - best-practices-researcher
@@ -46,9 +46,9 @@ research-agents:
 # Options: web-fullstack, api-backend, cli-tool, library, mobile, data-pipeline
 project-type: web-fullstack
 
-# Agent Teams configuration (experimental — /team-execution)
+# Agent Teams configuration (experimental — /ab-team-execution)
 # Requires CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1" in settings.json
-agent-teams:
+ab-agent-teams:
   enabled: false  # Set to true after enabling the experimental feature
   default-team-size: 3  # 3-5 recommended
   quality-gates:

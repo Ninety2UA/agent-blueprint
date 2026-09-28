@@ -8,7 +8,7 @@ Quality over speed. Small steps compound. The patterns you establish will be cop
 
 ## Session Continuity
 
-<!-- Updated by /session-wrap. Full history: git log + docs/learnings/ -->
+<!-- Updated by /ab-session-wrap. Full history: git log + docs/learnings/ -->
 
 **Last session:** 2026-09-28
 
@@ -32,19 +32,19 @@ No build step (template repo). Key skills for installed projects:
 
 | Skill | Purpose |
 |-------|---------|
-| `/build-pipeline` | Supervised pipeline — checkpoints between every stage |
-| `/ship-pipeline` | Autonomous pipeline — zero checkpoints, fire-and-forget |
-| `/quick-fix` | Fast-track small changes (< 3 files) with TDD |
-| `/ideation` | Generate and rank improvement ideas |
-| `/brainstorming` | Brainstorm before building |
-| `/review-swarm` | Multi-agent parallel code review |
-| `/deep-research` | Multi-agent parallel research |
-| `/orchestrate` | Wave-based parallel execution (dependency-ordered) |
-| `/team-execution` | Collaborative agent team (shared task list + messaging) |
+| `/ab-build-pipeline` | Supervised pipeline — checkpoints between every stage |
+| `/ab-ship-pipeline` | Autonomous pipeline — zero checkpoints, fire-and-forget |
+| `/ab-quick-fix` | Fast-track small changes (< 3 files) with TDD |
+| `/ab-ideation` | Generate and rank improvement ideas |
+| `/ab-brainstorming` | Brainstorm before building |
+| `/ab-review-swarm` | Multi-agent parallel code review |
+| `/ab-deep-research` | Multi-agent parallel research |
+| `/ab-orchestrate` | Wave-based parallel execution (dependency-ordered) |
+| `/ab-team-execution` | Collaborative agent team (shared task list + messaging) |
 | `./scripts/ship.sh "feature"` | External loop — fresh context per iteration |
-| `/plugin-update` | Update plugin to latest version from GitHub |
+| `/ab-plugin-update` | Update plugin to latest version from GitHub |
 
-Run `/project-start` after install to configure `docs/context/CONVENTIONS.md` with actual lint/test/dev commands.
+Run `/ab-project-start` after install to configure `docs/context/CONVENTIONS.md` with actual lint/test/dev commands.
 
 ## Architecture
 
@@ -54,9 +54,9 @@ skills/                                  # 55 skills (slash commands + workflows
 agents/                                  # 29 specialized subagents
 hooks/hooks.json                         # Hook definitions (${CLAUDE_PLUGIN_ROOT})
 hooks/handlers/                          # Hook scripts (session-start, context-monitor, etc.)
-templates/                               # Project scaffolding source (scaffolded by install.sh / /project-start)
+templates/                               # Project scaffolding source (scaffolded by install.sh / /ab-project-start)
   CLAUDE.md, BACKLOG.md, docs/...        # Template files for new projects
-scripts/ship.sh                          # Ralph-style external loop for /ship-pipeline
+scripts/ship.sh                          # Ralph-style external loop for /ab-ship-pipeline
 scripts/check-drift.sh, check-skill-collisions.py  # CI gates
 AGENTS.md                                # These instructions (CLAUDE.md is a symlink to it)
 docs/images/                             # README images (repo-only)
@@ -99,7 +99,7 @@ When executing a plan or working autonomously:
 
 ## Error Recovery
 
-- **Failed test:** Use systematic-debugging skill — gather evidence, form hypothesis, test it
+- **Failed test:** Use ab-systematic-debugging skill — gather evidence, form hypothesis, test it
 - **Merge conflict:** Read both sides, understand intent before resolving
 - **Broken build after dep update:** Pin previous version, add BACKLOG item
 - **Corrupted worktree:** Fresh worktree from main, cherry-pick completed commits
@@ -115,7 +115,7 @@ When executing a plan or working autonomously:
 For small, well-understood changes (< 3 files, obvious root cause):
 1. Write failing test → 2. Fix → 3. Verify → 4. Commit
 
-If touching 4+ files, adding new API, or changing data models → use full workflow (`/brainstorming` → `/build-pipeline`).
+If touching 4+ files, adding new API, or changing data models → use full workflow (`/ab-brainstorming` → `/ab-build-pipeline`).
 
 ## Code Quality
 
@@ -138,9 +138,9 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `style`, `perf`
 
 | Pipeline | Checkpoints | Review | Best For |
 |----------|-------------|--------|----------|
-| `/build-pipeline` | Between every stage | Single pass (or `--iterate N`) | Features needing human guidance |
-| `/ship-pipeline` | None (fully autonomous) | Iterative (default 3 cycles) | Well-defined features, fire-and-forget |
-| `/quick-fix` | None | None | Trivial changes (< 3 files) |
+| `/ab-build-pipeline` | Between every stage | Single pass (or `--iterate N`) | Features needing human guidance |
+| `/ab-ship-pipeline` | None (fully autonomous) | Iterative (default 3 cycles) | Well-defined features, fire-and-forget |
+| `/ab-quick-fix` | None | None | Trivial changes (< 3 files) |
 
 ## Context Loading Order
 
@@ -165,4 +165,4 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `style`, `perf`
 
 ## Key Learnings
 
-See `docs/learnings/` for project-specific patterns, gotchas, and insights — one doc per import/analysis cycle (e.g. `pipeline-discipline.md`, `addy-osmani-agent-skills-imports.md`). Updated by `/session-wrap`.
+See `docs/learnings/` for project-specific patterns, gotchas, and insights — one doc per import/analysis cycle (e.g. `pipeline-discipline.md`, `addy-osmani-agent-skills-imports.md`). Updated by `/ab-session-wrap`.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ship-loop.sh — Stop hook for /ship-pipeline premature-exit prevention (inner guard)
+# ship-loop.sh — Stop hook for /ab-ship-pipeline premature-exit prevention (inner guard)
 #
 # Prevents Claude from giving up before the pipeline is done.
 # This is the INNER guard — it blocks premature exit within a single session.

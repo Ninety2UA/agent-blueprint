@@ -1,6 +1,6 @@
 # Key Learnings
 
-Project-specific patterns, gotchas, and insights discovered during development. Updated by `/session-wrap` at the end of each session.
+Project-specific patterns, gotchas, and insights discovered during development. Updated by `/ab-session-wrap` at the end of each session.
 
 **Rules:**
 - Only add learnings that will matter in future sessions

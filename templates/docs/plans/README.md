@@ -2,12 +2,12 @@
 
 Store implementation plans as: `YYYY-MM-DD-feature-name.md`
 
-Plans are created by the `writing-plans` skill after a brainstorming session produces an approved design. They record decisions, not code: enough for a capable engineer (or agent) new to this project to follow — exact file paths, each test and what it asserts, signatures, exact test commands.
+Plans are created by the `ab-writing-plans` skill after a brainstorming session produces an approved design. They record decisions, not code: enough for a capable engineer (or agent) new to this project to follow — exact file paths, each test and what it asserts, signatures, exact test commands.
 
 ## Lifecycle
 
-1. **Created** by `/brainstorming` → writing-plans skill
-2. **Executed** by executing-plans skill or subagent-driven-development skill
+1. **Created** by `/ab-brainstorming` → ab-writing-plans skill
+2. **Executed** by ab-executing-plans skill or ab-subagent-driven-development skill
 3. **Updated** during execution as tasks are completed or deviations occur
 4. **Completed** when all tasks are done — add completion note at top
 5. **Archived** — completed plans stay in this directory as history
