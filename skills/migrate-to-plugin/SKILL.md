@@ -15,7 +15,7 @@ Check that the blueprint plugin is available by verifying you can access bluepri
 
 ```
 STOP. The blueprint plugin must be installed first.
-Run: curl -fsSL https://raw.githubusercontent.com/Ninety2UA/claude-code-blueprint/main/install.sh | bash
+Run: curl -fsSL https://raw.githubusercontent.com/Ninety2UA/agent-blueprint/main/install.sh | bash
 Then re-run the migrate-to-plugin skill.
 ```
 

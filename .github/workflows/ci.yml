@@ -17,7 +17,7 @@ jobs:
         run: npm install -g markdownlint-cli
 
       - name: Lint markdown files
-        run: markdownlint '**/*.md' --ignore node_modules --ignore docs/images --ignore plugins/claude-code-blueprint/skills/writing-skills
+        run: markdownlint '**/*.md' --ignore node_modules --ignore docs/images --ignore skills/writing-skills
 
   install-test:
     name: Install Script (${{ matrix.os }})
@@ -90,15 +90,18 @@ jobs:
           echo "Checking marketplace manifest..."
           test -f .claude-plugin/marketplace.json
 
-          echo "Checking plugin directory..."
-          test -d plugins/claude-code-blueprint
-          test -f plugins/claude-code-blueprint/.claude-plugin/plugin.json
+          echo "Checking plugin root (the repository root is the plugin)..."
+          test -f .claude-plugin/plugin.json
+          test ! -e plugins
+          test -f AGENTS.md
+          test -L CLAUDE.md
+          test "$(readlink CLAUDE.md)" = "AGENTS.md"
 
           echo "Checking plugin components..."
-          test -d plugins/claude-code-blueprint/skills
-          test -d plugins/claude-code-blueprint/agents
-          test -d plugins/claude-code-blueprint/hooks
-          test -f plugins/claude-code-blueprint/hooks/hooks.json
+          test -d skills
+          test -d agents
+          test -d hooks
+          test -f hooks/hooks.json
 
           echo "Plugin structure valid!"
 
@@ -112,13 +115,13 @@ jobs:
         run: shellcheck install.sh
 
       - name: Run ShellCheck on ship.sh
-        run: shellcheck --exclude=SC2317,SC2329 plugins/claude-code-blueprint/scripts/ship.sh
+        run: shellcheck --exclude=SC2317,SC2329 scripts/ship.sh
 
       - name: Run ShellCheck on check-drift.sh
         run: shellcheck scripts/check-drift.sh
 
       - name: Run ShellCheck on hook handlers
-        run: shellcheck plugins/claude-code-blueprint/hooks/handlers/*.sh
+        run: shellcheck hooks/handlers/*.sh
 
   drift-gate:
     name: Drift Gate
@@ -151,8 +154,10 @@ jobs:
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
+      # The root holds both manifests; validating "." checks only the marketplace,
+      # so the plugin manifest (which also flags a regular-file CLAUDE.md) runs by path.
       - name: Validate plugin manifest
-        run: claude plugin validate --strict --json plugins/claude-code-blueprint
+        run: claude plugin validate --strict --json .claude-plugin/plugin.json
 
       - name: Validate marketplace manifest
         run: claude plugin validate --strict --json .

@@ -13,7 +13,7 @@ Quality over speed. Small steps compound. The patterns you establish will be cop
 **Last session:** Not yet initialized
 
 **What was done:**
-- Project scaffolded with Claude Code Blueprint plugin
+- Project scaffolded with Agent Blueprint plugin
 
 **What's remaining:**
 - Run `/project-start` to configure conventions, goals, and status

@@ -104,7 +104,7 @@ const memoryFile = path.join(memoryDir, 'MEMORY.md');
 try {
   if (!fs.existsSync(memoryFile)) {
     fs.mkdirSync(memoryDir, { recursive: true });
-    fs.writeFileSync(memoryFile, '# Project Memory\n\n<!-- Auto-created by Claude Code Blueprint session-start hook -->\n');
+    fs.writeFileSync(memoryFile, '# Project Memory\n\n<!-- Auto-created by Agent Blueprint session-start hook -->\n');
     lines.push('Auto-memory initialized — MEMORY.md created.');
   }
 } catch (e) { /* ignore — non-critical */ }

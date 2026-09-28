@@ -1,13 +1,13 @@
 ---
 name: plugin-update
-description: "Trigger this skill when the user wants to update the Claude Code Blueprint plugin from GitHub — even if they just say 'update' without specifying what. Trigger when the user says 'update', 'update plugin', 'update blueprint', 'latest version', 'upgrade blueprint', 'new version available', 'check for updates', 'get newest version', 'refresh plugin', or 'reinstall blueprint'. Clones latest from GitHub, copies to cache, and updates the registry. DO NOT TRIGGER for updating project dependencies — use dependency-management instead. DO NOT TRIGGER for migrating from v2.x to v3.0 — use migrate-to-plugin instead."
+description: "Trigger this skill when the user wants to update the Agent Blueprint plugin from GitHub — even if they just say 'update' without specifying what. Trigger when the user says 'update', 'update plugin', 'update blueprint', 'latest version', 'upgrade blueprint', 'new version available', 'check for updates', 'get newest version', 'refresh plugin', or 'reinstall blueprint'. Clones latest from GitHub, copies to cache, and updates the registry. DO NOT TRIGGER for updating project dependencies — use dependency-management instead. DO NOT TRIGGER for migrating from v2.x to v3.0 — use migrate-to-plugin instead."
 ---
 
 # Plugin Update
 
 Update the blueprint plugin to the latest version from the source GitHub repository.
 
-**Announce at start:** "Updating Claude Code Blueprint plugin..."
+**Announce at start:** "Updating Agent Blueprint plugin..."
 
 ## Step 0: Try the native update first
 
@@ -18,10 +18,10 @@ Claude Code updates a plugin by its bare `plugin@marketplace` name since 2.1.246
 #   LEGACY INSTALL          -> stop; relay the printed install.sh command
 #   NATIVE UPDATE OK        -> skip to Step 6 (report only; nothing to clean up)
 #   FALLING THROUGH: <why>  -> tell the user why, then continue with Step 2
-PLUGIN_ID="claude-code-blueprint@claude-code-blueprint"
+PLUGIN_ID="agent-blueprint@agent-blueprint"
 REGISTRY="$HOME/.claude/plugins/installed_plugins.json"
-INSTALL_SH="https://raw.githubusercontent.com/Ninety2UA/claude-code-blueprint/main/install.sh"
-REMOTE_MANIFEST="https://raw.githubusercontent.com/Ninety2UA/claude-code-blueprint/main/plugins/claude-code-blueprint/.claude-plugin/plugin.json"
+INSTALL_SH="https://raw.githubusercontent.com/Ninety2UA/agent-blueprint/main/install.sh"
+REMOTE_MANIFEST="https://raw.githubusercontent.com/Ninety2UA/agent-blueprint/main/.claude-plugin/plugin.json"
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 
 fall_through() { echo "FALLING THROUGH: $1"; exit 0; }
@@ -76,7 +76,7 @@ command -v claude >/dev/null 2>&1 || fall_through "claude CLI not on PATH"
 # Refresh the marketplace catalog, then update this entry's own scope.
 # Bare plugin@marketplace name: 2.1.246+; --json: 2.1.268+; --yes is required
 # when stdin is not a TTY. An older CLI rejects the flags and falls through.
-claude plugin marketplace update claude-code-blueprint || fall_through "marketplace update failed"
+claude plugin marketplace update agent-blueprint || fall_through "marketplace update failed"
 UPDATE_OUT=$(claude plugin update "$PLUGIN_ID" --scope "$SCOPE" --json --yes) || fall_through "claude plugin update failed (exit $?): $UPDATE_OUT"
 echo "$UPDATE_OUT"
 
@@ -143,7 +143,7 @@ import json, os
 f = os.path.expanduser('~/.claude/plugins/installed_plugins.json')
 with open(f) as fh:
     data = json.load(fh)
-entry = data.get('plugins', {}).get('claude-code-blueprint@claude-code-blueprint', [{}])
+entry = data.get('plugins', {}).get('agent-blueprint@agent-blueprint', [{}])
 if isinstance(entry, list):
     entry = entry[0]
 print('version:', entry.get('version', 'unknown'))
@@ -161,7 +161,7 @@ Steps 2–5 run only when Step 0 falls through; Step 0 already performed Step 1'
 
 ```bash
 TMPDIR=$(mktemp -d)
-git clone --depth 1 https://github.com/Ninety2UA/claude-code-blueprint.git "$TMPDIR/blueprint"
+git clone --depth 1 https://github.com/Ninety2UA/agent-blueprint.git "$TMPDIR/blueprint"
 NEW_SHA=$(git -C "$TMPDIR/blueprint" rev-parse HEAD)
 echo "Latest commit: $NEW_SHA"
 ```
@@ -174,7 +174,7 @@ If there IS an update, show the user what changed:
 
 ```bash
 # Get version from plugin.json
-cat "$TMPDIR/blueprint/plugins/claude-code-blueprint/.claude-plugin/plugin.json" | python3 -c "import json,sys; print('New version:', json.load(sys.stdin)['version'])"
+cat "$TMPDIR/blueprint/.claude-plugin/plugin.json" | python3 -c "import json,sys; print('New version:', json.load(sys.stdin)['version'])"
 
 # Show recent commit messages
 git -C "$TMPDIR/blueprint" log --oneline -10
@@ -183,15 +183,15 @@ git -C "$TMPDIR/blueprint" log --oneline -10
 ## Step 4: Copy Plugin Files to Cache
 
 ```bash
-CACHE_DIR="$HOME/.claude/plugins/cache/claude-code-blueprint/claude-code-blueprint"
-VERSION=$(cat "$TMPDIR/blueprint/plugins/claude-code-blueprint/.claude-plugin/plugin.json" | python3 -c "import json,sys; print(json.load(sys.stdin)['version'])")
+CACHE_DIR="$HOME/.claude/plugins/cache/agent-blueprint/agent-blueprint"
+VERSION=$(cat "$TMPDIR/blueprint/.claude-plugin/plugin.json" | python3 -c "import json,sys; print(json.load(sys.stdin)['version'])")
 DEST="$CACHE_DIR/$VERSION"
 
 # Remove old cached version and copy new
 rm -rf "$DEST"
 mkdir -p "$DEST"
 
-SOURCE="$TMPDIR/blueprint/plugins/claude-code-blueprint"
+SOURCE="$TMPDIR/blueprint"
 for dir in skills agents hooks .claude-plugin scripts templates .claude; do
     if [ -d "$SOURCE/$dir" ]; then
         cp -R "$SOURCE/$dir" "$DEST/$dir"
@@ -216,9 +216,9 @@ import json, os
 f = os.path.expanduser('~/.claude/plugins/known_marketplaces.json')
 with open(f) as fh:
     data = json.load(fh)
-data['claude-code-blueprint']['lastUpdated'] = '$TIMESTAMP'
-data['claude-code-blueprint']['installLocation'] = '$DEST'
-data['claude-code-blueprint']['autoUpdate'] = True
+data['agent-blueprint']['lastUpdated'] = '$TIMESTAMP'
+data['agent-blueprint']['installLocation'] = '$DEST'
+data['agent-blueprint']['autoUpdate'] = True
 with open(f, 'w') as fh:
     json.dump(data, fh, indent=2)
     fh.write('\n')
@@ -230,7 +230,7 @@ import json, os
 f = os.path.expanduser('~/.claude/plugins/installed_plugins.json')
 with open(f) as fh:
     data = json.load(fh)
-key = 'claude-code-blueprint@claude-code-blueprint'
+key = 'agent-blueprint@agent-blueprint'
 entries = data.get('plugins', {}).get(key, [])
 if isinstance(entries, list):
     for entry in entries:
@@ -278,6 +278,6 @@ After the native path (Step 0), reuse the version, scope, and cache path its scr
 
 - The native path (Step 0) updates the **one registry entry it resolved**, in that entry's own scope; the manual path (Steps 2–5) rewrites every entry for the plugin. Both write into the **shared plugin cache**, so every project on that version gets the update
 - The user must **run `/reload-plugins`** (or restart) for changes to take effect
-- `/plugin install claude-code-blueprint@claude-code-blueprint` is the interactive route: since 2.1.232 it refreshes the marketplace first, then installs the latest version. Step 0 does the same refresh explicitly with `claude plugin marketplace update claude-code-blueprint`
+- `/plugin install agent-blueprint@agent-blueprint` is the interactive route: since 2.1.232 it refreshes the marketplace first, then installs the latest version. Step 0 does the same refresh explicitly with `claude plugin marketplace update agent-blueprint`
 - `claude plugin update` accepts the bare `plugin@marketplace` name since 2.1.246 and `--json` since 2.1.268; an older CLI rejects the flags, which is one of the cases that falls through to the manual steps
 - If the version number changed, the old version directory remains in cache (harmless)

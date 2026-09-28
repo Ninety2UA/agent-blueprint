@@ -28,15 +28,15 @@ Check if this is a fresh project that needs scaffolding:
    # Wrapper for blueprint's ship.sh from plugin
    # Search common plugin cache locations
    for CANDIDATE in \
-     "$HOME/.claude/plugins/cache/claude-code-blueprint/claude-code-blueprint"/*/scripts/ship.sh \
-     "$HOME/.claude/plugins/marketplaces/claude-code-blueprint/plugins/claude-code-blueprint/scripts/ship.sh"; do
+     "$HOME/.claude/plugins/cache/agent-blueprint/agent-blueprint"/*/scripts/ship.sh \
+     "$HOME/.claude/plugins/marketplaces/agent-blueprint/scripts/ship.sh"; do
      if [ -f "$CANDIDATE" ]; then
        PLUGIN_SHIP="$CANDIDATE"
        break
      fi
    done
    if [ -z "${PLUGIN_SHIP:-}" ]; then
-     echo "Blueprint plugin not found. Install: claude plugin install github:Ninety2UA/claude-code-blueprint"
+     echo "Blueprint plugin not found. Install: claude plugin install github:Ninety2UA/agent-blueprint"
      exit 1
    fi
    exec "$PLUGIN_SHIP" "$@"

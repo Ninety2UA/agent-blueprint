@@ -23,7 +23,7 @@ Quality over speed. Small steps compound. The patterns you establish will be cop
 **Current state of the code:**
 - Build: n/a (template repo, no build step)
 - Gates: drift gate (promo source, site grids + badge integrity, repo-count claims, README agents table, version equality, README nav anchor) + skill-collision gate (fails on invalid frontmatter YAML and unresolved `references/` pointers since v3.8.0; warn-only SKILL.md size report, no body over 16 KB) + plugin-validate job green; markdownlint + shellcheck clean locally
-- Website: live at <https://ninety2ua.github.io/claude-code-blueprint/>
+- Website: live at <https://ninety2ua.github.io/agent-blueprint/>
 - Uncommitted changes: none
 
 ## Skills
@@ -49,16 +49,16 @@ Run `/project-start` after install to configure `docs/context/CONVENTIONS.md` wi
 ## Architecture
 
 ```
-.claude-plugin/                          # Marketplace manifest (marketplace.json)
-plugins/claude-code-blueprint/           # Plugin root
-  skills/                                # 55 skills (slash commands + workflows)
-  agents/                                # 29 specialized subagents
-  hooks/hooks.json                       # Hook definitions (${CLAUDE_PLUGIN_ROOT})
-  hooks/handlers/                        # Hook scripts (session-start, context-monitor, etc.)
-  templates/                             # Project scaffolding source (scaffolded by install.sh / /project-start)
-    CLAUDE.md, BACKLOG.md, docs/...      # Template files for new projects
-  scripts/ship.sh                        # Ralph-style external loop for /ship-pipeline
-  .claude-plugin/plugin.json             # Plugin manifest
+.claude-plugin/                          # Plugin + marketplace manifests (the repo root is the plugin root)
+skills/                                  # 55 skills (slash commands + workflows)
+agents/                                  # 29 specialized subagents
+hooks/hooks.json                         # Hook definitions (${CLAUDE_PLUGIN_ROOT})
+hooks/handlers/                          # Hook scripts (session-start, context-monitor, etc.)
+templates/                               # Project scaffolding source (scaffolded by install.sh / /project-start)
+  CLAUDE.md, BACKLOG.md, docs/...        # Template files for new projects
+scripts/ship.sh                          # Ralph-style external loop for /ship-pipeline
+scripts/check-drift.sh, check-skill-collisions.py  # CI gates
+AGENTS.md                                # These instructions (CLAUDE.md is a symlink to it)
 docs/images/                             # README images (repo-only)
 install.sh                               # Plugin installer + legacy mode
 ```

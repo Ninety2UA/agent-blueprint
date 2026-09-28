@@ -241,7 +241,7 @@ def print_structure_report(yaml_fail, yaml_skipped, pointer_fail):
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     repo = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] else os.path.dirname(script_dir)
-    skills_glob = os.path.join(repo, "plugins/claude-code-blueprint/skills/*/SKILL.md")
+    skills_glob = os.path.join(repo, "skills/*/SKILL.md")
     paths = sorted(glob.glob(skills_glob))
 
     if not paths:
@@ -269,7 +269,7 @@ def main():
     warns.sort(reverse=True)
     fails.sort(reverse=True)
 
-    agent_paths = sorted(glob.glob(os.path.join(repo, "plugins/claude-code-blueprint/agents/*.md")))
+    agent_paths = sorted(glob.glob(os.path.join(repo, "agents/*.md")))
     yaml_fail, yaml_skipped = yaml_failures(paths + agent_paths, repo)
     pointer_fail = pointer_failures([os.path.dirname(p) for p in paths], repo)
 

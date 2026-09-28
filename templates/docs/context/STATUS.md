@@ -25,7 +25,7 @@ Last updated: (not yet initialized)
 
 | Date | Commit | Description |
 |------|--------|-------------|
-| — | — | Project scaffolded with Claude Code Blueprint |
+| — | — | Project scaffolded with Agent Blueprint |
 
 ## Decisions Made
 

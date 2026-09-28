@@ -10,7 +10,7 @@ Spawn a swarm of research agents in parallel, then synthesize their findings int
 
 **Announce at start:** "Starting deep research on: [topic]"
 
-**Name collision with the bundled workflow:** Claude Code ships its own `/deep-research` workflow — a web-search fan-out that starts only when invoked manually (CLI 2.1.218). This skill is the five-agent research swarm below. When the slash menu shows both, `/claude-code-blueprint:deep-research` is the swarm. Custom skills override bundled skills of the same name, so a legacy (copied-skill) install of `deep-research` is expected to take precedence; precedence over the bundled *workflow* is unverified.
+**Name collision with the bundled workflow:** Claude Code ships its own `/deep-research` workflow — a web-search fan-out that starts only when invoked manually (CLI 2.1.218). This skill is the five-agent research swarm below. When the slash menu shows both, `/agent-blueprint:deep-research` is the swarm. Custom skills override bundled skills of the same name, so a legacy (copied-skill) install of `deep-research` is expected to take precedence; precedence over the bundled *workflow* is unverified.
 
 ## Step 0: Load Project Configuration
 

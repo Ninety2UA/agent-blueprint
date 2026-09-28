@@ -7,8 +7,8 @@ const { execFileSync, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-// Repo root is three levels up from plugins/claude-code-blueprint/scripts/.
-const ROOT = path.resolve(__dirname, '../../..');
+// Repo root is one level up from scripts/.
+const ROOT = path.resolve(__dirname, '..');
 const OUTPUT_DIR = path.join(ROOT, 'docs/images');
 const FRAMES_DIR = path.join(OUTPUT_DIR, '_frames');
 const MP4_PATH = path.join(OUTPUT_DIR, 'overview.mp4');

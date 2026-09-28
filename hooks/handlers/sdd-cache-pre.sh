@@ -13,7 +13,7 @@
 # so the key is URL-only and the original prompt is surfaced in the hit
 # message so the next agent can tell if the earlier reading still applies.
 #
-# Adapted from addyosmani/agent-skills (MIT) for claude-code-blueprint.
+# Adapted from addyosmani/agent-skills (MIT) for agent-blueprint.
 # Dependencies: jq, curl, shasum (or sha256sum).
 
 set -euo pipefail
