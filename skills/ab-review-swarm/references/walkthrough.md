@@ -20,7 +20,7 @@ The walkthrough receives, from the synthesizer:
 
 - The merged findings list in severity order (P1 → P2 → P3), filtered to gated_auto and manual findings that survived the synthesis confidence gate. Advisory findings are included when surfaced for acknowledgment.
 - The recommended_action per finding (already normalized by the synthesizer's tie-break — see `findings-synthesizer.md` Step 2.8).
-- The run_id for artifact lookups at `.claude/review-runs/{run_id}/{reviewer}.json`.
+- The run_id for artifact lookups at `.agent-blueprint/review-runs/{run_id}/{reviewer}.json`.
 
 Each finding's recommended action has been pre-computed by synthesis. The walkthrough surfaces it but does not recompute.
 
@@ -64,7 +64,7 @@ The walkthrough renders intent, not syntax. The fixer subagent owns the exact co
 - **Code-span budget: at most 2 inline backtick spans per sentence**, each a single identifier, operator, or short phrase. Never embed full statements, template literals, or code requiring nested backticks.
 - **Always leave a space before and after every backtick span.** Without it, the terminal's markdown renderer eats the delimiters.
 - **Raw code block — only for short (≤5 line) genuinely additive new code** where no before-state exists.
-- **Summary + artifact pointer** — when prose can't capture the fix: one-sentence transformation + key symbol/location + `Full fix: .claude/review-runs/{run_id}/{reviewer}.json → findings[].suggested_fix`.
+- **Summary + artifact pointer** — when prose can't capture the fix: one-sentence transformation + key symbol/location + `Full fix: .agent-blueprint/review-runs/{run_id}/{reviewer}.json → findings[].suggested_fix`.
 - **No diff blocks.** Modifications to existing code render as prose.
 
 ### Conflict context line

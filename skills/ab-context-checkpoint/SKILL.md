@@ -38,11 +38,11 @@ git status --short
 
 ### Step 2: Write Checkpoint
 
-If Session Continuity in CLAUDE.md already has content, update it in place. Otherwise, create a checkpoint file.
+If the Session Continuity section of `docs/context/STATUS.md` already has content, update it in place. Otherwise, create a checkpoint file.
 
 **Option A: Update Session Continuity** (preferred if session is near-end)
 
-Update the Session Continuity section in CLAUDE.md with current state.
+Rewrite the Session Continuity section at the top of `docs/context/STATUS.md` with the current state, in plain text (no HTML comments).
 
 **Option B: Create checkpoint file** (preferred for mid-session save points)
 

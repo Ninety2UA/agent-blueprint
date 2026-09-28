@@ -78,7 +78,9 @@ If the user doesn't specify, infer from context and state your assumption. Once 
 
 ## Checklist
 
-Work through these items in order, tracked as a checklist file — `.claude/plans/<topic-slug>.progress.local.md`, one checkbox per item, same convention as `ab-executing-plans` — rather than a native task-list tool (not every model exposes one):
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+
+Work through these items in order, tracked as a checklist file — `.agent-blueprint/plans/<topic-slug>.progress.md`, one checkbox per item, same convention as `ab-executing-plans` — rather than a native task-list tool (not every model exposes one):
 
 1. **Explore project context** — check files, docs, recent commits
 2. **Ask clarifying questions** — WHY first (the problem and who has it), then constraints and success criteria; one at a time, then write your understanding back

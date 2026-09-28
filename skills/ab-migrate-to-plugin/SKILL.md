@@ -45,7 +45,7 @@ git diff --stat HEAD -- .claude/commands/ .claude/skills/ .claude/agents/ .claud
 
 If any engine files have been locally modified:
 - List the modified files
-- Ask: "These files have local modifications. They will be REMOVED during migration (the plugin version will be used instead). Do you want to: (a) Back up modified files to `.claude/custom-overrides/` before removing, or (b) Remove them (plugin versions are identical to the template)?"
+- Ask: "These files have local modifications. They will be REMOVED during migration (the plugin version will be used instead). Do you want to: (a) Back up modified files to `.agent-blueprint/custom-overrides/` before removing, or (b) Remove them (plugin versions are identical to the template)?"
 - Wait for user confirmation before proceeding
 
 ## Step 4: Create Backup Branch

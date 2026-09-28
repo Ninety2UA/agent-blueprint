@@ -1,0 +1,6 @@
+# Agent Blueprint working files. Run state, team ledgers, review artifacts and
+# caches are transient; plans and notes stay tracked.
+run/
+team/
+review-runs/
+cache/

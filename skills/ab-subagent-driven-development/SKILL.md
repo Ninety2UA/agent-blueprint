@@ -86,11 +86,12 @@ A reviewer batches same-shape findings into one pass rather than reporting them 
 
 ## Progress File
 
-The controller tracks tasks in `.claude/plans/<plan-basename>.progress.local.md` (`<plan-basename>` is the plan's filename without `.md`); native task-list tools are not the mechanism because current models do not have them:
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+
+The controller tracks tasks in `.agent-blueprint/plans/<plan-basename>.progress.md` (`<plan-basename>` is the plan's filename without `.md`); native task-list tools are not the mechanism because current models do not have them:
 
 - First line names the plan; one checkbox per task.
 - If the file already exists, reuse it and its ticks instead of recreating it.
-- At creation, run `git check-ignore -q` on it; if that fails, append `.claude/plans/*.progress.local.md` to the file named by `git rev-parse --git-path info/exclude`.
 - Tick a task's box once its code quality reviewer approves.
 - Delete it after the final code reviewer approves — before invoking ab-finishing-a-development-branch, passing the plan path (`docs/plans/<plan-basename>.md`) so its plan audit reads this plan.
 - An interrupted run leaves it in place; the STATE.md handoff (ab-session-continuity) points at it.
@@ -98,20 +99,12 @@ The controller tracks tasks in `.claude/plans/<plan-basename>.progress.local.md`
 
 ```bash
 plan=docs/plans/<plan-basename>.md
-progress=".claude/plans/$(basename "$plan" .md).progress.local.md"
-mkdir -p .claude/plans
+progress=".agent-blueprint/plans/$(basename "$plan" .md).progress.md"
+mkdir -p .agent-blueprint/plans
 if [ ! -f "$progress" ]; then   # an existing file keeps its ticks
   printf '# Progress: %s\n\n' "$plan" > "$progress"
   # then append one "- [ ] Task N: <title>" line per task in the plan
 fi
-git check-ignore -q "$progress" || {   # projects scaffolded before v3.6.0 lack the ignore rule
-  if exclude="$(git rev-parse --git-path info/exclude 2>/dev/null)" && [ -n "$exclude" ]; then
-    mkdir -p "$(dirname "$exclude")"
-    echo '.claude/plans/*.progress.local.md' >> "$exclude"
-  else
-    echo "warning: not a git repository - add .claude/plans/*.progress.local.md to your ignore rules yourself" >&2
-  fi
-}
 ```
 
 ## Prompt Templates
@@ -133,7 +126,7 @@ You: I'm using Subagent-Driven Development to execute this plan.
 
 [Read plan file once: docs/plans/feature-plan.md]
 [Extract all 5 tasks with full text and context]
-[Create .claude/plans/feature-plan.progress.local.md with one checkbox per task]
+[Create .agent-blueprint/plans/feature-plan.progress.md with one checkbox per task]
 
 Task 1: Hook installation script
 
@@ -199,7 +192,7 @@ Code reviewer: ✅ Approved
 [Dispatch final code-reviewer]
 Final reviewer: All requirements met, ready to merge
 
-[Final reviewer approved: delete .claude/plans/feature-plan.progress.local.md]
+[Final reviewer approved: delete .agent-blueprint/plans/feature-plan.progress.md]
 
 Done!
 ```

@@ -24,44 +24,38 @@ Load plan, review critically, execute tasks in batches, report for review betwee
 ## The Process
 
 ### Step 1: Load and Review Plan
+
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+
 1. Read plan file
 2. Review critically - identify any questions or concerns about the plan
 3. If concerns: Raise them with your human partner before starting
-4. **Pattern mapping (optional but recommended for plans with 3+ new files):** produce `.claude/plans/PATTERNS.md` mapping each new file to existing analogs with line-numbered excerpts. Read PATTERNS.md before each task — it grounds new code in existing conventions and prevents structural drift.
+4. **Pattern mapping (optional but recommended for plans with 3+ new files):** produce `.agent-blueprint/plans/PATTERNS.md` mapping each new file to existing analogs with line-numbered excerpts. Read PATTERNS.md before each task — it grounds new code in existing conventions and prevents structural drift.
 
    **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-   Prompt: `references/agents/pattern-mapper.md`. Inputs: the plan file path, the codebase root, and the output path `.claude/plans/PATTERNS.md`.
+   Prompt: `references/agents/pattern-mapper.md`. Inputs: the plan file path, the codebase root, and the output path `.agent-blueprint/plans/PATTERNS.md`.
 
    **Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
 5. If no concerns: create the progress file (below) and proceed
 
-**Progress file — `.claude/plans/<plan-basename>.progress.local.md`** (`<plan-basename>` is the plan's filename without `.md`):
+**Progress file — `.agent-blueprint/plans/<plan-basename>.progress.md`** (`<plan-basename>` is the plan's filename without `.md`):
 
 - First line names the plan; one checkbox per task.
 - If the file already exists, reuse it and its ticks instead of recreating it.
-- At creation, run `git check-ignore -q` on it; if that fails, append `.claude/plans/*.progress.local.md` to the file named by `git rev-parse --git-path info/exclude`.
 - Delete it when the run's final review is clean — Step 5, before invoking ab-finishing-a-development-branch.
 - An interrupted run leaves it in place; the STATE.md handoff (ab-session-continuity) points at it.
 - The session's native task list is the alternative only when the model offers one: Claude Code exposes its native task-list tools only on Claude 3.x, Opus 4.0–4.7, Sonnet 4.0–4.6 and Haiku 4.5 (CLI 2.1.233; verified on 2.1.268); `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` restores them elsewhere.
 
 ```bash
 plan=docs/plans/<plan-basename>.md
-progress=".claude/plans/$(basename "$plan" .md).progress.local.md"
-mkdir -p .claude/plans
+progress=".agent-blueprint/plans/$(basename "$plan" .md).progress.md"
+mkdir -p .agent-blueprint/plans
 if [ ! -f "$progress" ]; then   # an existing file keeps its ticks
   printf '# Progress: %s\n\n' "$plan" > "$progress"
   # then append one "- [ ] Task N: <title>" line per task in the plan
 fi
-git check-ignore -q "$progress" || {   # projects scaffolded before v3.6.0 lack the ignore rule
-  if exclude="$(git rev-parse --git-path info/exclude 2>/dev/null)" && [ -n "$exclude" ]; then
-    mkdir -p "$(dirname "$exclude")"
-    echo '.claude/plans/*.progress.local.md' >> "$exclude"
-  else
-    echo "warning: not a git repository - add .claude/plans/*.progress.local.md to your ignore rules yourself" >&2
-  fi
-}
 ```
 
 ### Step 2: Execute Batch
@@ -91,7 +85,7 @@ Based on feedback:
 
 After all tasks complete and verified:
 - **Final whole-branch review:** run ab-requesting-code-review once over the whole branch (base `git merge-base origin/main HEAD`, head `HEAD`), with the plan as the requirements and its Review Focus list as the reviewer's checklist. Use ab-review-swarm instead when the branch touches auth, money, data, or a public contract. Fix Critical and Important findings and review again; the review is clean when it returns none.
-- Delete the progress file (`.claude/plans/<plan-basename>.progress.local.md`) — every box is ticked and the final review is clean, so nothing is left to resume
+- Delete the progress file (`.agent-blueprint/plans/<plan-basename>.progress.md`) — every box is ticked and the final review is clean, so nothing is left to resume
 - Announce: "I'm using the ab-finishing-a-development-branch skill to complete this work."
 - **REQUIRED SUB-SKILL:** Use ab-finishing-a-development-branch, passing the plan path (`docs/plans/<plan-basename>.md`) so its plan audit reads this plan
 - Follow that skill to verify tests, present options, execute choice

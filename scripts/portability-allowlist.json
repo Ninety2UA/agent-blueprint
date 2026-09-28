@@ -13,9 +13,6 @@
     "skills/ab-build-pipeline/SKILL.md": [
       "size"
     ],
-    "skills/ab-context-checkpoint/SKILL.md": [
-      "instructions-write"
-    ],
     "skills/ab-deep-research/SKILL.md": [
       "description"
     ],
@@ -51,11 +48,7 @@
     "skills/ab-scope-cutting/SKILL.md": [
       "size"
     ],
-    "skills/ab-session-continuity/SKILL.md": [
-      "instructions-write"
-    ],
     "skills/ab-session-wrap/SKILL.md": [
-      "instructions-write",
       "size"
     ],
     "skills/ab-ship-pipeline/SKILL.md": [
@@ -75,9 +68,6 @@
     ],
     "skills/ab-test-driven-development/SKILL.md": [
       "size"
-    ],
-    "skills/ab-using-git-worktrees/SKILL.md": [
-      "instructions-write"
     ],
     "skills/ab-wave-orchestration/SKILL.md": [
       "size"

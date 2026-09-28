@@ -27,23 +27,23 @@ ls -d worktrees 2>/dev/null      # Alternative
 
 **If found:** Use that directory. If both exist, `.worktrees` wins.
 
-### 2. Check CLAUDE.md
+### 2. Check the project instructions file
 
 ```bash
-grep -i "worktree.*director" CLAUDE.md 2>/dev/null
+grep -i "worktree.*director" AGENTS.md CLAUDE.md 2>/dev/null
 ```
 
 **If preference specified:** Use it without asking.
 
 ### 3. Ask User
 
-If no directory exists and no CLAUDE.md preference:
+If no directory exists and the instructions file states no preference:
 
 ```
 No worktree directory found. Where should I create worktrees?
 
 1. .worktrees/ (project-local, hidden)
-2. ~/.claude/worktrees/<project-name>/ (global location)
+2. ~/.agent-blueprint/worktrees/<project-name>/ (global location)
 
 Which would you prefer?
 ```
@@ -68,7 +68,7 @@ Fix broken things immediately:
 
 **Why critical:** Prevents accidentally committing worktree contents to repository.
 
-### For Global Directory (~/.claude/worktrees)
+### For Global Directory (~/.agent-blueprint/worktrees)
 
 No .gitignore verification needed - outside project entirely.
 
@@ -88,8 +88,8 @@ case $LOCATION in
   .worktrees|worktrees)
     path="$LOCATION/$BRANCH_NAME"
     ;;
-  ~/.claude/worktrees/*)
-    path="~/.claude/worktrees/$project/$BRANCH_NAME"
+  ~/.agent-blueprint/worktrees/*)
+    path="~/.agent-blueprint/worktrees/$project/$BRANCH_NAME"
     ;;
 esac
 
@@ -165,7 +165,7 @@ Git refuses a worktree with uncommitted changes, untracked files, or a submodule
 | `.worktrees/` exists | Use it (verify ignored) |
 | `worktrees/` exists | Use it (verify ignored) |
 | Both exist | Use `.worktrees/` |
-| Neither exists | Check CLAUDE.md → Ask user |
+| Neither exists | Check the instructions file, then ask the user |
 | Directory not ignored | Add to .gitignore + commit |
 | Tests fail during baseline | Report failures + ask |
 | No package.json/Cargo.toml | Skip dependency install |
@@ -181,7 +181,7 @@ Git refuses a worktree with uncommitted changes, untracked files, or a submodule
 ### Assuming directory location
 
 - **Problem:** Creates inconsistency, violates project conventions
-- **Fix:** Follow priority: existing > CLAUDE.md > ask
+- **Fix:** Follow the priority: an existing directory, then the instructions file's preference, then ask
 
 ### Proceeding with failing tests
 
@@ -216,11 +216,11 @@ Ready to implement auth feature
 - Skip baseline test verification
 - Proceed with failing tests without asking
 - Assume directory location when ambiguous
-- Skip CLAUDE.md check
+- Skip the instructions-file check
 - Force a worktree removal, or tidy a dirty worktree so the removal passes
 
 **Always:**
-- Follow directory priority: existing > CLAUDE.md > ask
+- Follow the directory priority: an existing directory, then the instructions file's preference, then ask
 - Verify directory is ignored for project-local
 - Auto-detect and run project setup
 - Verify clean test baseline

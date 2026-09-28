@@ -52,8 +52,8 @@ Check if key docs are up to date:
 # When were context docs last modified?
 ls -la docs/context/STATUS.md docs/context/GOALS.md docs/context/CONVENTIONS.md 2>/dev/null
 
-# When was CLAUDE.md Session Continuity last updated?
-grep "Last session:" CLAUDE.md
+# When was the Session Continuity section last updated?
+grep "Last session:" docs/context/STATUS.md
 ```
 **Pass:** Docs updated within last 7 days
 **Warning:** Docs older than 7 days

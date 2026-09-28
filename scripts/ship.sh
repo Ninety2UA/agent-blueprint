@@ -205,8 +205,8 @@ fi
 # ──────────────────────────────────────────────
 # Progress tracking
 # ──────────────────────────────────────────────
-PROGRESS_FILE=".claude/ship-progress.local.md"
-LOG_DIR=".claude/ship-logs"
+PROGRESS_FILE=".agent-blueprint/run/ship-progress.md"
+LOG_DIR=".agent-blueprint/run/logs"
 mkdir -p "$LOG_DIR"
 
 if [[ ! -f "$PROGRESS_FILE" ]]; then

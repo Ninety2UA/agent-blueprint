@@ -79,7 +79,7 @@ commit, or the sentence that decided the call.
 
 Then, under the heading "Unplanned diff work", list every change in DIFF that
 no item covers, one line each, or the single word "none". Never list
-PLAN_FILE or .claude/plans/*.progress.local.md there.
+PLAN_FILE or .agent-blueprint/plans/*.progress.md there.
 
 Output the table and that list only. No strengths, no issues, no assessment.
 ```

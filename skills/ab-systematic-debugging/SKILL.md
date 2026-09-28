@@ -276,7 +276,9 @@ If you catch yourself thinking:
 
 ## Persistent Debug Sessions (Long Bugs)
 
-Most bugs resolve in one session. When one doesn't — hypothesis cycle 3+, a summarization compressed the investigation, the user resumes a prior bug, or evidence will span sessions — keep one file at `.claude/debug/<slug>.md` and follow `references/deep-dive.md` § Persistent Debug Sessions: append-only eliminated-hypotheses log, an evidence tier on every entry, one Current Focus at a time, a cycle counter that escalates at 5, a compact Summary on completion, and Summary → Eliminated → Active when resuming. Never persist single-cycle or fast-path bugs.
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+
+Most bugs resolve in one session. When one doesn't — hypothesis cycle 3+, a summarization compressed the investigation, the user resumes a prior bug, or evidence will span sessions — keep one file at `.agent-blueprint/debug/<slug>.md` and follow `references/deep-dive.md` § Persistent Debug Sessions: append-only eliminated-hypotheses log, an evidence tier on every entry, one Current Focus at a time, a cycle counter that escalates at 5, a compact Summary on completion, and Summary → Eliminated → Active when resuming. Never persist single-cycle or fast-path bugs.
 
 ## Quick Reference
 

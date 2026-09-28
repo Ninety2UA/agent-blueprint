@@ -63,6 +63,8 @@ Test shapes by skill type, bulletproofing a discipline skill, and the rationaliz
 
 ## Finish one skill before the next
 
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+
 **Tracking tasks.** The plan file's checkboxes are the record of progress: tick each one when its task is done and verified, so another session or another tool can continue from there. A host task list, if you have one, may mirror them, but it never replaces them.
 
 Copy the checklist in `references/skill-template.md` § Skill Creation Checklist into `.agent-blueprint/plans/<skill-name>-skill.md` as that file's checkboxes, and delete the file once every box is ticked and the final run is clean. Testing each skill before starting the next keeps one skill's gaps from spreading into the rest.

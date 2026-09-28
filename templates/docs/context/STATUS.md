@@ -2,6 +2,18 @@
 
 Last updated: (not yet initialized)
 
+## Session Continuity
+
+_Kept current by the ab-session-wrap and ab-context-checkpoint skills. Full history: git log and docs/learnings/._
+
+**Last session:** (none yet)
+
+**What was done:** (nothing yet)
+
+**What's remaining:** run the ab-project-start skill to configure the project.
+
+**Start here:** run the ab-project-start skill.
+
 ## Current State of the Code
 
 - **Build:** not configured (run `/ab-project-start`)

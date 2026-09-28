@@ -92,7 +92,7 @@ retire_when: [optional — the condition that makes this obsolete, e.g. "we drop
 Check if this solution relates to:
 - Existing docs in `docs/solutions/` — add cross-references
 - Architecture decisions in `docs/decisions/` — link if relevant
-- Key Learnings in `CLAUDE.md` — add a one-line entry if broadly applicable
+- **Project instructions file:** if the learning applies broadly, a one-line entry in its Key Learnings section. The file is AGENTS.md, or CLAUDE.md when only that one exists; this is the one step that writes it
 
 ### Step 4: Verify Searchability
 

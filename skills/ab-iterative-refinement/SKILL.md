@@ -44,6 +44,8 @@ Dispatch repeated review→fix→review cycles to iteratively improve code quali
 
 ## Return Contract for Sub-Agents
 
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+
 Each review and fix agent dispatched by this skill must end its response with:
 
 ```
@@ -57,7 +59,7 @@ Each review and fix agent dispatched by this skill must end its response with:
 - Path to detail artifacts if any
 ```
 
-This bounds handoff cost. If a reviewer's full findings exceed 2K tokens, persist them to `.claude/review-runs/<run_id>/<reviewer>.json` and quote only the summary in the response. The synthesizer reads detail files directly when needed; ab-iterative-refinement only needs the summary to drive the loop.
+This bounds handoff cost. If a reviewer's full findings exceed 2K tokens, persist them to `.agent-blueprint/review-runs/<run_id>/<reviewer>.json` and quote only the summary in the response. The synthesizer reads detail files directly when needed; ab-iterative-refinement only needs the summary to drive the loop.
 
 If a sub-agent returns without this structure, re-prompt once before counting it toward the iteration result.
 

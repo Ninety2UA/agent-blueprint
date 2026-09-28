@@ -29,7 +29,7 @@ When `ab-ship-pipeline`, `ab-orchestrate`, `ab-team-execution`, or any iterative
 
 The user typically provides one of:
 - A run id (e.g., `ship-2026-04-15-1430`)
-- A log path (e.g., `.claude/ship-logs/ship-2026-04-15-1430.log`)
+- A log path (e.g., `.agent-blueprint/run/logs/ship-2026-04-15-1430.log`)
 - A symptom ("the last ship run stopped at iteration 5")
 - Nothing — in which case, locate the most recent run automatically
 
@@ -40,13 +40,13 @@ The user typically provides one of:
 If user gave a path, use it. Otherwise:
 
 ```bash
-ls -t .claude/ship-logs/*.log 2>/dev/null | head -3
+ls -t .agent-blueprint/run/logs/*.log 2>/dev/null | head -3
 ```
 
 If no logs exist, fall back to:
 - Recent git activity (`git log --since='1 day ago' --oneline`)
 - Pending changes (`git status --short`)
-- Active session files (`ls .claude/team-active.local.md .continue-here.md 2>/dev/null`)
+- Active session files (`ls .agent-blueprint/team/active.md .continue-here.md 2>/dev/null`)
 
 ### Step 2: Investigate four anomaly categories
 
@@ -88,7 +88,9 @@ Before producing the report, scrub sensitive content:
 
 ### Step 4: Produce report
 
-Write findings to `.claude/forensics/<run-id-or-timestamp>.md`. Format:
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+
+Write findings to `.agent-blueprint/forensics/<run-id-or-timestamp>.md`. Format:
 
 ```markdown
 # Forensics Report: <run id or symptom>

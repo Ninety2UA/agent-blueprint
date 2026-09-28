@@ -37,12 +37,14 @@ Two loop mechanisms exist — the external bash loop (`scripts/ship.sh`) and the
 
 #### Continuation detection (both modes)
 
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+
 Check if this is a continuation of a previous ship pipeline run:
 
 1. Check git log on current branch for prior commits from this pipeline
 2. Check if a plan file already exists in `docs/plans/` for this feature. A plan found on disk is never run unverified: confirm it describes this feature, then run it through Stage 2c's plan-checker loop before skipping ahead
 3. Check for uncommitted changes
-4. Check if `.claude/ship-progress.local.md` exists (external loop progress file). If it does:
+4. Check if `.agent-blueprint/run/ship-progress.md` exists (external loop progress file). If it does:
    - Read its `Feature:` line. Another feature's name means a stale file: delete it and count from zero (no `Feature:` line means this feature).
    - Count its `## Iteration` blocks — `scripts/ship.sh` appends one per pass that ends without `<promise>DONE</promise>`, so the count survives fresh processes and `ship.sh` restarts.
    - **At 20 or more, STOP before Stage 1 regardless of `--max`.** Report what was completed and what failed (Error Recovery format), but keep this file — it is the counter — and name it as the file to delete for a deliberate restart. The ceiling is fixed; `--max` is the user's knob below it.
@@ -57,7 +59,7 @@ Continue to Stage 1 (or resume from detected progress).
 
 #### Interactive mode (`--external` flag is NOT set)
 
-Create the Stop hook state file to guard against premature exit within this session. Write `.claude/ship-loop.local.md`:
+Create the Stop hook state file to guard against premature exit within this session. Write `.agent-blueprint/run/ship-loop.md`:
 
 ```yaml
 ---
@@ -234,8 +236,8 @@ Skip if the work was straightforward.
 4. **Report completion** with the Pipeline Summary table and Quality block from `references/modes-and-reports.md` § Completion report.
 
 5. **Clean up loop state:**
-   - Remove `.claude/ship-loop.local.md` if it exists (Stop hook state)
-   - Remove `.claude/ship-progress.local.md` if it exists (external loop progress)
+   - Remove `.agent-blueprint/run/ship-loop.md` if it exists (Stop hook state)
+   - Remove `.agent-blueprint/run/ship-progress.md` if it exists (external loop progress)
 
 6. Output the completion signal (detected by both the Stop hook and `scripts/ship.sh`):
    ```
@@ -258,7 +260,7 @@ Skip if the work was straightforward.
 ## Error Recovery
 
 - If ANY stage fails fatally, STOP immediately and report what was completed and what failed
-- **Clean up loop state** — remove `.claude/ship-loop.local.md` and `.claude/ship-progress.local.md` so neither loop mechanism restarts a broken pipeline
+- **Clean up loop state** — remove `.agent-blueprint/run/ship-loop.md` and `.agent-blueprint/run/ship-progress.md` so neither loop mechanism restarts a broken pipeline
 - Do NOT try to skip stages or work around failures
 - Partial work (plan, branch, code) is preserved for the user to continue with the ab-build-pipeline skill
 - If the execution stage fails, do NOT enter the review stage — there's nothing to review

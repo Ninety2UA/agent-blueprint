@@ -119,7 +119,7 @@ After optimization:
 
 ### Reverted Attempts
 
-Every reverted optimization is recorded so it is not retried. When a plan is executing, append one line per revert to the plan's progress ledger (`.claude/plans/<plan-basename>.progress.local.md`, the file `ab-executing-plans` creates); with no plan running, put the line under the Performance Comparison block in Step 5 so it travels with the report.
+Every reverted optimization is recorded so it is not retried. When a plan is executing, append one line per revert to the plan's progress ledger (`.agent-blueprint/plans/<plan-basename>.progress.md`, the file `ab-executing-plans` creates); with no plan running, put the line under the Performance Comparison block in Step 5 so it travels with the report.
 
 ```markdown
 - Reverted: [change tried] — [before → after, variance] — [no improvement / within noise / regression]

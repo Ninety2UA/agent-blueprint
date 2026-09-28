@@ -1,6 +1,6 @@
 ---
 name: ab-resume-session
-description: "Trigger this skill when the user says 'resume', 'continue', 'pick up where I left off', 'what was I working on', 'last session', 'keep going', 'where did we stop', 'let's continue', or anything suggesting they want to pick up prior work. Trigger at the start of any new session when CLAUDE.md Session Continuity has prior session data, even if the user just says 'hi', 'let's go', 'I'm back', or 'hey' — they likely want to resume. Trigger even when the user doesn't explicitly ask to resume, as long as there is session history to restore. Reads all session state (CLAUDE.md, STATE.md, STATUS.md, GOALS.md, BACKLOG.md, checkpoints) and presents an orientation with priorities and suggested starting point. DO NOT TRIGGER on a brand new project with no session history — use ab-project-start instead. DO NOT TRIGGER when the user just wants a quick status overview without resuming work — use ab-project-status instead."
+description: "Trigger this skill when the user says 'resume', 'continue', 'pick up where I left off', 'what was I working on', 'last session', 'keep going', 'where did we stop', 'let's continue', or anything suggesting they want to pick up prior work. Trigger at the start of any new session when the Session Continuity section of docs/context/STATUS.md has prior session data, even if the user just says 'hi', 'let's go', 'I'm back', or 'hey' — they likely want to resume. Trigger even when the user doesn't explicitly ask to resume, as long as there is session history to restore. Reads all session state (STATUS.md with its Session Continuity section, STATE.md, GOALS.md, BACKLOG.md, checkpoints) and presents an orientation with priorities and suggested starting point. DO NOT TRIGGER on a brand new project with no session history — use ab-project-start instead. DO NOT TRIGGER when the user just wants a quick status overview without resuming work — use ab-project-status instead."
 ---
 
 # Resume Session
@@ -11,9 +11,8 @@ Reload all session context and present a clear starting point. Follow these step
 
 Read these files to understand where things stand:
 
-- `CLAUDE.md` — Read the **Session Continuity** section first. This tells you what was done, what's remaining, and where to start.
+- `docs/context/STATUS.md` — Read its **Session Continuity** section first: what was done, what's remaining, and where to start. Then the rest: current project state, in-flight work, known issues
 - `docs/context/STATE.md` — Execution state: current wave, task progress, blockers (if exists)
-- `docs/context/STATUS.md` — Current project state, in-flight work, known issues
 - `docs/context/GOALS.md` — Current objectives and priorities
 - `BACKLOG.md` — Pending items and their priority
 
@@ -65,7 +64,7 @@ Structure the orientation as status, pointers, traps.
 
 **Pointers** — quote the prior session's own words; don't re-summarize them:
 
-> [Quote the "What was done", "What's remaining", and "Start here" text verbatim from CLAUDE.md's Session Continuity section.]
+> [Quote the "What was done", "What's remaining", and "Start here" text verbatim from the Session Continuity section of docs/context/STATUS.md.]
 
 **Traps** — list only the priorities the project files actually record (STATE.md blockers, STATUS.md known issues, GOALS.md at-risk items, BACKLOG.md items flagged urgent). Omit a slot rather than inventing a filler priority — if none of these files name anything, say so instead of listing items by default.
 

@@ -50,7 +50,7 @@ status: [active | paused | blocked | complete]
 - [x] Task 1: [description] — commit [sha]
 - [x] Task 2: [description] — commit [sha]
 - [ ] Task 3: [description] — IN PROGRESS
-- Progress file: .claude/plans/<plan-basename>.progress.local.md — [when one exists: its ticks are the per-task resume point; an interrupted run leaves it in place]
+- Progress file: .agent-blueprint/plans/<plan-basename>.progress.md — [when one exists: its ticks are the per-task resume point; an interrupted run leaves it in place]
 
 ## Context Needed to Resume
 - [Key decision that was made and must be honored]
@@ -92,7 +92,7 @@ When the user runs `ab-pause-checkpoint` or you need to save state:
 
 2. **Update STATE.md** with current progress, decisions, and next steps
 
-3. **Update Session Continuity** in CLAUDE.md with a one-line summary
+3. **Refresh Session Continuity** in `docs/context/STATUS.md` with a one-line summary
 
 4. **Confirm to user:** "State saved. Resume with `ab-resume-session` in a new session."
 
@@ -101,7 +101,7 @@ When the user runs `ab-pause-checkpoint` or you need to save state:
 When the user runs `ab-resume-session`:
 
 1. **Read STATE.md** — full state including wave progress, blockers, next steps
-2. **Read CLAUDE.md Session Continuity** — summary and "start here" instruction
+2. **Read the Session Continuity section of `docs/context/STATUS.md`** — summary and "start here" instruction
 3. **Check git state** — branch, uncommitted changes, stashes
 4. **Verify plan file** — is it still current? Any tasks completed outside this session?
 5. **Present orientation** — summary of where things stand and what's next
@@ -114,7 +114,7 @@ When context is getting large or the session is ending:
 1. Run full state dump to STATE.md
 2. Note which subagents are pending (if any)
 3. Record any in-flight decisions that aren't committed yet
-4. Update the Session Continuity section in CLAUDE.md
+4. Refresh the Session Continuity section in `docs/context/STATUS.md`
 
 The next session reads STATE.md and picks up exactly where work stopped.
 

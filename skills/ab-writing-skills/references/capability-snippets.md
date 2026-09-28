@@ -1,6 +1,6 @@
 # Capability snippets
 
-The five steps that depend on what the host can do, each worded once. The paragraph right under each heading is the snippet. A skill pastes it as a paragraph of its own, byte for byte, and puts anything specific to its site (which prompt file, which inputs, which default) in the next paragraph. `python3 scripts/sync-shared.py` rewrites every copy from this file, and the portability gate fails on a copy that differs, so edit a snippet here and never in a copy.
+The steps that depend on what the host can do, or that every tool must do the same way, each worded once. The paragraph right under each heading is the snippet. A skill pastes it as a paragraph of its own, byte for byte, and puts anything specific to its site (which prompt file, which inputs, which default) in the next paragraph. `python3 scripts/sync-shared.py` rewrites every copy from this file, and the portability gate fails on a copy that differs, so edit a snippet here and never in a copy.
 
 ## helper-step
 
@@ -29,6 +29,12 @@ Use it at every point where the skill waits for the user. The next paragraph giv
 **Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
 Paste it only at steps that are safe at lower effort, such as mechanical checks and searches. The step's prompt file says the same in its role header.
+
+## working-folder
+
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+
+Paste it at the first step that writes under `.agent-blueprint/`.
 
 ## bundled-scripts
 

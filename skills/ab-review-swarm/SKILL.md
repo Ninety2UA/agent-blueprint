@@ -55,14 +55,16 @@ Scan the diff/files to determine which conditional reviewers to activate. A revi
 
 ## Step 3: Prepare Review Context
 
-Generate a `run_id` for this review (timestamp-based or short UUID): `review-YYYYMMDD-HHMMSS`. Create `.claude/review-runs/{run_id}/` if it does not exist.
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+
+Generate a `run_id` for this review (timestamp-based or short UUID): `review-YYYYMMDD-HHMMSS`. Create `.agent-blueprint/review-runs/{run_id}/` if it does not exist.
 
 For each helper, prepare focused inputs that include:
 1. The diff or file list to review
 2. Relevant project conventions from `docs/context/CONVENTIONS.md`
 3. The helper's specific focus area
 4. The shared calibration rubric: anchored confidence scoring (0/25/50/75/100), remediation tier (safe_auto/gated_auto/advisory/present), and the standard finding format (see `references/review-calibration.md`)
-5. **The two-output contract** (see `references/output-contract.md`): each reviewer writes a full-detail JSON artifact to `.claude/review-runs/{run_id}/{reviewer_name}.json` AND returns a compact merge-tier object to the orchestrator. Detail-tier fields (`why_it_matters`, `evidence`) live in the artifact file only; the compact return omits them so the synthesizer's context stays lean.
+5. **The two-output contract** (see `references/output-contract.md`): each reviewer writes a full-detail JSON artifact to `.agent-blueprint/review-runs/{run_id}/{reviewer_name}.json` AND returns a compact merge-tier object to the orchestrator. Detail-tier fields (`why_it_matters`, `evidence`) live in the artifact file only; the compact return omits them so the synthesizer's context stays lean.
 6. The `run_id` and `reviewer_name` for the artifact path.
 
 **Input hygiene — feed the artifact, not the author's verdict.** Each reviewer's prompt should carry the artifact (diff/files) and the contract it must meet — spec, plan, conventions — and nothing that asserts the work is already correct. Strip the author's own summary of correctness, self-assessment, and "this handles X" claims: they anchor the reviewer toward agreement and turn review into confirmation. Frame each reviewer's job as *disproof* — "find where this violates its contract," not "check whether this looks right." A reviewer who sets out to break the artifact and fails has produced far stronger evidence than one who set out to confirm it and succeeded. This sharpens the per-reviewer adversarial stance each reviewer's prompt file already carries (e.g. code-reviewer treats author claims as "not evidence"); it does not replace it.
@@ -73,7 +75,7 @@ Dispatch all selected helpers simultaneously.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Prompts: `references/agents/<reviewer>.md` for each selected reviewer. Inputs for each: the scope, `run_id={run_id}`, the diff/files, the Step 3 context, its focus (security-sentinel: security issues; performance-oracle: performance issues; code-reviewer: the plan and standards; and so on), and, per `references/output-contract.md`, to write full findings to `.claude/review-runs/{run_id}/<reviewer>.json` and return the compact merge-tier object.
+Prompts: `references/agents/<reviewer>.md` for each selected reviewer. Inputs for each: the scope, `run_id={run_id}`, the diff/files, the Step 3 context, its focus (security-sentinel: security issues; performance-oracle: performance issues; code-reviewer: the plan and standards; and so on), and, per `references/output-contract.md`, to write full findings to `.agent-blueprint/review-runs/{run_id}/<reviewer>.json` and return the compact merge-tier object.
 
 **Important:** Dispatch ALL helpers at once to maximize parallelism.
 
@@ -99,7 +101,7 @@ Dispatch the **findings-synthesizer** helper with the validated outputs.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Prompt: `references/agents/findings-synthesizer.md`. Inputs: the validated finding list, `run_id={run_id}`, and the artifacts at `.claude/review-runs/{run_id}/`; it synthesizes them into one prioritized report.
+Prompt: `references/agents/findings-synthesizer.md`. Inputs: the validated finding list, `run_id={run_id}`, and the artifacts at `.agent-blueprint/review-runs/{run_id}/`; it synthesizes them into one prioritized report.
 
 The synthesizer will:
 - De-duplicate overlapping findings (cross-reviewer fingerprint match)

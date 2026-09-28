@@ -39,13 +39,3 @@ service-account.json
 
 # Per-developer config
 blueprint.local.md
-
-# Ship loop state (session-local, not committed)
-.claude/ship-loop.local.md
-.claude/ship-progress.local.md
-
-# Plan progress ledger (session-local, not committed)
-.claude/plans/*.progress.local.md
-
-# WebFetch revalidating cache (sdd-cache hook)
-.claude/sdd-cache/

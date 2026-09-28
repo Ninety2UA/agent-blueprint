@@ -1,7 +1,7 @@
 #!/bin/bash
 # sdd-cache-post.sh — PostToolUse hook for WebFetch.
 #
-# After WebFetch, stores the response body in .claude/sdd-cache/<sha>.json
+# After WebFetch, stores the response body in .agent-blueprint/cache/sdd/<sha>.json
 # with the current ETag / Last-Modified captured via a HEAD request so the
 # pre hook can revalidate on the next fetch.
 #
@@ -21,7 +21,7 @@ command -v shasum >/dev/null 2>&1 || command -v sha256sum >/dev/null 2>&1 || exi
 if [ -t 0 ]; then INPUT="{}"; else INPUT=$(cat); fi
 
 dbg() {
-  local dir="${CLAUDE_PROJECT_DIR:-$PWD}/.claude/sdd-cache"
+  local dir="${CLAUDE_PROJECT_DIR:-$PWD}/.agent-blueprint/cache/sdd"
   [ "${SDD_CACHE_DEBUG:-0}" = "1" ] || [ -f "$dir/.debug" ] || return 0
   mkdir -p "$dir"
   printf '%s [post] %s\n' "$(date -u +%FT%TZ)" "$*" >> "$dir/.debug.log"
@@ -71,7 +71,7 @@ hash_key() {
   fi
 }
 
-CACHE_DIR="${CLAUDE_PROJECT_DIR:-$PWD}/.claude/sdd-cache"
+CACHE_DIR="${CLAUDE_PROJECT_DIR:-$PWD}/.agent-blueprint/cache/sdd"
 mkdir -p "$CACHE_DIR"
 CACHE_FILE="$CACHE_DIR/$(hash_key "$URL").json"
 

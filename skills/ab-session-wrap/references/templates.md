@@ -6,7 +6,7 @@ Loaded on demand from `SKILL.md`; nothing here is needed on every invocation.
 
 - [ ] User received clear, accurate summary of session work with file paths and commit hashes
 - [ ] User confirmed summary before docs were updated
-- [ ] CLAUDE.md Session Continuity section has specific "start here" instruction
+- [ ] docs/context/STATUS.md Session Continuity section has specific "start here" instruction
 - [ ] docs/learnings/LEARNINGS.md reviewed this session — new entries added, or the confirmation report states "No durable learnings this session"
 - [ ] docs/context/STATUS.md reflects actual current state with updated tables
 - [ ] docs/context/STATUS.md commit log has new entries with real commit hashes
@@ -51,7 +51,7 @@ ls -la *.tmp *.bak *~ 2>/dev/null
 
 **Actions:**
 - If feature worktrees exist and the branch was merged, remove them: `git worktree remove <path>`
-- If worktrees are still in progress, document them in Session Continuity ("worktree at .claude/worktrees/feat-auth still active")
+- If worktrees are still in progress, document them in Session Continuity ("worktree at .worktrees/feat-auth still active")
 - Remove any temp/backup files that shouldn't be committed
 - If completed plans should be archived, add a completion note at the top rather than moving/deleting them
 

@@ -1,6 +1,6 @@
 ---
 name: ab-session-wrap
-description: "Trigger this skill when the user says 'wrap', 'wrap up', 'end session', 'done for today', 'finishing up', 'let's stop here', 'save everything', 'I'm done', 'that's it for now', 'calling it a day', 'log off', or anything suggesting they are ending a work session. Trigger at the end of ANY work session, even if the user just says 'I'm done' or 'gotta go' without explicitly asking for a wrap-up. Always suggest running this before ending a session if the user hasn't invoked it — session continuity depends on it. Summarizes accomplishments, records learnings, and updates all project documentation (CLAUDE.md, STATUS.md, GOALS.md, BACKLOG.md, LEARNINGS.md) to ensure the next session can pick up seamlessly. DO NOT TRIGGER for quick mid-session checkpoints or brief pauses — use ab-pause-checkpoint instead. Session-wrap is the comprehensive end-of-session operation; ab-pause-checkpoint is the lightweight mid-session alternative."
+description: "Trigger this skill when the user says 'wrap', 'wrap up', 'end session', 'done for today', 'finishing up', 'let's stop here', 'save everything', 'I'm done', 'that's it for now', 'calling it a day', 'log off', or anything suggesting they are ending a work session. Trigger at the end of ANY work session, even if the user just says 'I'm done' or 'gotta go' without explicitly asking for a wrap-up. Always suggest running this before ending a session if the user hasn't invoked it — session continuity depends on it. Summarizes accomplishments, records learnings, and updates all project documentation (STATUS.md with its Session Continuity section, GOALS.md, BACKLOG.md, LEARNINGS.md) to ensure the next session can pick up seamlessly. DO NOT TRIGGER for quick mid-session checkpoints or brief pauses — use ab-pause-checkpoint instead. Session-wrap is the comprehensive end-of-session operation; ab-pause-checkpoint is the lightweight mid-session alternative."
 argument-hint: "[optional: focus area]"
 ---
 
@@ -17,7 +17,8 @@ Do NOT modify source code, tests, or infrastructure files. This is a documentati
 Read ALL of these before writing anything. Do as many in parallel as possible.
 
 **Project state files (read all):**
-- `CLAUDE.md` — Session Continuity section, behavioral rules
+- `docs/context/STATUS.md` — its Session Continuity section, then the rest of the status
+- The project instructions file (AGENTS.md, or CLAUDE.md when only that one exists) — behavioral rules
 - `docs/learnings/LEARNINGS.md` — key learnings and gotchas
 - `docs/context/STATUS.md` — in flight, up next, what's done, known issues
 - `docs/context/GOALS.md` — current objectives, milestones, non-goals
@@ -51,8 +52,8 @@ If the result is empty → **planning session**. If it has files → **implement
 
 <HARD-GATE>
 **If planning session:** Do NOT mark goals, milestones, or tasks as "completed" or "done" anywhere. A plan is not delivery. Specifically:
-- Step 4 (CLAUDE.md): "What was done" should say "planned [feature]" or "wrote plan for [feature]" — NOT "implemented" or "built"
-- Step 4 (CLAUDE.md): "Start here" should say "execute the plan at docs/plans/..." — NOT "continue implementing"
+- Step 4 (Session Continuity): "What was done" should say "planned [feature]" or "wrote plan for [feature]" — NOT "implemented" or "built"
+- Step 4 (Session Continuity): "Start here" should say "execute the plan at docs/plans/..." — NOT "continue implementing"
 - Step 6 (STATUS.md): Add plan to "In Flight" or "Up Next" — do NOT move anything to "What's Done"
 - Step 8 (GOALS.md): Do NOT mark goals/milestones as complete — at most note "plan written for [goal]"
 - Step 10 (Plans): Do NOT mark the plan as COMPLETE — it hasn't been executed yet
@@ -83,9 +84,9 @@ Ask the user: **"Does this look accurate? Anything to add or correct before I up
 
 **Wait for confirmation before proceeding.** The user may have context not in the git history — verbal decisions, Slack conversations, things they want emphasized or omitted.
 
-## Step 4: Update CLAUDE.md — Session Continuity
+## Step 4: Session Continuity in docs/context/STATUS.md
 
-Update the **Session Continuity** section at the top of CLAUDE.md. This is what the next session reads first.
+Rewrite the **Session Continuity** section at the top of `docs/context/STATUS.md` (create the section if the file lacks it). This is what the next session reads first. It lives in the status file, not the project instructions file, because notes written to AGENTS.md never load in a repository that still has a CLAUDE.md, and Hermes drops an instructions file that changes shape. Write plain text only: no HTML comments.
 
 Use the template in `references/templates.md` § Step 4 Session Continuity template.
 
@@ -227,7 +228,7 @@ If `docs/context/STATE.md` already exists, invoke the `ab-session-continuity` sk
 After all documentation updates are complete:
 
 ```bash
-git add CLAUDE.md BACKLOG.md docs/
+git add BACKLOG.md docs/
 git commit -m "docs: session wrap-up YYYY-MM-DD — [one-line summary of session work]"
 ```
 

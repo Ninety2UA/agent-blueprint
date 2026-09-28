@@ -12,11 +12,13 @@ Spawn a team of independent Claude Code instances that coordinate through a shar
 
 ## Activate Team State
 
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+
 Before spawning teammates, create the state file so Agent Teams hooks (TeammateIdle, TaskCompleted) know a team is active:
 
 ```bash
 mkdir -p .claude
-echo "active: true" > .claude/team-active.local.md
+echo "active: true" > .agent-blueprint/team/active.md
 ```
 
 **Prerequisite:** Agent Teams is an experimental feature. Ensure `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"` is set in your Claude Code settings.json.

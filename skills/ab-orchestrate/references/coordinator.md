@@ -306,12 +306,14 @@ Default when nobody answers: stop with the report as it stands and start no furt
 Remove the team state file so Agent Teams hooks stop firing after the team is done:
 
 ```bash
-rm -f .claude/team-active.local.md
+rm -f .agent-blueprint/team/active.md
 ```
 
 This prevents TeammateIdle and TaskCompleted hooks from triggering on subsequent commands in the same session.
 
 ## Helper Return Contract
+
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
 
 Every task packet you hand a worker (wave worker, fix worker) ends with this output section, so its final response starts with one of these states and ends with a compact summary ≤ 2,000 tokens. A helper that runs from a prompt file, such as the integration verifier, returns that file's Output section instead.
 
@@ -322,7 +324,7 @@ Every task packet you hand a worker (wave worker, fix worker) ends with this out
 | `NEEDS_INPUT` | Mid-task user/operator decision required |
 | `INCONCLUSIVE` | Task ran to completion but result is uncertain (couldn't verify, partial coverage) |
 
-The 2K-token cap is a *commitment*: bounded handoff cost regardless of how long the worker ran. If the worker's substantive output exceeds that, it must persist detail to a file (under `.claude/runs/<id>/` or `.claude/review-runs/<id>/`) and reference the path in the summary — not paste the full output back into your context.
+The 2K-token cap is a *commitment*: bounded handoff cost regardless of how long the worker ran. If the worker's substantive output exceeds that, it must persist detail to a file (under `.agent-blueprint/team/<id>/` or `.agent-blueprint/review-runs/<id>/`) and reference the path in the summary — not paste the full output back into your context.
 
 The output section to put at the end of every task packet:
 

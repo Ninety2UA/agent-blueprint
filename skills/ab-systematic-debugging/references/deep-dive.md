@@ -16,7 +16,7 @@ Most bugs resolve in one session. Some don't — they survive context resets, sp
 - The user is resuming a bug from a prior session
 - The bug is cross-component and evidence collection will exceed one session
 
-**Mechanism:** maintain a single file at `.claude/debug/<slug>.md` (auto-create the directory if missing). The slug is a 3–5 word kebab-case summary of the symptom (e.g., `oauth-redirect-loop`).
+**Mechanism:** maintain a single file at `.agent-blueprint/debug/<slug>.md` (auto-create the directory if missing). The slug is a 3–5 word kebab-case summary of the symptom (e.g., `oauth-redirect-loop`).
 
 **File structure:**
 
@@ -55,7 +55,7 @@ Most bugs resolve in one session. Some don't — they survive context resets, sp
 4. **Cycle counter:** increment a `cycles:` field in frontmatter each time a new hypothesis enters Active. At 5+ cycles, escalate to the user — the architecture probably needs questioning (Phase 4 step 5).
 5. **Compact summary on completion:** when status flips to `verified` or `abandoned`, write a ≤2K-token `## Summary` at the top with: root cause (1 line), fix applied (1 line), how many cycles, eliminated branches (bullets), prevention note. Future agents resuming this slug read only the summary unless they need full history.
 
-**Resuming a session:** if `.claude/debug/<slug>.md` already exists, **read the Summary first** (if present), then Eliminated, then Active. Do NOT re-run eliminated hypotheses without new evidence that contradicts the elimination reason.
+**Resuming a session:** if `.agent-blueprint/debug/<slug>.md` already exists, **read the Summary first** (if present), then Eliminated, then Active. Do NOT re-run eliminated hypotheses without new evidence that contradicts the elimination reason.
 
 **When NOT to persist:** single-cycle bugs, syntax/type errors, environment misconfigurations, or anything Step 0 routes to fast-path. Persistence has overhead — only pay it when the session is genuinely long.
 

@@ -9,7 +9,7 @@ When a review swarm runs with many reviewers and findings, the orchestrator's co
 Each reviewer writes the **full finding set** as JSON to a workspace path supplied by the orchestrator:
 
 ```
-.claude/review-runs/{run_id}/{reviewer_name}.json
+.agent-blueprint/review-runs/{run_id}/{reviewer_name}.json
 ```
 
 This file contains every required field — the long prose fields (`why_it_matters`, `evidence`) live here, not in the orchestrator's context. If the write fails, continue: the compact return below still provides everything synthesis needs to merge and route.
@@ -21,7 +21,7 @@ The agent's normal return value carries only the fields synthesis needs to merge
 | Tier | Fields | Where it goes |
 |------|--------|---------------|
 | **Merge tier** (always returned) | `title`, `severity`, `file`, `line`, `confidence`, `tier`, `pre_existing`, `suggested_fix` (optional), `requires_verification` | Compact return to orchestrator |
-| **Detail tier** (artifact only) | `why_it_matters`, `evidence` | Written to `.claude/review-runs/{run_id}/{reviewer_name}.json` |
+| **Detail tier** (artifact only) | `why_it_matters`, `evidence` | Written to `.agent-blueprint/review-runs/{run_id}/{reviewer_name}.json` |
 | **Top-level** (always returned) | `reviewer`, `residual_risks`, `testing_gaps` | Compact return to orchestrator |
 
 The synthesizer reads the compact return for routing decisions. Walkthrough/headless surfaces that need the long prose fields read the artifact file on demand by `(file, line_bucket(line, ±3), normalize(title))` matching.
@@ -71,7 +71,7 @@ These are validation failures; synthesis rejects non-conforming output:
 
 ## Reviewer rules
 
-- You are operationally read-only. The one permitted write is the artifact file at `.claude/review-runs/{run_id}/{reviewer_name}.json`. Do not edit project files, change branches, commit, push, create PRs, or otherwise mutate the checkout.
+- You are operationally read-only. The one permitted write is the artifact file at `.agent-blueprint/review-runs/{run_id}/{reviewer_name}.json`. Do not edit project files, change branches, commit, push, create PRs, or otherwise mutate the checkout.
 - You are a leaf reviewer inside an already-running ab-review-swarm. Do not invoke other skills or agents. Perform your analysis directly and return findings in the required format only.
 - If the run id is empty or absent, skip the artifact write entirely — the compact return is sufficient.
 - If you find no issues, return an empty `findings` array. Still populate `residual_risks` and `testing_gaps` if applicable.

@@ -67,7 +67,7 @@ For files >2000 lines, use targeted Read with `offset`/`limit` rather than full 
 
 ### Step 4: Write PATTERNS.md
 
-Write to `.claude/plans/PATTERNS.md` (or wherever the plan lives, alongside it). Format:
+Write to `.agent-blueprint/plans/PATTERNS.md` (or wherever the plan lives, alongside it). Format:
 
 ```markdown
 # Implementation Patterns
