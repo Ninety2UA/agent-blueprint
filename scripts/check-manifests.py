@@ -22,10 +22,9 @@ the same shrink-only rules as check-portability.py (stale entries fail).
 Usage: check-manifests.py [repo-root] [--allowlist PATH] [--allowlist-base REF]
 Exit:  0 = clean · 1 = violation(s) or stale allowlist entries
 """
+import importlib.util
 import json
 import os
-import re
-import subprocess
 import sys
 
 NAME = "agent-blueprint"
@@ -37,7 +36,19 @@ MARKETPLACES = [".claude-plugin/marketplace.json", ".agents/plugins/marketplace.
 PACKAGE = "package.json"
 NEEDS_SKILLS_KEY = [".codex-plugin/plugin.json", ".grok-plugin/plugin.json"]
 ALLOWLIST_SECTION = "manifests"
-FRONTMATTER = re.compile(r"^---[ \t]*\n(.*?)\n---[ \t]*(?:\n|$)", re.DOTALL)
+
+
+def _load_portability_gate():
+    """check-portability.py as a module: its frontmatter parser, allowlist
+    handling and report layout are shared, so both gates read the allowlist alike."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    spec = importlib.util.spec_from_file_location("check_portability", os.path.join(here, "check-portability.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+GATE = _load_portability_gate()
 
 
 def read(path):
@@ -48,29 +59,14 @@ def read(path):
 def skill_metadata_versions(repo):
     """{skill: metadata.version} for skills whose frontmatter carries one."""
     out = {}
-    root = os.path.join(repo, "skills")
-    if not os.path.isdir(root):
-        return out
-    for d in sorted(os.listdir(root)):
-        p = os.path.join(root, d, "SKILL.md")
-        if not os.path.isfile(p):
+    for skill_dir in GATE.skill_dirs(repo):
+        data, err = GATE.parse_frontmatter(read(os.path.join(skill_dir, "SKILL.md")))
+        if err:   # invalid frontmatter is check-portability's finding
             continue
-        m = FRONTMATTER.match(read(p).replace("\r\n", "\n"))
-        if not m:
-            continue
-        block = m.group(1)
-        try:
-            import yaml
-            data = yaml.safe_load(block) or {}
-            ver = (data.get("metadata") or {}).get("version") if isinstance(data, dict) else None
-        except ImportError:
-            meta = re.search(r"^metadata:\s*\n((?:[ \t]+.*\n?)*)", block, re.MULTILINE)
-            vm = re.search(r"^\s+version:\s*[\"']?([^\"'\s]+)", meta.group(1), re.MULTILINE) if meta else None
-            ver = vm.group(1) if vm else None
-        except Exception:   # noqa: BLE001 - invalid YAML is check-portability's finding
-            ver = None
+        meta = data.get("metadata")
+        ver = meta.get("version") if isinstance(meta, dict) else None
         if ver is not None:
-            out[d] = str(ver)
+            out[os.path.basename(skill_dir)] = str(ver)
     return out
 
 
@@ -161,69 +157,16 @@ def collect(repo):
     return found
 
 
-def load_allowlist(path, section):
-    if not path or not os.path.isfile(path):
-        return set()
-    data = json.loads(read(path))
-    return {(p, r) for p, rules in (data.get(section) or {}).items() for r in rules}
-
-
-def base_allowlist(repo, ref, rel_path, section):
-    try:
-        out = subprocess.run(["git", "-C", repo, "show", "%s:%s" % (ref, rel_path)],
-                             capture_output=True, text=True, check=True).stdout
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return None
-    data = json.loads(out)
-    return {(p, r) for p, rules in (data.get(section) or {}).items() for r in rules}
-
-
 def main(argv):
-    args, allowlist, base_ref = [], None, None
-    it = iter(argv)
-    for a in it:
-        if a == "--allowlist":
-            allowlist = next(it)
-        elif a == "--allowlist-base":
-            base_ref = next(it)
-        else:
-            args.append(a)
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    repo = os.path.abspath(args[0]) if args else os.path.dirname(script_dir)
-    allowlist = allowlist or os.path.join(repo, "scripts", "portability-allowlist.json")
-
+    repo, allowlist, base_ref = GATE.parse_args(argv, __file__)
     found = collect(repo)
-    allowed = load_allowlist(allowlist, ALLOWLIST_SECTION)
-    failures = sorted(k for k in found if k not in allowed)
-    stale = sorted(allowed - set(found))
-    grew = []
-    if base_ref:
-        base = base_allowlist(repo, base_ref, os.path.relpath(allowlist, repo), ALLOWLIST_SECTION)
-        if base is not None:
-            grew = sorted(allowed - base)
-
+    status = GATE.allowlist_status(repo, found, allowlist, ALLOWLIST_SECTION, base_ref)
     print("Manifest gate — %s" % repo)
-    if failures:
-        print("\n  FAIL (%d):" % len(failures))
-        for key in failures:
-            for msg in found[key]:
-                print("    %s: [%s] %s" % (key[0], key[1], msg))
-    if stale:
-        print("\n  FAIL — allowlist entries that no longer match a violation (remove them; the list only shrinks):")
-        for p, r in stale:
-            print("    %s: [%s]" % (p, r))
-    if grew:
-        print("\n  FAIL — allowlist entries added since %s (fix the violation instead of allowlisting it):" % base_ref)
-        for p, r in grew:
-            print("    %s: [%s]" % (p, r))
-    held = sorted(k for k in found if k in allowed)
-    if held:
-        print("\n  Allowlisted (%d entries, drained by later units):" % len(held))
-        for p, r in held:
-            print("    %s: [%s]" % (p, r))
-    if not (failures or stale or grew):
+    GATE.print_findings(found, status, base_ref)
+    bad = status[0] or status[1] or status[2]
+    if not bad:
         print("\n  OK — no violations beyond the allowlist.")
-    return 1 if (failures or stale or grew) else 0
+    return 1 if bad else 0
 
 
 if __name__ == "__main__":

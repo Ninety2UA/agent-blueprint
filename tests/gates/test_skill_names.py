@@ -3,6 +3,7 @@
 Run: python3 -m unittest discover -s tests/gates
 """
 import csv
+import importlib.util
 import os
 import re
 import subprocess
@@ -13,8 +14,12 @@ SKILLS = os.path.join(REPO, "skills")
 NAME_MAP = os.path.join(REPO, "docs", "upgrade", "v4-skill-names.tsv")
 FRONTMATTER = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 NAME_LINE = re.compile(r"^name:\s*(\S+)\s*$", re.MULTILINE)
-# A prose reference is an ab-<name> token that is not part of a longer word or path.
-PROSE_REF = re.compile(r"(?<![A-Za-z0-9_./-])ab-[a-z0-9]+(?:-[a-z0-9]+)*")
+
+# The gate's own patterns, so the test and the gate cannot drift apart.
+_spec = importlib.util.spec_from_file_location("check_portability", os.path.join(REPO, "scripts", "check-portability.py"))
+GATE = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(GATE)
+PROSE_REF = GATE.PROSE_REF   # an ab-<name> token that is not part of a longer word or path
 
 
 def read(path):
@@ -37,11 +42,6 @@ def skill_markdown():
         for name in files:
             if name.endswith(".md"):
                 yield os.path.join(root, name)
-
-
-def slash_reference(names):
-    alt = "|".join(re.escape(n) for n in sorted(names, key=len, reverse=True))
-    return re.compile(r"(?<![A-Za-z0-9_.~:-])/(%s)(?![A-Za-z0-9_-])" % alt)
 
 
 def unknown_prose_refs(text, known):
@@ -74,7 +74,7 @@ class SkillNames(unittest.TestCase):
 
     def test_no_slash_reference_to_any_old_or_new_name(self):
         rows = name_map()
-        pattern = slash_reference([r["v3_name"] for r in rows] + [r["v4_name"] for r in rows])
+        pattern = GATE.slash_reference([r["v3_name"] for r in rows] + [r["v4_name"] for r in rows])
         hits = []
         for path in skill_markdown():
             for n, line in enumerate(read(path).splitlines(), 1):

@@ -81,6 +81,12 @@ class ManifestGate(unittest.TestCase):
         self.repo.edit("skills/ab-fixture/SKILL.md", "  owner: gate-tests", '  owner: gate-tests\n  version: "3.8.0"')
         self.assertFails("skills/ab-fixture/SKILL.md", "version", "metadata.version 3.8.0")
 
+    def test_skill_metadata_version_mismatch_without_pyyaml(self):
+        self.repo.edit("skills/ab-fixture/SKILL.md", "  owner: gate-tests", '  owner: gate-tests\n  version: "3.8.0"')
+        code, out = run_gate("check-manifests.py", self.repo.root, env={"PORTABILITY_FORCE_NO_YAML": "1"})
+        self.assertEqual(code, 1, out)
+        self.assertIn("skills/ab-fixture/SKILL.md: [version]", out)
+
     def test_skill_metadata_version_match_passes(self):
         self.repo.edit("skills/ab-fixture/SKILL.md", "  owner: gate-tests", '  owner: gate-tests\n  version: "%s"' % VERSION)
         code, out = self.gate()

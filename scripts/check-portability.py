@@ -163,13 +163,18 @@ HTML_COMMENT = re.compile(r"<!--")
 
 YAML_WARNED = []
 _YAML = []
+_READ_CACHE = {}
 
 
 # ── small helpers ──────────────────────────────────────────────
 
 def read(path):
-    with open(path, encoding="utf-8") as fh:
-        return fh.read()
+    """File text, read once per run: several rules scan the same files."""
+    key = os.path.abspath(path)
+    if key not in _READ_CACHE:
+        with open(path, encoding="utf-8") as fh:
+            _READ_CACHE[key] = fh.read()
+    return _READ_CACHE[key]
 
 
 def rel(repo, path):
@@ -234,6 +239,15 @@ def line_of(text, pos):
     return text.count("\n", 0, pos) + 1
 
 
+def slash_reference(names):
+    """Compiled /name pattern for these skill names, longest first so a name
+    that prefixes another cannot match early; None for no names."""
+    if not names:
+        return None
+    alt = "|".join(re.escape(n) for n in sorted(names, key=len, reverse=True))
+    return re.compile(r"(?<![A-Za-z0-9_.~:-])/(%s)(?![A-Za-z0-9_-])" % alt)
+
+
 # ── inventory ──────────────────────────────────────────────────
 
 def skill_dirs(repo):
@@ -273,7 +287,7 @@ def instruction_files(repo):
 
 # ── rules ──────────────────────────────────────────────────────
 
-def check_frontmatter(repo, skill_dir, add):
+def check_frontmatter(skill_dir, add):
     path = os.path.join(skill_dir, "SKILL.md")
     text = read(path)
     data, err = parse_frontmatter(text)
@@ -320,10 +334,8 @@ def check_prompt_frontmatter(skill_dir, add):
             add(p, "frontmatter", "prompt files carry no frontmatter (KTD2)")
 
 
-def check_text_rules(repo, skill_dir, skill_names, add):
+def check_text_rules(skill_dir, slash, add):
     own = os.path.basename(skill_dir)
-    slash = re.compile(r"(?<![A-Za-z0-9_.~:-])/(%s)(?![A-Za-z0-9_-])"
-                       % "|".join(re.escape(n) for n in sorted(skill_names, key=len, reverse=True))) if skill_names else None
     for path in skill_files(skill_dir, include_assets=False):
         text = read(path)
         for pat, why in BANNED:
@@ -367,7 +379,7 @@ def hermes_findings(text):
     return found
 
 
-def check_hermes(repo, paths, add):
+def check_hermes(paths, add):
     for path in paths:
         text = read(path)
         for line, label in hermes_findings(text):
@@ -425,9 +437,9 @@ def openai_implicit_off(skill_dir):
     return bool(re.search(r"^\s+allow_implicit_invocation:\s*false\s*$", text, re.MULTILINE))
 
 
-def check_manual_only(repo, fm_by_skill, add):
-    manual = {}
-    for skill_dir in skill_dirs(repo):
+def check_manual_only(dirs, fm_by_skill, add):
+    manual = set()
+    for skill_dir in dirs:
         name = os.path.basename(skill_dir)
         flag = fm_by_skill.get(name, {}).get("disable-model-invocation") is True
         off = openai_implicit_off(skill_dir)
@@ -439,15 +451,16 @@ def check_manual_only(repo, fm_by_skill, add):
             add(path, "manual-only", "agents/openai.yaml turns implicit invocation off, but the skill lacks "
                 "disable-model-invocation: true")
         if flag or off:
-            manual[name] = skill_dir
-    for name in sorted(manual):
-        for skill_dir in skill_dirs(repo):
-            if os.path.basename(skill_dir) == name:
-                continue
-            for path in prose_files(skill_dir):
-                if name in {m.group(0) for m in PROSE_REF.finditer(read(path))}:
-                    add(path, "manual-only", "references manual-only skill %s; manual-only skills are hidden from "
-                        "other skills on Claude Code, Codex and Grok (KTD12)" % name)
+            manual.add(name)
+    if not manual:
+        return
+    for skill_dir in dirs:
+        own = os.path.basename(skill_dir)
+        for path in prose_files(skill_dir):
+            refs = {m.group(0) for m in PROSE_REF.finditer(read(path))}
+            for name in sorted((refs & manual) - {own}):
+                add(path, "manual-only", "references manual-only skill %s; manual-only skills are hidden from "
+                    "other skills on Claude Code, Codex and Grok (KTD12)" % name)
 
 
 # ── driver ─────────────────────────────────────────────────────
@@ -455,6 +468,7 @@ def check_manual_only(repo, fm_by_skill, add):
 def collect(repo):
     """All violations as {(rel_path, rule): [messages]}."""
     found = {}
+    _READ_CACHE.clear()
 
     def add(path, rule, msg):
         found.setdefault((rel(repo, path), rule), []).append(msg)
@@ -465,17 +479,18 @@ def collect(repo):
     tsv = os.path.join(repo, "docs", "upgrade", "v4-skill-names.tsv")
     if os.path.isfile(tsv):
         old_names = [ln.split("\t")[0] for ln in read(tsv).splitlines()[1:] if ln.strip()]
+    slash = slash_reference(names + old_names)
     fm_by_skill = {}
     for d in dirs:
-        fm_by_skill[os.path.basename(d)] = check_frontmatter(repo, d, add)
+        fm_by_skill[os.path.basename(d)] = check_frontmatter(d, add)
         check_prompt_frontmatter(d, add)
-        check_text_rules(repo, d, names + old_names, add)
-        check_hermes(repo, list(skill_files(d)), add)
-    check_hermes(repo, instruction_files(repo), add)
+        check_text_rules(d, slash, add)
+        check_hermes(list(skill_files(d)), add)
+    check_hermes(instruction_files(repo), add)
     check_instruction_length(repo, add)
     check_stray_skill_md(repo, add)
     check_shared(repo, add)
-    check_manual_only(repo, fm_by_skill, add)
+    check_manual_only(dirs, fm_by_skill, add)
     return found, len(dirs)
 
 
@@ -496,7 +511,8 @@ def base_allowlist(repo, ref, rel_path, section):
     return {(p, r) for p, rules in (data.get(section) or {}).items() for r in rules}
 
 
-def main(argv):
+def parse_args(argv, script_file):
+    """(repo, allowlist path, base ref) from [repo-root] [--allowlist PATH] [--allowlist-base REF]."""
     args, allowlist, base_ref = [], None, None
     it = iter(argv)
     for a in it:
@@ -506,29 +522,28 @@ def main(argv):
             base_ref = next(it)
         else:
             args.append(a)
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    script_dir = os.path.dirname(os.path.abspath(script_file))
     repo = os.path.abspath(args[0]) if args else os.path.dirname(script_dir)
-    allowlist = allowlist or os.path.join(repo, "scripts", "portability-allowlist.json")
+    return repo, allowlist or os.path.join(repo, "scripts", "portability-allowlist.json"), base_ref
 
-    found, count = collect(repo)
-    if count == 0:
-        print("check-portability: no skills under %s/skills — refusing to pass vacuously" % repo)
-        return 2
-    allowed = load_allowlist(allowlist, ALLOWLIST_SECTION)
+
+def allowlist_status(repo, found, allowlist, section, base_ref):
+    """(failures, stale, grew, held): violations not allowlisted, allowlist entries
+    with no violation, entries missing at base_ref, and allowlisted violations."""
+    allowed = load_allowlist(allowlist, section)
     failures = sorted(k for k in found if k not in allowed)
     stale = sorted(allowed - set(found))
     grew = []
     if base_ref:
-        base = base_allowlist(repo, base_ref, rel(repo, allowlist), ALLOWLIST_SECTION)
+        base = base_allowlist(repo, base_ref, rel(repo, allowlist), section)
         if base is not None:
             grew = sorted(allowed - base)
+    held = sorted(k for k in found if k in allowed)
+    return failures, stale, grew, held
 
-    print("Portability gate — %d skills" % count)
-    if YAML_WARNED:
-        if os.environ.get("REQUIRE_YAML") == "1":
-            print("\n  FAIL: PyYAML is not installed and REQUIRE_YAML=1 — frontmatter cannot be fully parsed")
-        else:
-            print("\n  WARN: PyYAML not installed — frontmatter checked with a line parser (CI uses PyYAML)")
+
+def print_findings(found, status, base_ref):
+    failures, stale, grew, held = status
     if failures:
         print("\n  FAIL (%d):" % len(failures))
         for key in failures:
@@ -542,12 +557,28 @@ def main(argv):
         print("\n  FAIL — allowlist entries added since %s (fix the violation instead of allowlisting it):" % base_ref)
         for p, r in grew:
             print("    %s: [%s]" % (p, r))
-    held = sorted(k for k in found if k in allowed)
     if held:
         print("\n  Allowlisted (%d entries, drained by later units):" % len(held))
         for p, r in held:
             print("    %s: [%s]" % (p, r))
-    bad = failures or stale or grew or (YAML_WARNED and os.environ.get("REQUIRE_YAML") == "1")
+
+
+def main(argv):
+    repo, allowlist, base_ref = parse_args(argv, __file__)
+    found, count = collect(repo)
+    if count == 0:
+        print("check-portability: no skills under %s/skills — refusing to pass vacuously" % repo)
+        return 2
+    status = allowlist_status(repo, found, allowlist, ALLOWLIST_SECTION, base_ref)
+    print("Portability gate — %d skills" % count)
+    yaml_required = bool(YAML_WARNED) and os.environ.get("REQUIRE_YAML") == "1"
+    if YAML_WARNED:
+        if yaml_required:
+            print("\n  FAIL: PyYAML is not installed and REQUIRE_YAML=1 — frontmatter cannot be fully parsed")
+        else:
+            print("\n  WARN: PyYAML not installed — frontmatter checked with a line parser (CI uses PyYAML)")
+    print_findings(found, status, base_ref)
+    bad = status[0] or status[1] or status[2] or yaml_required
     if not bad:
         print("\n  OK — no violations beyond the allowlist.")
     return 1 if bad else 0
