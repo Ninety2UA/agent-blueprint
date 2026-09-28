@@ -22,7 +22,7 @@ Quality over speed. Small steps compound. The patterns you establish will be cop
 
 **Current state of the code:**
 - Build: n/a (template repo, no build step)
-- Gates: drift gate (promo source, site grids + badge integrity, repo-count claims, README agents table, version equality, README nav anchor) + skill-collision gate (fails on invalid frontmatter YAML and unresolved `references/` pointers since v3.8.0; warn-only SKILL.md size report, no body over 16 KB) + plugin-validate job green; markdownlint + shellcheck clean locally
+- Gates: drift gate (promo source, site grids + badge integrity, repo-count claims, README agents table, version equality, README nav anchor) + skill-collision gate (fails on invalid frontmatter YAML and unresolved `references/` pointers) + portability gate (`scripts/check-portability.py`: agentskills frontmatter, `ab-` names, 8,000-byte SKILL.md cap, no host variables or slash references, Hermes-safe text, shrink-only allowlist in `scripts/portability-allowlist.json`) + manifest gate (`scripts/check-manifests.py`) + snippet sync check (`scripts/sync-shared.py --check`) + the `tests/gates` unit suite + plugin-validate job green; markdownlint + shellcheck clean locally
 - Website: live at <https://ninety2ua.github.io/agent-blueprint/>
 - Uncommitted changes: none
 

@@ -3,7 +3,7 @@
 
 One committed manifest per tool points at the shared skills/ tree. Rule ids:
 
-  missing-manifest  every KTD10 manifest exists and parses as JSON.
+  missing-manifest  every KTD10 manifest exists and parses as a JSON object.
   name              each plugin manifest and marketplace names agent-blueprint.
   version           every versioned manifest, package.json, and any skill's
                     frontmatter metadata.version equal .claude-plugin/plugin.json.
@@ -83,9 +83,14 @@ def collect(repo):
             add(rel_path, "missing-manifest", "KTD10 manifest is missing")
             continue
         try:
-            docs[rel_path] = json.loads(read(p))
+            doc = json.loads(read(p))
         except json.JSONDecodeError as exc:
             add(rel_path, "missing-manifest", "not valid JSON (%s)" % exc)
+            continue
+        if not isinstance(doc, dict):   # absent for every other rule
+            add(rel_path, "missing-manifest", "is not a JSON object (parsed as %s)" % type(doc).__name__)
+            continue
+        docs[rel_path] = doc
 
     for rel_path in PLUGIN_MANIFESTS + [PACKAGE]:
         doc = docs.get(rel_path)
@@ -132,7 +137,7 @@ def collect(repo):
             add("plugin.json", "root-manifest", "root plugin.json must not declare $schema: Codex then truncates "
                 "every SKILL.md at 8,000 bytes under the Agent Plugins limits")
         if "skills" in root:
-            add("plugin.json", "root-manifest", "root plugin.json carries no skills key (KTD10)")
+            add("plugin.json", "root-manifest", "root plugin.json must not declare a skills key (KTD10)")
 
     pkg = docs.get(PACKAGE)
     if isinstance(pkg, dict):

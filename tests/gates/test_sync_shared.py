@@ -118,6 +118,49 @@ class SyncTool(unittest.TestCase):
         self.assertEqual(code, 1, out)
         self.assertIn("fix it by hand", out)
 
+    def test_site_line_right_under_a_snippet_needs_a_hand_fix(self):
+        site = "Prompt: `references/guide.md`. Inputs: the target."
+        self.repo.edit(SKILL, "2. Use the", "\n%s\n%s\n\n2. Use the" % (self.helper, site))
+        before = self.repo.read(SKILL)
+        code, out = run_gate("sync-shared.py", self.repo.root, "--check")
+        self.assertEqual(code, 1, out)
+        self.assertIn("[snippet-drift]", out)
+        self.assertIn("must be a paragraph of its own", out)
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 1, out)
+        self.assertIn("needs a hand fix", out)
+        self.assertEqual(self.repo.read(SKILL), before)
+
+    def test_four_backtick_fence_holding_a_fence_hides_only_itself(self):
+        drifted = self.helper.replace("if you can", "whenever possible")
+        example = "````markdown\n```text\nPrompt: x\n```\n\n%s\n````" % drifted
+        self.repo.edit(SKILL, "2. Use the", "\n%s\n\n%s\n\nPrompt: `references/guide.md`.\n\n2. Use the"
+                       % (example, drifted))
+        lines = self.repo.read(SKILL).split("\n")
+        outside = len(lines) - lines[::-1].index(drifted)
+        code, out = run_gate("sync-shared.py", self.repo.root, "--check")
+        self.assertEqual(code, 1, out)
+        self.assertEqual(out.count("[snippet-drift]"), 1, out)
+        self.assertIn("line %d: the **Helper step.** snippet differs" % outside, out)
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 0, out)
+        self.assertIn(example, self.repo.read(SKILL))
+
+    def test_snippet_on_a_list_item_line_is_reported(self):
+        self.repo.edit(SKILL, "2. Use the", "\n- %s\n\n1. %s\n\n2. Use the" % (self.helper, self.helper))
+        code, out = run_gate("sync-shared.py", self.repo.root, "--check")
+        self.assertEqual(code, 1, out)
+        self.assertEqual(out.count("must be a paragraph of its own"), 2, out)
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 1, out)
+        self.assertIn("needs a hand fix", out)
+
+    def test_owner_read_past_a_four_backtick_fence(self):
+        owner = OWNER.replace("ab-writing-skills", "ab-helper")
+        self.repo.edit(owner, "\n## helper-step", "\n````markdown\n```text\nexample\n```\n````\n\n## helper-step")
+        snips, _, _ = SYNC.snippets(self.repo.root, SYNC.load_registry(self.repo.root))
+        self.assertEqual(snips, self.snips)
+
     def test_owner_file_itself_is_not_a_copy(self):
         code, out = run_gate("sync-shared.py", self.repo.root, "--check")
         self.assertEqual(code, 0, out)

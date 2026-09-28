@@ -101,6 +101,21 @@ class PortabilityGate(unittest.TestCase):
         self.repo.edit(SKILL, "Read `references/guide.md`", "Read [the helper](../ab-helper/SKILL.md) and `references/guide.md`")
         self.assertFails(SKILL, "path-escape", "leaves the skill directory")
 
+    def test_path_after_a_longer_fence_with_an_inner_fence(self):
+        # An inner ``` line does not close a ```` fence, so the link after the
+        # outer fence is prose, not the start of another fenced block.
+        self.repo.edit(SKILL, "1. Look at the target",
+                       "````markdown\n```bash\necho hi\n```\n````\n\n"
+                       "Read [the helper](../ab-helper/SKILL.md).\n\n```bash\nls\n```\n\n1. Look at the target")
+        self.assertFails(SKILL, "path-escape", "leaves the skill directory")
+
+    def test_inner_fence_does_not_end_a_longer_fence(self):
+        self.repo.edit(SKILL, "1. Look at the target",
+                       "````markdown\n```bash\necho hi\n```\nSee [the helper](../ab-helper/SKILL.md).\n````\n\n"
+                       "1. Look at the target")
+        code, out = self.gate()
+        self.assertEqual(code, 0, out)
+
     def test_other_skill_directory_path(self):
         self.repo.edit(SKILL, "Read `references/guide.md`", "Read skills/ab-helper/SKILL.md and `references/guide.md`")
         self.assertFails(SKILL, "path-escape", "another skill's directory")
@@ -246,18 +261,46 @@ class PortabilityGate(unittest.TestCase):
         self.assertIn("no longer match a violation", out)
         self.assertIn("%s: [banned-token]" % SKILL, out)
 
-    def test_allowlist_entry_added_since_base_fails(self):
+    def commit_base(self):
+        """git-initialize the fixture repository and commit its current state as the base."""
         def git(*args):
-            subprocess.run(["git", "-C", self.repo.root] + list(args), check=True, capture_output=True)
-        self.repo.allowlist()
+            subprocess.run(["git", "-C", self.repo.root, "-c", "user.email=t@example.com", "-c", "user.name=t"]
+                           + list(args), check=True, capture_output=True)
         git("init", "-q")
-        git("-c", "user.email=t@example.com", "-c", "user.name=t", "add", "-A")
-        git("-c", "user.email=t@example.com", "-c", "user.name=t", "commit", "-q", "-m", "base")
+        git("add", "-A")
+        git("commit", "-q", "-m", "base")
+
+    def allowlist_an_arguments_violation(self):
         self.repo.edit(SKILL, "1. Look at the target", "The target: $ARGUMENTS\n\n1. Look at the target")
         self.repo.allowlist(skills={SKILL: ["banned-token"]})
+
+    def test_allowlist_entry_added_since_base_fails(self):
+        self.repo.allowlist()
+        self.commit_base()
+        self.allowlist_an_arguments_violation()
         code, out = self.gate("--allowlist-base", "HEAD")
         self.assertEqual(code, 1, out)
         self.assertIn("added since HEAD", out)
+
+    def test_base_without_an_allowlist_seeds_it(self):
+        self.commit_base()   # the base commit has no allowlist file yet
+        self.allowlist_an_arguments_violation()
+        code, out = self.gate("--allowlist-base", "HEAD")
+        self.assertEqual(code, 0, out)
+        self.assertIn("Allowlisted", out)
+
+    def test_unresolvable_allowlist_base_fails(self):
+        self.commit_base()
+        code, out = self.gate("--allowlist-base", "no-such-ref")
+        self.assertEqual(code, 1, out)
+        self.assertIn("--allowlist-base no-such-ref", out)
+        self.assertIn("does not resolve to a commit", out)
+
+    def test_allowlist_base_without_git_fails(self):
+        code, out = self.gate("--allowlist-base", "HEAD", env={"PATH": self.repo.path("no-bin")})
+        self.assertEqual(code, 1, out)
+        self.assertIn("--allowlist-base HEAD", out)
+        self.assertIn("git cannot run", out)
 
     def test_without_pyyaml_warns_and_still_checks(self):
         self.repo.edit(SKILL, "argument-hint:", "effort: high\nargument-hint:")

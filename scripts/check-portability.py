@@ -39,7 +39,9 @@ Allowlist: scripts/portability-allowlist.json holds today's violations as
 {"skills": {path: [rule-id, ...]}, "manifests": {...}}. An allowlisted violation
 passes; an entry that no longer matches a violation FAILS, so the list can only
 shrink. With --allowlist-base REF, entries absent from the allowlist at REF also
-fail (CI passes the PR base), so no later change can seed new entries.
+fail (CI passes the PR base), so no later change can seed new entries. A REF
+that does not resolve to a commit fails the gate; a REF whose tree has no
+allowlist file yet passes the check (the change seeds it).
 
 PyYAML is optional locally (a line-based parser covers the checks) and required
 in CI: REQUIRE_YAML=1 turns its absence into a failure.
@@ -64,7 +66,10 @@ TEXT_EXT = (".md", ".txt", ".sh", ".py", ".js", ".ts", ".json", ".yaml", ".yml",
 
 FRONTMATTER = re.compile(r"^---[ \t]*\n(.*?)\n---[ \t]*(?:\n|$)", re.DOTALL)
 NAME_RE = re.compile(r"^ab-[a-z0-9]+(?:-[a-z0-9]+)*$")
-FENCE = re.compile(r"^[ \t]*(```|~~~)[^\n]*\n.*?^[ \t]*\1[ \t]*$", re.DOTALL | re.MULTILINE)
+# CommonMark fences: an opening run of 3+ backticks or tildes (then an info
+# string) closes at the first line holding a run of the same character at least
+# as long, then only whitespace, so a ```` block can quote a ``` block.
+FENCE = re.compile(r"^[ \t]*((`|~)\2{2,})(?!\2)[^\n]*\n.*?^[ \t]*\1\2*[ \t]*$", re.DOTALL | re.MULTILINE)
 PROSE_REF = re.compile(r"(?<![A-Za-z0-9_./-])ab-[a-z0-9]+(?:-[a-z0-9]+)*")
 
 # R8: host substitutions and variables that tie a skill to one tool.
@@ -501,13 +506,32 @@ def load_allowlist(path, section):
     return {(p, r) for p, rules in (data.get(section) or {}).items() for r in rules}
 
 
+class BaseRefError(Exception):
+    """--allowlist-base cannot be read: the ref names no commit, or git cannot run."""
+
+
 def base_allowlist(repo, ref, rel_path, section):
-    try:
-        out = subprocess.run(["git", "-C", repo, "show", "%s:%s" % (ref, rel_path)],
-                             capture_output=True, text=True, check=True).stdout
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return None   # no allowlist at the base yet: nothing to compare against
-    data = json.loads(out)
+    """Allowlist entries at ref, or None when ref has no allowlist file (the base
+    predates it, so there is nothing to compare). Raises BaseRefError when ref does
+    not resolve to a commit: a typo or an unfetched ref must not skip the check."""
+    def git(*args):
+        try:
+            return subprocess.run(["git", "-C", repo] + list(args), capture_output=True, text=True)
+        except OSError as exc:
+            raise BaseRefError("git cannot run (%s)" % exc)
+
+    commit = git("rev-parse", "--verify", "--quiet", "%s^{commit}" % ref)
+    if commit.returncode != 0:
+        detail = (commit.stderr.strip().splitlines() or [""])[0]
+        raise BaseRefError("does not resolve to a commit%s; fetch it (CI checks out with fetch-depth: 0) "
+                           "or fix the name" % (" (%s)" % detail if detail else ""))
+    blob = "%s:%s" % (commit.stdout.strip(), rel_path)
+    if git("cat-file", "-e", blob).returncode != 0:
+        return None
+    shown = git("show", blob)
+    if shown.returncode != 0:
+        raise BaseRefError("git show %s failed (%s)" % (blob, shown.stderr.strip()))
+    data = json.loads(shown.stdout)
     return {(p, r) for p, rules in (data.get(section) or {}).items() for r in rules}
 
 
@@ -529,13 +553,18 @@ def parse_args(argv, script_file):
 
 def allowlist_status(repo, found, allowlist, section, base_ref):
     """(failures, stale, grew, held): violations not allowlisted, allowlist entries
-    with no violation, entries missing at base_ref, and allowlisted violations."""
+    with no violation, entries missing at base_ref, and allowlisted violations.
+    grew is a BaseRefError instead when base_ref cannot be read; it is truthy, so a
+    gate that fails on a non-empty grew fails on it too."""
     allowed = load_allowlist(allowlist, section)
     failures = sorted(k for k in found if k not in allowed)
     stale = sorted(allowed - set(found))
     grew = []
     if base_ref:
-        base = base_allowlist(repo, base_ref, rel(repo, allowlist), section)
+        try:
+            base = base_allowlist(repo, base_ref, rel(repo, allowlist), section)
+        except BaseRefError as exc:
+            base, grew = None, exc
         if base is not None:
             grew = sorted(allowed - base)
     held = sorted(k for k in found if k in allowed)
@@ -553,7 +582,9 @@ def print_findings(found, status, base_ref):
         print("\n  FAIL — allowlist entries that no longer match a violation (remove them; the list only shrinks):")
         for p, r in stale:
             print("    %s: [%s]" % (p, r))
-    if grew:
+    if isinstance(grew, BaseRefError):
+        print("\n  FAIL — --allowlist-base %s: %s. The shrink-only check cannot run." % (base_ref, grew))
+    elif grew:
         print("\n  FAIL — allowlist entries added since %s (fix the violation instead of allowlisting it):" % base_ref)
         for p, r in grew:
             print("    %s: [%s]" % (p, r))

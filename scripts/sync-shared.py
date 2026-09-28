@@ -26,7 +26,9 @@ import os
 import re
 import sys
 
-FENCE = re.compile(r"^[ \t]*(```|~~~)[^\n]*\n.*?^[ \t]*\1[ \t]*$", re.DOTALL | re.MULTILINE)
+# CommonMark fences: a run of 3+ backticks (info string without backticks) or 3+ tildes,
+# closed by a run of the same character at least as long, followed only by whitespace.
+FENCE_OPEN = re.compile(r"^[ \t]*(?:(`{3,})[^`]*|(~{3,}).*)$")
 LABEL = re.compile(r"^\*\*[^*\n]+\*\*")
 LIST_LEAD = re.compile(r"^\s*(?:[-*+]\s+|\d+[.)]\s+|>\s*)*")
 
@@ -42,18 +44,27 @@ def load_registry(repo):
 
 
 def fence_lines(lines):
-    """Set of 0-based line indexes inside fenced code blocks."""
-    inside, marker, out = False, None, set()
+    """Set of 0-based line indexes inside fenced code blocks (an unclosed fence runs to the end)."""
+    close, out = None, set()
     for i, line in enumerate(lines):
-        m = re.match(r"^[ \t]*(```|~~~)", line)
-        if m and not inside:
-            inside, marker = True, m.group(1)
+        if close:
             out.add(i)
-        elif inside:
+            if close.match(line):
+                close = None
+            continue
+        m = FENCE_OPEN.match(line)
+        if m:
+            run = m.group(1) or m.group(2)
+            close = re.compile(r"^[ \t]*%s{%d,}[ \t]*$" % (re.escape(run[0]), len(run)))
             out.add(i)
-            if re.match(r"^[ \t]*%s[ \t]*$" % re.escape(marker), line):
-                inside = False
     return out
+
+
+def blank_fences(text):
+    """text with every fenced line emptied, so line numbers stay put."""
+    lines = text.split("\n")
+    fenced = fence_lines(lines)
+    return "\n".join("" if i in fenced else line for i, line in enumerate(lines))
 
 
 def blocks(text):
@@ -90,7 +101,7 @@ def snippets(repo, registry):
     if not os.path.isfile(path):
         return {}, None, owner
     out = {}
-    text = FENCE.sub(lambda m: "\n" * m.group(0).count("\n"), read(path))
+    text = blank_fences(read(path))
     for section in re.split(r"^## .*$", text, flags=re.MULTILINE)[1:]:
         lines, ranges = blocks(section)
         if ranges:
@@ -117,7 +128,12 @@ def skill_prose(repo):
 
 
 def snippet_drift(text, snips):
-    """[(line_no, label, kind, (first, last) or None)] for copies in text; kind is 'drift' or 'run-in'."""
+    """[(line_no, label, kind, (first, last, indent) or None)] for copies in text.
+
+    kind is 'drift' (a paragraph of its own that differs: rewrite it), 'run-on' (text
+    written right under the snippet in the same paragraph) or 'run-in' (the label opens
+    a later line or a list item); the last two need a hand fix, so sync never deletes text.
+    """
     lines, ranges = blocks(text)
     found = []
     for first, last in ranges:
@@ -125,10 +141,12 @@ def snippet_drift(text, snips):
         para = "\n".join(body)
         for label, canon in snips.items():
             if para.startswith(label):
-                if para != canon:
+                if len(body) > canon.count("\n") + 1:
+                    found.append((first + 1, label, "run-on", None))
+                elif para != canon:
                     found.append((first + 1, label, "drift", (first, last, indent)))
                 continue
-            for k, line in enumerate(body[1:], 1):
+            for k, line in enumerate(body):
                 if LIST_LEAD.sub("", line).startswith(label):
                     found.append((first + k + 1, label, "run-in", None))
     return found
@@ -149,6 +167,9 @@ def find_drift(repo, registry=None):
                 if kind == "drift":
                     out.append((path, "snippet-drift", "line %d: the %s snippet differs from its owner; run "
                                 "python3 scripts/sync-shared.py" % (line, label)))
+                elif kind == "run-on":
+                    out.append((path, "snippet-drift", "line %d: the %s snippet must be a paragraph of its own; "
+                                "add a blank line between it and the following text" % (line, label)))
                 else:
                     out.append((path, "snippet-drift", "line %d: the %s snippet must be a paragraph of its own, "
                                 "with a blank line before and after" % (line, label)))
@@ -191,6 +212,10 @@ def sync(repo, registry=None):
                 continue
             lines = text.split("\n")
             for line, label, kind, span in sorted(hits, key=lambda h: -h[0]):
+                if kind == "run-on":
+                    problems.append("%s:%d: the %s snippet has text right under it; add a blank line between them"
+                                    % (os.path.relpath(path, repo), line, label))
+                    continue
                 if kind == "run-in":
                     problems.append("%s:%d: the %s snippet is run into another paragraph; fix it by hand"
                                     % (os.path.relpath(path, repo), line, label))

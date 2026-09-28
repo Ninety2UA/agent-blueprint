@@ -110,7 +110,7 @@ class ManifestGate(unittest.TestCase):
     def test_skills_key_in_root_plugin_json(self):
         self.manifests["plugin.json"]["skills"] = "./skills/"
         self.save()
-        self.assertFails("plugin.json", "root-manifest", "no skills key")
+        self.assertFails("plugin.json", "root-manifest", "must not declare a skills key")
 
     def test_wrong_name(self):
         self.manifests[".grok-plugin/plugin.json"]["name"] = "claude-code-blueprint"
@@ -156,6 +156,28 @@ class ManifestGate(unittest.TestCase):
     def test_invalid_json(self):
         self.repo.write(".grok-plugin/plugin.json", "{ nope")
         self.assertFails(".grok-plugin/plugin.json", "missing-manifest", "not valid JSON")
+
+    def assertNotAnObject(self, path, text):
+        """A manifest that parses to a non-object is reported once, as missing-manifest,
+        and is treated as absent by every other rule."""
+        self.repo.write(path, text)
+        self.assertFails(path, "missing-manifest", "is not a JSON object")
+        code, out = self.gate()
+        rules = [line.split("[", 1)[1].split("]", 1)[0]
+                 for line in out.splitlines() if line.strip().startswith("%s: [" % path)]
+        self.assertEqual(rules, ["missing-manifest"], out)
+
+    def test_null_manifest(self):
+        self.assertNotAnObject(".codex-plugin/plugin.json", "null\n")
+
+    def test_array_manifest(self):
+        self.assertNotAnObject(".claude-plugin/plugin.json", '["agent-blueprint", "4.0.0"]\n')
+
+    def test_array_marketplace(self):
+        self.assertNotAnObject(".grok-plugin/marketplace.json", '[{"name": "agent-blueprint"}]\n')
+
+    def test_string_manifest(self):
+        self.assertNotAnObject("package.json", '"agent-blueprint"\n')
 
 
 if __name__ == "__main__":

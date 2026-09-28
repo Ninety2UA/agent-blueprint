@@ -74,6 +74,11 @@ jobs:
           test -d /tmp/blueprint-test/tests
           test -d /tmp/blueprint-test/infra
 
+          echo "Checking legacy install copies only scripts/ship.sh and .claude-plugin/plugin.json..."
+          test -f /tmp/blueprint-test/scripts/ship.sh
+          test "$(ls /tmp/blueprint-test/scripts)" = "ship.sh"
+          test "$(ls /tmp/blueprint-test/.claude-plugin)" = "plugin.json"
+
           echo "All checks passed!"
 
       - name: Test --no-overwrite mode
