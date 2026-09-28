@@ -39,7 +39,7 @@ Never use bare `origin/main` as the base: once main moves past your branch point
 
 **2. Dispatch the code-reviewer helper:**
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt: `references/agents/code-reviewer.md` (the helper's instructions). Inputs: the review request, which is the template at `code-reviewer.md` with its placeholders filled in.
 

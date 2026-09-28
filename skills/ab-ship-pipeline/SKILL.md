@@ -116,7 +116,7 @@ For **brownfield** tasks (modifying existing code), add a 4th dimension — **Co
 
 Dispatch these helpers simultaneously:
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt files and inputs:
 - `references/agents/learnings-researcher.md`: Search docs/solutions/ for relevant prior work related to: [feature]. Return findings as bullet points.
@@ -135,7 +135,7 @@ Invoke the ab-writing-plans skill and follow it. Incorporate all research findin
 
 Dispatch the **plan-checker** helper to verify the plan.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt: `references/agents/plan-checker.md`. Inputs: the plan file from 2b.
 
@@ -225,7 +225,7 @@ Skip if the work was straightforward.
 
 3. **Deploy check** (if `--deploy` flag): Dispatch the **deployment-verifier** helper to verify deployment readiness. Report the go/no-go checklist in the completion report.
 
-   **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+   **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
    Prompt: `references/agents/deployment-verifier.md`. Inputs: Verify deployment readiness for this PR. Check build, tests, security, migrations, configuration, dependencies, rollback plan, and monitoring.
 

@@ -126,7 +126,7 @@ Build one task packet per task. Each packet holds:
 
 Start one worker per task, all at once, each in its own worktree.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt: each task's packet, as that worker's whole prompt; no prompt file applies. Inputs: the packet itself.
 
@@ -136,7 +136,7 @@ Wait for all workers in the wave to return.
 
 Check the wave's combined output before the next wave starts.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt: `references/agents/integration-verifier.md`. Inputs: the wave number, the commit the wave started from, and each completed task with its worker's summary.
 
@@ -218,7 +218,7 @@ After all workers complete:
 
 If tests/build/lint fail, identify the failing component and hand the fix to a worker: in team mode, assign it to the responsible teammate; in wave mode, start a targeted fix worker. Re-run verification after the fix.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt: a fix task packet, built like a wave task packet (§ Start the Wave's Workers), naming the failing component, the failing output, and the files the fix may touch; no prompt file applies. Inputs: the packet itself.
 

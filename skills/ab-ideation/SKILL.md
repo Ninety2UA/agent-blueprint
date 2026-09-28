@@ -46,7 +46,7 @@ Parse the focus hint into: focus context, volume override.
 
 Dispatch 3 helpers **in parallel** and wait for them (results needed before proceeding).
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt files and inputs:
 - `references/agents/learnings-researcher.md`: Search docs/solutions/, docs/learnings/, and docs/context/DECISIONS.md for known pain points, recurring issues, and areas flagged for improvement. Focus: {focus_hint}
@@ -67,7 +67,7 @@ Generate the full candidate list **before** critiquing any idea.
 
 Dispatch 3 parallel ideation helpers.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 These have no prompt file: each helper's prompt is its frame text below. Each gets: the grounding summary, the focus hint, and a per-helper volume target (~8-10 ideas). Instruct each to generate raw candidates only — no critique.
 

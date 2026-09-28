@@ -30,7 +30,7 @@ Based on the topic, formulate specific research questions for each helper:
 
 Dispatch ALL research helpers simultaneously:
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt files and inputs:
 - `references/agents/learnings-researcher.md`: Search docs/solutions/ and docs/research/ for past work related to [topic]. Report findings with file references.
@@ -49,7 +49,7 @@ Prompt files and inputs:
 
 When all helpers return, dispatch the **research-synthesizer** helper:
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt: `references/agents/research-synthesizer.md`. Inputs: Synthesize these research outputs into one unified brief: [all helper outputs]. Focus on: consensus findings, unique insights, contradictions, and gaps.
 

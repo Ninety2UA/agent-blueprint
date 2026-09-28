@@ -71,7 +71,7 @@ For each helper, prepare focused inputs that include:
 
 Dispatch all selected helpers simultaneously.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompts: `references/agents/<reviewer>.md` for each selected reviewer. Inputs for each: the scope, `run_id={run_id}`, the diff/files, the Step 3 context, its focus (security-sentinel: security issues; performance-oracle: performance issues; code-reviewer: the plan and standards; and so on), and, per `references/output-contract.md`, to write full findings to `.claude/review-runs/{run_id}/<reviewer>.json` and return the compact merge-tier object.
 
@@ -87,7 +87,7 @@ When all reviewers return, the flow has two synthesis stages:
 
 Dispatch the **findings-validator** helper with the merged compact returns. The validator does an independent re-verification per surviving finding (3 questions: real in current code? introduced by this diff? not handled elsewhere?) and returns validated, rejected, or unresolved per finding with a reason. Conservative bias — when in doubt, reject — except on protected subjects (auth, injection, data loss, secrets), where a rejection must quote the refuting line.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt: `references/agents/findings-validator.md`. Inputs: the merged finding list, the diff, and `run_id={run_id}`; it validates these findings against the diff.
 
@@ -97,7 +97,7 @@ This step is an FP backstop. Rejected findings are dropped before synthesis. **U
 
 Dispatch the **findings-synthesizer** helper with the validated outputs.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt: `references/agents/findings-synthesizer.md`. Inputs: the validated finding list, `run_id={run_id}`, and the artifacts at `.claude/review-runs/{run_id}/`; it synthesizes them into one prioritized report.
 

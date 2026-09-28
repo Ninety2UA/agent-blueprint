@@ -91,7 +91,7 @@ You MUST complete each phase before proceeding to the next (unless Step 0 author
    - If not reproducible → gather more data, don't guess
    - If reproduction is disputed or intermittent, dispatch the `bug-reproduction-validator` helper to independently establish the repro before investing in investigation
 
-   **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+   **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
    Prompt: `references/agents/bug-reproduction-validator.md`. Inputs: the bug report and the repro steps.
 
@@ -202,7 +202,7 @@ You MUST complete each phase before proceeding to the next (unless Step 0 author
 
    For non-trivial fixes — intermittent bugs, disputed repro steps, fixes touching shared state, or long sessions where confirmation bias accumulates — dispatch the `bug-reproduction-validator` helper. It re-runs the reproduction and verifies the fix in a fresh context, with none of this session's assumptions.
 
-   **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+   **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
    Prompt: `references/agents/bug-reproduction-validator.md`. Inputs: the bug report, the repro steps, and the fix.
 

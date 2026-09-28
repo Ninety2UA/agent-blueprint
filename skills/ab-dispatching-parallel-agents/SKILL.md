@@ -65,7 +65,7 @@ Each agent gets:
 
 Start one helper per domain, all at once, so they run concurrently.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt: each domain's task from step 2 (scope, goal, constraints, expected output), as that helper's whole prompt; no prompt file applies. Inputs: the task itself, for example:
 

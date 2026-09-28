@@ -102,7 +102,7 @@ All agents in a swarm need the same base context:
 
 Review and research specialists start through the skills that carry them. Start the members this skill runs itself all at once:
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt: `references/agents/integration-checker.md` for the integration checker; for any other member, the task packet below, one per member. Inputs: the member's focus and the shared context from Step 2.
 

@@ -51,7 +51,7 @@ The whole file, frontmatter included, loads each time the skill runs, and Codex 
 
 Watch a baseline fail first. Without seeing what an agent does with no skill, you cannot tell whether the skill teaches anything, so this holds for edits as well as new skills.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 The helper's prompt is the pressure scenario you wrote, following `testing-skills-with-subagents.md`; its input is whether the skill is loaded.
 

@@ -29,7 +29,7 @@ Load plan, review critically, execute tasks in batches, report for review betwee
 3. If concerns: Raise them with your human partner before starting
 4. **Pattern mapping (optional but recommended for plans with 3+ new files):** produce `.claude/plans/PATTERNS.md` mapping each new file to existing analogs with line-numbered excerpts. Read PATTERNS.md before each task — it grounds new code in existing conventions and prevents structural drift.
 
-   **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path if the helper shares your files, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+   **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
    Prompt: `references/agents/pattern-mapper.md`. Inputs: the plan file path, the codebase root, and the output path `.claude/plans/PATTERNS.md`.
 
