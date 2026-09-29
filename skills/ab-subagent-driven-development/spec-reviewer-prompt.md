@@ -19,7 +19,7 @@ Helper (its prompt is the text below):
     [From implementer's report]
 
     BASE_SHA: [commit before this task started — stays fixed across fix rounds]
-    HEAD_SHA: [current commit]
+    HEAD_SHA: [current commit, or `working tree` in no-commit mode: then review the working tree and untracked files, starting from the files the implementer lists]
 
     ## CRITICAL: Do Not Trust the Report
 

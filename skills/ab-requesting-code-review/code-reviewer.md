@@ -27,6 +27,14 @@ git diff --stat {BASE_SHA}..{HEAD_SHA}
 git diff {BASE_SHA}..{HEAD_SHA}
 ```
 
+When **Head** is `working tree` (no-commit mode: the changes are not committed yet), review the working tree against the base instead, and read each untracked file in full:
+
+```bash
+git diff --stat {BASE_SHA}
+git diff {BASE_SHA}
+git ls-files --others --exclude-standard
+```
+
 ## Review Checklist
 
 **Code Quality:**

@@ -2,15 +2,21 @@
 name: ab-orchestrate
 description: "Runs a plan as team work: a task ledger, dependency-ordered waves of parallel helpers with file ownership or worktrees, integration checks between waves, lead-only commits, then review and sign-off. Works in every tool: helpers where the tool has them, one task after another where it does not, and Claude Code Agent Teams or Codex multi_agent_v2 when the user has switched them on. Use when a plan has four or more tasks, some of them independent, or when the user asks for parallel, team, wave or collaborative execution. Not for a sequential plan with review checkpoints between batches (ab-executing-plans) or a change under three files (ab-quick-fix)."
 argument-hint: "[path to plan file] [--no-review] [--wave-size N] [--iterations N] [--convergence fast|deep|perfect]"
+metadata:
+  version: "3.8.0"
 ---
 
 # Orchestrate — Team Work in Waves
 
-Execute a plan as a team, with this session as the lead. The lead follows `references/coordinator.md`: it keeps the run's task ledger (`references/team-ledger.md`), groups tasks into waves so no two tasks in a wave share a file, starts one worker per task, integrates and commits each finished task itself, verifies every wave, and (unless `--no-review`) reviews the combined output and signs off. Only the lead starts helpers; workers never start their own.
+Execute a plan as a team, with this session as the lead. The lead follows `references/coordinator.md`: it keeps the run's task ledger (`references/team-ledger.md`), groups tasks into waves so no two tasks in a wave share a file, starts one worker per task, integrates and commits each finished task itself, verifies every wave, and (unless `--no-review`) reviews the combined output and signs off. Only the lead starts helpers; workers never start their own, because many hosts forbid a helper from starting another.
 
 The same run works everywhere. Where the tool can start helpers, a wave's workers run in parallel. Where it cannot, the lead does each task itself, one after another, through the same ledger, so the result has the same shape. Where the user has switched on a native team feature, the lead uses it on top of the ledger (`references/native-extras.md`).
 
 **Announce at start:** "Starting team run — coordinating from this session."
+
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+
+**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. If `.agent-blueprint/.gitignore` is missing, create it first with the lines `run/`, `team/`, `review-runs/` and `cache/`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## Parse Arguments
 
@@ -21,8 +27,6 @@ The same run works everywhere. Where the tool can start helpers, a wave's worker
 - **`--convergence fast|deep|perfect`:** Review convergence mode (default: `fast`). `fast` = exit when P1=0, `deep` = exit when P1+P2=0, `perfect` = exit when all findings=0. Only applies when `--iterations` > 1.
 
 ## Coordinate
-
-**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
 
 The ledger lives in `.agent-blueprint/team/<run>/ledger.md`.
 
@@ -49,7 +53,7 @@ When the coordinator's report is ready:
 
 1. Present the execution summary to the user, with the ledger's path
 2. If you signed off (with-review mode): report the sign-off status
-3. If the report lists blockers: present them and ask the user how to proceed (`references/coordinator.md` § Phase 5)
+3. If the report lists blockers: present them and ask the user how to proceed, with the options and the headless default in `references/coordinator.md` § Phase 5
 
 ## Standalone vs Pipeline Usage
 

@@ -1,271 +1,81 @@
 ---
 name: ab-ship-pipeline
-description: "Trigger this skill whenever the user wants autonomous end-to-end development with zero checkpoints. Trigger scenarios: 'ship it', 'fire and forget', 'autonomous', 'just build it', 'no checkpoints', 'don't ask me anything, just do it', 'ship', 'autonomous pipeline', 'handle everything yourself', 'I don't want to be involved', 'go end to end', 'build and open a PR', or any request where the user signals they want hands-off execution without review gates. Even if the user doesn't explicitly say 'ship', trigger this skill when they clearly want to hand off a well-defined feature and not be consulted during development. DO NOT TRIGGER when the user wants human oversight or approval between stages (e.g. 'step by step', 'guide me', 'with checkpoints') — use ab-build-pipeline instead. DO NOT TRIGGER for trivial changes touching fewer than 3 files with an obvious approach — use ab-quick-fix instead."
+description: "Ships a feature end to end with no checkpoints: recorded assumptions, a verified and deepened plan, execution through ab-orchestrate, review until it converges, then commits and a PR body, tracked in .agent-blueprint/run/state.json. Use when the user wants a well-defined feature built hands-off, fire and forget, through to a pull request. Not for work the user approves stage by stage (ab-build-pipeline) or a change under three files (ab-quick-fix)."
 argument-hint: "<feature description> [--swarm] [--iterations N] [--convergence fast|deep|perfect] [--deploy] [--external]"
+metadata:
+  version: "3.8.0"
 ---
 
 # Ship Pipeline — Autonomous End-to-End
 
-You are executing the fully autonomous development pipeline. Unlike the ab-build-pipeline skill (which stops for user approval between stages), this runs to completion with NO checkpoints. Every decision is made autonomously.
+Run every stage below in order without stopping for the user, who asked not to be consulted: each decision is made here and recorded. The run ends when its state file (below) says `done`, or `blocked` or `needs-human` with a `reason`.
 
-**Announce at start:** "Starting ship pipeline — fully autonomous. No checkpoints. Will deliver a PR when done."
-
-## Parse Arguments
-
-Extract from arguments:
-- **Feature description:** Everything that isn't a flag
-- **`--swarm`:** Also run review and browser testing in parallel at Stage 5 (default: off). Execution goes through the ab-orchestrate skill either way
-- **`--iterations N`:** Max review-improve iterations (default: 3, max: 10)
-- **`--convergence fast|deep|perfect`:** Review convergence mode (default: fast)
-- **`--external`:** Set by `scripts/ship.sh` — signals this session is managed by the external loop (skip Stop hook activation)
-
-## Intake — route before shipping
-
-Ship only what is a feature. A bug report (something broke, an error to explain) goes to ab-systematic-debugging first; ship the fix only once the root cause is known. A question (how does X work, should we do Y) gets an answer and the run stops: no branch, no PR.
-
-## Pipeline Stages
-
-Execute ALL stages sequentially. Do NOT stop for user input. Make all decisions autonomously.
-
-Decisions follow the decision boundary in ab-executing-plans with one difference: this contract cannot stop, so a CLAUDE.md must-ask category is decided conservatively and appended to `docs/context/DECISIONS.md` under Stage 1's locked-decision rule (the hard stop applies to ab-build-pipeline and ab-autonomous-loop runs).
-
----
-
-### Stage 0: Initialize Loop & Detect Continuation
-
-Two loop mechanisms exist — the external bash loop (`scripts/ship.sh`) and the internal Stop hook (`ship-loop.sh`). Stage 0 handles both.
-
-#### Continuation detection (both modes)
+Announce at start: "Starting ship pipeline — fully autonomous. No checkpoints. Will deliver a PR when done."
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
 
-Check if this is a continuation of a previous ship pipeline run:
+**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. If `.agent-blueprint/.gitignore` is missing, create it first with the lines `run/`, `team/`, `review-runs/` and `cache/`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
-1. Check git log on current branch for prior commits from this pipeline
-2. Check if a plan file already exists in `docs/plans/` for this feature. A plan found on disk is never run unverified: confirm it describes this feature, then run it through Stage 2c's plan-checker loop before skipping ahead
-3. Check for uncommitted changes
-4. Check if `.agent-blueprint/run/ship-progress.md` exists (external loop progress file). If it does:
-   - Read its `Feature:` line. Another feature's name means a stale file: delete it and count from zero (no `Feature:` line means this feature).
-   - Count its `## Iteration` blocks — `scripts/ship.sh` appends one per pass that ends without `<promise>DONE</promise>`, so the count survives fresh processes and `ship.sh` restarts.
-   - **At 20 or more, STOP before Stage 1 regardless of `--max`.** Report what was completed and what failed (Error Recovery format), but keep this file — it is the counter — and name it as the file to delete for a deliberate restart. The ceiling is fixed; `--max` is the user's knob below it.
+## Run state
 
-If continuation detected, **skip to the stage that needs work** — don't redo requirements, planning, or deepening if those artifacts already exist on disk.
+`references/run-state.md` is the contract for `.agent-blueprint/run/state.json`. Write the file whole (a temporary file in the same folder, renamed over the old one) at start, once Stage 0 has read any earlier one, and at every stage change, with every field: `status`, `stage`, `iteration`, `host`, `driver`, `session_id`, `decisions`, `provenance`, `reason`, `updated_at`.
 
-#### External mode (`--external` flag is set)
+- `driver`: `runner` when `AGENT_BLUEPRINT_RUNNER` is `1` or `--external` was passed, else `interactive`.
+- `stage`: `continuation` (Stage 0), `plan` (1–3), `execute` (4), `review` (5–6), `verify` (7 to its plan audit), `ship` (the rest).
+- `decisions`: each default taken without asking (assumptions, must-ask choices, danger-scan hits).
+- `provenance`: `ab-ship-pipeline` and this file's `metadata.version`. `session_id`: the host's, else the branch name fitted to the pattern.
 
-The external `scripts/ship.sh` bash loop manages context-exhaustion restarts by spawning fresh Claude processes. Do NOT create the Stop hook state file — the external loop handles iteration.
+Leave every run file in place, on failure too, and set `status` instead: only the ship runner cleans up, since it alone sees the whole run.
 
-Continue to Stage 1 (or resume from detected progress).
+## Arguments
 
-#### Interactive mode (`--external` flag is NOT set)
+Everything that is not a flag is the feature description. The flags are in `references/modes-and-reports.md` § Flags Reference; `--external` equals `AGENT_BLUEPRINT_RUNNER=1`.
 
-Create the Stop hook state file to guard against premature exit within this session. Write `.agent-blueprint/run/ship-loop.md`:
+## Pipeline Stages
 
-```yaml
----
-active: true
-session_id: "<current-branch-name>"
-iteration: 1
-max_iterations: 5
-completion_promise: "DONE"
----
-<paste the full original feature description here, including all flags>
-```
+### Stage 0: Initialize Loop & Detect Continuation
 
-- `max_iterations: 5` caps inner restarts to prevent infinite blocking if context is exhausted
-- The session_id uses the branch name so other sessions aren't blocked
-- If this file already exists with `iteration` > 1, you are in a **continuation session** from a prior Stop hook restart
-
-#### Optional: native `/goal` completion (interactive only, CLI v2.1.139+)
-
-An opt-in overlay only: the `ship-loop.sh` Stop hook remains the guarantee, so continue the pipeline immediately and never wait for a paste. The prompt to emit, the `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` opt-out (which also turns off the goal's automatic retries), and the CLI-version notes are in `references/modes-and-reports.md` § Native /goal completion.
-
----
+Ship only a feature: route the request with `references/stages.md` § Intake, then run `references/stages.md` § Continuation checks, and skip to the stage that needs work. At an `iteration` of 20 or more, stop before Stage 1 as `blocked`, the ceiling as `reason`, and report what was completed and what failed; state.json keeps the count, so a deliberate restart starts from an empty `.agent-blueprint/run/`. The ceiling is fixed; the ship runner's limit is the user's knob below it.
 
 ### Stage 1: Requirements (Auto-Discuss)
 
-Analyze the feature description. If requirements are clear and unambiguous:
-- Lock them as decisions
-- Skip to Stage 2
-
-If requirements are ambiguous:
-- Make reasonable assumptions based on project context (read `docs/context/CONVENTIONS.md`, `docs/context/GOALS.md`)
-- Document assumptions as locked decisions
-- Proceed — do NOT ask the user
-
-Write locked decisions to `docs/context/DECISIONS.md` (append, don't overwrite).
-
-**Ambiguity Gate — score requirements before proceeding:**
-
-| Dimension | Weight | Question |
-|-----------|--------|----------|
-| **Scope clarity** | 40% | Is it clear what's in and out of scope? Are boundaries explicit? |
-| **Constraint clarity** | 30% | Are technical constraints, dependencies, and limitations stated? |
-| **Success criteria clarity** | 30% | Are acceptance criteria specific and testable? |
-
-Rate each dimension 0.0–1.0. Calculate: `clarity = (scope × 0.4) + (constraints × 0.3) + (criteria × 0.3)`
-
-For **brownfield** tasks (modifying existing code), add a 4th dimension — **Context clarity (15%)**: is existing codebase behavior understood? Adjust weights to 35%/25%/25%/15%.
-
-- If clarity **≥ 0.8** → proceed to Stage 2
-- If clarity **< 0.8** → make reasonable assumptions for the weakest dimension, append them as locked decisions to `docs/context/DECISIONS.md`, then re-score. If still < 0.8, proceed anyway with assumptions documented (autonomous mode — no user questions).
-
----
+Lock clear requirements as decisions; where they are ambiguous, lock reasonable assumptions from `docs/context/CONVENTIONS.md` and `docs/context/GOALS.md` instead of asking. Other decisions follow the ab-executing-plans skill's decision boundary, except that a must-ask category from the project instructions file is decided conservatively and locked the same way, since this skill cannot stop to ask. Append decisions to `docs/context/DECISIONS.md` (append, don't overwrite) and score the requirements with `references/stages.md` § Ambiguity gate.
 
 ### Stage 2: Plan
 
-#### 2a. Parallel Research
-
-Dispatch these helpers simultaneously:
-
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
-
-Prompt files and inputs:
-- `references/agents/learnings-researcher.md`: Search docs/solutions/ for relevant prior work related to: [feature]. Return findings as bullet points.
-- `references/agents/framework-docs-researcher.md`: Gather current documentation for [frameworks involved]. Focus on API patterns, version constraints, and gotchas.
-- `references/agents/codebase-context-mapper.md`: Map all files and dependencies affected by: [feature description]. Identify integration points and potential conflicts.
-
-**Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
-
-Collect all research results.
-
-#### 2b. Write Plan
-
-Invoke the ab-writing-plans skill and follow it. Incorporate all research findings into the plan. Write the plan to `docs/plans/YYYY-MM-DD-<topic>.md`.
-
-#### 2c. Plan Verification Loop
-
-Dispatch the **plan-checker** helper to verify the plan.
-
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
-
-Prompt: `references/agents/plan-checker.md`. Inputs: the plan file from 2b.
-
-BLOCKING issues are those that prevent implementation (missing dependencies, architectural conflicts, unresolvable ambiguity). If the plan-checker reports BLOCKING issues:
-
-```
-for pass in 1..3:
-    Fix blocking issues in the plan
-    Re-dispatch plan-checker
-    if no BLOCKING issues: break
-```
-
-If blocking issues persist after 3 passes, STOP the pipeline and report: "Plan verification failed after 3 passes. Remaining blockers: [list]. Use the ab-build-pipeline skill for supervised planning."
-
-#### 2d. Pre-flight danger scan (advisory)
-
-Before execution, scan the verified plan for irreversible operations (deleting data, migrations on shared databases, force-push or history rewrite, publishing or sending anything outside the repo), pushes to a protected branch, and deleting or skipping tests. Route each hit through the decision boundary and record it; the scan never stops the run by itself.
-
----
+- **2a.** Research: `references/stages.md` § Research.
+- **2b.** Invoke the ab-writing-plans skill with the findings; the plan goes to `docs/plans/YYYY-MM-DD-<topic>.md`.
+- **2c.** Verify it: `references/stages.md` § Plan check. Blockers left after 3 passes stop the run as `blocked`, reported as that section says.
+- **2d.** Danger scan: `references/stages.md` § Danger scan.
 
 ### Stage 3: Deepen Plan
 
-Invoke the ab-deepen-plan skill on the plan file. This enriches the plan with parallel research from all its configured research helpers.
-
----
+Invoke the ab-deepen-plan skill on the plan file.
 
 ### Stage 4: Execute
 
-Invoke the ab-orchestrate skill with the plan file and `--no-review` flag, in both modes. It coordinates all execution from the main session: it keeps the task ledger, groups tasks into dependency-ordered waves, delegates implementation to workers, commits each finished task, runs integration checks, and reports back, autonomously (no user approval needed — the plan is already verified by plan-checker). Review is handled by Stage 5, not by that skill.
-
-After that skill reports execution complete, proceed to Stage 5.
-
----
+Invoke the ab-orchestrate skill with the plan file and `--no-review` flag, in both modes (with or without `--swarm`). It needs no user approval, since plan-checker verified the plan; review is Stage 5's job.
 
 ### Stage 5: Iterative Review
 
-**Default mode:** Run iterative refinement sequentially.
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
 
-**Swarm mode (`--swarm` flag):** review and browser testing run as parallel background tasks and their results merge before the convergence check — see `references/modes-and-reports.md` § Swarm-mode review.
+Invoke the ab-iterative-refinement skill (with `--swarm`, alongside browser testing: `references/modes-and-reports.md` § Swarm-mode review), passing `max_iterations` (`--iterations`, default 3), `convergence` (`--convergence`, default `fast`), `scope` (this branch vs main, `git diff main...HEAD`, or in no-commit mode the working tree) and earlier rounds' Skip and Defer decisions, so declined findings stay declined (ab-iterative-refinement Step 2a).
 
-**Both modes — iterative refinement parameters:**
-
-Invoke the ab-iterative-refinement skill.
-
-Pass the configured parameters:
-- `max_iterations`: from `--iterations` flag (default 3)
-- `convergence`: from `--convergence` flag (default `fast`)
-- `scope`: all changes on this branch vs main (`git diff main...HEAD`)
-- earlier rounds' Skip and Defer decisions, so declined findings are not raised again (ab-iterative-refinement Step 2a, "Declined findings stay declined")
-
-If iterative refinement exits without converging per the specified mode (P1 > 0 for `fast`, P1+P2 > 0 for `deep`, any findings > 0 for `perfect`):
-- STOP the pipeline
-- Report: "Review found unresolved critical issues after [N] iterations. Use the ab-build-pipeline skill to address manually."
-- Do NOT create a PR with known critical issues
-
----
+If it ends without converging (P1 > 0 for `fast`, P1+P2 > 0 for `deep`, any finding for `perfect`), stop as `blocked`: "Review found unresolved critical issues after [N] iterations. Use the ab-build-pipeline skill to address manually." Write no PR body: a PR claims the work is ready.
 
 ### Stage 6: Compound (Knowledge Capture)
 
-If the implementation involved solving a non-trivial problem:
-- Invoke the ab-knowledge-compounding skill to document it in `docs/solutions/`
-
-Skip if the work was straightforward.
-
----
+If the work solved a non-trivial problem, invoke the ab-knowledge-compounding skill to document it in `docs/solutions/`; otherwise skip it.
 
 ### Stage 7: Ship It
 
-1. **Final commit** with conventional format:
-   ```
-   feat(<scope>): <description>
-   ```
-
-2. **Create PR** by invoking the ab-pr-workflow skill. The PR description should include:
-   - Summary of the feature
-   - Plan file reference
-   - Review iterations completed and convergence status
-   - Test results
-
-   If ab-pr-workflow's plan audit blocks the PR (a NOT DONE or PARTIAL row): STOP the pipeline, report the blocking rows per Error Recovery, clean up loop state, and open no PR — steps 3-6 do not run and no completion signal is emitted.
-
-3. **Deploy check** (if `--deploy` flag): Dispatch the **deployment-verifier** helper to verify deployment readiness. Report the go/no-go checklist in the completion report.
-
-   **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
-
-   Prompt: `references/agents/deployment-verifier.md`. Inputs: Verify deployment readiness for this PR. Check build, tests, security, migrations, configuration, dependencies, rollback plan, and monitoring.
-
-   **Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
-
-4. **Report completion** with the Pipeline Summary table and Quality block from `references/modes-and-reports.md` § Completion report.
-
-5. **Clean up loop state:**
-   - Remove `.agent-blueprint/run/ship-loop.md` if it exists (Stop hook state)
-   - Remove `.agent-blueprint/run/ship-progress.md` if it exists (external loop progress)
-
-6. Output the completion signal (detected by both the Stop hook and `scripts/ship.sh`):
-   ```
-   <promise>DONE</promise>
-   ```
-
----
-
-## Flags, Running Modes, Comparison
-
-`references/modes-and-reports.md` carries the flags table, the two running modes (interactive `ab-ship-pipeline` guarded by the Stop hook versus `scripts/ship.sh` with a fresh process per iteration), and the ab-build-pipeline / ab-ship-pipeline / ship.sh comparison table.
-
-## When NOT to Use
-
-- **Unclear requirements** — if you can't describe the feature in one sentence, use ab-build-pipeline with human checkpoints
-- **Architectural decisions needed** — if the feature requires choosing between fundamentally different approaches, use ab-discuss + ab-build-pipeline
-- **First feature in a new codebase** — conventions aren't established yet; use ab-build-pipeline to set patterns with human oversight
-- **Database migrations** — always review migrations manually before applying; use ab-build-pipeline with `--deploy`
+1. **Commit** `feat(<scope>): <description>` (in no-commit mode, into `commit-msg.md`).
+2. **PR body.** Write it to `.agent-blueprint/run/pr-body.md`, the one path the runner publishes, per `references/stages.md` § PR body. A blocking plan audit stops the run as `blocked`, with nothing published.
+3. **Deploy check** (with `--deploy`): `references/stages.md` § Deploy check.
+4. **Finish.** Driver `runner`: with the commits (or `commit-msg.md`) and `pr-body.md` in place, set `done`; the runner scans for secrets, pushes and opens the PR. Driver `interactive`: scan the outgoing range and `pr-body.md` for secrets, then publish, per `references/stages.md` § Publish; set `done` after.
+5. **Report** per `references/modes-and-reports.md` § Completion report, and stop.
 
 ## Error Recovery
 
-- If ANY stage fails fatally, STOP immediately and report what was completed and what failed
-- **Clean up loop state** — remove `.agent-blueprint/run/ship-loop.md` and `.agent-blueprint/run/ship-progress.md` so neither loop mechanism restarts a broken pipeline
-- Do NOT try to skip stages or work around failures
-- Partial work (plan, branch, code) is preserved for the user to continue with the ab-build-pipeline skill
-- If the execution stage fails, do NOT enter the review stage — there's nothing to review
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-|---|---|
-| "The change is well-defined enough — no need for autonomous review iterations" | If the change is *that* well-defined and small, use `ab-quick-fix`. Ship-pipeline exists for autonomous quality, not autonomous skipping. |
-| "I'll prompt for approval mid-pipeline if something feels off" | That's `ab-build-pipeline`. Adding checkpoints to `ab-ship-pipeline` defeats the point — fire-and-forget is the contract. |
-| "Iteration cap reached, ship it anyway" | Cap-reached without convergence is a NO-GO signal, not a permission slip. Surface findings to the user. |
-| "I'll auto-merge after a green review" | Ship-pipeline reviews; the user merges. The pipeline finishes by handing off, not by pushing main. |
-| "Reviews are duplicating work between iterations" | Iterations exist *because* fixes introduce regressions. Two passes catch what one missed; you'd find this with measurement, not intuition. |
-| "Database migration is small, autonomous is fine" | Never. Migrations always go through `ab-build-pipeline --deploy` with human review of the migration file. |
+If a stage fails fatally, stop at once: report what was completed and what failed, and set `blocked` (or `needs-human` when only a person can unblock it) with a `reason` saying what would, so neither the runner nor the Stop hook restarts a broken pipeline. Do not skip a stage or work around a failure, because the PR would then claim checks that never ran; partial work (plan, branch, code) stays for the ab-build-pipeline skill. After a failed execution, skip review: there is nothing to review.

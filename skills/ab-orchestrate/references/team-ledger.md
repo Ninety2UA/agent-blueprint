@@ -44,7 +44,7 @@ The lead session is the only writer of the ledger. Helpers never edit it: they r
 
 - **Status of the run:** `running`, `done` or `blocked`.
 - **Status of a task:** `pending`, `running`, `done`, `blocked`, `needs-input` or `failed`. Only the lead moves a task to `done`, and only after its checks pass.
-- **Result:** the commit that holds the task once the lead has integrated it, or the reason for `blocked` or `failed`.
+- **Result:** the commit that holds the task once the lead has integrated it (`uncommitted` in no-commit mode, § Isolation), or the reason for `blocked` or `failed`.
 - **Files:** every file the task may create or change, taken from the plan. A task whose plan entry names no files gets `?`.
 - **Isolation:** `worktree`, `ownership` or `inline` (see below).
 
@@ -76,7 +76,9 @@ Read the `isolation` column for your host.
 - **ownership:** helpers share the checkout and each touches only the files it owns. Helpers do not commit; the lead commits each task's files once the task passes its checks, naming the files so another task's work stays out of that commit.
 - **inline:** no helpers. The lead does each task itself, one after another, in wave order, and commits each task as it would under ownership.
 
-When the session cannot write `.git` (some hosts' sandboxes block it), use ownership, make no commits, and leave the changes with a commit message for whoever runs the session to commit.
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+
+Some hosts' sandboxes block `.git` writes, and creating a worktree writes there too, so in this mode helpers use ownership, never worktrees; inline stays inline. The lead still integrates each task after its checks pass, adds that task's message, and sets its Result to `uncommitted`. The wave check then gets the files the wave's tasks own instead of the commit the wave started from.
 
 ## Integrating a wave
 

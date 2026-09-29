@@ -1,24 +1,30 @@
 ---
 name: ab-quick-fix
-description: "Trigger this skill for ANY small, well-understood change, even if the user doesn't explicitly say 'quick'. Trigger scenarios: 'fix this bug', 'small change', 'typo', 'config change', 'rename', 'just fix it', 'quick fix', 'quick', 'update this value', 'change the default', 'swap this out', 'minor refactor', 'add a test for this', or any change touching fewer than 3 files where the approach is obvious and straightforward. Even if the user doesn't explicitly ask for a quick workflow, trigger this skill when the described change is clearly trivial — a single bug fix, a rename, a config tweak, a copy edit. Uses TDD: write failing test, fix, verify, commit. DO NOT TRIGGER when touching 4+ files, adding new public APIs or endpoints, changing data models, or when the approach is unclear — use ab-brainstorming + ab-build-pipeline instead."
+description: "Makes a small, well-understood change through a short test-first loop: checks that the change qualifies (under 3 files, obvious approach), writes a failing test, makes the minimal fix, runs the full test suite, build and lint, and commits on a branch. Use when the change is a bug fix whose cause is known, a typo, copy or config change, a rename, a changed default or minor refactor within one module, or a test for existing behavior, whether or not the user says 'quick'. Not for changes touching 4 or more files, new public APIs, endpoints or schemas, data-model changes, or an unclear approach (use ab-brainstorming, then ab-build-pipeline), nor for a bug whose cause is not yet known (use ab-systematic-debugging first)."
 argument-hint: "[describe the change]"
+metadata:
+  version: "3.8.0"
 ---
 
 # Quick Fix — Lightweight Change Workflow
 
-You are executing a small, well-understood change using the lightweight workflow.
+A finished quick fix is one commit on a branch that holds the change and a test that failed before it and passes after, with the full test suite, build and lint green. The workflow stays this short only because the change is small and its approach obvious; when either stops being true, hand over to the full workflow.
 
-## When NOT to Use
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
 
-- **Touching 4+ files** — use `ab-build-pipeline` (or `ab-ship-pipeline` for autonomous).
-- **New public API, endpoint, or schema** — needs design first via `ab-brainstorming`.
-- **Auth, payments, or data-migration code** — never ab-quick-fix; always full pipeline with review.
-- **Approach is unclear or has multiple options** — use `ab-discuss` or `ab-brainstorming`.
-- **Bug with non-obvious root cause** — use `ab-systematic-debugging` first; ab-quick-fix once cause is known and small.
+**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. If `.agent-blueprint/.gitignore` is missing, create it first with the lines `run/`, `team/`, `review-runs/` and `cache/`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+
+## When Not to Use
+
+- **Touching 4+ files**: use the ab-build-pipeline skill (or ab-ship-pipeline for an autonomous run).
+- **New public API, endpoint or schema**: it needs design first, with the ab-brainstorming skill.
+- **Auth, payments or data-migration code**: always the full pipeline with review, never this skill, because a small-looking change there can do outsized harm.
+- **Approach unclear, or several options**: use the ab-discuss or ab-brainstorming skill.
+- **Bug with a non-obvious root cause**: use the ab-systematic-debugging skill first, and this skill once the cause is known and the fix is small.
 
 ## Step 1: Qualification Check
 
-Before proceeding, verify this qualifies as a "quick" change:
+Before starting, confirm the change is quick.
 
 **Qualifies:**
 - Bug fix with obvious root cause (< 3 files touched)
@@ -26,47 +32,46 @@ Before proceeding, verify this qualifies as a "quick" change:
 - Adding a test for existing behavior
 - Renaming or minor refactor within a single module
 
-**Does NOT qualify — redirect to ab-brainstorming:**
+**Does not qualify (redirect to ab-brainstorming):**
 - Touching 4+ files
 - Adding new public API or endpoint
 - Changing data models or schemas
 - Anything where you're unsure of the approach
 
-If the change does NOT qualify, say: "This looks like it needs the full workflow. Let me switch to ab-brainstorming." Then invoke the ab-brainstorming skill instead.
+If the change does not qualify, say: "This looks like it needs the full workflow. Let me switch to ab-brainstorming." Then use the ab-brainstorming skill instead. If it qualified but grows past these limits mid-fix, stop and switch to the ab-build-pipeline skill.
 
 ## Step 2: Write a Failing Test
 
-Invoke the ab-test-driven-development skill.
+Use the ab-test-driven-development skill.
 
-Write a test that describes the expected behavior BEFORE writing any implementation code. Run it — it should fail (RED).
+Write a test that describes the expected behavior before any implementation code. Run it: it should fail (red).
 
 ## Step 3: Implement the Fix
 
-Write the minimum code to make the test pass. Run the test — it should pass (GREEN).
+Write the minimum code to make the test pass. Run the test: it should pass (green).
 
 ## Step 4: Verify
 
+Run the full test suite (not just your test), the build and the linter, with the commands in `docs/context/CONVENTIONS.md` or the project instructions file:
+
 ```bash
-# Run the full test suite — not just your test
 [test command]
-
-# Run the build
 [build command]
-
-# Check for lint issues
 [lint command]
 ```
 
-All must pass before committing.
+All three pass before you commit.
 
 ## Step 5: Commit
+
+Commit on a branch unless the user said otherwise; on the default branch, create one first (in no-commit mode, below, do neither). Stage only the files you changed, and follow the project's commit conventions:
 
 ```bash
 git add [specific files]
 git commit -m "[type](scope): [description]"
 ```
 
-Follow the commit conventions in CLAUDE.md.
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
 
 ## Common Rationalizations
 

@@ -1,20 +1,18 @@
 # Coordinator
 
-Instructions for the main session when it runs a plan through the ab-orchestrate skill. You are the coordinator, the lead of the team: you keep the run's ledger (`references/team-ledger.md`), group tasks into waves, hand implementation to workers, integrate and commit their work, verify the combined output, review it, and sign off. You do NOT write code yourself. Only you start helpers; a worker never starts one of its own, because many hosts forbid a helper from starting another.
+Instructions for the main session when it runs a plan through the ab-orchestrate skill. You are the coordinator, the lead of the team: you keep the run's ledger (`references/team-ledger.md`), group tasks into waves, hand implementation to workers, integrate and commit their work, verify the combined output, review it, and sign off. You do not write code yourself. Only you start helpers; a worker never starts one of its own, because many hosts forbid a helper from starting another.
 
 <HARD-GATE>
 While you coordinate, you write only the blueprint's working files under `.agent-blueprint/` (the run's ledger among them), and you run commands only to verify or to integrate: git status, git diff, git log, npx tsc, eslint, npm run build, npm test, and the git commands that bring a finished task onto the run's branch and commit it.
 
-You must NEVER run a command, or make an edit, that:
-- Creates or writes files outside `.agent-blueprint/`
-- Edits code
-- Modifies content with echo, cat, sed or awk
-- Installs dependencies (npm install, pip install)
-- Changes the codebase in any other way
+Nothing else you run or edit changes the project. That rules out:
+- Creating or writing files outside `.agent-blueprint/`
+- Editing code
+- Changing content with echo, cat, sed or awk
+- Installing dependencies (npm install, pip install)
+- Any other change to the codebase
 
-If you are about to change a file, STOP. Put the change in a task packet and hand it to a worker instead.
-
-All implementation goes to workers. No exceptions. Not even "just this one small fix." The one case where you implement is the Helper step's fallback: when you cannot start helpers at all, carry out each task packet yourself, one task at a time, and still verify each wave as below.
+A change the lead makes lands in files a worker owns, outside any task's checks and commit, and fills the lead's context with detail that crowds out the coordination. So when you are about to change a file, put the change in a task packet and hand it to a worker, even when it is one small fix. The one case where you implement is the Helper step's fallback: when you cannot start helpers at all, carry out each task packet yourself, one task at a time, and still verify each wave as below.
 </HARD-GATE>
 
 ## Core Principles
@@ -22,15 +20,15 @@ All implementation goes to workers. No exceptions. Not even "just this one small
 1. **Delegate, don't implement.** If you notice a gap, write a task packet and hand it to a worker; don't fix it yourself.
 2. **Hold the big picture.** Keep the whole plan and every worker's status in view. Workers carry the detail and hand back short summaries (§ Helper Return Contract), so your context stays on coordination.
 3. **Quality is your responsibility.** Workers produce code. You ensure the combined output meets standards.
-4. **Sign off or send back.** Never report "done" until tests pass and review is clean.
+4. **Sign off or send back.** Report "done" only when tests pass and review is clean, because the skill that sent you here treats your report as the verdict.
 
 ## Completeness Principle
 
 AI-assisted coding compresses implementation time 10-100x. When evaluating options or making scoping decisions:
 
-- If Option A is the complete implementation (all edge cases, full coverage) and Option B is a shortcut that saves modest effort — **always prefer A**. The delta between 80 lines and 150 lines costs seconds with AI.
+- If Option A is the complete implementation (all edge cases, full coverage) and Option B is a shortcut that saves modest effort, prefer A: the delta between 80 lines and 150 lines costs seconds with AI.
 - **Lake vs ocean:** A "lake" is boilable — 100% test coverage for a module, handling all edge cases. An "ocean" is not — rewriting an entire system. Recommend boiling lakes. Flag oceans as out of scope.
-- **When estimating effort**, always show both scales:
+- **When estimating effort**, show both scales, so the user can weigh the AI-assisted cost against the one they know:
 
 | Task type | Human team | AI-assisted | Compression |
 |-----------|-----------|-------------|-------------|
@@ -122,7 +120,7 @@ Check the wave's combined output before the next wave starts.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Prompt: `references/agents/integration-verifier.md`. Inputs: the wave number, the commit the wave started from, and each completed task with its worker's summary.
+Prompt: `references/agents/integration-verifier.md`. Inputs: the wave number, the commit the wave started from (in no-commit mode, the files the wave's tasks own), and each completed task with its worker's summary.
 
 **Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
@@ -145,7 +143,7 @@ Judge progress by artifacts, not the clock. A worker whose commits or expected f
 
 ### Worker Failure Protocol
 
-A `NEEDS_INPUT` return is a decision, not a failure — route it, never start the worker again with a narrower scope. Supervised: put the worker's options to the user (§ Question Format). Under ab-ship-pipeline: take the conservative option and lock it in `docs/context/DECISIONS.md` (ab-ship-pipeline Stage 1's locked-decision rule). Either way, send the decision back to the worker — message it if your host lets you message a running helper or teammate, or start it again with the decision in its task packet if it has gone. A `BLOCKED` return that describes a sub-task the worker wanted a helper for is yours to decide: start it as its own task or fold it into another.
+A `NEEDS_INPUT` return is a decision, not a failure: route it rather than start the worker again with a narrower scope, which would only bury the question. Supervised: put the worker's options to the user (§ Question Format). Under ab-ship-pipeline: take the conservative option and lock it in `docs/context/DECISIONS.md` (ab-ship-pipeline Stage 1's locked-decision rule). Either way, send the decision back to the worker — message it if your host lets you message a running helper or teammate, or start it again with the decision in its task packet if it has gone. A `BLOCKED` return that describes a sub-task the worker wanted a helper for is yours to decide: start it as its own task or fold it into another.
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
@@ -154,10 +152,10 @@ The options are the worker's own. Default when nobody answers: the most conserva
 When a worker returns without completing its task (incomplete output, wrong files modified, or returns errors), reconcile before classifying: check `git log` on its branch or worktree and the files the task expected. Work that landed despite a garbled or missing report counts as done once its verification passes; only what is actually missing is a failure.
 
 1. **Retry once with reduced scope.** Simplify the task: narrow the file list, break it into a smaller piece, add more explicit context about what went wrong.
-2. **If retry fails, skip and continue.** Mark the task as `blocked: worker failure` and proceed with remaining tasks. Do NOT attempt a third time — two failures indicate the task needs human input or a different approach.
+2. **If retry fails, skip and continue.** Mark the task as `blocked: worker failure` and proceed with remaining tasks. Don't attempt a third time: two failures indicate the task needs human input or a different approach.
 3. **Report all skipped tasks.** In the Phase 5 report, list every skipped task with: what was attempted, what the worker returned, and your recommendation for how to resolve it manually.
 
-Never let a single worker failure stall the entire pipeline. The other workers' completed work is still valuable.
+Don't let a single worker failure stall the entire run, because the other workers' completed work is still valuable.
 
 ## Phase 3: Integration Verification
 
@@ -200,6 +198,10 @@ Prompt: a fix task packet, built like a wave task packet (§ Start the Wave's Wo
 ### 4a. Run the Review Swarm (single-pass mode)
 
 Run the ab-review-swarm skill on all changes since the run started (`git diff <base commit>...HEAD`, with the base commit from the ledger). It starts all configured reviewers in parallel and synthesizes their findings via findings-synthesizer.
+
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+
+In this mode the review covers the working tree and untracked files against the ledger's base commit, since the run has made no commits (`references/team-ledger.md` § Isolation).
 
 ### 4b. Evaluate Findings
 
@@ -259,7 +261,7 @@ Write this report; the skill that sent you here presents it:
 [grouped by task]
 
 ### Commits
-[list of all commits]
+[list of all commits, or in no-commit mode the messages added to commit-msg.md]
 ```
 
 If the report lists blockers, present them and ask the user how to proceed (§ Question Format).
@@ -285,7 +287,7 @@ Every task packet you hand a worker (wave worker, fix worker) ends with this out
 | `NEEDS_INPUT` | Mid-task user/operator decision required |
 | `INCONCLUSIVE` | Task ran to completion but result is uncertain (couldn't verify, partial coverage) |
 
-The 2K-token cap is a *commitment*: bounded handoff cost regardless of how long the worker ran. If the worker's substantive output exceeds that, it must persist detail to a file (under `.agent-blueprint/team/<id>/` or `.agent-blueprint/review-runs/<id>/`) and reference the path in the summary — not paste the full output back into your context.
+The 2K-token cap is a *commitment*: bounded handoff cost regardless of how long the worker ran. If the worker's substantive output exceeds that, it persists detail to a file (under `.agent-blueprint/team/<id>/` or `.agent-blueprint/review-runs/<id>/`) and references the path in the summary, rather than pasting the full output back into your context, where it would crowd out the coordination.
 
 The output section to put at the end of every task packet:
 
@@ -324,10 +326,10 @@ This is a defense-in-depth measure. Read-injection scanner and prompt-guard catc
 
 ## Behavioral Rules
 
-- **NEVER write code.** Not even "just this one small fix." Delegate everything; the only exception is the no-helper fallback in the gate above.
-- **NEVER skip verification.** Always run tests + build after execution completes.
-- **NEVER sign off with failing tests.** If tests fail, fix or escalate — never ignore.
+- **Delegate all code.** Even one small fix goes to a worker, for the reasons in the gate above; the only exception is the no-helper fallback there.
+- **Verify every run.** Run tests + build after execution completes, because a worker's own test run is evidence, not a verdict.
+- **Sign off only on passing tests.** If tests fail, fix or escalate; a sign-off over failing tests hands the next stage a broken branch.
 - **Monitor actively.** Don't start workers and go silent. Check progress, intervene on blockers.
 - **Preserve worker autonomy.** Give context and constraints, not step-by-step instructions. Let workers make implementation decisions within their scope.
-- **NEVER let a worker start helpers.** Every task packet carries two worker rules: decide within the decision boundary in the ab-executing-plans skill and return `NEEDS_INPUT` with the options when it does not allow deciding; never start a helper of its own — a sub-task that seems to need one is returned as `BLOCKED` describing it, for you to decide.
+- **Workers start no helpers.** Many hosts forbid a helper from starting another, so every task packet carries two worker rules: decide within the decision boundary in the ab-executing-plans skill and return `NEEDS_INPUT` with the options when it does not allow deciding; never start a helper of its own — a sub-task that seems to need one is returned as `BLOCKED` describing it, for you to decide.
 - **Report honestly.** If quality isn't where it should be, say so. Don't paper over issues.

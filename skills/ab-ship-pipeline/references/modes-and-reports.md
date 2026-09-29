@@ -11,37 +11,33 @@ Loaded on demand from `SKILL.md`; nothing here is needed on every invocation.
 | `--convergence fast` | Exit review loop when P1 = 0 (default) |
 | `--convergence deep` | Exit review loop when P1 + P2 = 0 |
 | `--convergence perfect` | Exit review loop when all findings = 0 |
-| `--deploy` | After PR, also run deployment verification |
-| `--external` | Set by `scripts/ship.sh` — skip Stop hook activation (external loop manages restarts) |
+| `--deploy` | Before the run finishes, also verify deployment readiness |
+| `--external` | Passed by the ship runner; same as `AGENT_BLUEPRINT_RUNNER=1`: `driver` is `runner`, and the runner publishes |
 
 ## Running Modes
 
-### Interactive: `ab-ship-pipeline` inside Claude
+Both modes write the same `.agent-blueprint/run/state.json` (`references/run-state.md`), and both are finished only when it says `done`, never by what a session prints.
 
-Type `ab-ship-pipeline <feature>` in a Claude session. The Stop hook (`ship-loop.sh`) guards against premature exit — if Claude tries to stop before outputting `<promise>DONE</promise>`, the hook blocks exit and re-injects the prompt. This does NOT reset context — the conversation keeps growing. Best for features that fit within a single context window. On CLI v2.1.139+ you can optionally paste the native `/goal` prompt emitted at Stage 0 for an elapsed/turns/tokens overlay; set `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` first so the goal's idle check-ins (CLI 2.1.234+) never interrupt the no-questions run (it also turns off the goal's retries from 2.1.269; the Stop hook covers that), and `--resume` restores the goal (CLI 2.1.239) — the Stop hook remains the guarantee regardless (see Stage 0).
+### Interactive: the skill in a session
 
-### External loop: `scripts/ship.sh`
+Start the ab-ship-pipeline skill with the feature in an ordinary session. `driver` is `interactive`, and `status` `running` is the guard: where the host runs the blueprint's Stop hook (Claude Code and Codex), the hook reads state.json and keeps the session from ending before the run is finished. This does not reset context: the conversation keeps growing. Best for features that fit within a single context window. The session publishes the PR itself, after a secret scan (`references/stages.md` § Publish). On Claude Code CLI v2.1.139+ you can optionally paste the native `/goal` prompt printed at Stage 0 for an elapsed/turns/tokens overlay; set `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` first so the goal's idle check-ins (CLI 2.1.234+) never interrupt the no-questions run (it also turns off the goal's retries from 2.1.269; the Stop hook covers that), and `--resume` restores the goal (CLI 2.1.239) — the Stop hook remains the guarantee regardless (see § Native /goal completion).
 
-Run from your terminal **before** entering Claude:
+### External loop: the ship runner
 
-```bash
-./scripts/ship.sh "add JWT authentication" --max 10 --swarm
-```
+Run the ship runner from a terminal, before any session, with the feature description and the flags. It starts a **fresh headless session per iteration** (Ralph-style) in any of the supported tools, with `AGENT_BLUEPRINT_RUNNER=1` set, so each iteration gets a clean context window. State persists via git, plan files, and state.json. Best for large features that may exhaust context.
 
-This spawns a **fresh Claude process per iteration** (Ralph-style). Each iteration gets a clean 200K context window. State persists via git, plan files, and progress tracking. Best for large features that may exhaust context.
+The runner decides from state.json whether to start another iteration, stop, or publish. When the skill sets `done`, the runner scans the outgoing range and `pr-body.md` for secrets, pushes to the remote it recorded at the start, and opens or updates the PR. It is the only process that cleans up run files. Passing `--external` to the skill has the same effect as the marker variable.
 
-The external loop passes `--external` to the ship pipeline, which disables the Stop hook state file (avoiding conflict between inner and outer loop).
+## Comparison: ab-build-pipeline vs ab-ship-pipeline vs the ship runner
 
-## Comparison: ab-build-pipeline vs ab-ship-pipeline vs ship.sh
-
-| Aspect | ab-build-pipeline | ab-ship-pipeline (interactive) | `ship.sh` (external) |
+| Aspect | ab-build-pipeline | ab-ship-pipeline (interactive) | Ship runner (external) |
 |--------|----------|----------------------|----------------------|
 | **Checkpoints** | Between every stage | None | None |
 | **User input** | Required at each stage | Never | Never |
-| **Context reset** | N/A | No (Stop hook, same session) | Yes (fresh process per iteration) |
-| **Max outer iterations** | N/A | 5 (Stop hook) | 10 (configurable via `--max`) |
+| **Context reset** | N/A | No (Stop hook, same session) | Yes (fresh session per iteration) |
+| **Max outer iterations** | N/A | The Stop hook's cap | The runner's limit, below the fixed ceiling of 20 |
 | **Review iterations** | 1 (default) | 3 (default) | 3 (default) |
-| **PR creation** | Manual | Automatic | Automatic |
+| **PR creation** | Manual | Automatic (the session publishes) | Automatic (the runner publishes) |
 | **Best for** | Human-guided features | Single-context fire-and-forget | Large features, context exhaustion |
 
 ## Completion report
@@ -59,7 +55,7 @@ Report completion in this shape:
 | Execute | [wave/swarm] — [N] tasks completed | — |
 | Review | [N] iterations, converged at iteration [N] | — |
 | Compound | [captured/skipped] | — |
-| PR | Created: [PR URL] | — |
+| PR | Created: [PR URL], or body in .agent-blueprint/run/pr-body.md for the ship runner to publish | — |
 
 ### Run numbers
 - Tasks: [done]/[planned] · Retries: [N] · Decisions locked without asking: [N] · Blocked or deferred: [N] (each listed with its reason)
@@ -85,26 +81,27 @@ In swarm mode, dispatch review and browser testing as parallel background tasks 
 
 3. **Merge results:** If browser testing found issues not caught by review, create additional fix tasks and resolve them.
 
-This parallelization is the key speedup of swarm mode — review and testing run simultaneously instead of sequentially.
+This parallelization is the key speedup of swarm mode — review and testing run simultaneously instead of sequentially. Where the host cannot run two tasks at once, run them one after the other and merge the same way.
 
 ## Native /goal completion
 
-The `ship-loop.sh` Stop hook above is the **default, zero-config guard** — it needs no user action and works in every mode, including headless `--external` runs. As an *optional* enhancement for interactive users on CLI v2.1.139+, emit a copyable `/goal` prompt so completion is also tracked by the platform's native condition-completion (with its live elapsed/turns/tokens overlay). Print this block once at Stage 0 for the user to paste:
+In an interactive session, state.json's `running` status read by the blueprint's Stop hook is the **default, zero-config guard** — it needs no user action; headless runs are guarded by the ship runner instead. As an *optional* enhancement for interactive users on Claude Code CLI v2.1.139+, emit a copyable `/goal` prompt so completion is also tracked by the platform's native condition-completion (with its live elapsed/turns/tokens overlay). Print this block once at Stage 0 for the user to paste:
 
 ```text
 /goal Keep working across turns until the ship pipeline is fully complete: all
-stages done, review converged, changes committed, and the pipeline has emitted
-<promise>DONE</promise> with every item verified. Do not stop before then.
+stages done, review converged, changes committed, the PR published, and
+.agent-blueprint/run/state.json at status done, with every item verified. Stop
+early only if that file says blocked or needs-human.
 ```
 
 Check-in opt-out: set `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` in the environment Claude starts from before pasting, so the platform's idle check-ins (CLI 2.1.234+) never conflict with the pipeline's no-questions rule.
 
-- **Emit only in interactive mode** (never when `--external` is set — a headless loop has no one to paste it, which is why the Stop hook, not `/goal`, is the guarantee). **Do not stall waiting for the paste** — continue the pipeline immediately; the `ship-loop.sh` hook protects the run whether or not the user pastes.
-- If pasted, native `/goal` and the Stop hook coexist harmlessly: both release the session once `<promise>DONE</promise>` appears, and `/goal` just adds an overlay. `/goal` is an opt-in convenience, **not** a dependency — the pipeline never relies on it, so no minimum-CLI floor is imposed on `ab-ship-pipeline` itself.
-- Native `STOP_HOOK_BLOCK_CAP` (default 8, since CLI 2.1.143) backstops the hook against runaway blocking even if `max_iterations` is misconfigured — defense in depth, no action needed.
+- **Emit only in interactive mode** (never when `driver` is `runner` — a headless loop has no one to paste it, which is why state.json and the runner, not `/goal`, are the guarantee). **Do not stall waiting for the paste** — continue the pipeline immediately; the Stop hook protects the run whether or not the user pastes.
+- If pasted, native `/goal` and the Stop hook coexist harmlessly: the hook releases the session once state.json leaves `running`, and `/goal` just adds an overlay. `/goal` is an opt-in convenience, **not** a dependency — the pipeline never relies on it, so no minimum-CLI floor is imposed on `ab-ship-pipeline` itself.
+- Native `STOP_HOOK_BLOCK_CAP` (default 8, since CLI 2.1.143) backstops the Stop hook against runaway blocking — defense in depth, no action needed.
 - From CLI 2.1.269 a goal retries with backoff after API errors, dropped connections, and token or usage limits, or pauses with a stated reason. **`CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` turns those retries off too.** Keep recommending it for no-questions runs anyway: the goal is an overlay, and the Stop hook still holds the session open if a goal pauses or stops retrying.
 - A goal survives resuming a compacted session (CLI 2.1.274). It is unavailable when hooks are disabled (`disableAllHooks`) or restricted to managed hooks (`allowManagedHooksOnly`); plugin hooks fall under the same policies, so check them before relying on either guard.
-- The goal clears itself on an unrecoverable error (CLI 2.1.234), which matches Error Recovery below: the pipeline stops and removes its loop state files rather than restarting a broken run.
+- The goal clears itself on an unrecoverable error (CLI 2.1.234), which matches Error Recovery in SKILL.md: the pipeline stops and sets `blocked` or `needs-human` rather than restarting a broken run.
 - An idle session with an active goal checks in on 30+ minute background work at 30 m, then 1 h, then 2 h, at most three times per goal (CLI 2.1.234–2.1.246). `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` opts out — see the note above the bullets — so a pasted goal never turns into a question the pipeline is not allowed to ask.
-- `--resume` restores an active goal (CLI 2.1.239), so a resumed interactive session keeps the overlay without re-pasting; the Stop hook state file (`iteration` > 1) is what actually resumes the pipeline.
-- `claude -p "/goal …"` is a documented headless goal loop, but a skill or hook still cannot start a goal, so `ship-loop.sh` remains the guarantee and `scripts/ship.sh` keeps its fresh-process-per-iteration design rather than wrapping a goal loop.
+- `--resume` restores an active goal (CLI 2.1.239), so a resumed interactive session keeps the overlay without re-pasting; state.json, read by Stage 0's continuation checks, is what actually resumes the pipeline.
+- `claude -p "/goal …"` is a documented headless goal loop, but a skill or hook still cannot start a goal, so the Stop hook remains the interactive guarantee and the ship runner keeps its fresh-session-per-iteration design rather than wrapping a goal loop.

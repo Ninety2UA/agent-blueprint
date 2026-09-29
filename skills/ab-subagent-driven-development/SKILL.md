@@ -1,277 +1,64 @@
 ---
 name: ab-subagent-driven-development
-description: "Trigger this skill when executing plans with independent tasks in the current session using fresh subagents per task — for isolation and clean context on each task. Trigger when you have an implementation plan with mostly independent tasks and want to stay in the current session rather than using parallel worktrees. Dispatches a fresh subagent per task with two-stage review after each (spec compliance then code quality). Usually invoked internally by ab-executing-plans — not typically called directly by users. DO NOT TRIGGER for tightly coupled tasks that share state — use sequential execution instead. DO NOT TRIGGER when the tasks should run in parallel as team work — use ab-orchestrate instead."
+description: "Runs a written plan in this session one task at a time: a fresh helper implements each task from its full text, a spec-compliance reviewer and then a code-quality reviewer check it, fix rounds repeat until both pass, and a final review covers the whole implementation. Use when a plan's tasks are mostly independent and you want clean context per task without leaving this session; usually invoked by another skill. Not for tightly coupled tasks that share state (execute those in order yourself), a separate session with human checkpoints (ab-executing-plans), or parallel team work (ab-orchestrate)."
+metadata:
+  version: "3.8.0"
 ---
 
 # Subagent-Driven Development
 
-Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+Run a plan in this session one task at a time: a fresh helper implements each task, a spec-compliance reviewer checks it built what the task asked (nothing missing, nothing extra), and only then a code-quality reviewer checks how well it is built. The run is done when every task's box is ticked, the final review approves, and the ab-finishing-a-development-branch skill has the branch. A fresh helper per task keeps its context clean; the review order keeps quality review off code that may still change for the spec.
 
-**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+Diagrams: `references/flowcharts.md`. Comparison with ab-executing-plans: `references/advantages.md`. A worked run: `references/example-workflow.md`. What never to do: `references/red-flags.md`.
 
-## When to Use
-
-```dot
-digraph when_to_use {
-    "Have implementation plan?" [shape=diamond];
-    "Tasks mostly independent?" [shape=diamond];
-    "Stay in this session?" [shape=diamond];
-    "ab-subagent-driven-development" [shape=box];
-    "ab-executing-plans" [shape=box];
-    "Manual execution or brainstorm first" [shape=box];
-
-    "Have implementation plan?" -> "Tasks mostly independent?" [label="yes"];
-    "Have implementation plan?" -> "Manual execution or brainstorm first" [label="no"];
-    "Tasks mostly independent?" -> "Stay in this session?" [label="yes"];
-    "Tasks mostly independent?" -> "Manual execution or brainstorm first" [label="no - tightly coupled"];
-    "Stay in this session?" -> "ab-subagent-driven-development" [label="yes"];
-    "Stay in this session?" -> "ab-executing-plans" [label="no - parallel session"];
-}
-```
-
-**vs. Executing Plans (parallel session):**
-- Same session (no context switch)
-- Fresh subagent per task (no context pollution)
-- Two-stage review after each task: spec compliance first, then code quality
-- Faster iteration (no human-in-loop between tasks)
-
-## The Process
-
-```dot
-digraph process {
-    rankdir=TB;
-
-    subgraph cluster_per_task {
-        label="Per Task";
-        "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
-        "Implementer subagent asks questions?" [shape=diamond];
-        "Answer questions, provide context" [shape=box];
-        "Implementer subagent implements, tests, commits, self-reviews" [shape=box];
-        "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [shape=box];
-        "Spec reviewer subagent confirms code matches spec?" [shape=diamond];
-        "Implementer subagent fixes spec gaps" [shape=box];
-        "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
-        "Code quality reviewer subagent approves?" [shape=diamond];
-        "Implementer subagent fixes quality issues" [shape=box];
-        "Tick task in progress file" [shape=box];
-    }
-
-    "Read plan, extract all tasks with full text, note context, create progress file" [shape=box];
-    "More tasks remain?" [shape=diamond];
-    "Dispatch final code reviewer helper for entire implementation" [shape=box];
-    "Use ab-finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
-
-    "Read plan, extract all tasks with full text, note context, create progress file" -> "Dispatch implementer subagent (./implementer-prompt.md)";
-    "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
-    "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
-    "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
-    "Implementer subagent asks questions?" -> "Implementer subagent implements, tests, commits, self-reviews" [label="no"];
-    "Implementer subagent implements, tests, commits, self-reviews" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)";
-    "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" -> "Spec reviewer subagent confirms code matches spec?";
-    "Spec reviewer subagent confirms code matches spec?" -> "Implementer subagent fixes spec gaps" [label="no"];
-    "Implementer subagent fixes spec gaps" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review (same implementer, cumulative)"];
-    "Spec reviewer subagent confirms code matches spec?" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="yes"];
-    "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
-    "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
-    "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review (same implementer, cumulative)"];
-    "Code quality reviewer subagent approves?" -> "Tick task in progress file" [label="yes"];
-    "Tick task in progress file" -> "More tasks remain?";
-    "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
-    "More tasks remain?" -> "Dispatch final code reviewer helper for entire implementation" [label="no"];
-    "Dispatch final code reviewer helper for entire implementation" -> "Use ab-finishing-a-development-branch";
-}
-```
-
-A reviewer batches same-shape findings into one pass rather than reporting them one at a time — the implementer fixes the batch, not each instance separately.
-
-## Progress File
+## 1. Start
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
 
-The controller tracks tasks in `.agent-blueprint/plans/<plan-basename>.progress.md` (`<plan-basename>` is the plan's filename without `.md`); native task-list tools are not the mechanism because current models do not have them:
+**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. If `.agent-blueprint/.gitignore` is missing, create it first with the lines `run/`, `team/`, `review-runs/` and `cache/`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
-- First line names the plan; one checkbox per task.
-- If the file already exists, reuse it and its ticks instead of recreating it.
-- Tick a task's box once its code quality reviewer approves.
-- Delete it after the final code reviewer approves — before invoking ab-finishing-a-development-branch, passing the plan path (`docs/plans/<plan-basename>.md`) so its plan audit reads this plan.
-- An interrupted run leaves it in place; the STATE.md handoff (ab-session-continuity) points at it.
-- The session's native task list is the alternative only when the model offers one: Claude Code exposes its native task-list tools only on Claude 3.x, Opus 4.0–4.7, Sonnet 4.0–4.6 and Haiku 4.5 (CLI 2.1.233; verified on 2.1.268); `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` restores them elsewhere.
+Work in an isolated workspace (the ab-using-git-worktrees skill). On main or master, branch first unless the user said to work there, since every task commits.
 
-```bash
-plan=docs/plans/<plan-basename>.md
-progress=".agent-blueprint/plans/$(basename "$plan" .md).progress.md"
-mkdir -p .agent-blueprint/plans
-if [ ! -f "$progress" ]; then   # an existing file keeps its ticks
-  printf '# Progress: %s\n\n' "$plan" > "$progress"
-  # then append one "- [ ] Task N: <title>" line per task in the plan
-fi
-```
+## 2. Load the plan
 
-## Prompt Templates
+Read the plan once and extract each task's full text with its context (where it fits, what it depends on). Helpers get that text, not the plan path, so none spends its context reading the plan.
 
-- `./implementer-prompt.md` - Dispatch implementer subagent
-- `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
-- `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+**Tracking tasks.** The plan file's checkboxes are the record of progress: tick each one when its task is done and verified, so another session or another tool can continue from there. A host task list, if you have one, may mirror them, but it never replaces them.
 
-Final code review, after all tasks:
+Here they live in the progress file `.agent-blueprint/plans/<plan-basename>.progress.md`, one box per task (format and setup: `references/progress-file.md`); tick the plan's own task boxes too if it has them. An existing file keeps its ticks: resume at the first unticked task. An interrupted run leaves it in place for the STATE.md handoff (ab-session-continuity).
+
+## 3. Run each task
+
+One task at a time, since two implementers would edit the same files. Record BASE, the commit the task starts from, and keep it through fix rounds so each re-review reads the whole task. The implementer commits; reviewers read BASE..HEAD.
+
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+
+In that mode, tell the implementer: it reports its commit message instead of committing, and you add the message there. Reviewers get `working tree` as HEAD, and the implementer's list of changed files marks the task's part.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Prompt: `references/agents/code-reviewer.md`. Inputs: the plan path and the whole implementation's range (the commit before the first task to HEAD).
+Three helpers, in order, each starting once the one before is done and passing:
 
-## Example Workflow
+1. Implementer. Prompt: `implementer-prompt.md` (this skill's folder), filled in. Inputs: the task's full text and context, the working directory, and whether no-commit mode is on. Name it (say `implementer-task-3`) if your host can message a running helper. Answer its questions before it proceeds; one you cannot answer goes through the decision boundary in the ab-executing-plans skill, then to § When you need the user if that says ask.
+2. Spec reviewer. Prompt: `spec-reviewer-prompt.md`, filled in. Inputs: the task text, the implementer's report, BASE, HEAD.
+3. Code-quality reviewer. Prompt: `references/agents/code-reviewer.md`. Inputs: as `code-quality-reviewer-prompt.md` lists.
 
-```
-You: I'm using Subagent-Driven Development to execute this plan.
+**Fix rounds.** Send a reviewer's findings to the same implementer in one message, same-shape ones batched, then have that reviewer check BASE..HEAD again; if you cannot reach it, start a fresh one with its report and the findings. Fix through a helper, never by hand, also when an implementer fails a task, so your context stays clean. An open finding means not done; self-review replaces neither review. After five rounds in one stage, mark the task `— BLOCKED: <reason>` in the progress file and ask the user.
 
-[Read plan file once: docs/plans/feature-plan.md]
-[Extract all 5 tasks with full text and context]
-[Create .agent-blueprint/plans/feature-plan.progress.md with one checkbox per task]
+When the code-quality reviewer approves, tick the box and take the next task.
 
-Task 1: Hook installation script
+## 4. Final review
 
-[Get Task 1 text and context (already extracted)]
-[Dispatch implementation subagent with full task text + context]
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Implementer: "Before I begin - should the hook be installed at user or system level?"
+Prompt: `references/agents/code-reviewer.md`. Inputs: the plan path and the range from the commit before the first task to HEAD (in no-commit mode, the working tree, as in step 3).
 
-You: "User level (~/.claude/hooks/)"
+Fix its findings as in the fix rounds until it approves. Then delete the progress file and use the ab-finishing-a-development-branch skill, passing the plan path (`docs/plans/<plan-basename>.md`) for its plan audit.
 
-Implementer: "Got it. Implementing now..."
-[Later] Implementer:
-  - Implemented install-hook command
-  - Added tests, 5/5 passing
-  - Self-review: Found I missed --force flag, added it
-  - Committed
+## When you need the user
 
-[Dispatch spec compliance reviewer]
-Spec reviewer: ✅ Spec compliant - all requirements met, nothing extra
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-[Get git SHAs, dispatch code quality reviewer]
-Code reviewer: Strengths: Good test coverage, clean. Issues: None. Approved.
+An implementer's question: its options. Default when nobody answers: the conservative one, recorded under the plan's `### Assumptions` and sent back. A blocked task: guidance and retry, skip it and go on with tasks that do not need it, or stop. Default when nobody answers: stop and report the task with its open findings.
 
-[Mark Task 1 complete]
-
-Task 2: Recovery modes
-
-[Get Task 2 text and context (already extracted)]
-[Dispatch implementation subagent with full task text + context]
-
-Implementer: [No questions, proceeds]
-Implementer:
-  - Added verify/repair modes
-  - 8/8 tests passing
-  - Self-review: All good
-  - Committed
-
-[Dispatch spec compliance reviewer]
-Spec reviewer: ❌ Issues:
-  - Missing: Progress reporting (spec says "report every 100 items")
-  - Extra: Added --json flag (not requested)
-
-[Implementer fixes issues]
-Implementer: Removed --json flag, added progress reporting
-
-[Spec reviewer reviews again]
-Spec reviewer: ✅ Spec compliant now
-
-[Dispatch code quality reviewer]
-Code reviewer: Strengths: Solid. Issues (Important): Magic number (100)
-
-[Implementer fixes]
-Implementer: Extracted PROGRESS_INTERVAL constant
-
-[Code reviewer reviews again]
-Code reviewer: ✅ Approved
-
-[Mark Task 2 complete]
-
-...
-
-[After all tasks]
-[Dispatch final code-reviewer]
-Final reviewer: All requirements met, ready to merge
-
-[Final reviewer approved: delete .agent-blueprint/plans/feature-plan.progress.md]
-
-Done!
-```
-
-## Advantages
-
-**vs. Manual execution:**
-- Subagents follow TDD naturally
-- Fresh context per task (no confusion)
-- Parallel-safe (subagents don't interfere)
-- Subagent can ask questions (before AND during work)
-
-**vs. Executing Plans:**
-- Same session (no handoff)
-- Continuous progress (no waiting)
-- Review checkpoints automatic
-
-**Efficiency gains:**
-- No file reading overhead (controller provides full text)
-- Controller curates exactly what context is needed
-- Subagent gets complete information upfront
-- Questions surfaced before work begins (not after)
-
-**Quality gates:**
-- Self-review catches issues before handoff
-- Two-stage review: spec compliance, then code quality
-- Review loops ensure fixes actually work
-- Spec compliance prevents over/under-building
-- Code quality ensures implementation is well-built
-
-**Cost:**
-- More subagent invocations (implementer + 2 reviewers per task)
-- Controller does more prep work (extracting all tasks upfront)
-- Review loops add iterations
-- But catches issues early (cheaper than debugging later)
-
-## Red Flags
-
-**Never:**
-- Start implementation on main/master branch without explicit user consent
-- Skip reviews (spec compliance OR code quality)
-- Proceed with unfixed issues
-- Dispatch multiple implementation subagents in parallel (conflicts)
-- Make subagent read plan file (provide full text instead)
-- Skip scene-setting context (subagent needs to understand where task fits)
-- Ignore subagent questions (answer before letting them proceed)
-- Accept "close enough" on spec compliance (spec reviewer found issues = not done)
-- Skip review loops (reviewer found issues = implementer fixes = review again)
-- Let implementer self-review replace actual review (both are needed)
-- **Start code quality review before spec compliance is ✅** (wrong order)
-- Move to next task while either review has open issues
-
-**If subagent asks questions:**
-- Answer clearly and completely
-- Provide additional context if needed
-- Don't rush them into implementation
-
-**If reviewer finds issues:**
-- Continue the same implementer, not a new one — in Claude Code, spawn it with a unique name (e.g. `implementer-task-3`) and resume it by sending it a message addressed to that name
-- Batch same-shape findings into one message rather than sending them one at a time
-- If the harness cannot resume it, or no reply arrives within your wait window, re-dispatch a fresh implementer carrying the prior report and all findings
-- Reviewer re-reviews the cumulative range from the pre-task commit (BASE pinned) — not just the latest fix
-- Five rounds per review phase (spec compliance, then quality); on the fifth, mark the task blocked in the progress file with `— BLOCKED: <reason>` and escalate
-- Don't skip the re-review
-
-**If subagent fails task:**
-- Dispatch fix subagent with specific instructions
-- Don't try to fix manually (context pollution)
-
-## Integration
-
-**Required workflow skills:**
-- **ab-using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
-- **ab-writing-plans** - Creates the plan this skill executes
-- **ab-requesting-code-review** - Code review template for reviewer subagents
-- **ab-finishing-a-development-branch** - Complete development after all tasks
-
-**Subagents should use:**
-- **ab-test-driven-development** - Subagents follow TDD for each task
-
-**Alternative workflow:**
-- **ab-executing-plans** - Use for parallel session instead of same-session execution
+ab-writing-plans writes the plan; implementers follow ab-test-driven-development; reviewers follow ab-requesting-code-review.

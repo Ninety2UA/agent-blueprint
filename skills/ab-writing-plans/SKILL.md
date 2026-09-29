@@ -1,197 +1,60 @@
 ---
 name: ab-writing-plans
-description: "Trigger this skill when converting an approved design or spec into an implementation plan that records the decisions — exact file paths, the tests and what they assert, signatures, dependency ordering. Trigger when the user says 'write a plan', 'create a plan', 'implementation steps', 'break this down into tasks', 'how do we implement this', 'plan out the work', or 'turn this design into tasks'. Trigger after brainstorming produces an approved design — even if the user doesn't explicitly ask for a plan, suggest this skill once a design is approved. Also trigger when the user has a clear spec from any source and needs it decomposed into bite-sized executable steps. DO NOT TRIGGER when the user hasn't brainstormed or designed yet — use ab-brainstorming first to produce an approved design. DO NOT TRIGGER for executing an existing plan — use ab-executing-plans instead. DO NOT TRIGGER for enriching a plan with research — use ab-deepen-plan instead."
+description: "Turns an approved design or a clear spec into an implementation plan that records decisions, not code: exact file paths, each test and what it asserts, signatures and spec values, dependency order, verification commands, boundaries and a review focus, saved for review before anything runs. Use when an approved design or spec needs breaking into bite-sized executable tasks, when the user asks for a plan or implementation steps, or once ab-brainstorming has an approved design. Not for work with no design yet (ab-brainstorming), executing a plan (ab-executing-plans) or enriching one with research (ab-deepen-plan)."
+metadata:
+  version: "3.8.0"
 ---
 
 # Writing Plans
 
-## Overview
+A plan records decisions, not a transcript of the code. For each task it names the files, the test and what it asserts, the signatures and spec values the code must honor, the order, and the command that proves it done. The executor is a skilled engineer who knows little of this codebase, toolset or domain, so supply the context (paths, conventions, contracts, commands) and leave out the code those decisions already determine. Test design is where executors drift most, so the plan settles it: every test is named with the behavior it asserts. DRY, YAGNI, TDD, frequent commits.
 
-A plan records decisions, not a transcript of the code. For each task it names the files, the test and what it asserts, the signatures and spec values the code must honor, the order, and the command that proves it done. The executor is a capable engineer who lacks this codebase's context, so supply the context (paths, conventions, contracts, commands) and leave out the code those decisions already determine. DRY. YAGNI. TDD. Frequent commits.
+**Not for:** no design yet (ab-brainstorming first: a vague idea makes a vague plan); a quick fix under three files with an obvious root cause (ab-quick-fix, no plan); triaging open work (ab-backlog-triage); feasibility research (ab-spike-exploration or ab-deep-research), including a costly-to-reverse choice still open, such as a storage engine, public API shape or vendor, which ab-spike-exploration compares first; a regression (ab-systematic-debugging, then a plan if the fix is non-trivial).
 
-## When NOT to Use
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
 
-- **No design exists yet** — run `ab-brainstorming` first to lock the design; planning a vague idea produces a vague plan.
-- **The change qualifies as a quick fix** (< 3 files, obvious root cause) — use `ab-quick-fix` and skip the plan document.
-- **You're triaging open work** — use `ab-backlog-triage`; `ab-writing-plans` produces *one* plan for *one* change.
-- **You're researching feasibility** — use `ab-spike-exploration` or `ab-deep-research`; the plan is the artifact *after* feasibility is settled.
-- **A costly-to-reverse choice is still open after research** (storage engine, public API shape, a vendor) — compare the options in `ab-spike-exploration` first; the plan commits to the one that wins.
-- **You're fixing a regression** — use `ab-systematic-debugging`; debug-first then plan if the fix is non-trivial.
+**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. If `.agent-blueprint/.gitignore` is missing, create it first with the lines `run/`, `team/`, `review-runs/` and `cache/`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
-Assume a skilled developer who knows almost nothing about our toolset or problem domain. Test design is where executors most often drift, so the plan settles it: every test is named with the behavior it asserts.
+Announce at start: "I'm using the ab-writing-plans skill to create the implementation plan." Work in a dedicated worktree where the project uses them, and save the plan to `docs/plans/YYYY-MM-DD-<feature-name>.md`.
 
-**Announce at start:** "I'm using the ab-writing-plans skill to create the implementation plan."
+## 1. Check the requirements (rigor probes)
 
-**Context:** This should be run in a dedicated worktree (created by ab-brainstorming skill).
+Requirements from a probed brainstorming session skip this. Otherwise scan them for five gaps (evidence, specificity, counterfactual, attachment, durability) and ask at most two or three of those questions, in prose rather than as a checklist, skipping any the requirements already answer. The probe table and rules: `references/rigor-probes.md`.
 
-**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-## Requirements Quality Check (Rigor Probes)
+Options: answer the probe, refine the requirements first, or plan with the gap open. A real gap pauses planning and sends the user back to the requirements. Default when nobody answers: plan, and write each unanswered probe into the plan as an assumption so its reviewer sees it.
 
-Requirements that came from a probed brainstorming session skip this. Otherwise, before planning, scan them for five gaps (evidence, specificity, counterfactual, attachment, durability) and ask at most two or three of those questions in prose. A real gap sends the user back to refine the requirements. The probe table and rules are in `references/rigor-probes.md`.
+## 2. Write the tasks
 
-## Bite-Sized Task Granularity
+Each step is one action with a checkable result: write the failing test `test_x` asserting Y; run it and see it fail for the expected reason; implement `f(a) -> B` in `path/file.py` until it passes; run the project suite and see it green; commit. A step's detail is the decision it pins: the test and its assertions, or the signature, file and spec values. Write a code body only for an algorithm those leave open (a tricky parse, a non-obvious formula); the executor writes the rest against the real code.
 
-**Each step is one action with a checkable result:**
-- "Write the failing test `test_x` asserting Y" - step
-- "Run it and see it fail for the expected reason" - step
-- "Implement `f(a) -> B` in `path/file.py` until it passes" - step
-- "Run the project suite and see it green" - step
-- "Commit" - step
+Follow `references/plan-format.md` for the header every plan starts with, the task template, verification commands (each testable step gets a runnable command and its expected result, or says plainly that none exists) and the three boundaries lists: Always do, Ask first, Never do.
 
-A step's detail is the decision it pins: the test and its assertions, or the signature, file, and spec values. Write a code body only for an algorithm those don't determine (a tricky parse, a non-obvious formula). Everything else the executor writes against the real code.
+For each new data flow, trace the shadow paths; give each new service call, external API or database operation an error map, and turn every unhandled path into a task: `references/failure-paths.md`.
 
-## Plan Document Header
+When the plan will run in parallel waves (the ab-orchestrate skill), embed the contracts executors need (key types, exports, signatures), and add a "Task 0: Define contracts" when later tasks consume new interfaces: `references/interface-context.md`.
 
-**Every plan MUST start with this header:**
+End the plan with `## Review Focus`: at most five inputs or failure modes the spec implies but no task's test exercises yet (the shadow paths and error maps surface them). Give each a test in the task that owns it, and list it so the final reviewer checks it on purpose rather than by luck.
 
-```markdown
-# [Feature Name] Implementation Plan
+## 3. Review before handoff
 
-> **For Claude:** REQUIRED SUB-SKILL: Use ab-executing-plans to implement this plan task-by-task.
+- **Step scan**: every step is one action with a checkable result; no step body repeats what its test and signature already determine.
+- **Proportion check**: a plan much longer than its spec is usually transcribing code; cut it back to decisions.
+- **Review Focus**: present, five items or fewer, each pinned by a test in its owning task.
 
-**Objective:** [One sentence describing the outcome — a holdable statement of what's true for users after this ships, not the mechanism]
+Tempted to cut a corner? `references/rationalizations.md`.
 
-**Means:** [Only when an approach is already fixed — the chosen technique, in one sentence]
+## 4. Hand off
 
-**Spec:** [Optional — link to a design doc or spec this plan implements]
+The user reviews the saved plan before anything runs: approving the design approved the scope, not this plan. Under the ab-ship-pipeline skill, skip the review request and the question, because its plan-checker loop is the review and it chooses execution itself. Otherwise recommend one option with a one-line reason and its cost (for example "Subagent-driven: 4 sequential tasks, one review per task"), and end with "Plan saved to `docs/plans/<filename>.md`; please review it before anything runs. I recommend <option> because <reason>. Which approach?"
 
-**Architecture:** [2-3 sentences about approach]
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-**Tech Stack:** [Key technologies/libraries]
+Options:
 
----
-```
+1. **Deepen the plan** with the ab-deepen-plan skill: parallel research helpers add best practices, prior solutions and framework docs to each section. Afterwards, offer options 2 and 3 again.
+2. **Subagent-driven, in this session**, with the ab-subagent-driven-development skill: a fresh helper per task and a code review between tasks. Good for hands-on oversight.
+3. **Team work** with the ab-orchestrate skill and the plan path: from the main session it runs dependency-ordered waves through a task ledger, each helper owning its files and the lead committing, with a native team feature (such as Claude Code Agent Teams) where one is switched on. Fastest for plans with concurrent tasks.
 
-The plan-completion audit (`ab-finishing-a-development-branch` Step 3) reads `### Task N:` headings (this template's unit shape), `### U<N>.` headings, or checklist lines as the plan's items, whichever shape a given plan uses.
-
-## Task Structure
-
-````markdown
-### Task N: [Component Name]
-
-**Files:**
-- Create: `exact/path/to/file.py`
-- Modify: `exact/path/to/existing.py:123-145`
-- Test: `tests/exact/path/to/test.py`
-
-**Step 1: Write the failing test** `test_rejects_expired_token` — an expired token returns `None` and logs `token.expired`.
-
-**Step 2: Run it to verify it fails**
-Run: `pytest tests/path/test.py::test_rejects_expired_token -v` → Expected: FAIL (`validate_token` not defined)
-
-**Step 3: Implement** `validate_token(token: str) -> User | None` in `src/path/file.py`; expiry uses the `exp` claim with the 30 s clock skew from the spec.
-
-**Step 4: Run the project suite** → Expected: PASS, with any failure named, including ones this task didn't cause
-
-**Step 5: Commit** `feat(auth): reject expired tokens`
-````
-
-## Shadow Path Tracing
-
-For every new data flow in the plan, trace four paths — not just the happy path:
-
-```
-INPUT ──► VALIDATION ──► TRANSFORM ──► PERSIST ──► OUTPUT
-  │            │              │            │           │
-  ▼            ▼              ▼            ▼           ▼
-[nil?]    [invalid?]    [exception?]  [conflict?]  [stale?]
-[empty?]  [too long?]   [timeout?]    [dup key?]   [partial?]
-```
-
-For each node: document what happens on each shadow path in the task description. If a shadow path is unhandled, add a task to handle it.
-
-## Error/Rescue Map
-
-For tasks that introduce new service calls, external APIs, or database operations, include an error map in the task description:
-
-```
-METHOD/CODEPATH       | WHAT CAN GO WRONG    | HANDLED? | USER SEES
-Service#call          | API timeout          | ?        | ?
-                      | Malformed response   | ?        | ?
-                      | Rate limited (429)   | ?        | ?
-```
-
-Any "?" in the HANDLED column becomes a sub-task. Every external call must have its failure mode explicitly addressed in the plan.
-
-## Review Focus
-
-End the plan with a `## Review Focus` section: at most five inputs or failure modes the spec implies but no task's test exercises yet (Shadow Path Tracing and the Error/Rescue Map are where they surface). Give each one a test in the task that owns it, and list it here so the final reviewer checks it on purpose instead of by luck.
-
-## Interface Context for Parallel Executors
-
-When the plan will run in parallel waves (`ab-orchestrate`), embed the contracts executors need (key types, exports, signatures) in the plan so they don't explore the codebase to find them, and add a "Task 0: Define contracts" when later tasks consume new interfaces. When to include or skip it, and the block shapes, are in `references/interface-context.md`.
-
-## Verification Commands
-
-Every task step that produces a testable result should include a **runnable verification command** — not just "verify it works."
-
-| Bad | Good |
-|-----|------|
-| "Verify it works" | `Run: pytest tests/auth.py -v` → Expected: PASS |
-| "Check the endpoint" | `Run: curl -s localhost:3000/api/health \| jq .status` → Expected: `"ok"` |
-| "Make sure it builds" | `Run: npm run build` → Expected: exit 0, no errors |
-
-If no automated verification exists yet, say so explicitly: `No automated verification available — requires manual browser check at /dashboard`. This honesty prevents executors from inventing fake checks.
-
-## Remember
-- Exact file paths always
-- Decisions, not code: name the test and its assertions, the signature, the spec values (not "add validation"); a code body only for an algorithm those leave open
-- Exact commands with expected output
-- Reference relevant skills with @ syntax
-- DRY, YAGNI, TDD, frequent commits
-
-## Boundaries
-
-Every plan should declare three lists, in this order:
-
-- **Always do** — non-negotiables for this work (run tests before commits, follow existing naming, validate user input at boundaries, cite framework docs for non-obvious patterns)
-- **Ask first** — actions that need explicit user approval (DB schema changes, new dependencies, auth changes, env var additions, public API changes, anything in CLAUDE.md's "Must ask the user FIRST" list)
-- **Never do** — hard prohibitions (commit secrets, edit vendor directories, remove failing tests without approval, skip verification, use `--no-verify` to bypass hooks)
-
-The three-tier framing is sharper than a generic "be careful" — at decision time, an action falls into exactly one bucket. Plans without explicit boundaries inherit them from CLAUDE.md, but for non-trivial work always restate the work-specific items.
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-|---|---|
-| "The plan is obvious, I'll just describe the steps" | Vague plans become vague code. Exact file paths, exact commands, named tests with their assertions, and signatures keep the executor from improvising. |
-| "I'll write the code into the plan to save the executor time" | The executor rewrites it against the real code anyway, and pasted code goes stale at the first deviation. Planning in code also drifts into building the project during planning. Record the decision. |
-| "I'll skip verification commands and figure them out at run-time" | The executor will skip verification too. If the plan-author can't articulate "Expected: PASS," neither will the implementer. |
-| "Interface contracts are implementation details" | When parallel executors share a contract, the contract IS the spec. Skipping the interface section creates Wave-N integration breakage. |
-| "Plans are overhead — let me start coding" | Planning IS the task. Implementation without a plan is typing, not engineering. The cost of the plan is paid back many times over in fewer wrong turns. |
-| "I'll write the plan after the design — they're the same thing" | Brainstorming produces a *what*; the plan produces a *how with file paths and commands*. Conflating them loses the executable detail. |
-| "Boundaries are for big projects" | Boundaries are cheapest to declare on small plans (3 lines per list) and most expensive to recover from when missing. |
-
-## Self-Review Before Handoff
-
-- **Step scan** — every step is one action with a checkable result; no step body repeats what its test and signature already determine.
-- **Proportion check** — a plan much longer than the spec it implements is usually transcribing code. Cut it back to decisions.
-- **Review Focus** — present, five items or fewer, each pinned by a test in its owning task.
-
-## Execution Handoff
-
-The user reviews the *saved* plan before anything runs. Approving the design in brainstorming approved the scope, not this plan. Under an autonomous pipeline (`ab-ship-pipeline`), skip the review request and the question: its plan-checker loop is the review, and the pipeline chooses execution itself. Then recommend one option below with a one-line reason and its cost (e.g. "Subagent-Driven: 4 sequential tasks, one review per task"), and close with:
-
-**"Plan saved to `docs/plans/<filename>.md` — please review it before anything runs.**
-
-**1. Deepen the plan (`ab-deepen-plan`)** — Dispatch parallel research helpers to enrich each section with best practices, prior solutions, and framework docs before executing
-
-**2. Subagent-Driven (this session)** — I dispatch a fresh subagent per task, review between tasks, fast iteration. Good for hands-on oversight.
-
-**3. Team work (`ab-orchestrate`)** — Runs the plan in waves through a task ledger: independent tasks run in parallel within each wave, each helper owns its files, and the lead commits. Uses Claude Code Agent Teams or Codex multi_agent_v2 when switched on. Faster total time for plans with concurrent tasks.
-
-**I recommend [option] because [reason]. Which approach?"**
-
-**If Deepen chosen:**
-- Invoke `ab-deepen-plan` with the plan file path
-- After deepening, re-present execution options (2-3)
-
-**If Subagent-Driven chosen:**
-- **REQUIRED SUB-SKILL:** Use ab-subagent-driven-development
-- Stay in this session
-- Fresh subagent per task + code review
-
-**If Team work chosen:**
-- Invoke `ab-orchestrate` with the plan file path
-- The skill keeps the task ledger, groups waves and dispatches helpers from the main session
+Default when nobody answers: stop with the plan saved and your recommendation stated, and start nothing, since no one has reviewed the plan; a pipeline that called this skill goes on to its own plan check.

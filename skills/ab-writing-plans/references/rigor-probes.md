@@ -18,3 +18,4 @@ Before diving into planning, verify the incoming requirements are solid. If they
 - If requirements came from a rigorous brainstorming session with probes already applied, skip this section entirely
 - Probes that surface real gaps → pause planning, send the user back to refine requirements
 - Probes that are satisfactorily answered → proceed to planning
+- Probes nobody answers (a headless or pipeline run) → proceed, and write each one into the plan as an assumption, as SKILL.md step 1's default says

@@ -62,7 +62,7 @@ With 6+ reviewers × 5+ findings each × full prose, the orchestrator's context 
 
 These are validation failures; synthesis rejects non-conforming output:
 
-- `severity`: exactly one of `"P1"`, `"P2"`, `"P3"`. Do NOT use `"high"`, `"medium"`, `"low"`, `"critical"`, even if your prose discusses priorities that way conceptually. If your reasoning uses qualitative priority, translate at emit time.
+- `severity`: exactly one of `"P1"`, `"P2"`, `"P3"`, not `"high"`, `"medium"`, `"low"` or `"critical"`, even if your prose discusses priorities that way. If your reasoning uses qualitative priority, translate at emit time.
 - `tier`: exactly one of `"safe_auto"`, `"gated_auto"`, `"advisory"`, `"present"`.
 - `confidence`: exactly one of `0`, `25`, `50`, `75`, `100`. Float values (e.g. `0.85`) are validation failures.
 - `evidence`: an ARRAY of strings with at least one element. A single string value is a validation failure — wrap every quote in `["..."]` even when there is only one.

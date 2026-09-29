@@ -5,7 +5,7 @@ Loaded on demand from `SKILL.md`; nothing here is needed on every invocation.
 ## Success criteria
 
 - [ ] User received clear, accurate summary of session work with file paths and commit hashes
-- [ ] User confirmed summary before docs were updated
+- [ ] User confirmed summary before docs were updated (or the report says a headless run took the default)
 - [ ] docs/context/STATUS.md Session Continuity section has specific "start here" instruction
 - [ ] docs/learnings/LEARNINGS.md reviewed this session — new entries added, or the confirmation report states "No durable learnings this session"
 - [ ] docs/context/STATUS.md reflects actual current state with updated tables
@@ -17,7 +17,7 @@ Loaded on demand from `SKILL.md`; nothing here is needed on every invocation.
 - [ ] Active specs in docs/specs/ have updated acceptance criteria
 - [ ] ADRs created for significant decisions
 - [ ] Auto-memory updated if it exists
-- [ ] All doc updates committed with descriptive message
+- [ ] All doc updates committed with descriptive message (in no-commit mode: message in `.agent-blueprint/run/commit-msg.md`)
 - [ ] No source code files were modified
 - [ ] "Last updated" dates are current
 
@@ -31,10 +31,22 @@ git diff --name-only | grep -v -E '\.(md|json)$' | head -5
 git status
 ```
 
-If any non-documentation files were modified, revert them:
+If this wrap modified a non-documentation file, revert that file:
 ```bash
 git checkout -- [file]
 ```
+
+Revert only files the wrap itself changed. Uncommitted work from earlier in the session belongs to the user: list it under uncommitted changes in Session Continuity instead of discarding it.
+
+## Step 17 report
+
+Present final confirmation to the user:
+- List which files were updated (with brief reason for each)
+- List which files were skipped (and why — "no changes in that domain")
+- If no learning cleared the bar in Step 5, state "No durable learnings this session" — this line belongs only in the report, never in LEARNINGS.md
+- Say whether the user confirmed the Step 3 summary, or that a headless run took the default without confirmation
+- Flag any items that need human attention
+- Confirm the docs commit was made, or in no-commit mode that its message is in `.agent-blueprint/run/commit-msg.md`
 
 ## Step 14 cleanup
 
@@ -55,7 +67,9 @@ ls -la *.tmp *.bak *~ 2>/dev/null
 - Remove any temp/backup files that shouldn't be committed
 - If completed plans should be archived, add a completion note at the top rather than moving/deleting them
 
-## Step 6 STATUS.md mapping
+## Step 6 status tables
+
+Map the session onto each STATUS.md table:
 
 **Current State of the Code:**
 - Update build/test/lint status with actual current values
@@ -120,6 +134,8 @@ ls -la *.tmp *.bak *~ 2>/dev/null
 ```
 
 ## Step 3 summary
+
+Confirm the summary before writing because the user may have context not in the git history — verbal decisions, chat conversations, things they want emphasized or omitted.
 
 **Session Summary**
 - Duration estimate (from first to last git timestamp, or note if unclear)

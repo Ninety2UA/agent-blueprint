@@ -1,358 +1,69 @@
 ---
 name: ab-autonomous-loop
-description: "Trigger this skill when executing multi-task plans autonomously with retry logic and no human checkpoints. Trigger scenarios: 'run autonomously', 'keep going', 'don't stop until done', 'just do it all', 'run through the whole plan', 'execute everything without stopping', or when a plan needs continuous autonomous execution with built-in retry logic, completion tracking, circuit breaker, and degradation detection. Typically invoked internally by pipeline skills (ab-ship-pipeline, ab-build-pipeline) rather than directly by users. Even if the user doesn't explicitly ask for autonomous execution, trigger this skill when the context calls for looping through plan tasks without human intervention between each one. DO NOT TRIGGER when human review checkpoints are needed between batches — use ab-executing-plans instead. DO NOT TRIGGER when tasks should run in parallel — use ab-orchestrate instead."
+description: "Runs a plan's tasks one after another with no human checkpoints: do the next unchecked task, verify it, tick it and commit, retry failures after a written reflection, and stop on a fatal error, a circuit breaker, a risk score or a hard cap. Often started by the pipeline skills. Use when a plan of mostly sequential tasks should run to the end unattended, or the user says to keep going until all of it is done. Not for review checkpoints between batches (ab-executing-plans) or tasks that can run in parallel (ab-orchestrate)."
+metadata:
+  version: "3.8.0"
 ---
 
 # Autonomous Loop
 
-## Overview
-
-Execute a plan's tasks in an autonomous loop: pick a task, attempt it, verify it, mark it complete (or retry on failure), and move to the next one. Loop until all tasks are done. Inspired by the iterate-until-complete pattern where small, disciplined iterations compound into full plan completion.
-
-**Core principle:** Loop until done. Retry on transient failures. Abort on fatal errors. Track progress via checkboxes.
-
-## When to Use
-
-- Executing a multi-step implementation plan autonomously
-- Processing a PRD or task list end-to-end
-- When the user says "just do it all" or "run through the whole plan"
-- When you have 5+ sequential tasks to complete without needing human input between each one
+The run ends with every plan task ticked, verified and committed plus a final report, or stopped with a structured escalation that says what blocked it.
 
-**Don't use when:**
-- Tasks require human decisions between steps (use ab-executing-plans with checkpoints instead)
-- Tasks are independent and can run in parallel (use ab-resolve-in-parallel instead)
-- You're exploring or unsure of the approach (use ab-brainstorming or ab-writing-plans first)
-
-## The Iron Law
-
-<HARD-GATE>
-Run feedback loops INCREMENTALLY, not at project end. Verify after EACH task, not after all tasks. A chain of unverified changes is a chain of compounding bugs.
-</HARD-GATE>
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
 
-## Process
-
-### Step 1: Load the Plan
-
-Read the plan file and parse all tasks. Each task should have:
-- A description of what to do
-- A clear completion criteria (how to verify it's done)
-- A checkbox status (`- [ ]` pending, `- [x]` complete)
+**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. If `.agent-blueprint/.gitignore` is missing, create it first with the lines `run/`, `team/`, `review-runs/` and `cache/`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
-**Pre-flight danger scan (advisory):** before the first task, scan the plan for irreversible operations (deleting data, shared-database migrations, force-push, publishing outside the repo), protected-branch pushes, and deleting or skipping tests. Route each hit through the decision boundary; the scan never stops the loop by itself.
+**Verify after every task, not at the end.** A chain of unverified changes is a chain of compounding bugs, and the stop signals below mean something only when each task was checked on its own.
 
-If the plan doesn't have checkboxes, add them:
-```markdown
-- [ ] Task 1: Implement user model
-- [ ] Task 2: Add validation middleware
-- [ ] Task 3: Write integration tests
-```
+## Step 1: Load and classify the plan
 
-### Step 2: Classify Tasks
+Read the plan. Each task needs a description, a completion check and a checkbox (`- [ ]` pending, `- [x]` done); add missing checkboxes, and split a task that would take hours, since a giant task hides its failures. Classify each task as independent, sequential or parallelizable (`references/loop-details.md` § Task classes); hand parallelizable ones to the ab-resolve-in-parallel skill.
 
-Before starting the loop, classify each task:
+**Tracking tasks.** The plan file's checkboxes are the record of progress: tick each one when its task is done and verified, so another session or another tool can continue from there. A host task list, if you have one, may mirror them, but it never replaces them.
 
-| Classification | Meaning | Example |
-|---------------|---------|---------|
-| **Independent** | Can be done in any order | Adding unrelated tests |
-| **Sequential** | Must follow previous task | Migration before code that uses new schema |
-| **Parallelizable** | Can run concurrently | Independent module implementations |
+**Pre-flight danger scan (advisory):** before the first task, run the scan in `references/loop-details.md` § Pre-flight danger scan. It routes each hit through the ab-executing-plans decision boundary and never stops the loop by itself.
 
-For parallelizable tasks, consider dispatching them via the ab-resolve-in-parallel skill instead of looping sequentially.
+## Step 2: Run the loop
 
-### Step 3: Enter the Loop
+Each pass (diagram: `references/loop-details.md` § Loop diagram): **pick** the next unchecked task whose dependencies are done; **attempt** it, reading the files it names and testing first when writing code (the ab-test-driven-development skill); **verify** it at once with the project's tests, build and the task's own acceptance check.
 
-```
-┌─────────────────────────────────────────┐
-│              AUTONOMOUS LOOP            │
-│                                         │
-│  ┌──► Pick next uncompleted task        │
-│  │         │                            │
-│  │    Attempt task                      │
-│  │         │                            │
-│  │    Verify (tests, build, evidence)   │
-│  │         │                            │
-│  │    ┌────┴────┐                       │
-│  │    │ Pass?   │                       │
-│  │    └────┬────┘                       │
-│  │     yes │  no                        │
-│  │         │   │                        │
-│  │   Mark [x]  Classify error           │
-│  │         │   │                        │
-│  │         │   ┌────┴────┐              │
-│  │         │   │ Fatal?  │              │
-│  │         │   └────┬────┘              │
-│  │         │  no    │  yes              │
-│  │         │  Retry │  STOP & REPORT    │
-│  │         │  (backoff)                 │
-│  │         │                            │
-│  │    More tasks?                       │
-│  │     yes │  no                        │
-│  └────────┘   │                         │
-│          ALL DONE                       │
-└─────────────────────────────────────────┘
-```
+**On success,** tick its checkbox, log "Task N complete. [N/total] done.", and commit, so a later failure can return to the last good state without losing earlier work. An unticked task gets attempted again.
 
-For each iteration of the loop:
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
 
-#### 3a. Pick Next Task
+**On failure,** classify the error. Transient (rate limit, timeout, flaky test): retry with backoff. Fixable (an implementation bug): debug with the ab-systematic-debugging skill, fix, retry. Fatal (missing dependency, wrong architecture, unclear requirement): stop and escalate (Step 4). An unclear requirement is Fatal only when the ab-executing-plans decision boundary says to stop (a must-ask category in the project instructions file); anything else it lets an autonomous run decide is decided, recorded, and continued.
 
-Select the next uncompleted task (`- [ ]`) in order. Skip tasks blocked by incomplete dependencies.
+**Reflect before every retry.** Write out what failed (the specific error), what the next attempt changes, and whether it repeats the last approach; if it does, pick a fundamentally different one, since the same strategy with minor tweaks tends to fail the same way.
 
-#### 3b. Attempt the Task
+**Retries:** at most 3 per task (4 attempts); the second changes the approach, the third the whole strategy, each after re-reading the failing output. Transient errors back off 5 s, 15 s, then 45 s before the last attempt. When retries run out, mark the task blocked and move to the next independent task; if other tasks depend on it, stop and escalate.
 
-Execute the task following these sub-steps:
-1. Read any files the task references
-2. Write the implementation (follow TDD if writing code — test first)
-3. Run the task's verification (tests, build, lint, or specific check)
+## Step 3: Report progress, check stop signals
 
-#### 3c. Verify
+After each task, pass or fail, print the report in `references/final-report.md` § Progress report. Then stop the loop, with no retry, at the first of these (counters: `references/loop-details.md` § Circuit breaker, § Risk score):
 
-Run verification immediately after the task:
+- **No progress:** 3 passes in a row finish no task.
+- **Same error:** the same normalized error 5 times running.
+- **Rising difficulty:** each of the last 3 tasks needed more retries than the one before.
+- **Hot file:** one file changed by 4 or more tasks.
+- **Risk score over 20%:** +15% a revert, +5% a fix touching over 3 files, +1% each fix after the 15th, +20% touching files unrelated to the task; test-only changes add nothing.
+- **Hard caps:** 50 changes in the run, or 20 loop passes; the 20-pass ceiling is fixed and sits above every limit the user may change.
 
-```bash
-# Always run after code changes
-[test command]
-[build command]
-```
+## Step 4: Stop and escalate
 
-Check the specific acceptance criteria for the task too.
+Stop for a fatal error, retries run out on a task others depend on, or a Step 3 signal. Report in `references/final-report.md` § Structured escalation (what you were trying to do, what you tried, what you think the issue is, what you need), so the user gets a decision to make, not debug output. A checkpoint the user asked for every N tasks shows the progress report and asks the same way.
 
-#### 3d. Handle Result
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-**On success:**
-- Mark the task complete: `- [x] Task N: description`
-- Update the plan file with the checkbox
-- Log: "✓ Task N complete. [N/total] done."
-- Continue to next task
+Options: answer or decide, and the loop resumes; revise the plan (the ab-writing-plans skill) and restart; or stop. Default when nobody answers: stop, with progress in the checkboxes and the escalation as the run's final output, because continuing past a stop signal compounds the damage it caught; at a checkpoint, continue, since the Step 3 signals still guard the run.
 
-**On failure — classify the error:**
+If the user interrupts, stop, save progress in the checkboxes and report where the run stands.
 
-| Error Type | Examples | Action |
-|-----------|----------|--------|
-| **Transient** | Rate limit, network timeout, flaky test | Retry with backoff |
-| **Fixable** | Test failure from implementation bug | Debug and fix, then retry |
-| **Fatal** | Missing dependency, wrong architecture, unclear requirement | STOP and report |
+## Step 5: Finish
 
-An unclear requirement is Fatal only after the decision boundary in ab-executing-plans has been applied: a CLAUDE.md must-ask category stops here with the Step 5 structured escalation, and anything that rule lets an autonomous run decide is decided, recorded, and continued.
+When every task is ticked:
 
-#### 3e. Reflection Gate (before every retry)
+1. Run the full test suite, the build and the lint.
+2. Deslop every file this session changed (hedging, filler transitions, comments that restate the code, redundant type annotations; checklist: the deslop pass, Step 0.5, of the ab-iterative-refinement skill), then rerun the tests.
+3. Report in `references/final-report.md` § Final report: verification results, the run's numbers (tasks, retries, escalations, blocked tasks and why) and the changes.
 
-Before retrying, you MUST answer these three questions explicitly in your output:
-
-1. **What failed?** — State the specific error, not just "it didn't work"
-2. **What specific change will I make?** — Name the concrete difference from the last attempt
-3. **Am I repeating the same approach?** — If yes, you MUST switch strategies entirely
-
-<HARD-GATE>
-Do NOT retry without writing out answers to all three questions. If the answer to question 3 is "yes", you must choose a fundamentally different approach before proceeding. Repeating the same strategy with minor tweaks is not allowed after the first retry.
-</HARD-GATE>
-
-#### 3f. Retry Logic
-
-When retrying a failed task:
-
-```
-Attempt 1: Immediate
-Attempt 2: Complete Reflection Gate, try different approach
-Attempt 3: Complete Reflection Gate, try fundamentally different strategy
-Attempt 4 (max): STOP — escalate to user
-```
-
-**Max retries per task: 3** (4 total attempts including the initial one).
-
-Between retries:
-- Complete the Reflection Gate above (mandatory)
-- Re-read the failing test output or error message
-- If the second retry fails, the third MUST use a fundamentally different approach
-- If all retries exhausted, mark the task as blocked and move to the next independent task
-
-**Exponential backoff for transient errors:**
-- Attempt 1: immediate
-- Attempt 2: 5 second pause
-- Attempt 3: 15 second pause
-- Attempt 4: 45 second pause, then abort
-
-### Step 4: Progress Tracking
-
-After each task (pass or fail), report progress:
-
-```markdown
-## Loop Progress: [N/total] tasks complete
-
-### Completed
-- [x] Task 1: Implement user model ✓
-- [x] Task 2: Add validation middleware ✓
-
-### Current
-- [ ] Task 3: Write integration tests (attempt 2/4 — fixing assertion)
-
-### Remaining
-- [ ] Task 4: Add error handling
-- [ ] Task 5: Update API docs
-
-### Blocked
-- [ ] Task 6: Deploy (blocked by Task 3)
-```
-
-### Step 5: Circuit Breaker
-
-In addition to per-task retry limits, track global loop health to detect stalls:
-
-**Tracking state (maintained across iterations):**
-```
-consecutive_no_progress = 0    # increments when no task completes in a full loop pass
-consecutive_same_error = 0     # increments when the same error message appears
-last_error_signature = ""      # normalized error message for comparison
-attempts_per_task = []         # track retry count for each completed task (for trend detection)
-files_modified_count = {}      # track how many tasks touch each file path
-```
-
-**Thresholds (configurable):**
-
-| Threshold | Default | What It Detects |
-|-----------|---------|-----------------|
-| `NO_PROGRESS_THRESHOLD` | 3 | Loop is spinning without completing any task |
-| `SAME_ERROR_THRESHOLD` | 5 | Same error repeating — root cause needs human input |
-| `RISING_DIFFICULTY_THRESHOLD` | 3 consecutive tasks with increasing retry count | Complexity compounding — approach is degrading |
-| `HOT_FILE_THRESHOLD` | Same file modified by 4+ different tasks | God object emerging — one file absorbing too much responsibility |
-
-**After each loop iteration:**
-
-1. If a task was completed this iteration → reset `consecutive_no_progress` to 0
-2. If NO task was completed → increment `consecutive_no_progress`
-3. If the error message matches `last_error_signature` → increment `consecutive_same_error`
-4. If the error message is different → reset `consecutive_same_error` to 0, update `last_error_signature`
-
-**Circuit breaker triggers:**
-
-```
-if consecutive_no_progress >= NO_PROGRESS_THRESHOLD:
-    STOP — "Circuit breaker: No progress in [N] consecutive iterations."
-
-if consecutive_same_error >= SAME_ERROR_THRESHOLD:
-    STOP — "Circuit breaker: Same error repeated [N] times."
-
-if last 3 tasks each required more retries than the previous:
-    STOP — "Circuit breaker: Rising difficulty — tasks are getting harder, not easier."
-
-if any file has been modified by 4+ different tasks:
-    STOP — "Circuit breaker: Hot file detected — [file] modified by [N] tasks."
-```
-
-When the circuit breaker triggers, do NOT retry. Stop immediately and report using this format:
-
-```markdown
-## Circuit Breaker — [trigger type]
-
-### What I was trying to do
-[Current task and its goal]
-
-### What I've tried
-[List of approaches attempted, with outcomes]
-
-### What I think the issue is
-[Root cause hypothesis — be specific]
-
-### What I need from you
-[Specific question or decision needed to unblock]
-```
-
-This structured escalation ensures the user gets actionable information, not a wall of debug output.
-
-**Error signature normalization:** Strip line numbers, timestamps, and variable values from error messages before comparison. Compare the structural pattern, not the exact string. Example: `"TypeError: Cannot read property 'foo' of undefined at line 42"` → `"TypeError: Cannot read property of undefined"`.
-
-### Step 5.5: WTF-Likelihood Risk Scoring
-
-In addition to the circuit breaker thresholds above, maintain an additive risk score that accumulates across the entire loop run. This catches gradual degradation that individual circuit breaker thresholds might miss.
-
-**Tracking (maintained across all iterations):**
-```
-wtf_score = 0%
-```
-
-**Risk accumulation:**
-
-| Event | Score Added | Rationale |
-|-------|-----------|-----------|
-| Each revert (`git revert`) | +15% | Reverts mean changes made things worse |
-| Each fix touching >3 files | +5% | Multi-file changes are riskier |
-| After fix 15 | +1% per additional fix | Volume itself is a risk signal |
-| Touching files unrelated to the current task | +20% | Scope creep is the biggest risk |
-
-**Threshold:** If `wtf_score > 20%`, STOP immediately. Show the user what you've done so far and ask whether to continue.
-
-**Hard cap:** 50 total changes across the entire loop run, regardless of wtf_score.
-
-**Note:** Test commits (regression tests, new test files) do NOT count toward wtf_score. Only production code changes accumulate risk.
-
-Native `/loop` schedules runs but does not circuit-break or detect degradation, so it complements this skill rather than replacing it (`references/final-report.md` § Native /loop).
-
-### Step 6: Loop Termination
-
-The loop ends when one of these conditions is met:
-
-| Condition | Action |
-|-----------|--------|
-| **All tasks complete** | Run final verification, report success with the run's numbers (Step 7) |
-| **Fatal error** | Stop, report using structured escalation format (trying/tried/think/need) |
-| **Max retries exhausted** on a blocking task | Stop, report using structured escalation format |
-| **Circuit breaker triggered** | Stop, report using structured escalation format |
-| **User interrupts** | Stop, save progress, report current state |
-
-### Step 7: Final Verification
-
-When all tasks are complete, run a full verification pass:
-
-```bash
-# Full test suite
-[test command]
-
-# Full build
-[build command]
-
-# Lint
-[lint command]
-```
-
-Report the final state in the shape in `references/final-report.md` § Final report: verification results, the run's numbers (tasks done, retries, escalations, blocked tasks with reasons), and the changes made.
-
-**Deslop pass:** Before reporting completion, run a deslop pass on all files modified during this session — remove AI text patterns (over-hedged language, filler transitions, restating-the-obvious comments, redundant type annotations). See ab-iterative-refinement Step 0 for the full checklist. Verify tests still pass after deslop changes.
-
-## Integration with Other Skills
-
-| Situation | Skill to Use |
-|-----------|-------------|
-| Task requires writing code | Follow ab-test-driven-development (red-green-refactor) |
-| Task fails and needs debugging | Use ab-systematic-debugging to find root cause |
-| Multiple independent tasks ready | Dispatch via ab-resolve-in-parallel |
-| Task requires a plan change | Stop loop, use ab-writing-plans to revise |
-| All tasks done, ready to merge | Use ab-finishing-a-development-branch |
-| Loop complete, end of session | Use ab-session-wrap to document |
-
-## Quick Reference
-
-| Parameter | Default | Override |
-|-----------|---------|----------|
-| Hard iteration ceiling | 20 loop passes | Fixed — no override. Count Step 3 passes in context; at 20, stop with the Step 5 structured escalation. Same ceiling as ab-ship-pipeline Stage 0, which counts `## Iteration` blocks across fresh processes. Sits above every configurable cap: retries 3 per task, 50 total changes, Stop hook 5, `ship.sh --max` 10. |
-| Max retries per task | 3 | User can specify |
-| No-progress circuit breaker | 3 iterations | User can specify |
-| Same-error circuit breaker | 5 occurrences | User can specify |
-| Rising difficulty circuit breaker | 3 consecutive tasks with increasing retries | User can specify |
-| Hot file circuit breaker | 4+ tasks touching same file | User can specify |
-| Batch size before checkpoint | All (autonomous) | User can request checkpoints every N tasks |
-| Backoff timing | 5s → 15s → 45s | Adjust for rate limits |
-| Parallelizable tasks | Sequential | Dispatch via ab-resolve-in-parallel |
-
-## Common Mistakes
-
-**Retrying the same approach** — The Reflection Gate (Step 3e) exists specifically to prevent this. If you can't articulate what's different about your next attempt, you haven't reflected enough. Never skip the gate.
-
-**Skipping verification between tasks** — "I'll verify at the end" means 5 tasks of compounding bugs. Verify after EVERY task.
-
-**Not updating the plan** — If you complete a task but don't mark it `[x]`, the loop will try it again. Always update the checkbox.
-
-**Continuing past fatal errors** — Transient errors get retried. Fatal errors (missing dependency, wrong architecture) require human input. Don't retry what can't succeed.
-
-**Giant tasks in the loop** — Each task should be completable in minutes, not hours. If a task is too large, break it into subtasks before entering the loop.
-
-**Not committing between tasks** — Commit after each successful task. If a later task breaks something, you can revert to the last good state without losing earlier work.
+In `references/loop-details.md`: when not to use this skill (§ When Not to Use), limits and overrides (§ Quick Reference), next skills (§ Integration with Other Skills) and common mistakes (§ Common Mistakes).

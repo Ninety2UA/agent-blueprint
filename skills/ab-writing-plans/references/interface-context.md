@@ -10,7 +10,8 @@ After determining which files the task touches, extract the key interfaces from 
 
 ````markdown
 ### Interface Context
-<!-- Extracted from codebase — executor should use directly, no exploration needed -->
+
+Extracted from the codebase: use these directly, no exploration needed.
 
 From `src/types/user.ts`:
 ```typescript

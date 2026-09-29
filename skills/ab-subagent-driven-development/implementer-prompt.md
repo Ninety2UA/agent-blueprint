@@ -35,7 +35,7 @@ Helper (its prompt is the text below):
     2. Implement exactly what the task specifies
     3. Write tests (following TDD if task says to)
     4. Verify implementation works
-    5. Commit your work
+    5. Commit your work, unless the controller says no-commit mode is on: then leave it uncommitted and put the commit message you would have used in your report
     6. Self-review (see below)
     7. Report back
 
@@ -85,6 +85,7 @@ Helper (its prompt is the text below):
     - RED run: the failing test command you ran before the fix, and its failure line
     - What you tested, and the project suite's result: the full test command you ran and every failing test by name, including ones your change didn't cause
     - Files changed
+    - Commit: its SHA, or in no-commit mode the message you would have used
     - Self-review findings (if any)
     - Any issues or concerns
 ```

@@ -4,29 +4,8 @@
     "AGENTS.md": [
       "html-comment"
     ],
-    "skills/ab-autonomous-loop/SKILL.md": [
-      "size"
-    ],
-    "skills/ab-brainstorming/SKILL.md": [
-      "size"
-    ],
-    "skills/ab-build-pipeline/SKILL.md": [
-      "size"
-    ],
-    "skills/ab-deep-research/SKILL.md": [
-      "description"
-    ],
-    "skills/ab-executing-plans/SKILL.md": [
-      "size"
-    ],
-    "skills/ab-finishing-a-development-branch/SKILL.md": [
-      "size"
-    ],
     "skills/ab-ideation/SKILL.md": [
       "banned-token",
-      "size"
-    ],
-    "skills/ab-iterative-refinement/SKILL.md": [
       "size"
     ],
     "skills/ab-knowledge-compounding/SKILL.md": [
@@ -42,16 +21,7 @@
     "skills/ab-pr-workflow/SKILL.md": [
       "size"
     ],
-    "skills/ab-review-swarm/SKILL.md": [
-      "size"
-    ],
     "skills/ab-scope-cutting/SKILL.md": [
-      "size"
-    ],
-    "skills/ab-session-wrap/SKILL.md": [
-      "size"
-    ],
-    "skills/ab-ship-pipeline/SKILL.md": [
       "size"
     ],
     "skills/ab-source-driven-development/SKILL.md": [
@@ -60,23 +30,8 @@
     "skills/ab-spike-exploration/SKILL.md": [
       "size"
     ],
-    "skills/ab-subagent-driven-development/SKILL.md": [
-      "size"
-    ],
-    "skills/ab-systematic-debugging/SKILL.md": [
-      "size"
-    ],
-    "skills/ab-test-driven-development/SKILL.md": [
-      "size"
-    ],
     "skills/ab-wave-orchestration/SKILL.md": [
       "size"
-    ],
-    "skills/ab-writing-plans/SKILL.md": [
-      "size"
-    ],
-    "skills/ab-writing-plans/references/interface-context.md": [
-      "html-comment"
     ],
     "templates/CLAUDE.md": [
       "html-comment"
