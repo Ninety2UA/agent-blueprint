@@ -36,6 +36,18 @@ Paste it only at steps that are safe at lower effort, such as mechanical checks 
 
 Paste it at the first step that writes under `.agent-blueprint/`.
 
+## provenance-record
+
+**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. If `.agent-blueprint/.gitignore` is missing, create it first with the lines `run/`, `team/`, `review-runs/` and `cache/`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+
+Paste it as the first step of every pipeline skill, which also carries `metadata.version` in its frontmatter. The fields are defined in the ab-ship-pipeline skill's run-state reference.
+
+## no-commit-mode
+
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+
+Paste it at the first step that commits, and at every review step that chooses a commit range.
+
 ## bundled-scripts
 
 **Bundled scripts.** Paths such as `scripts/run.sh` are relative to this skill's own folder, the one holding its SKILL.md, not to the project. Run a script through its interpreter (`bash` for `.sh`; `python3`, or `python` if that is missing, for `.py`) instead of relying on its executable bit, and if the interpreter is missing, say so and stop that step.

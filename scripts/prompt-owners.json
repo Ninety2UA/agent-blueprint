@@ -74,6 +74,12 @@
       "copies": [
         "skills/ab-resolve-in-parallel/references/agents/pr-comment-resolver.md"
       ]
+    },
+    {
+      "owner": "docs/upgrade/v4-skill-names.tsv",
+      "copies": [
+        "skills/ab-executing-plans/references/v4-skill-names.tsv"
+      ]
     }
   ]
 }

@@ -37,7 +37,7 @@ Every rule, with its reason and gate id: `references/portable-authoring.md`.
 
 ## Capability snippets
 
-Five steps depend on what the host can do: **Helper step.**, **Asking the user.**, **Tracking tasks.**, **Lower effort.** and **Bundled scripts.** Each has one fixed wording in `references/capability-snippets.md`. Paste the snippet as a paragraph of its own, byte for byte, and put the site's details (prompt file, inputs, default) in the next paragraph. Edit only the owner, then run `python3 scripts/sync-shared.py` to rewrite the copies.
+Eight steps depend on what the host can do, or must run the same way in every tool: **Helper step.**, **Asking the user.**, **Tracking tasks.**, **Lower effort.**, **Working folder.**, **Provenance record.**, **No-commit mode.** and **Bundled scripts.** Each has one fixed wording in `references/capability-snippets.md`. Paste the snippet as a paragraph of its own, byte for byte, and put the site's details (prompt file, inputs, default) in the next paragraph. Edit only the owner, then run `python3 scripts/sync-shared.py` to rewrite the copies.
 
 ## Helpers and prompt files
 

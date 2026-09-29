@@ -22,7 +22,7 @@ All run files live in `.agent-blueprint/run/`, which `.agent-blueprint/.gitignor
 | `stage` | string | The pipeline stage in progress: `continuation`, `plan`, `execute`, `review`, `verify`, `ship` |
 | `iteration` | integer | The iteration the skill believes it is in; informational only |
 | `host` | string | `claude`, `codex`, `agy`, `grok`, `pi`, `cursor-agent`, `hermes`, `amp` |
-| `driver` | string | `runner` when the ship runner started the session, `interactive` otherwise |
+| `driver` | string | `runner` when the ship runner started the session (`AGENT_BLUEPRINT_RUNNER` is `1`), `interactive` otherwise |
 | `session_id` | string | The host's session id, matching `^[A-Za-z0-9._:-]{1,128}$` |
 | `decisions` | array | One object per headless default taken: `stage`, `question`, `choice`, `reason` |
 | `provenance` | object | `skill` (`ab-ship-pipeline`) and `version` (this skill's frontmatter `metadata.version`) |
@@ -47,6 +47,17 @@ Example:
   "updated_at": "2026-10-01T09:14:03Z"
 }
 ```
+
+## Runner environment
+
+The runner exports two variables into every session it starts, and the skills read them from the environment:
+
+| Variable | Value | Meaning |
+|---|---|---|
+| `AGENT_BLUEPRINT_RUNNER` | `1` | The ship runner drives this session. Set `driver` to `runner`, stop at `done`, and leave publishing to the runner |
+| `AGENT_BLUEPRINT_GIT_WRITABLE` | `1` or `0` | Whether the host's posture can write `.git`, from the runner's preflight probe. At `0` the skills run in no-commit mode |
+
+In no-commit mode a skill makes no commits: it leaves its changes in the working tree and adds the message it would have used to `commit-msg.md`, and the runner commits after the session. Review steps then review the working tree and untracked files against the merge base, since there is no commit range yet. Outside the runner neither variable is set, and a skill that finds `.git` read-only when it commits falls back to the same mode.
 
 ## What the runner keeps itself
 
@@ -90,4 +101,4 @@ Anything else is not done.
 
 ## The Stop hook
 
-Where a host runs the blueprint's Stop hook (Claude Code and Codex), the hook reads `state.json`: it keeps an interactive session from stopping while `status` is `running`, and stands down when `driver` is `runner` or the runner's marker variable is set, since headless iterations would otherwise stall.
+Where a host runs the blueprint's Stop hook (Claude Code and Codex), the hook reads `state.json`: it keeps an interactive session from stopping while `status` is `running`, and stands down when `driver` is `runner` or `AGENT_BLUEPRINT_RUNNER` is set, since headless iterations would otherwise stall.

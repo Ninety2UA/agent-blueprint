@@ -38,7 +38,7 @@ How to write a skill that loads and runs in any of the eight tools Agent Bluepri
 
 ## Shared text
 
-- [snippet-drift] The five capability snippets live in `references/capability-snippets.md`. Paste a snippet as a paragraph of its own, byte for byte, and put the site's details in the next paragraph. Never edit a copy: edit the owner and run `python3 scripts/sync-shared.py`.
+- [snippet-drift] The capability snippets live in `references/capability-snippets.md`. Paste a snippet as a paragraph of its own, byte for byte, and put the site's details in the next paragraph. Never edit a copy: edit the owner and run `python3 scripts/sync-shared.py`.
 - [copy-drift] A file several skills need (a prompt file, the name map) has one owner and byte-identical copies, registered in `scripts/prompt-owners.json` and rewritten by the same tool.
 - [owner-missing] Every registered owner and copy location exists; a removed skill cannot own shared text.
 

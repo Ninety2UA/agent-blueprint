@@ -33,10 +33,10 @@ def real_snippets():
 
 
 class RealOwner(unittest.TestCase):
-    def test_owner_holds_the_six_snippets(self):
+    def test_owner_holds_the_eight_snippets(self):
         self.assertEqual(sorted(real_snippets()), sorted([
-            "**Asking the user.**", "**Bundled scripts.**", "**Helper step.**",
-            "**Lower effort.**", "**Tracking tasks.**", "**Working folder.**"]))
+            "**Asking the user.**", "**Bundled scripts.**", "**Helper step.**", "**Lower effort.**",
+            "**No-commit mode.**", "**Provenance record.**", "**Tracking tasks.**", "**Working folder.**"]))
 
     def test_every_snippet_is_one_line_paragraph(self):
         for label, text in real_snippets().items():

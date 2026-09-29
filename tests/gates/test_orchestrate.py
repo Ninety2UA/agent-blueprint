@@ -4,6 +4,7 @@ Checks the merged skill's ledger, host limits and extras, that the removed skill
 leave no trace, and that the Agent Teams hooks act only while the Claude extra runs.
 """
 import csv
+import json
 import os
 import re
 import shutil
@@ -57,8 +58,13 @@ class RemovedSkills(unittest.TestCase):
 
     def test_no_skill_names_a_removed_skill(self):
         pattern = re.compile(r"\b(?:ab-)?(?:agent-teams|team-execution)\b")
+        with open(os.path.join(REPO, "scripts", "prompt-owners.json"), encoding="utf-8") as fh:
+            name_map_copies = {os.path.join(REPO, c) for e in json.load(fh)["shared"]
+                               if e["owner"] == "docs/upgrade/v4-skill-names.tsv" for c in e["copies"]}
         hits = []
         for path in files_under("skills"):
+            if path in name_map_copies:   # a skill's own copy of the name map lists every old name (KTD17)
+                continue
             for n, line in enumerate(read(path).splitlines(), 1):
                 if pattern.search(line):
                     hits.append("%s:%d" % (os.path.relpath(path, REPO), n))
