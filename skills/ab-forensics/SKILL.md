@@ -87,7 +87,7 @@ Before producing the report, scrub sensitive content, because reports get pasted
 
 ### Step 4: Produce report
 
-**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
 Write findings to `.agent-blueprint/forensics/<run-id-or-timestamp>.md` in the format of `references/report-template.md` § Format. If this run already has a report, extend it instead of starting a second one.
 

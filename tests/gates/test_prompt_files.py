@@ -7,6 +7,9 @@ helpers of its own, and every prompt a skill names present in that skill.
 import glob
 import os
 import re
+import shutil
+import subprocess
+import tempfile
 import unittest
 
 from gate_helpers import REPO, gate_module, read
@@ -89,6 +92,33 @@ class PromptFiles(unittest.TestCase):
         self.assertTrue(STARTS_HELPERS.search("Use the Task tool to fan out."))
         self.assertFalse(STARTS_HELPERS.search("Start no helpers of your own."))
         self.assertFalse(STARTS_HELPERS.search("When the dispatching step names an output contract"))
+
+
+class DriftGateAgentCount(unittest.TestCase):
+    """The drift gate fails a current-state surface that still counts agents (v4 has helper prompts)."""
+
+    def run_drift_with(self, rel_path, extra):
+        root = tempfile.mkdtemp()
+        try:
+            copy = os.path.join(root, "repo")
+            shutil.copytree(REPO, copy, symlinks=True, ignore=shutil.ignore_patterns(".git", "node_modules"))
+            with open(os.path.join(copy, rel_path), "a", encoding="utf-8") as fh:
+                fh.write(extra)
+            result = subprocess.run(["bash", os.path.join(copy, "scripts", "check-drift.sh"), copy],
+                                    capture_output=True, text=True, timeout=120)
+            return result.returncode, result.stdout + result.stderr
+        finally:
+            shutil.rmtree(root)
+
+    def test_agent_count_in_the_instructions_fails(self):
+        code, out = self.run_drift_with("AGENTS.md", "\nThe plugin ships 29 specialized subagents.\n")
+        self.assertNotEqual(code, 0, out)
+        self.assertIn("still claims an agent count", out)
+
+    def test_agent_count_in_the_readme_tree_fails(self):
+        code, out = self.run_drift_with("README.md", "\n```\n\u2514\u2500\u2500 29 agents\n```\n")
+        self.assertNotEqual(code, 0, out)
+        self.assertIn("still lists an agent count", out)
 
 
 if __name__ == "__main__":

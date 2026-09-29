@@ -767,6 +767,8 @@ Helpers are prompt files inside the skills that use them (`skills/<skill>/refere
 | [**integration-verifier**](skills/ab-wave-orchestration/references/agents/integration-verifier.md) | Cross-task integration verification | After wave completion — ensures parallel implementations work together |
 | [**findings-synthesizer**](skills/ab-review-swarm/references/agents/findings-synthesizer.md) | Review swarm output consolidation | After `/ab-review-swarm` — de-duplicates and prioritizes all findings |
 | [**pattern-mapper**](skills/ab-executing-plans/references/agents/pattern-mapper.md) | Analog-file mapping for new code | Between research and execution — grounds new files in existing conventions |
+| [**implementer**](skills/ab-subagent-driven-development/references/agents/implementer.md) | One plan task, test first, with a self-review | Subagent-driven development — a fresh helper per task |
+| [**spec-reviewer**](skills/ab-subagent-driven-development/references/agents/spec-reviewer.md) | Built what the task asked, nothing more | Subagent-driven development — after each implementer, before code review |
 | [**doc-claim-verifier**](skills/ab-document-review/references/agents/doc-claim-verifier.md) | Doc claims vs live codebase | Reviewing READMEs, ADRs, runbooks — catches doc drift after refactors |
 | [**findings-validator**](skills/ab-review-swarm/references/agents/findings-validator.md) | Independent re-verification of review findings | Between `/ab-review-swarm` and synthesis — suppresses false positives |
 

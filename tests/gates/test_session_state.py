@@ -72,7 +72,7 @@ class SessionState(unittest.TestCase):
     def test_agent_blueprint_gitignore(self):
         lines = read(os.path.join(ASSETS, "agent-blueprint", "gitignore")).split("\n")
         entries = [l.strip() for l in lines if l.strip() and not l.startswith("#")]
-        for ignored in ("run/", "team/"):
+        for ignored in ("run/", "team/", "review-runs/", "cache/", ".gitignore"):
             self.assertIn(ignored, entries)
         self.assertNotIn("plans/", entries)
         self.assertFalse(any(e.startswith(("plans", "*", "debug", "forensics")) for e in entries))

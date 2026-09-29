@@ -25,9 +25,19 @@ command -v shasum >/dev/null 2>&1 || command -v sha256sum >/dev/null 2>&1 || exi
 
 if [ -t 0 ]; then INPUT="{}"; else INPUT=$(cat); fi
 
+# The blueprint's working folder carries its own ignore file; write it before the
+# first write under .agent-blueprint/, as the skills' Working folder step does.
+ensure_ignore() {
+  local ab="${CLAUDE_PROJECT_DIR:-$PWD}/.agent-blueprint"
+  [ -f "$ab/.gitignore" ] && return 0
+  mkdir -p "$ab"
+  printf 'run/\nteam/\nreview-runs/\ncache/\n.gitignore\n' > "$ab/.gitignore"
+}
+
 dbg() {
   local dir="${CLAUDE_PROJECT_DIR:-$PWD}/.agent-blueprint/cache/sdd"
   [ "${SDD_CACHE_DEBUG:-0}" = "1" ] || [ -f "$dir/.debug" ] || return 0
+  ensure_ignore
   mkdir -p "$dir"
   printf '%s [pre]  %s\n' "$(date -u +%FT%TZ)" "$*" >> "$dir/.debug.log"
 }

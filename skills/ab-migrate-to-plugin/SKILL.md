@@ -51,7 +51,7 @@ If any engine files have been locally modified, list them and ask before going o
 
 Options: 1. back up the modified files to `.agent-blueprint/custom-overrides/` before removing them; 2. remove them (the plugin versions are identical to the template). Default when nobody answers: option 1, since a backup loses nothing.
 
-**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
 For the backup, copy each modified file into `.agent-blueprint/custom-overrides/` under its original path (for example `.agent-blueprint/custom-overrides/.claude/skills/<name>/SKILL.md`).
 

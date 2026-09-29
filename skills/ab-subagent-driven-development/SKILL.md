@@ -13,9 +13,9 @@ Diagrams: `references/flowcharts.md`. Comparison with ab-executing-plans: `refer
 
 ## 1. Start
 
-**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. If `.agent-blueprint/.gitignore` is missing, create it first with the lines `run/`, `team/`, `review-runs/` and `cache/`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. Before that, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 Work in an isolated workspace (the ab-using-git-worktrees skill). On main or master, branch first unless the user said to work there, since every task commits.
 
@@ -39,9 +39,9 @@ In that mode, tell the implementer: it reports its commit message instead of com
 
 Three helpers, in order, each starting once the one before is done and passing:
 
-1. Implementer. Prompt: `implementer-prompt.md` (this skill's folder), filled in. Inputs: the task's full text and context, the working directory, and whether no-commit mode is on. Name it (say `implementer-task-3`) if your host can message a running helper. Answer its questions before it proceeds; one you cannot answer goes through the decision boundary in the ab-executing-plans skill, then to § When you need the user if that says ask.
-2. Spec reviewer. Prompt: `spec-reviewer-prompt.md`, filled in. Inputs: the task text, the implementer's report, BASE, HEAD.
-3. Code-quality reviewer. Prompt: `references/agents/code-reviewer.md`. Inputs: as `code-quality-reviewer-prompt.md` lists.
+1. Implementer. Prompt: `references/agents/implementer.md`. Inputs: the task's full text and context, the working directory, and whether no-commit mode is on. Name it (say `implementer-task-3`) if your host can message a running helper. Answer its questions before it proceeds; one you cannot answer goes through the decision boundary in the ab-executing-plans skill, then to § When you need the user if that says ask.
+2. Spec reviewer. Prompt: `references/agents/spec-reviewer.md`. Inputs: the task text, the implementer's report, BASE, HEAD.
+3. Code-quality reviewer, only after the spec review passes. Prompt: `references/agents/code-reviewer.md`. Inputs: what was implemented (from the implementer's report), the task from the plan, BASE, HEAD, and a one-line description.
 
 **Fix rounds.** Send a reviewer's findings to the same implementer in one message, same-shape ones batched, then have that reviewer check BASE..HEAD again; if you cannot reach it, start a fresh one with its report and the findings. Fix through a helper, never by hand, also when an implementer fails a task, so your context stays clean. An open finding means not done; self-review replaces neither review. After five rounds in one stage, mark the task `— BLOCKED: <reason>` in the progress file and ask the user.
 

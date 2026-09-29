@@ -62,7 +62,7 @@ The table is the verdict's recommendation. A NO-GO decides itself: do not deploy
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-Options: 1. Deploy now, tracking any warnings for follow-up. 2. Fix the warnings first, then re-verify from Step 1. 3. Hold the deployment. Default when nobody answers: deploy only on a GO verdict, where every check passed; on CONDITIONAL GO, hold (option 3) and record the warnings, because an unattended run should not accept risks nobody has looked at.
+Options: 1. Deploy now, tracking any warnings for follow-up. 2. Fix the warnings first, then re-verify from Step 1. 3. Hold the deployment. Default when nobody answers: hold (option 3) and report the verdict, with any warnings recorded. Deploy unattended only when the request or the calling pipeline explicitly asked for a deployment to this environment and the verdict is GO, where every check passed: a readiness question is not a deploy order, and an unattended run should not accept risks nobody has looked at.
 
 ### Step 4: Document
 

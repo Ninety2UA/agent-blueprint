@@ -1,6 +1,8 @@
 # Agent Blueprint working files. Run state, team ledgers, review artifacts and
 # caches are transient; plans and notes stay tracked.
+# This file lists itself, so it never shows up as an untracked change.
 run/
 team/
 review-runs/
 cache/
+.gitignore

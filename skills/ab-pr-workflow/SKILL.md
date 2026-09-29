@@ -16,7 +16,7 @@ Take a branch from ready to merged: checks green on the pushed commit, a body th
 
 Run the checks the project declares in `docs/context/CONVENTIONS.md` (lint, typecheck, test, build), not a remembered subset, and run them on the exact commit you will push: commit first, note `git rev-parse HEAD`, and if HEAD moves before the push, run them again.
 
-**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
 **No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
 
@@ -38,7 +38,7 @@ Title: concise, imperative mood (`Add user authentication`, not `Added user auth
 
 Then push the branch and open the PR from that file (for example `gh pr create --body-file .agent-blueprint/run/pr-body.md`).
 
-**Body only.** When `AGENT_BLUEPRINT_RUNNER` is `1`, or the caller asks for the body only, run Step 1 and the plan audit, write and scan the body at `.agent-blueprint/run/pr-body.md` (that path and no other), do the Step 3 self-review, and stop: push nothing and create no PR, because the ship runner publishes that file.
+**Body only.** When `AGENT_BLUEPRINT_RUNNER` is `1`, no-commit mode is on, or the caller asks for the body only, run Step 1 and the plan audit, write and scan the body at `.agent-blueprint/run/pr-body.md` (that path and no other), do the Step 3 self-review, and stop: push nothing and create no PR. The runner publishes that file; outside it, say the changes and `commit-msg.md` await a commit, since a push now would carry older code than you checked.
 
 ### Step 3: Self-Review
 

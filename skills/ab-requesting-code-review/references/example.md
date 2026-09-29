@@ -20,11 +20,11 @@ HEAD_SHA=$(git rev-parse HEAD)
   DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
 
 [Helper returns]:
-  Strengths: Clean architecture, real tests
-  Issues:
-    Important: Missing progress indicators
-    Minor: Magic number (100) for reporting interval
-  Assessment: Ready to proceed
+  - Important: No progress indicator on long repairs — src/index.ts:88 — Confidence: 75
+    Impact: a repair of a large index looks hung. Fix: report progress every 100 entries.
+  - Suggestion: Magic number (100) for reporting interval — src/index.ts:91 — Confidence: 50
+    Impact: the interval is hard to tune. Fix: name it REPORT_INTERVAL.
+  Verdict: ready with fixes
 
 You: [Fix progress indicators]
 [Continue to Task 3]

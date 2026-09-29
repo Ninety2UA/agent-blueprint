@@ -276,7 +276,7 @@ Set the ledger's status to `done`, or to `blocked` with the reason when the repo
 
 ## Helper Return Contract
 
-**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
 Every task packet you hand a worker (wave worker, fix worker) ends with this output section, so its final response starts with one of these states, carries a compact summary ≤ 2,000 tokens, and ends with any notes for later tasks, which you append to the ledger. A helper that runs from a prompt file, such as the integration verifier, returns that file's Output section instead.
 

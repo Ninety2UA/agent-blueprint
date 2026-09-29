@@ -10,13 +10,15 @@ Use the path the caller passed. Without one, take the newest `docs/plans/*.md` f
 git log --name-only --format= <base-branch>..HEAD -- docs/plans/ | grep -v -- '-design\.md$' | grep . | sort -u | tail -1
 ```
 
+In no-commit mode (`AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only) the plan may exist only in the working tree, so also consider plans that are modified or untracked there (`git status --porcelain -- docs/plans/`), and take the newest of all of them. A plan you cannot find is `NO PLAN` only after both lists come back empty.
+
 ## Audit request
 
 ```
 Plan audit. Classify; do not review. Read only.
 
 PLAN_FILE: <plan-path>
-DIFF: git diff <base-branch>...HEAD
+DIFF: git diff <base-branch>...HEAD (in no-commit mode: git diff $(git merge-base <base-branch> HEAD) plus every untracked file)
 ITEMS: every `### U<N>.` heading, `### Task N:` heading, and checklist line in PLAN_FILE
 
 Output one table row per item: | Item | State | Evidence |

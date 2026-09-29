@@ -253,6 +253,38 @@ class AgentTeamsHooks(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
 
 
+@unittest.skipUnless(shutil.which("node") and shutil.which("npm"), "node and npm are needed to run the idle hook's test check")
+class TeammateIdleGuard(unittest.TestCase):
+    """teammate-idle.js blocks on failing tests only while the marker says active: true."""
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        with open(os.path.join(self.dir, "package.json"), "w") as fh:
+            fh.write('{"name": "fixture", "private": true, "scripts": {"test": "node -e \\"process.exit(1)\\""}}\n')
+
+    def tearDown(self):
+        shutil.rmtree(self.dir)
+
+    def idle(self, marker=None):
+        if marker is not None:
+            os.makedirs(os.path.join(self.dir, ".agent-blueprint", "team"), exist_ok=True)
+            with open(os.path.join(self.dir, MARKER), "w") as fh:
+                fh.write(marker)
+        return subprocess.run(["node", os.path.join(REPO, "hooks", "handlers", "teammate-idle.js")], cwd=self.dir,
+                              capture_output=True, text=True, timeout=120)
+
+    def test_no_marker_means_no_action(self):
+        self.assertEqual(self.idle().returncode, 0)
+
+    def test_inactive_marker_means_no_action(self):
+        self.assertEqual(self.idle("active: false\n").returncode, 0)
+
+    def test_active_marker_keeps_a_teammate_with_failing_tests_working(self):
+        result = self.idle("active: true\n")
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("Tests are failing", result.stderr)
+
+
 class ShipRoutesToOrchestrate(unittest.TestCase):
     def test_stage_four_runs_orchestrate_in_every_mode(self):
         text = read(os.path.join(REPO, "skills", "ab-ship-pipeline", "SKILL.md"))
