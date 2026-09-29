@@ -393,18 +393,9 @@ if [ -n "$TARGET_DIR" ]; then
 
     info "Scaffolding project at ${BOLD}$TARGET_DIR${NC}..."
 
+    # scaffold.py adds src/, tests/ and infra/ only to an empty project
     scaffold_project
     success "Project files scaffolded"
-
-    # Placeholder directories
-    if [ "$DRY_RUN" = false ]; then
-        for dir in src tests infra; do
-            mkdir -p "$TARGET_DIR/$dir"
-            if [ ! -f "$TARGET_DIR/$dir/.gitkeep" ]; then
-                touch "$TARGET_DIR/$dir/.gitkeep"
-            fi
-        done
-    fi
 fi
 
 echo ""

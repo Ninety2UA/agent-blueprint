@@ -4,7 +4,7 @@ import os
 import re
 import unittest
 
-from gate_helpers import REPO
+from gate_helpers import REPO, read
 
 SKILLS = os.path.join(REPO, "skills")
 ASSETS = os.path.join(SKILLS, "ab-project-start", "assets")   # the scaffold; dotfiles are stored without the dot
@@ -14,11 +14,6 @@ CLAUDE_PATH = re.compile(r"\.claude/([A-Za-z0-9_.*<>{}-]+)")
 WRITERS = ["ab-brainstorming", "ab-executing-plans", "ab-review-swarm", "ab-iterative-refinement",
            "ab-ship-pipeline", "ab-subagent-driven-development", "ab-systematic-debugging",
            "ab-writing-skills", "ab-forensics", "ab-orchestrate"]
-
-
-def read(path):
-    with open(path, encoding="utf-8") as fh:
-        return fh.read()
 
 
 def skill_text(name):

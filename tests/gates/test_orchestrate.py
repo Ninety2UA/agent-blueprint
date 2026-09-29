@@ -12,7 +12,7 @@ import subprocess
 import tempfile
 import unittest
 
-from gate_helpers import REPO
+from gate_helpers import REPO, read
 
 SKILL = os.path.join(REPO, "skills", "ab-orchestrate")
 REFS = os.path.join(SKILL, "references")
@@ -22,11 +22,6 @@ REMOVED = ["ab-agent-teams", "ab-team-execution"]
 SURFACES = ["AGENTS.md", "README.md", "index.html", "install.sh", ".claude-plugin", "hooks", "scripts",
             "docs/images/promo-video.html"]
 MARKER = ".agent-blueprint/team/active.md"
-
-
-def read(path):
-    with open(path, encoding="utf-8") as fh:
-        return fh.read()
 
 
 def section(text, heading):

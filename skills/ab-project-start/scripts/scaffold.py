@@ -67,7 +67,11 @@ def merge_lines(target, template):
 
 
 def same_file(a, b):
-    return os.path.exists(a) and os.path.exists(b) and os.path.realpath(a) == os.path.realpath(b)
+    """True when both paths reach one file: a symlink either way, or a hard link."""
+    try:
+        return os.path.samefile(a, b)
+    except OSError:
+        return False
 
 
 def plan(project):

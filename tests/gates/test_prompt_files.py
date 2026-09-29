@@ -9,7 +9,7 @@ import os
 import re
 import unittest
 
-from gate_helpers import REPO
+from gate_helpers import REPO, gate_module, read
 
 PROMPTS = sorted(glob.glob(os.path.join(REPO, "skills", "*", "references", "agents", "*.md")))
 # Imperative helper-starting wording, and one host's team or dispatch tools.
@@ -18,12 +18,7 @@ STARTS_HELPERS = re.compile(
     r"(?:helper|subagent|sub-agent|agent|worker|teammate)s?\b"
     r"|\b(?:Task|Agent) tool\b|\bTeamCreate\b|\bSendMessage\b|\bspawn_agent\b", re.IGNORECASE)
 PROMPT_REF = re.compile(r"references/agents/([a-z0-9-]+)\.md")
-FENCE = re.compile(r"^[ \t]*(`{3,}|~{3,}).*?^[ \t]*\1[ \t]*$", re.DOTALL | re.MULTILINE)
-
-
-def read(path):
-    with open(path, encoding="utf-8") as fh:
-        return fh.read()
+FENCE = gate_module().FENCE   # the gate's own fence pattern, so the two cannot drift apart
 
 
 class PromptFiles(unittest.TestCase):

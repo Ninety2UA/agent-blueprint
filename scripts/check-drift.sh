@@ -66,7 +66,7 @@ fi
 # ── Derive ground truth from the filesystem ───────────────────
 SKILLS=$(find "$SKILLS_DIR" -type f -name 'SKILL.md' | wc -l | tr -d ' ')
 # Helper prompts: distinct file names, since a shared prompt has byte-identical copies.
-PROMPTS=$(find "$SKILLS_DIR" -path '*/references/agents/*.md' -type f -exec basename {} \; | sort -u | wc -l | tr -d ' ')
+PROMPTS=$(find "$SKILLS_DIR" -path '*/references/agents/*.md' -type f | sed 's#.*/##' | sort -u | wc -l | tr -d ' ')
 HOOKS=$(python3 - "$HOOKS_JSON" <<'PY'
 import json, sys
 try:

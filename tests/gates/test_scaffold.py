@@ -10,23 +10,12 @@ import sys
 import tempfile
 import unittest
 
-from gate_helpers import REPO
+from gate_helpers import REPO, read, write
 
 SKILL = os.path.join(REPO, "skills", "ab-project-start")
 ASSETS = os.path.join(SKILL, "assets")
 SCRIPT = os.path.join(SKILL, "scripts", "scaffold.py")
 CAP = 200   # R15: instruction files that load every session stay short
-
-
-def read(path):
-    with open(path, encoding="utf-8") as fh:
-        return fh.read()
-
-
-def write(path, text):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as fh:
-        fh.write(text)
 
 
 class Templates(unittest.TestCase):
@@ -79,7 +68,7 @@ class Scaffold(unittest.TestCase):
             self.assertEqual(actions[rel], "created", rel)
 
     def test_existing_claude_md_gains_the_import_and_keeps_its_content(self):
-        write(self.p("CLAUDE.md"), "# My rules\n\nUse tabs.\n")
+        write(self.project, "CLAUDE.md", "# My rules\n\nUse tabs.\n")
         actions = self.run_scaffold()
         self.assertEqual(actions["CLAUDE.md"], "merged")
         text = read(self.p("CLAUDE.md"))
@@ -89,7 +78,7 @@ class Scaffold(unittest.TestCase):
 
     def test_existing_agents_md_keeps_its_sections_and_gains_missing_ones(self):
         own = "# Ours\n\n## Commits\n\nWe squash everything.\n\n## Deploys\n\nFridays never.\n"
-        write(self.p("AGENTS.md"), own)
+        write(self.project, "AGENTS.md", own)
         actions = self.run_scaffold()
         self.assertEqual(actions["AGENTS.md"], "merged")
         text = read(self.p("AGENTS.md"))
@@ -108,15 +97,22 @@ class Scaffold(unittest.TestCase):
             self.assertEqual(read(self.p(rel)), text, rel)
 
     def test_claude_md_symlinked_to_agents_md_is_left_alone(self):
-        write(self.p("AGENTS.md"), "# Ours\n")
+        write(self.project, "AGENTS.md", "# Ours\n")
         os.symlink("AGENTS.md", self.p("CLAUDE.md"))
         actions = self.run_scaffold()
         self.assertEqual(actions["CLAUDE.md"], "kept")
         self.assertTrue(os.path.islink(self.p("CLAUDE.md")))
         self.assertNotIn("@AGENTS.md", read(self.p("AGENTS.md")))
 
+    def test_claude_md_hard_linked_to_agents_md_is_left_alone(self):
+        write(self.project, "AGENTS.md", "# Ours\n")
+        os.link(self.p("AGENTS.md"), self.p("CLAUDE.md"))
+        actions = self.run_scaffold()
+        self.assertEqual(actions["CLAUDE.md"], "kept")
+        self.assertNotIn("@AGENTS.md", read(self.p("AGENTS.md")))
+
     def test_gitignore_gains_missing_lines_only(self):
-        write(self.p(".gitignore"), "dist/\n.env\n")
+        write(self.project, ".gitignore", "dist/\n.env\n")
         actions = self.run_scaffold()
         self.assertEqual(actions[".gitignore"], "merged")
         lines = read(self.p(".gitignore")).splitlines()
@@ -124,7 +120,7 @@ class Scaffold(unittest.TestCase):
         self.assertEqual(lines.count(".env"), 1)
 
     def test_existing_project_gets_no_placeholder_folders(self):
-        write(self.p("package.json"), "{}\n")
+        write(self.project, "package.json", "{}\n")
         self.run_scaffold()
         self.assertFalse(os.path.exists(self.p("src")))
 

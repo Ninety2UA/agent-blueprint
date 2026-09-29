@@ -3,8 +3,11 @@
 Skill fixtures are stored as SKILL.fixture.md so the installable tree never holds
 a stray SKILL.md (KTD1); build_repo() copies them into place as SKILL.md.
 """
+import functools
+import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -14,6 +17,62 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 FIXTURES = os.path.join(HERE, "fixtures")
 SCRIPTS = os.path.join(REPO, "scripts")
+ASK = "**Asking the user.**"
+FRONTMATTER = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
+USE_WHEN = re.compile(r"\bUse (?:when|before|after)\b")   # KTD13: what the skill does, then when to use it
+
+
+def read(path):
+    with open(path, encoding="utf-8") as fh:
+        return fh.read()
+
+
+@functools.lru_cache(maxsize=None)
+def gate_module():
+    """scripts/check-portability.py as a module, so a test uses the gate's own patterns."""
+    spec = importlib.util.spec_from_file_location("check_portability", os.path.join(SCRIPTS, "check-portability.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def skill_frontmatter(name):
+    return FRONTMATTER.match(read(os.path.join(REPO, "skills", name, "SKILL.md"))).group(1)
+
+
+def skill_description(name):
+    return re.search(r'^description:\s*"?(.*?)"?\s*$', skill_frontmatter(name), re.MULTILINE).group(1)
+
+
+@functools.lru_cache(maxsize=None)
+def skill_prose(name):
+    """SKILL.md and the skill's references as one text, without prompt files (agents/) or assets/."""
+    root = os.path.join(REPO, "skills", name)
+    parts = []
+    for dirpath, dirs, files in os.walk(root):
+        dirs.sort()
+        rel = os.path.relpath(dirpath, root).split(os.sep)
+        if rel[0] == "assets" or "agents" in rel:
+            continue
+        parts += [read(os.path.join(dirpath, f)) for f in sorted(files) if f.endswith(".md")]
+    return "\n".join(parts)
+
+
+def questions_without_default(text):
+    """Positions of Asking the user paragraphs that name no default before the next heading or question."""
+    paragraphs = re.split(r"\n\s*\n", text)
+    missing = []
+    for i, para in enumerate(paragraphs):
+        if not para.strip().startswith(ASK):
+            continue
+        after = []
+        for nxt in paragraphs[i + 1:i + 6]:
+            if nxt.lstrip().startswith("#") or nxt.strip().startswith(ASK):
+                break
+            after.append(nxt)
+        if not re.search(r"(?i)\bdefault\b", " ".join(after)):
+            missing.append(i)
+    return missing
 
 
 def fixture(*parts):

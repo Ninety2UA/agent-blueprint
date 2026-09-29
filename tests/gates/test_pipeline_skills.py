@@ -11,7 +11,8 @@ import os
 import re
 import unittest
 
-from gate_helpers import REPO
+from gate_helpers import (REPO, USE_WHEN, questions_without_default, read, skill_description,
+                          skill_frontmatter, skill_prose)
 
 PIPELINE = ["ab-build-pipeline", "ab-ship-pipeline", "ab-brainstorming", "ab-writing-plans", "ab-executing-plans",
             "ab-review-swarm", "ab-requesting-code-review", "ab-systematic-debugging", "ab-quick-fix",
@@ -22,44 +23,21 @@ COMMITS_OR_REVIEWS = ["ab-build-pipeline", "ab-ship-pipeline", "ab-executing-pla
                       "ab-requesting-code-review", "ab-systematic-debugging", "ab-quick-fix",
                       "ab-subagent-driven-development", "ab-iterative-refinement", "ab-finishing-a-development-branch",
                       "ab-test-driven-development", "ab-orchestrate"]
-ASK = "**Asking the user.**"
-FRONTMATTER = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
-
-
-def read(path):
-    with open(path, encoding="utf-8") as fh:
-        return fh.read()
 
 
 def skill_md(name):
     return read(os.path.join(REPO, "skills", name, "SKILL.md"))
 
 
-def skill_text(name):
-    """SKILL.md plus every markdown reference of the skill, prompt files excluded."""
-    root = os.path.join(REPO, "skills", name)
-    parts = []
-    for dirpath, _dirs, files in os.walk(root):
-        if os.sep + "agents" in dirpath[len(root):]:
-            continue
-        parts += [read(os.path.join(dirpath, f)) for f in sorted(files) if f.endswith(".md")]
-    return "\n".join(parts)
-
-
 def release_version():
     return json.loads(read(os.path.join(REPO, ".claude-plugin", "plugin.json")))["version"]
 
 
-def description(name):
-    fm = FRONTMATTER.match(skill_md(name)).group(1)
-    return re.search(r'^description:\s*"?(.*?)"?\s*$', fm, re.MULTILINE).group(1)
-
-
 class PipelineSkills(unittest.TestCase):
     def test_each_carries_the_release_version(self):
+        version = re.escape(release_version())
         for name in PIPELINE:
-            fm = FRONTMATTER.match(skill_md(name)).group(1)
-            self.assertRegex(fm, r'(?m)^metadata:\n  version: "%s"$' % re.escape(release_version()), name)
+            self.assertRegex(skill_frontmatter(name), r'(?m)^metadata:\n  version: "%s"$' % version, name)
 
     def test_each_writes_its_provenance_record(self):
         for name in PIPELINE:
@@ -67,29 +45,17 @@ class PipelineSkills(unittest.TestCase):
 
     def test_each_that_commits_or_reviews_has_no_commit_mode(self):
         for name in COMMITS_OR_REVIEWS:
-            self.assertIn("**No-commit mode.**", skill_text(name), name)
+            self.assertIn("**No-commit mode.**", skill_prose(name), name)
 
     def test_every_question_names_a_headless_default(self):
-        missing = []
-        for name in PIPELINE:
-            paragraphs = re.split(r"\n\s*\n", skill_text(name))
-            for i, para in enumerate(paragraphs):
-                if para.strip().startswith(ASK):
-                    # The default follows the options, before the next heading or question.
-                    after = []
-                    for nxt in paragraphs[i + 1:i + 6]:
-                        if nxt.lstrip().startswith("#") or nxt.strip().startswith(ASK):
-                            break
-                        after.append(nxt)
-                    if not re.search(r"(?i)\bdefault\b", " ".join(after)):
-                        missing.append("%s: question %d" % (name, i))
+        missing = ["%s: question %d" % (name, i) for name in PIPELINE for i in questions_without_default(skill_prose(name))]
         self.assertEqual(missing, [], "a question without a headless default stalls an unattended run")
 
     def test_descriptions_lead_with_what_the_skill_does(self):
         for name in PIPELINE:
-            text = description(name)
+            text = skill_description(name)
             self.assertNotRegex(text, r"(?i)^trigger this skill", name)
-            self.assertRegex(text, r"\bUse (?:when|before|after)\b", name)
+            self.assertRegex(text, USE_WHEN, name)
             self.assertLessEqual(len(text), 1024, name)
 
     def test_no_pipeline_skill_is_allowlisted(self):
@@ -100,7 +66,7 @@ class PipelineSkills(unittest.TestCase):
 
 class ShipPipelineRunState(unittest.TestCase):
     def setUp(self):
-        self.text = skill_text("ab-ship-pipeline")
+        self.text = skill_prose("ab-ship-pipeline")
         self.contract = read(os.path.join(REPO, "skills", "ab-ship-pipeline", "references", "run-state.md"))
 
     def test_no_done_sentinel(self):
