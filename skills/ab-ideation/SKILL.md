@@ -1,188 +1,79 @@
 ---
 name: ab-ideation
-description: "Trigger this skill when the user wants improvement ideas, project direction suggestions, or creative inspiration for what to work on next. Trigger when the user says 'what should I build', 'give me ideas', 'surprise me', 'what would you change', 'what's worth improving', 'suggest improvements', 'what to work on next', 'I'm stuck', 'I don't know what to do', 'what needs attention', or 'where should I focus'. Trigger even when the user seems stuck, directionless, or doesn't know what to do next — proactively suggest running ideation to generate grounded possibilities. Also trigger when a session starts with no clear goal or the user asks for a codebase health check. Generates improvement ideas by scanning the codebase, then critically filters to the strongest survivors. DO NOT TRIGGER when the user already knows what they want to build — use ab-brainstorming instead. DO NOT TRIGGER for research on a specific known topic — use ab-deep-research instead."
+description: "Generates grounded improvement ideas for a project: scans its learnings, structure and git history with three helpers, generates candidates from three frames (friction, inversion, leverage), rejects the weak ones with a reason each, and saves 5-7 ranked survivors to docs/research/. Use when the user asks what to build, change or improve next, wants ideas, feels stuck or unsure where to focus, or starts a session with no clear goal. Not for designing something the user already chose (ab-brainstorming) or researching a named topic (ab-deep-research)."
 argument-hint: "[optional: focus area, constraint, or volume hint]"
 ---
 
 # Generate Improvement Ideas
 
-`ab-ideation` answers: **"What are the strongest ideas worth exploring?"**
+The outcome is a ranked ideation doc in `docs/research/`: 5-7 surviving ideas, each grounded in this codebase, and a rejection summary saying why the rest fell. It answers "What are the strongest ideas worth exploring?" and writes no requirements, plans or code. Quality comes from grounding and explicit rejection, not optimistic ranking, and the user picks which idea goes on to the ab-brainstorming skill.
 
-This skill produces a ranked ideation artifact in `docs/research/`. It does **not** produce requirements, plans, or code. When the user selects an idea, hand off to `ab-writing-plans`.
+Not for: designing what the user already chose (the ab-brainstorming skill); researching one named topic (ab-deep-research); breaking a known feature into tasks (ab-writing-plans); choosing between two named options (ab-discuss), since ideation is for "I don't know what to do"; or ranking existing bug reports (ab-backlog-triage).
 
-## When NOT to Use
+## Focus hint
 
-- **The user already knows what to build** — use `ab-brainstorming` to design that specific thing.
-- **Research on a single named topic** — use `ab-deep-research`, not ideation.
-- **Sub-tasking a known feature** — use `ab-writing-plans` directly.
-- **Picking between two pre-named options** — use `ab-discuss`; ideation is for "I don't know what to do," not "which of these two?"
-- **Bug triage** — use `ab-backlog-triage`; ideation generates new directions, it doesn't rank existing reports.
+Read the focus hint, if any, from the user's request that came with this skill: a concept (`DX improvements`), a path (`src/api/`), a constraint (`low-complexity quick wins`) or a volume hint (`top 3`, `go deep`, `raise the bar`). With none, ideate open-ended.
 
-## Focus Hint
+Default volume: about 8-10 ideas per helper (about 25 raw, 15-20 after dedupe), keeping 5-7 survivors. Honor a clear override.
 
-The user's argument: $ARGUMENTS
+## Phase 0: Resume and scope
 
-Interpret as optional context:
-- A concept: `DX improvements`
-- A path: `src/api/`
-- A constraint: `low-complexity quick wins`
-- A volume hint: `top 3`, `go deep`, `raise the bar`
+Parse the focus hint into focus context and a volume override. Look in `docs/research/` for ideation docs (`*-ideation.md`) from the last 30 days; if one matches this topic or focus, ask how to proceed.
 
-If no argument, proceed with open-ended ideation.
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-Default volume: ~8-10 ideas per helper (yielding ~25 raw, ~15-20 after dedupe), keep 5-7 survivors. Honor clear overrides.
+Options: continue from it (read, summarize, update it in place), or start fresh. Default when nobody answers: continue from it, so its survivors and rejections are not lost.
 
-## Phase 0: Resume & Scope
+## Phase 1: Codebase scan
 
-Check `docs/research/` for ideation documents (`*-ideation.md`) created within the last 30 days.
-
-If a relevant doc exists (matching topic/focus), ask whether to:
-1. Continue from it (read, summarize, update in place)
-2. Start fresh
-
-Parse the focus hint into: focus context, volume override.
-
-## Phase 1: Codebase Scan
-
-Dispatch 3 helpers **in parallel** and wait for them (results needed before proceeding).
+Start three helpers in parallel and wait for all of them, because the later phases build on their results.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Prompt files and inputs:
-- `references/agents/learnings-researcher.md`: Search docs/solutions/, docs/learnings/, and docs/context/DECISIONS.md for known pain points, recurring issues, and areas flagged for improvement. Focus: {focus_hint}
-- `references/agents/codebase-context-mapper.md`: Map project structure, patterns, conventions, and gaps. Identify areas with high complexity, missing tests, or unclear architecture. Focus: {focus_hint}
-- `references/agents/git-history-analyzer.md`: Analyze recent git history (last 30 days). Find: hot files (most changed), recurring fix patterns, areas with frequent churn, recent refactors that may have follow-up work. Focus: {focus_hint}
+Prompt files and inputs (each also gets the focus hint):
+- `references/agents/learnings-researcher.md`: known pain points, recurring issues and areas flagged for improvement in docs/solutions/, docs/learnings/ and docs/context/DECISIONS.md.
+- `references/agents/codebase-context-mapper.md`: project structure, patterns, conventions and gaps, such as high complexity, missing tests or unclear architecture.
+- `references/agents/git-history-analyzer.md`: the last 30 days of history: hot files, recurring fix patterns, frequent churn, and recent refactors that may need follow-up.
 
 **Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
-Consolidate results into a **grounding summary**:
-- **Project shape** — language, framework, structure, key patterns
-- **Known pain points** — from learnings and past solutions
-- **Hot spots** — from git churn analysis
-- **Gaps** — missing tests, unclear docs, incomplete features
+Consolidate the results into a grounding summary: **project shape** (language, framework, structure, key patterns), **known pain points** (learnings, past solutions), **hot spots** (git churn) and **gaps** (missing tests, unclear docs, incomplete features).
 
-## Phase 2: Divergent Ideation
+## Phase 2: Divergent ideation
 
-Generate the full candidate list **before** critiquing any idea.
-
-Dispatch 3 parallel ideation helpers.
+Generate the full candidate list before critiquing any idea, because early critique prunes the list before strong combinations can appear.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-These have no prompt file: each helper's prompt is its frame text below. Each gets: the grounding summary, the focus hint, and a per-helper volume target (~8-10 ideas). Instruct each to generate raw candidates only — no critique.
+Prompts: the three frames in `references/ideation-frames.md` (friction, inversion, leverage), one per helper; they have no prompt file. Inputs: the grounding summary, the focus hint and a volume of about 8-10 ideas. Start all three at once, since they are independent. A frame is a starting bias, not a constraint, and helpers return raw candidates only, with no critique.
 
-Assign each a different **ideation frame** as a starting bias (not a constraint — cross-cutting ideas are valuable):
+When all have returned:
+1. Merge and dedupe into one master list.
+2. Combine ideas from different frames into something stronger where you can (expect 2-4 additions).
+3. With a focus, weight toward it without excluding stronger adjacent ideas.
 
-- Friction frame: Generate ~{volume} concrete improvement ideas for this project, grounded in the codebase scan below. Start from this frame: User/developer friction — What's painful, slow, confusing, or error-prone? Where do people waste time? Follow any promising thread. Every idea must be grounded in the actual codebase — no abstract product advice. For each idea, return: title, summary (2-3 sentences), why_it_matters (1 sentence), grounding_evidence (what in the scan supports this). Focus hint: {focus_hint}. Grounding summary: {grounding_summary}
-- Inversion frame: Generate ~{volume} concrete improvement ideas for this project, grounded in the codebase scan below. Start from this frame: Inversion and removal — What can be eliminated, automated, or simplified? What would happen if we removed this entirely? Follow any promising thread. Every idea must be grounded in the actual codebase — no abstract product advice. For each idea, return: title, summary (2-3 sentences), why_it_matters (1 sentence), grounding_evidence (what in the scan supports this). Focus hint: {focus_hint}. Grounding summary: {grounding_summary}
-- Leverage frame: Generate ~{volume} concrete improvement ideas for this project, grounded in the codebase scan below. Start from this frame: Leverage and compounding — What small change would make many future changes easier? Where does effort compound? Follow any promising thread. Every idea must be grounded in the actual codebase — no abstract product advice. For each idea, return: title, summary (2-3 sentences), why_it_matters (1 sentence), grounding_evidence (what in the scan supports this). Focus hint: {focus_hint}. Grounding summary: {grounding_summary}
+## Phase 3: Adversarial filtering
 
-**Important:** Start ALL 3 at once to maximize parallelism.
+Review every candidate yourself rather than handing critique to helpers, because judging an idea means comparing it with the whole list. Give each rejected idea a one-line reason.
 
-After all helpers return:
-1. Merge and dedupe into one master list
-2. Synthesize cross-cutting combinations — scan for ideas from different frames that combine into something stronger (expect 2-4 additions)
-3. If a focus was provided, weight toward it without excluding stronger adjacent ideas
+Apply `references/filtering.md` in order: reject by its criteria, score the survivors, and tag each as a two-way or one-way door, scrutinizing one-way doors harder.
 
-## Phase 3: Adversarial Filtering
+Keep 5-7 survivors. If more survive, run a stricter pass; if fewer than 5, say so honestly rather than lowering the bar.
 
-The orchestrator (you) reviews every candidate directly — do not dispatch helpers for critique.
+## Phase 4: Present survivors
 
-For each rejected idea, write a one-line reason.
+Present the survivors, then the rejection summary table, in the format in `references/ideation-formats.md` § Presenting survivors. The rejections show what was considered, so the ranking does not look arbitrary.
 
-**Rejection criteria:**
-- Too vague to act on
-- Not actionable without major prerequisite work
-- Duplicates a stronger idea
-- Not grounded in the current codebase
-- Too expensive relative to likely value
-- Already covered by existing workflows, tools, or docs
-- Interesting but trivial (not worth a brainstorm session)
+## Phase 5: Hand off
 
-**Score survivors** using: groundedness, expected value, novelty, pragmatism, leverage on future work, implementation burden.
+Write or update the ideation doc (`references/ideation-formats.md` § Ideation doc) before any hand-off, before ending the session and after each refinement round, so no round's work lives only in the conversation. Then ask what happens next.
 
-**Size scrutiny by reversibility.** Tag each survivor as a *two-way door* (easily reversed — ship it, learn, back it out cheaply) or a *one-way door* (hard or impossible to undo — a data migration, a public API shape, a foundational dependency). Two-way doors can be decided fast on thin evidence; being wrong is cheap. One-way doors warrant deeper scrutiny — demand stronger grounding, surface more alternatives, and record the irreversibility in the idea's downsides so the user can see which choices lock the project in.
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-Target: keep 5-7 survivors. If too many survive, run a stricter pass. If fewer than 5, report honestly — don't lower the bar.
+Options: (1) take a chosen idea forward: mark it `Explored` in the doc, then invoke the ab-brainstorming skill with the idea as its seed, since a chosen idea still needs a design before a plan; (2) refine: add angles (back to Phase 2), raise the bar (back to Phase 3) or dig into one idea; (3) end the session and commit the doc, unless the user would rather leave it uncommitted. Default when nobody answers: (3), because choosing which idea to pursue is the user's call.
 
-## Phase 4: Present Survivors
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
 
-Present surviving ideas in structured form:
+Commit message: `docs: ideation — <topic>`.
 
-```
-### 1. [Title]
-**Description:** [Concrete explanation]
-**Rationale:** [Why this improves the project]
-**Downsides:** [Tradeoffs or costs]
-**Confidence:** [0-100%]
-**Complexity:** [Low / Medium / High]
-```
-
-Then include a brief **rejection summary** table:
-
-| # | Idea | Reason Rejected |
-|---|------|-----------------|
-| 1 | ... | ... |
-
-## Phase 5: Hand Off
-
-After presenting, ask what should happen next:
-
-1. **Brainstorm a selected idea** — write/update the ideation doc, mark that idea as `Explored`, then invoke `ab-writing-plans` with the selected idea as the seed
-2. **Refine the ideation** — add more angles (→ Phase 2), raise the bar (→ Phase 3), or dig deeper on one idea
-3. **End session** — write/update the ideation doc, offer to commit it
-
-## Artifact Format
-
-Save to `docs/research/YYYY-MM-DD-<topic>-ideation.md` (or `open-ideation.md` if no focus):
-
-```markdown
----
-date: YYYY-MM-DD
-topic: <kebab-case-topic>
-focus: <optional focus hint>
----
-
-# Ideation: <Title>
-
-## Codebase Context
-[Grounding summary from Phase 1]
-
-## Ranked Ideas
-
-### 1. <Idea Title>
-**Description:** [Concrete explanation]
-**Rationale:** [Why this improves the project]
-**Downsides:** [Tradeoffs or costs]
-**Confidence:** [0-100%]
-**Complexity:** [Low / Medium / High]
-**Status:** [Unexplored / Explored]
-
-## Rejection Summary
-
-| # | Idea | Reason Rejected |
-|---|------|-----------------|
-| 1 | <Idea> | <Reason> |
-
-## Session Log
-- YYYY-MM-DD: Initial ideation — <candidate count> generated, <survivor count> survived
-```
-
-**Always write the artifact before:** handing off to `ab-writing-plans`, ending the session, or after refinement rounds.
-
-## Key Principles
-
-- **Ground before ideating** — scan the actual codebase first. No abstract advice.
-- **Generate many → critique all → explain survivors** — quality comes from explicit rejection, not optimistic ranking.
-- **Route to `ab-writing-plans`** — ideation identifies directions; `ab-writing-plans` defines the selected one precisely.
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-|---|---|
-| "I already know what to build, skip ideation" | Then use `ab-brainstorming` directly. Ideation is for "I don't know what's worth doing" — not for re-ranking a foregone conclusion. |
-| "More ideas is better" | 25 shallow ideas beats 8 strong ones less than half the time. The critique pass matters more than the volume. |
-| "Skip the rejection summary, only show survivors" | The rejected list is half the value — it tells the user what was considered and why it didn't survive. Without it, survivors look arbitrary. |
-| "I'll skip the codebase scan and ideate from intuition" | Ungrounded ideas drift toward generic advice. The signal is in what *this* codebase needs, not what any codebase might. |
-| "Just hand the top idea to `ab-writing-plans` automatically" | The user picks. Ideation produces a ranked menu; planning operates on the chosen item. Automating the choice removes the user's leverage. |
-| "Painkiller-vs-vitamin distinction is too philosophical" | It's the cheapest filter we have. Vitamins look reasonable in a list; under the painkiller test, most evaporate. |
+The principles behind these phases, and why skipping one fails: `references/rationalizations.md`.

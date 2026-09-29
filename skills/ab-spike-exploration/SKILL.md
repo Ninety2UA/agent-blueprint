@@ -1,13 +1,11 @@
 ---
 name: ab-spike-exploration
-description: "Trigger this skill when there is significant technical uncertainty about whether an approach will work and hands-on code exploration is needed to answer the question. Trigger when the user says 'spike', 'explore', 'prototype', 'proof of concept', 'can we even do this', 'feasibility', 'experiment', 'try it out', 'will this work', or 'I'm not sure this is possible'. Trigger even when the user is about to commit to an approach without evidence — proactively suggest a spike when unknowns are large, the team is debating without data, or an estimate feels like pure guesswork. This is for timeboxed hands-on code exploration, not documentation research. DO NOT TRIGGER for general research or context gathering — use ab-deep-research instead. DO NOT TRIGGER when the approach is clear and the only question is effort estimation. DO NOT TRIGGER when the question can be answered by reading docs — just read them or use ab-deep-research."
+description: "Runs a timeboxed, hands-on spike that answers one technical question with throwaway code: sets the question, timebox and success criteria, explores on a spike branch or scratch folder, gathers evidence, and writes a spike report with a recommendation to docs/research/spikes/. Use when it is unclear whether an approach will work, when choosing between technologies or a costly-to-reverse option, when integrating an unfamiliar API, when a debate has no data or an estimate is guesswork, or when the user asks for a spike or proof of concept; suggest one before the user commits to an approach without evidence. Not for documentation research or context gathering (ab-deep-research), questions the docs answer, or effort estimates for a clear approach."
 ---
 
 # Spike / Exploration
 
-## Overview
-
-A spike is a timeboxed investigation to reduce uncertainty. The output is knowledge, not production code. Spikes answer questions like "can we do X?", "how does Y work?", and "which approach is better?"
+A spike is a timeboxed investigation that reduces uncertainty. It is finished when a report in `docs/research/spikes/` answers its question (yes, no or partly) with evidence and a recommendation, and the spike code stays out of the main line. The output is knowledge, not production code: spikes answer questions like "can we do X?", "how does Y work?" and "which approach is better?"
 
 **Core principle:** The deliverable of a spike is a decision, not a feature. Write throwaway code. Explore fast. Document what you learned.
 
@@ -26,11 +24,9 @@ A spike is a timeboxed investigation to reduce uncertainty. The output is knowle
 - You're procrastinating on implementation by over-researching (set a timebox and honor it)
 - The question can be answered by reading documentation (just read it)
 
-## The Iron Law
+## Question and Timebox First
 
-<HARD-GATE>
-A spike has a QUESTION and a TIMEBOX. If you don't have both before starting, you're not doing a spike — you're wandering. Define both before writing any code.
-</HARD-GATE>
+A spike has a question and a timebox, both written down before any code. Without a question nothing tells you when you are done, and without a timebox exploration fills the day; a spike missing either is wandering.
 
 ## Process
 
@@ -58,13 +54,15 @@ Examples of bad spike questions:
 
 ### Step 2: Explore
 
-Rules for spike code:
+Spike code is throwaway, so it skips what shipping code needs:
 
 1. **No tests required** — this code is throwaway
 2. **No code review required** — it won't ship
 3. **No style standards** — hack freely, hardcode values, skip error handling
 4. **Branch or scratch directory** — keep spike code separate from main
 5. **Focus on the question** — resist the urge to build the whole feature
+
+Use a scratch directory instead of a branch when you cannot switch branches, for example with uncommitted work in the tree or a read-only `.git`.
 
 ```bash
 # Create a spike branch
@@ -112,7 +110,7 @@ When the timebox expires (or you have your answer), write a report:
 [Anything surprising or concerning discovered during the spike]
 ```
 
-Save the report to: `docs/research/spikes/YYYY-MM-DD-[topic].md`
+Save the report to `docs/research/spikes/YYYY-MM-DD-[topic].md` on the branch you started from, not the spike branch, so it survives when the spike branch goes.
 
 ### Step 5: Clean Up
 
@@ -123,69 +121,7 @@ Save the report to: `docs/research/spikes/YYYY-MM-DD-[topic].md`
 
 ## Spike Patterns
 
-### A/B Comparison Spike
-
-Comparing two approaches. Fix the criteria before building anything, then build one throwaway artifact per option to the same depth, so neither wins on polish. Score both against those criteria. The artifacts are deleted; the matrix and the reason go into the report and the plan.
-
-```markdown
-## Spike: PostgreSQL vs. SQLite for local-first sync
-
-**Question:** Which database handles our offline-first sync requirements better?
-**Timebox:** 3 hours
-
-### Approach A: PostgreSQL + logical replication
-- [findings]
-
-### Approach B: SQLite + cr-sqlite
-- [findings]
-
-### Comparison Matrix
-| Criterion | PostgreSQL | SQLite |
-|-----------|-----------|--------|
-| Offline support | ... | ... |
-| Sync complexity | ... | ... |
-| Query performance | ... | ... |
-
-### Recommendation: [choice] because [evidence-based reasoning]
-```
-
-### Feasibility Spike
-
-Can we do this at all?
-
-```markdown
-## Spike: Browser-based PDF generation
-
-**Question:** Can we generate PDFs client-side without a server round-trip?
-**Timebox:** 2 hours
-
-### Tested Libraries
-1. jsPDF — [result]
-2. pdf-lib — [result]
-3. Puppeteer in WASM — [result]
-
-### Answer: YES, using pdf-lib. Limitations: [list]
-```
-
-### Integration Spike
-
-How does this external system work?
-
-```markdown
-## Spike: Stripe Connect onboarding flow
-
-**Question:** What's the minimum integration for marketplace seller onboarding?
-**Timebox:** 2 hours
-
-### API Endpoints Used
-- [endpoint]: [what it does, gotchas]
-
-### Auth Flow
-- [sequence of calls]
-
-### Undocumented Behavior
-- [anything surprising]
-```
+Three shapes, each with a template in `references/spike-patterns.md`: A/B Comparison Spike, Feasibility Spike and Integration Spike. Follow the one that fits.
 
 ## Timebox Discipline
 
@@ -194,23 +130,19 @@ When the timebox expires:
 | Situation | Action |
 |-----------|--------|
 | **Question answered** | Write report, move on |
-| **Partial answer** | Write what you know, note remaining unknowns, decide: extend or accept uncertainty |
+| **Partial answer** | Write what you know, note remaining unknowns, then extend or accept the uncertainty (below) |
 | **No answer** | Write what you tried, why it didn't work, recommend next steps |
-| **Found a bigger problem** | Document it, stop the spike, escalate to the team |
+| **Found a bigger problem** | Document it, stop the spike, and report it to the user |
 
-**Never extend a timebox by more than 50%.** If a 2-hour spike isn't answered in 3 hours, the question is probably too broad — split it into smaller spikes.
+Extend a timebox by at most half its length. If a 2-hour spike isn't answered in 3 hours, the question is probably too broad: split it into smaller spikes.
+
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
+
+For a partial answer, options: extend the timebox (by at most half), accept the partial answer, or split the unknowns into a new spike. Default when nobody answers: accept the partial answer and write the report with the remaining unknowns listed, since an extension spends time nobody approved.
 
 ## Common Mistakes
 
-**Spike becomes a prototype** — You found something that works and kept building. Stop. Write the report. Create implementation tasks. The spike code is throwaway.
-
-**No timebox** — "I'll just explore for a bit" turns into a full day. Set a timer.
-
-**No question** — "Let's spike on payments" is not a spike. "Can Stripe handle split payments to 3 parties?" is.
-
-**Merging spike code** — Spike code is written fast with no tests, no error handling, and hardcoded values. It's evidence, not implementation. Rewrite it properly.
-
-**Skipping the report** — The code will be deleted. If you don't write down what you learned, the spike was wasted time.
+A spike that grows into a prototype, has no timebox or no question, gets merged, or ends without a report: `references/common-mistakes.md`.
 
 ## Integration with Other Skills
 

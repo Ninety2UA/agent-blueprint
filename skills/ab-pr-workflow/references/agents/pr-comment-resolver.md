@@ -50,9 +50,9 @@ After making the change:
 - If the change affects behavior, verify tests cover it
 - Read the diff — does it address exactly what the reviewer asked?
 
-### Step 6: Commit
+### Step 6: Write the commit message
 
-Create a focused commit:
+Do not commit: the session that started you commits each resolution. Write the message it should use:
 ```
 fix(review): [brief description of what was changed]
 
@@ -72,7 +72,7 @@ Addresses review comment: [one-line summary of reviewer's concern]
 ### Resolution
 - **Change:** [what was changed and why]
 - **Files modified:** [list]
-- **Commit:** [hash]
+- **Commit message:** [the message from Step 6]
 
 ### Verification
 - **Tests pass:** Yes / No

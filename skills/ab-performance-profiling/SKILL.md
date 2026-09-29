@@ -1,13 +1,13 @@
 ---
 name: ab-performance-profiling
-description: "Trigger this skill whenever the user mentions performance concerns — even if they want to jump straight to optimizing. Trigger when the user says 'slow', 'performance', 'optimize', 'profile', 'bottleneck', 'takes too long', 'speed up', 'laggy', 'high latency', 'memory leak', 'CPU spike', 'N+1 queries', 'timeout', 'response time', or 'make it faster'. Trigger even when the user says 'just add an index' or 'just cache it' — ALWAYS profile before optimizing. Never guess at bottlenecks. Measure first, then target the actual bottleneck with data. DO NOT TRIGGER for code quality improvements that aren't performance-related — use simplify or ab-iterative-refinement instead."
+description: "Makes slow code faster by measurement: a baseline with its run-to-run variance, a profile of the critical path, a hypothesis the data supports, one optimization at a time re-measured against that noise floor, and a record of reverted attempts so none is retried. Use when something is slow, laggy or timing out, latency, CPU or memory has regressed, N+1 queries or a bottleneck is suspected, or the user wants code sped up, including when they want to jump straight to a fix such as adding an index or a cache. Not for code quality changes unrelated to performance (ab-iterative-refinement, or a code simplification skill)."
 ---
 
 # Performance Profiling
 
 ## Overview
 
-Profile-driven performance investigation. Measure before optimizing, form hypotheses based on data, and verify that changes actually improve performance.
+Profile-driven performance investigation. Measure before optimizing, form hypotheses based on data, and verify that changes actually improve performance. The run is done when the Step 5 comparison shows each kept change beating the baseline's noise with the regression check passing, and every reverted attempt is on record.
 
 ## When to Use
 
@@ -19,11 +19,7 @@ Profile-driven performance investigation. Measure before optimizing, form hypoth
 
 ## The Iron Law
 
-<HARD-GATE>
-NO OPTIMIZATION WITHOUT PROFILING DATA. Do not guess at bottlenecks. Do not optimize based on intuition. Measure first, then optimize the measured bottleneck.
-</HARD-GATE>
-
-"Premature optimization is the root of all evil." — Donald Knuth
+**Hard gate.** Optimize only a bottleneck that profiling data shows, and measure before you change anything, even when the user asks for a specific fix such as an index or a cache. Intuition about where time goes is usually wrong, and an unmeasured change can make things slower while looking like progress. When the user's fix is the right one, the data will say so.
 
 ## Process
 
@@ -83,10 +79,10 @@ Based on profiling data, form specific hypotheses:
 
 ### Step 4: Optimize
 
-Make ONE change at a time. For each change:
+Make one change at a time, so each measured difference has a single cause. For each change:
 1. Implement the optimization
 2. Measure performance again (same conditions and run count as the baseline)
-3. Compare: Did it actually improve? An improvement smaller than the baseline's run-to-run variance is within measurement noise — treat it as no improvement
+3. Compare: did it actually improve? An improvement smaller than the baseline's run-to-run variance is within measurement noise — treat it as no improvement
 4. If yes, keep it. If no, or if the improvement is within measurement noise, revert it and record the attempt (see Reverted Attempts below)
 
 **Common optimization patterns:**
@@ -119,13 +115,15 @@ After optimization:
 
 ### Reverted Attempts
 
-Every reverted optimization is recorded so it is not retried. When a plan is executing, append one line per revert to the plan's progress ledger (`.agent-blueprint/plans/<plan-basename>.progress.md`, the file `ab-executing-plans` creates); with no plan running, put the line under the Performance Comparison block in Step 5 so it travels with the report.
+Every reverted optimization is recorded so it is not retried. When a plan is executing, append one line per revert to the plan's progress ledger (`.agent-blueprint/plans/<plan-basename>.progress.md`, the file the ab-executing-plans skill creates); with no plan running, put the line under the Performance Comparison block in Step 5 so it travels with the report.
 
 ```markdown
 - Reverted: [change tried] — [before → after, variance] — [no improvement / within noise / regression]
 ```
 
 Before trying an optimization, read the ledger: an entry for the same change ends the attempt.
+
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
 
 ## Quick Reference
 
@@ -139,7 +137,7 @@ Before trying an optimization, read the ledger: an entry for the same change end
 
 ## Common Mistakes
 
-**Optimizing without measuring** — The #1 mistake. Your intuition about what's slow is usually wrong. Measure first.
+**Optimizing without measuring** — The most common mistake. Your intuition about what's slow is usually wrong. Measure first.
 
 **Optimizing the wrong thing** — A function that takes 1ms but is called once doesn't matter. A function that takes 0.1ms but is called 10,000 times does. Profile to find the actual bottleneck.
 

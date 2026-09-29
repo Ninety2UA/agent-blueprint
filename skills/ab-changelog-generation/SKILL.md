@@ -1,6 +1,6 @@
 ---
 name: ab-changelog-generation
-description: "Trigger this skill when preparing any release or when the user asks what has changed — even if they don't explicitly mention changelogs. Trigger when the user says 'changelog', 'release notes', 'what changed', 'prepare release', 'version bump', 'tag a release', 'what's new', 'summarize changes', 'update CHANGELOG', 'ship a version', or 'what did we do since last release'. Trigger when preparing a new release, generating release notes for a version tag, summarizing changes for stakeholders, or updating CHANGELOG.md. Generates structured release notes from git history using Keep a Changelog format. DO NOT TRIGGER for session-level summaries — use ab-session-wrap instead. DO NOT TRIGGER for PR descriptions — use ab-pr-workflow instead."
+description: "Generates release notes from git history in Keep a Changelog format: finds the range since the last release tag, sorts the commits into Added, Changed, Deprecated, Removed, Fixed and Security, rewrites them for users with breaking changes and PR links, and adds the entry to CHANGELOG.md. Use when preparing a release or version tag, writing release notes for stakeholders, updating CHANGELOG.md, or answering what changed since the last release. Not for a session summary (ab-session-wrap) or a PR description (ab-pr-workflow)."
 argument-hint: "[optional: version number or tag range]"
 ---
 
@@ -31,7 +31,7 @@ git tag --sort=-v:refname | head -5
 git log --reverse --format="%H" | head -1
 ```
 
-The range is: `[last-tag]..HEAD` (or `[first-commit]..HEAD` if no tags).
+The range is: `[last-tag]..HEAD` (or `[first-commit]..HEAD` if no tags). If the user named a tag range, use it instead; a version number they give becomes the entry's heading in Step 5.
 
 ### Step 2: Collect Commits
 

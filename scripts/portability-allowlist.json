@@ -4,35 +4,6 @@
     "AGENTS.md": [
       "html-comment"
     ],
-    "skills/ab-ideation/SKILL.md": [
-      "banned-token",
-      "size"
-    ],
-    "skills/ab-knowledge-compounding/SKILL.md": [
-      "size"
-    ],
-    "skills/ab-migrate-to-plugin/SKILL.md": [
-      "hermes-pattern"
-    ],
-    "skills/ab-plugin-update/SKILL.md": [
-      "hermes-pattern",
-      "size"
-    ],
-    "skills/ab-pr-workflow/SKILL.md": [
-      "size"
-    ],
-    "skills/ab-scope-cutting/SKILL.md": [
-      "size"
-    ],
-    "skills/ab-source-driven-development/SKILL.md": [
-      "size"
-    ],
-    "skills/ab-spike-exploration/SKILL.md": [
-      "size"
-    ],
-    "skills/ab-wave-orchestration/SKILL.md": [
-      "size"
-    ],
     "templates/CLAUDE.md": [
       "html-comment"
     ]

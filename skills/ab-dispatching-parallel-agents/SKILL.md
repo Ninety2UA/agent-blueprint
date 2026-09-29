@@ -1,69 +1,35 @@
 ---
 name: ab-dispatching-parallel-agents
-description: "Trigger this skill when facing 2+ independent tasks that can be worked on concurrently without shared state or sequential dependencies. Trigger when multiple unrelated failures need investigation (different test files, different subsystems, different bugs), when independent code changes can be made in parallel, or when separate analyses can run simultaneously. Usually invoked internally by other skills, not directly by users. Guides proper dispatch of parallel subagents — one agent per independent problem domain. DO NOT TRIGGER for tasks that modify shared state or for running a plan as team work — use ab-orchestrate instead. DO NOT TRIGGER for a single task — just do it directly."
+description: "Splits two or more independent problems into one focused helper each, all started at once, each with its own scope, goal, constraints and expected output, then reviews and integrates what they return. Use when several unrelated failures (different test files, subsystems or bugs), independent code changes or separate analyses can proceed at the same time, usually as a step inside another skill. Not for work that touches shared state or a whole plan run as team work (ab-orchestrate), or for a single task, which is quicker done directly."
 ---
 
 # Dispatching Parallel Agents
 
-## Overview
+Investigating unrelated problems one after another wastes time when none needs the others' context. Give each independent problem domain its own helper and let them run at the same time. The dispatch is done when every helper has returned, their changes do not conflict, and the full test suite passes with all of them in place.
 
-When you have multiple unrelated failures (different test files, different subsystems, different bugs), investigating them sequentially wastes time. Each investigation is independent and can happen in parallel.
+## When to use
 
-**Core principle:** Dispatch one agent per independent problem domain. Let them work concurrently.
+Use it when three or more test files fail with different root causes, when several subsystems are broken independently, and in general when each problem can be understood without the others and the investigations share no state. A decision graph: `references/dispatch-examples.md` § Decision graph.
 
-## When to Use
+Not when the failures are related (fixing one might fix the others, so investigate them together first), when understanding them needs the whole system's state, when the debugging is exploratory and you do not yet know what is broken, or when helpers would interfere by editing the same files or using the same resources.
 
-```dot
-digraph when_to_use {
-    "Multiple failures?" [shape=diamond];
-    "Are they independent?" [shape=diamond];
-    "Single agent investigates all" [shape=box];
-    "One agent per problem domain" [shape=box];
-    "Can they work in parallel?" [shape=diamond];
-    "Sequential agents" [shape=box];
-    "Parallel dispatch" [shape=box];
+## 1. Identify the independent domains
 
-    "Multiple failures?" -> "Are they independent?" [label="yes"];
-    "Are they independent?" -> "Single agent investigates all" [label="no - related"];
-    "Are they independent?" -> "Can they work in parallel?" [label="yes"];
-    "Can they work in parallel?" -> "Parallel dispatch" [label="yes"];
-    "Can they work in parallel?" -> "Sequential agents" [label="no - shared state"];
-}
-```
+Group the failures by what is broken, for example: file A's tests cover the tool approval flow, file B's the batch completion behavior, file C's abort handling. Domains are independent when fixing one does not affect the others, as fixing tool approval does not affect the abort tests.
 
-**Use when:**
-- 3+ test files failing with different root causes
-- Multiple subsystems broken independently
-- Each problem can be understood without context from others
-- No shared state between investigations
+## 2. Write one focused task per domain
 
-**Don't use when:**
-- Failures are related (fix one might fix others)
-- Need to understand full system state
-- Agents would interfere with each other
+Each task gives its helper:
+- **Specific scope:** one test file or subsystem
+- **Clear goal:** make these tests pass
+- **Constraints:** change no other code, start no helpers of its own, and make no commits, since this session integrates the results
+- **Expected output:** a summary of what it found and fixed
 
-## The Pattern
+A good task is focused on one domain, self-contained (it carries the error messages and test names the helper needs), and specific about what to return. A full example: `references/dispatch-examples.md` § Example prompt. Common mistakes: `references/dispatch-examples.md` § Common Mistakes.
 
-### 1. Identify Independent Domains
+## 3. Start the helpers at once
 
-Group failures by what's broken:
-- File A tests: Tool approval flow
-- File B tests: Batch completion behavior
-- File C tests: Abort functionality
-
-Each domain is independent - fixing tool approval doesn't affect abort tests.
-
-### 2. Create Focused Agent Tasks
-
-Each agent gets:
-- **Specific scope:** One test file or subsystem
-- **Clear goal:** Make these tests pass
-- **Constraints:** Don't change other code
-- **Expected output:** Summary of what you found and fixed
-
-### 3. Dispatch in Parallel
-
-Start one helper per domain, all at once, so they run concurrently.
+Start one helper per domain, all at once, so they run at the same time.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
@@ -75,110 +41,12 @@ Fix batch-completion-behavior.test.ts failures
 Fix tool-approval-race-conditions.test.ts failures
 ```
 
-### 4. Review and Integrate
+## 4. Review and integrate
 
-When agents return:
-- Read each summary
-- Verify fixes don't conflict
-- Run full test suite
-- Integrate all changes
+When the helpers return:
+1. **Review each summary** to understand what changed.
+2. **Check for conflicts:** did two helpers edit the same code?
+3. **Run the full suite** to confirm the fixes work together.
+4. **Spot-check** the changes, since helpers can make the same systematic error.
 
-## Agent Prompt Structure
-
-Good agent prompts are:
-1. **Focused** - One clear problem domain
-2. **Self-contained** - All context needed to understand the problem
-3. **Specific about output** - What should the agent return?
-
-```markdown
-Fix the 3 failing tests in src/agents/agent-tool-abort.test.ts:
-
-1. "should abort tool with partial output capture" - expects 'interrupted at' in message
-2. "should handle mixed completed and aborted tools" - fast tool aborted instead of completed
-3. "should properly track pendingToolCount" - expects 3 results but gets 0
-
-These are timing/race condition issues. Your task:
-
-1. Read the test file and understand what each test verifies
-2. Identify root cause - timing issues or actual bugs?
-3. Fix by:
-   - Replacing arbitrary timeouts with event-based waiting
-   - Fixing bugs in abort implementation if found
-   - Adjusting test expectations if testing changed behavior
-
-Do NOT just increase timeouts - find the real issue.
-
-Return: Summary of what you found and what you fixed.
-```
-
-## Common Mistakes
-
-**❌ Too broad:** "Fix all the tests" - agent gets lost
-**✅ Specific:** "Fix agent-tool-abort.test.ts" - focused scope
-
-**❌ No context:** "Fix the race condition" - agent doesn't know where
-**✅ Context:** Paste the error messages and test names
-
-**❌ No constraints:** Agent might refactor everything
-**✅ Constraints:** "Do NOT change production code" or "Fix tests only"
-
-**❌ Vague output:** "Fix it" - you don't know what changed
-**✅ Specific:** "Return summary of root cause and changes"
-
-## When NOT to Use
-
-**Related failures:** Fixing one might fix others - investigate together first
-**Need full context:** Understanding requires seeing entire system
-**Exploratory debugging:** You don't know what's broken yet
-**Shared state:** Agents would interfere (editing same files, using same resources)
-
-## Real Example from Session
-
-**Scenario:** 6 test failures across 3 files after major refactoring
-
-**Failures:**
-- agent-tool-abort.test.ts: 3 failures (timing issues)
-- batch-completion-behavior.test.ts: 2 failures (tools not executing)
-- tool-approval-race-conditions.test.ts: 1 failure (execution count = 0)
-
-**Decision:** Independent domains - abort logic separate from batch completion separate from race conditions
-
-**Dispatch:**
-```
-Agent 1 → Fix agent-tool-abort.test.ts
-Agent 2 → Fix batch-completion-behavior.test.ts
-Agent 3 → Fix tool-approval-race-conditions.test.ts
-```
-
-**Results:**
-- Agent 1: Replaced timeouts with event-based waiting
-- Agent 2: Fixed event structure bug (threadId in wrong place)
-- Agent 3: Added wait for async tool execution to complete
-
-**Integration:** All fixes independent, no conflicts, full suite green
-
-**Time saved:** 3 problems solved in parallel vs sequentially
-
-## Key Benefits
-
-1. **Parallelization** - Multiple investigations happen simultaneously
-2. **Focus** - Each agent has narrow scope, less context to track
-3. **Independence** - Agents don't interfere with each other
-4. **Speed** - 3 problems solved in time of 1
-
-## Verification
-
-After agents return:
-1. **Review each summary** - Understand what changed
-2. **Check for conflicts** - Did agents edit same code?
-3. **Run full suite** - Verify all fixes work together
-4. **Spot check** - Agents can make systematic errors
-
-## Real-World Impact
-
-From debugging session (2025-10-03):
-- 6 failures across 3 files
-- 3 agents dispatched in parallel
-- All investigations completed concurrently
-- All fixes integrated successfully
-- Zero conflicts between agent changes
+Then integrate all the changes. A worked example from a session: `references/dispatch-examples.md` § Real Example from Session.

@@ -1,14 +1,12 @@
 ---
 name: ab-codebase-mapping
-description: "Trigger this skill when the user needs to understand a codebase before modifying it — even if they don't explicitly ask for a map. Trigger when the user says 'map the code', 'understand this codebase', 'how is this structured', 'architecture overview', 'onboarding', 'what does this do', 'walk me through this', 'how does this work', 'explain the architecture', 'give me the lay of the land', or 'I'm new to this project'. Trigger before modifying unfamiliar code, when joining a new project, when onboarding new team members, or after a major refactor to update the team's mental model. This is a read-only analysis — no code changes. Produces structured documentation of architecture, dependencies, patterns, and concerns. DO NOT TRIGGER for targeted code investigation of a specific bug — use ab-systematic-debugging instead. DO NOT TRIGGER for reviewing a specific document — use ab-document-review instead."
+description: "Maps an unfamiliar codebase, read-only, before anyone changes it: a helper (one per major module when the codebase is large) surveys the architecture, module responsibilities, data flow, conventions, tech stack and concerns, citing file paths, and the map is saved to docs/context/CODEBASE-MAP.md or a per-module map, with conventions and critical concerns carried into CONVENTIONS.md and BACKLOG.md. Use when joining a project, before modifying code nobody here has worked in, when onboarding someone, after a major refactor, or when the user asks how the code is structured, how it works or for an architecture overview. Not for tracking down a specific bug (use ab-systematic-debugging) or reviewing a document (use ab-document-review)."
 argument-hint: "[optional: focus area or module name]"
 ---
 
 # Codebase Mapping
 
-## Overview
-
-Map an unfamiliar codebase into structured documentation before making any changes. The map becomes the shared context for all subsequent development work.
+Map an unfamiliar codebase, or one area of it, into structured documentation before making any changes. The map becomes the shared context for all subsequent development work. The run is done when the map is saved under `docs/context/` and its key findings are presented to the user.
 
 ## When to Use
 
@@ -19,15 +17,13 @@ Map an unfamiliar codebase into structured documentation before making any chang
 
 ## The Iron Law
 
-<HARD-GATE>
-Do NOT modify any source code, tests, or configuration until the codebase map is complete and saved. Mapping is a read-only operation. If you discover something that needs fixing, add it to the map's Concerns section — not inline.
-</HARD-GATE>
+Change no source code, tests or configuration until the map is complete and saved. Mapping is read-only, because an edit made mid-map changes the thing being mapped and mixes two tasks that should be reviewed apart. When you find something that needs fixing, add it to the map's Concerns section instead of fixing it inline.
 
 ## Process
 
 ### Step 1: Dispatch the Mapper
 
-Dispatch the **codebase-mapper** helper with the scope of the mapping.
+Hand the mapping to the codebase-mapper helper, scoped to what the user asked for: the focus area or module they named, or the full project when they named none.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
@@ -41,7 +37,7 @@ Save findings in the format specified by your output template.
 
 **Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
-If the codebase is large, dispatch multiple mapper helpers in parallel — one per major module or directory.
+If the codebase is large, start several mapper helpers in parallel, one per major module or directory, each with the same prompt file and its own focus area. Where helpers cannot run in parallel, map the modules one after another.
 
 ### Step 2: Review the Map
 
@@ -50,11 +46,15 @@ When the helper returns, review the map for:
 - Accuracy — do the descriptions match what you see in the code?
 - Actionability — can a developer use this to navigate the codebase?
 
+With several helpers, merge their maps into one before this review.
+
 ### Step 3: Save the Map
 
 Save the map to `docs/context/CODEBASE-MAP.md` (or `docs/context/MAP-[module-name].md` for focused maps).
 
 If `docs/context/CONVENTIONS.md` doesn't exist yet, extract the convention findings from the map into a new CONVENTIONS.md.
+
+Add the critical concerns to `BACKLOG.md` as well, so they are not lost once the session ends.
 
 ### Step 4: Orient the Session
 

@@ -89,7 +89,7 @@ class PipelineSkills(unittest.TestCase):
         for name in PIPELINE:
             text = description(name)
             self.assertNotRegex(text, r"(?i)^trigger this skill", name)
-            self.assertIn("Use when", text, name)
+            self.assertRegex(text, r"\bUse (?:when|before|after)\b", name)
             self.assertLessEqual(len(text), 1024, name)
 
     def test_no_pipeline_skill_is_allowlisted(self):

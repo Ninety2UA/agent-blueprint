@@ -95,7 +95,7 @@ if [ -n "$IDENTITY" ]; then echo "IDENTITY: SET"; else echo "IDENTITY: UNSET"; f
 
 # Layer 2: Build script
 echo "=== Env vars in build script: ==="
-if env | grep -q '^IDENTITY='; then echo "IDENTITY in environment"; else echo "IDENTITY not in environment"; fi
+if [ -n "${IDENTITY+x}" ]; then echo "IDENTITY is set"; else echo "IDENTITY is not set"; fi
 
 # Layer 3: Signing script
 echo "=== Keychain state: ==="

@@ -1,21 +1,17 @@
 ---
 name: ab-using-git-worktrees
-description: "Trigger this skill when feature work needs isolation from the current workspace or when parallel execution benefits from worktree isolation. Trigger when the user says 'worktree', 'isolated branch', 'parallel branches', 'separate workspace', or 'work on this in isolation'. Trigger before executing implementation plans that use parallel agents in separate branches. Usually invoked internally by the ab-orchestrate skill — not typically called directly by users. Provides systematic directory selection and safety verification for reliable worktree isolation. DO NOT TRIGGER for simple branch creation — just use git checkout -b."
+description: "Sets up an isolated git worktree for feature or parallel work: picks the worktree folder (an existing one, then the project instructions file's preference, then asks), checks that a project-local folder is git-ignored, creates the worktree on a new branch, installs dependencies and runs the tests for a clean baseline, and later removes worktrees without force. Use when work needs isolation from the current checkout, when parallel helpers need separate branches, or before running a plan in its own workspace; usually started by other skills such as ab-orchestrate. Not for plain branch creation (use git checkout -b)."
 ---
 
 # Using Git Worktrees
 
-## Overview
-
-Git worktrees create isolated workspaces sharing the same repository, allowing work on multiple branches simultaneously without switching.
-
-**Core principle:** Systematic directory selection + safety verification = reliable isolation.
+A worktree is a second checkout of the same repository on its own branch, so work can proceed on several branches at once without switching. The skill ends with a worktree in the right folder, git-ignored when it sits inside the project, set up, and with a test baseline you have seen, because isolation is only reliable when the folder choice is systematic and the safety checks run.
 
 **Announce at start:** "I'm using the ab-using-git-worktrees skill to set up an isolated workspace."
 
 ## Directory Selection Process
 
-Follow this priority order:
+Follow this priority order: an existing directory, then the instructions file's preference, then ask. Guessing a location creates inconsistency and can break the project's conventions.
 
 ### 1. Check Existing Directories
 
@@ -37,36 +33,28 @@ grep -i "worktree.*director" AGENTS.md CLAUDE.md 2>/dev/null
 
 ### 3. Ask User
 
-If no directory exists and the instructions file states no preference:
+If no directory exists and the instructions file states no preference, ask where worktrees should go.
 
-```
-No worktree directory found. Where should I create worktrees?
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-1. .worktrees/ (project-local, hidden)
-2. ~/.agent-blueprint/worktrees/<project-name>/ (global location)
-
-Which would you prefer?
-```
+Options: `.worktrees/` (project-local, hidden) or `~/.agent-blueprint/worktrees/<project-name>/` (global location). Default when nobody answers: `~/.agent-blueprint/worktrees/<project-name>/`, because it sits outside the project and needs no `.gitignore` change or commit.
 
 ## Safety Verification
 
 ### For Project-Local Directories (.worktrees or worktrees)
 
-**MUST verify directory is ignored before creating worktree:**
+Verify the directory is ignored before creating the worktree, because an unignored worktree gets its whole contents tracked and pollutes `git status`:
 
 ```bash
 # Check if directory is ignored (respects local, global, and system gitignore)
 git check-ignore -q .worktrees 2>/dev/null || git check-ignore -q worktrees 2>/dev/null
 ```
 
-**If NOT ignored:**
+**If not ignored**, fix it before going on: add the directory to `.gitignore`, commit that change, then create the worktree.
 
-Fix broken things immediately:
-1. Add appropriate line to .gitignore
-2. Commit the change
-3. Proceed with worktree creation
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
 
-**Why critical:** Prevents accidentally committing worktree contents to repository.
+`git worktree add` writes to `.git` as well, so in this mode create no worktree: say so and hand back, and the caller works in the current checkout with disjoint file ownership, as the ab-orchestrate skill does.
 
 ### For Global Directory (~/.agent-blueprint/worktrees)
 
@@ -83,14 +71,10 @@ project=$(basename "$(git rev-parse --show-toplevel)")
 ### 2. Create Worktree
 
 ```bash
-# Determine full path
-case $LOCATION in
-  .worktrees|worktrees)
-    path="$LOCATION/$BRANCH_NAME"
-    ;;
-  ~/.agent-blueprint/worktrees/*)
-    path="~/.agent-blueprint/worktrees/$project/$BRANCH_NAME"
-    ;;
+# Determine full path ($HOME, since a quoted ~ is not expanded)
+case "$LOCATION" in
+  .worktrees|worktrees) path="$LOCATION/$BRANCH_NAME" ;;
+  *) path="$HOME/.agent-blueprint/worktrees/$project/$BRANCH_NAME" ;;
 esac
 
 # Create worktree with new branch
@@ -100,40 +84,29 @@ cd "$path"
 
 ### 3. Run Project Setup
 
-Auto-detect and run appropriate setup:
+Detect the setup from the project's files rather than hardcoding one, since projects use different tools; skip it when none of these files exists:
 
 ```bash
-# Node.js
-if [ -f package.json ]; then npm install; fi
-
-# Rust
-if [ -f Cargo.toml ]; then cargo build; fi
-
-# Python
-if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+if [ -f package.json ]; then npm install; fi                     # Node.js
+if [ -f Cargo.toml ]; then cargo build; fi                       # Rust
+if [ -f requirements.txt ]; then pip install -r requirements.txt; fi   # Python
 if [ -f pyproject.toml ]; then poetry install; fi
-
-# Go
-if [ -f go.mod ]; then go mod download; fi
+if [ -f go.mod ]; then go mod download; fi                       # Go
 ```
 
 ### 4. Verify Clean Baseline
 
-Run tests to ensure worktree starts clean:
-
-```bash
-# Examples - use project-appropriate command
-npm test
-cargo test
-pytest
-go test ./...
-```
+Run the project's tests (for example `npm test`, `cargo test`, `pytest`, `go test ./...`) so the worktree starts from a known state; without a baseline, new bugs cannot be told apart from old ones.
 
 Run it from the worktree path, and keep every verification command inside it: no absolute paths into the main checkout, no `cd ..` out of the worktree, no `--prefix`/`-C` pointing at another tree. A test run that reads the main checkout reports on code the worktree didn't change.
 
-**If tests fail:** Report failures, ask whether to proceed or investigate.
-
 **If tests pass:** Report ready.
+
+**If tests fail:** report the failures and ask whether to proceed or investigate.
+
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
+
+Options: proceed with the failures recorded as the baseline, investigate them first, or stop. Default when nobody answers: start no feature work; keep the worktree, report the failing tests as its baseline, and hand back to the caller.
 
 ### 5. Report Location
 
@@ -153,85 +126,9 @@ git worktree remove <path>
 
 Git refuses a worktree with uncommitted changes, untracked files, or a submodule. That refusal is the safety check, so keep it:
 
-- Never run `git worktree remove --force`; the user runs it by hand when they choose to lose the changes.
+- Never run `git worktree remove --force`, because it deletes uncommitted work for good; the user runs it by hand when they choose to lose the changes.
 - On refusal, report the state (`git -C <path> status --short`), keep the worktree, and hand back.
 - Do not clean, stash, or commit inside the worktree to make the removal succeed.
 - Delete the branch only after the worktree is gone; git refuses to delete a branch a worktree still holds.
 
-## Quick Reference
-
-| Situation | Action |
-|-----------|--------|
-| `.worktrees/` exists | Use it (verify ignored) |
-| `worktrees/` exists | Use it (verify ignored) |
-| Both exist | Use `.worktrees/` |
-| Neither exists | Check the instructions file, then ask the user |
-| Directory not ignored | Add to .gitignore + commit |
-| Tests fail during baseline | Report failures + ask |
-| No package.json/Cargo.toml | Skip dependency install |
-| Removal refused (dirty tree) | Report state, keep worktree, relay the force command to the user |
-
-## Common Mistakes
-
-### Skipping ignore verification
-
-- **Problem:** Worktree contents get tracked, pollute git status
-- **Fix:** Always use `git check-ignore` before creating project-local worktree
-
-### Assuming directory location
-
-- **Problem:** Creates inconsistency, violates project conventions
-- **Fix:** Follow the priority: an existing directory, then the instructions file's preference, then ask
-
-### Proceeding with failing tests
-
-- **Problem:** Can't distinguish new bugs from pre-existing issues
-- **Fix:** Report failures, get explicit permission to proceed
-
-### Hardcoding setup commands
-
-- **Problem:** Breaks on projects using different tools
-- **Fix:** Auto-detect from project files (package.json, etc.)
-
-## Example Workflow
-
-```
-You: I'm using the ab-using-git-worktrees skill to set up an isolated workspace.
-
-[Check .worktrees/ - exists]
-[Verify ignored - git check-ignore confirms .worktrees/ is ignored]
-[Create worktree: git worktree add .worktrees/auth -b feature/auth]
-[Run npm install]
-[Run npm test - 47 passing]
-
-Worktree ready at /Users/you/myproject/.worktrees/auth
-Tests passing (47 tests, 0 failures)
-Ready to implement auth feature
-```
-
-## Red Flags
-
-**Never:**
-- Create worktree without verifying it's ignored (project-local)
-- Skip baseline test verification
-- Proceed with failing tests without asking
-- Assume directory location when ambiguous
-- Skip the instructions-file check
-- Force a worktree removal, or tidy a dirty worktree so the removal passes
-
-**Always:**
-- Follow the directory priority: an existing directory, then the instructions file's preference, then ask
-- Verify directory is ignored for project-local
-- Auto-detect and run project setup
-- Verify clean test baseline
-
-## Integration
-
-**Called by:**
-- **ab-brainstorming** (Phase 4) - REQUIRED when design is approved and implementation follows
-- **ab-subagent-driven-development** - REQUIRED before executing any tasks
-- **ab-executing-plans** - REQUIRED before executing any tasks
-- Any skill needing isolated workspace
-
-**Pairs with:**
-- **ab-finishing-a-development-branch** - REQUIRED for cleanup after work complete; its Step 6 and discard path follow "Removing a Worktree" above
+See `references/summary.md` for the quick reference, common mistakes, an example run, red flags and integration.

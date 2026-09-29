@@ -1,11 +1,14 @@
 ---
 name: ab-pause-checkpoint
-description: "Trigger this skill when the user says 'pause', 'checkpoint', 'save state', 'stepping away', 'break', 'save progress', 'brb', 'hold on', 'save where I am', 'quick save', or anything suggesting they need a mid-session state capture without ending the session. Trigger even when the user just says 'I need to step away for a bit' or 'hold that thought' — they want their state preserved for a quick return. This is for mid-session snapshots only, not full end-of-session documentation. DO NOT TRIGGER at the end of a full work session — use ab-session-wrap instead. Session-wrap provides comprehensive documentation, learnings capture, and cross-session continuity. This skill is the lightweight alternative for quick interruptions."
+description: "Saves a quick mid-session snapshot when the user steps away: writes a checkpoint of the branch, changes, decisions and next steps through ab-context-checkpoint, and updates the execution state in docs/context/STATE.md (wave progress, task completion, blockers) through ab-session-continuity. Documentation only; the session goes on afterwards. Use when the user wants to pause, take a break, save progress or checkpoint their place for a quick return. Not for the end of a full work session, which needs complete documentation, learnings and cross-session continuity (ab-session-wrap)."
 argument-hint: "[optional: reason for pausing]"
 ---
 
 # Pause Checkpoint
 
-Invoke the ab-context-checkpoint skill. Also invoke the ab-session-continuity skill and follow it to update docs/context/STATE.md with current execution state (wave progress, task completion, blockers).
+Save the user's place so they can come straight back to it. The pause is done when the checkpoint and the execution state are both written and the user has been told how to resume.
 
-This is a documentation-only operation. Do NOT modify source code.
+1. Run the ab-context-checkpoint skill. If the user gave a reason for pausing, use it as the checkpoint's brief description.
+2. Run the ab-session-continuity skill and follow its Process: Pausing Work to update `docs/context/STATE.md` with the current execution state (wave progress, task completion, blockers).
+
+This is documentation only: change no source code, because a pause should preserve the state, not change it, and an edit made on the way out goes unreviewed.

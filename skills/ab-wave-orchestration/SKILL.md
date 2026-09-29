@@ -1,111 +1,35 @@
 ---
 name: ab-wave-orchestration
-description: "Trigger this skill when executing dependency-ordered task groups — tasks that have a mix of independent and dependent relationships. Groups tasks into waves: independent tasks run in parallel within each wave, dependent tasks wait for prior waves. Verifies integration between waves before proceeding. To run a whole plan as team work with a task ledger and lead-only commits, use ab-orchestrate. DO NOT TRIGGER when all tasks are sequential (use ab-autonomous-loop instead). DO NOT TRIGGER when all tasks are independent with no dependencies (use ab-resolve-in-parallel instead). DO NOT TRIGGER for plans with fewer than 4 tasks (overhead not worth it)."
+description: "Groups dependent tasks into waves and runs them: tasks with no unmet dependency and no shared file run as parallel helpers within a wave, an integration verifier checks each wave before the next, and this session commits each task. Use when four or more tasks mix independent and dependent work and you want the wave pattern itself, for example inside another skill. Not for a whole plan run as team work with a task ledger (ab-orchestrate), all-sequential tasks (ab-autonomous-loop), all-independent items (ab-resolve-in-parallel), or three tasks or fewer."
 ---
 
 # Wave Orchestration
 
-## Overview
+Run tasks in dependency-ordered waves, one helper per task within a wave. The run is done when every wave has passed its integration check and been committed, the final verification is green, and the report is written. This session is the lead: it alone starts helpers and commits, because many hosts forbid a helper from starting another, and one committer keeps the history in task order.
 
-Execute a plan by grouping tasks into dependency-ordered waves. Within each wave, independent tasks run in parallel (one subagent per task). Between waves, an integration verifier ensures all tasks work together before the next wave begins.
+To run a whole plan as team work with a task ledger, use the ab-orchestrate skill, which builds on this pattern. The wave model and a comparison with the other execution skills: `references/wave-guide.md` § The Wave Model and `references/wave-guide.md` § Comparison with Other Execution Skills.
 
-**Core principle:** Maximize parallelism within dependency constraints. Independent tasks run concurrently; dependent tasks wait.
+## Step 1: Load the plan
 
-## When to Use
+Read the plan file. For each task, note its ID, description, dependencies, and the files it will modify. Where the plan states no dependencies, infer them: a task that creates something a later task uses comes first.
 
-- Plan has 4+ tasks with mixed dependencies
-- Some tasks are independent (can run in parallel)
-- Some tasks depend on others (must wait)
-- You want maximum speed without sacrificing correctness
+## Step 2: Build the waves
 
-**Don't use when:**
-- All tasks are sequential (use ab-autonomous-loop instead)
-- All tasks are independent (use ab-resolve-in-parallel instead)
-- Plan has 1-3 tasks (overhead not worth it)
+Put each task in the earliest wave where all its dependencies are done. Two tasks in one wave never modify the same file, since parallel edits to one file overwrite each other; when two independent tasks share a file, move one to a later wave. Keep waves within the host's helper limits: `references/wave-guide.md` § Helper limits. Write the wave plan as in `references/wave-guide.md` § Example wave plan, and check it against `references/wave-guide.md` § Common Mistakes.
 
-## The Wave Model
+## Step 3: Confirm the wave plan
 
-```
-Wave 1: [Task A, Task B, Task C]  ← all independent, run in parallel
-         │         │         │
-         ▼         ▼         ▼
-    ┌─────────────────────────────┐
-    │   Integration Verification   │
-    └─────────────────────────────┘
-                  │
-Wave 2: [Task D, Task E]         ← D depends on A, E depends on B
-         │         │
-         ▼         ▼
-    ┌─────────────────────────────┐
-    │   Integration Verification   │
-    └─────────────────────────────┘
-                  │
-Wave 3: [Task F]                  ← depends on D and E
-         │
-         ▼
-    ┌─────────────────────────────┐
-    │   Final Verification         │
-    └─────────────────────────────┘
-```
+Show the number of waves, the tasks in each, which run in parallel, and the estimated time saved against running them one by one.
 
-## Process
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-### Step 1: Load and Parse the Plan
+Options: approve and run Wave 1 first, checking each wave before the next; change the waves; stop. Default when nobody answers: run the plan as built.
 
-Read the plan file. For each task, identify:
-- Task ID or number
-- Description
-- Dependencies (which tasks must complete first)
-- Files it will modify (for conflict detection)
+## Step 4: Run each wave
 
-If the plan doesn't specify dependencies explicitly, infer them:
-- Tasks that create something used by later tasks → dependency
-- Tasks modifying the same file → same wave or sequential
-- Tasks with no overlap → independent
+### 4a. Start the wave's helpers
 
-### Step 2: Build the Dependency Graph
-
-Organize tasks into waves:
-
-```markdown
-## Wave Plan
-
-### Wave 1 (no dependencies)
-- Task 1: Set up database schema
-- Task 3: Create API route stubs
-- Task 5: Add frontend page skeleton
-
-### Wave 2 (depends on Wave 1)
-- Task 2: Implement model logic (depends on Task 1)
-- Task 4: Implement API handlers (depends on Task 3)
-
-### Wave 3 (depends on Wave 2)
-- Task 6: Wire frontend to API (depends on Tasks 4, 5)
-- Task 7: Add integration tests (depends on Tasks 2, 4)
-```
-
-**Rules for wave assignment:**
-- A task goes in the earliest wave where ALL its dependencies are satisfied
-- Tasks in the same wave MUST NOT modify the same files
-- If two independent tasks touch the same file, put one in a later wave
-
-### Step 3: Present Wave Plan for Approval
-
-Show the user the wave breakdown:
-- How many waves
-- Which tasks in each wave
-- Which tasks run in parallel
-- Estimated time savings vs sequential execution
-
-Ask: **"Approve this wave plan? I'll execute Wave 1 first, verify, then Wave 2, etc."**
-
-### Step 4: Execute Each Wave
-
-For each wave:
-
-#### 4a. Start Parallel Helpers
-
-For each task in the wave, start an implementer helper using the ab-subagent-driven-development pattern. **Give each implementer its own worktree**, an isolated copy of the repo, preventing file conflicts between parallel tasks.
+Start one implementer per task, all at once, in the ab-subagent-driven-development skill's implementer pattern. Give each its own worktree (an isolated copy of the repository) where the host offers one, so parallel tasks cannot overwrite each other's changes; otherwise each touches only the files its task owns.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
@@ -116,23 +40,15 @@ Implement Task [N]: [full task description].
 Context: [relevant project context, file paths, conventions].
 Constraints: Only modify [specific files]. Follow TDD. Run every verification
 command inside your worktree; never point it at the main checkout or another path.
+Start no helpers of your own, and do not commit on the main checkout.
 Return: Summary of changes, files modified, test results.
 ```
 
-Start ALL of the wave's helpers at once for maximum parallelism.
+### 4b. Collect results
 
-**Session cap:** Claude Code no longer caps subagents per session (the 200-subagent total was removed in CLI 2.1.224). What applies now is a concurrency cap of 20 subagents by default (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`, 2.1.217) and a nesting depth of 3 by default (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`, 2.1.219). Very wide waves are bounded by the concurrency cap rather than by a session total, so keep individual waves reasonably sized on large plans; and each implementer sits one spawn level deep (session → implementer) and starts no helpers of its own.
+When all helpers return, read each summary, note the files each modified, and check for unexpected overlaps.
 
-**Why worktree isolation matters:** Without isolation, parallel implementers can overwrite each other's changes to the same files. Worktrees give each implementer a clean copy. Changes are merged back after the wave completes.
-
-#### 4b. Collect Results
-
-When all subagents return:
-1. Read each summary
-2. Note files modified by each
-3. Check for unexpected overlaps
-
-#### 4c. Integration Verification
+### 4c. Integration check
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
@@ -140,67 +56,34 @@ Prompt: `references/agents/integration-verifier.md`. Inputs: the wave number and
 
 **Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
-#### 4d. Handle Verification Results
+### 4d. Act on the result
 
-- **PASS:** Proceed to next wave
-- **ISSUES FOUND:** Fix issues before proceeding. Start a targeted fix helper for each issue as in 4a, with the issue as its task packet.
-- **FAIL:** Stop. Report failure to user. Do not proceed to next wave.
+- **PASS:** go to 4e.
+- **ISSUES FOUND:** fix each with a targeted helper as in 4a, the issue as its task packet, then check again.
+- **FAIL:** stop and report to the user; the next wave would build on a broken one.
 
-### Step 5: Final Verification
+### 4e. Commit the wave
 
-After all waves complete:
+Bring each task's changes onto the working branch, one commit per task: merge its worktree, or commit its owned files by name so another task's work stays out of that commit. Then start the next wave.
 
-1. Run full test suite
-2. Run build
-3. Run lint
-4. Run an overall code review
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, create `.agent-blueprint/.gitignore` with the lines `run/`, `team/`, `review-runs/` and `cache/` if it does not exist yet, so run state stays out of commits while plans and notes stay tracked.
+
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+
+In this mode helpers use file ownership, not worktrees, since creating a worktree writes to `.git` as well.
+
+## Step 5: Final verification
+
+After the last wave, run the full test suite, the build and the lint, then an overall code review.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
 Prompt: `references/agents/code-reviewer.md`. Inputs: the plan file and the review range, from the commit before Wave 1 to `HEAD`.
 
-### Step 6: Report
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
 
-```markdown
-## Wave Orchestration Complete
+Here the range is the working tree and untracked files against the commit before Wave 1.
 
-### Execution Summary
-| Wave | Tasks | Status | Duration |
-|------|-------|--------|----------|
-| Wave 1 | Tasks 1, 3, 5 | Complete | [time] |
-| Wave 2 | Tasks 2, 4 | Complete | [time] |
-| Wave 3 | Tasks 6, 7 | Complete | [time] |
+## Step 6: Report
 
-### Final Verification
-- Tests: [X passing, Y failing]
-- Build: [pass/fail]
-- Lint: [pass/fail]
-
-### Files Changed
-[list of all files, grouped by task]
-
-### Commits
-[list of commits from all tasks]
-```
-
-## Comparison with Other Execution Skills
-
-| Skill | Use When | Parallelism |
-|-------|----------|-------------|
-| **ab-wave-orchestration** | Mixed dependencies, 4+ tasks | Parallel within waves |
-| **ab-autonomous-loop** | Sequential tasks, retry needed | None (sequential) |
-| **ab-resolve-in-parallel** | All tasks independent | Full parallel |
-| **ab-subagent-driven-development** | Any plan, in-session | Sequential with review |
-| **ab-executing-plans** | Cross-session execution | Human-paced batches |
-
-## Common Mistakes
-
-**Putting dependent tasks in the same wave** — If Task B reads from the table Task A creates, they CANNOT be in the same wave. Task B must wait for Task A.
-
-**Ignoring file conflicts** — Two tasks that both modify `src/utils/helpers.ts` will conflict even if logically independent. Put them in different waves.
-
-**Skipping integration verification** — Each wave must pass integration before the next wave starts. Skipping creates cascading failures.
-
-**Too many waves** — If your plan has 10 waves of 1 task each, it's just sequential execution with extra overhead. Restructure the plan for more parallelism.
-
-**Too few waves** — If everything is in Wave 1, you're probably missing dependencies. Tasks that create schemas should precede tasks that use those schemas.
+Report in the format of `references/wave-guide.md` § Report format.

@@ -1,13 +1,13 @@
 ---
 name: ab-document-review
-description: "Trigger this skill when reviewing any written artifact — even if the user just says 'does this look good'. Trigger when the user says 'review this doc', 'review the spec', 'check the plan', 'feedback on this document', 'critique this', 'does this look right', 'proofread this', 'review the ADR', 'check the README', 'is this spec complete', or 'give me feedback on this write-up'. Trigger for specs, plans, ADRs, READMEs, design docs, RFCs, or any document that needs structured feedback for clarity, completeness, and accuracy. Uses a three-pass review process: accuracy, structure, then communication. DO NOT TRIGGER for code review — use ab-requesting-code-review or ab-review-swarm instead. DO NOT TRIGGER for changelog or release notes — use ab-changelog-generation instead."
+description: "Reviews a written document in three separate passes (accuracy, with a helper that checks every file, command and endpoint it names against the repository; then clarity; then completeness) and ends with the must-fix issues in priority order and a verdict: approved, revisions needed or rework needed. Use when the user wants feedback on, a critique of or a proofread of a spec, plan, ADR, README, design doc, RFC or other write-up, including a casual 'does this look good' about a document. Not for code review (ab-requesting-code-review or ab-review-swarm) or changelogs and release notes (ab-changelog-generation)."
 ---
 
 # Document Review
 
 ## Overview
 
-Structured three-pass review process for documents. Each pass focuses on a different quality dimension, preventing the reviewer from getting distracted by surface issues while evaluating substance.
+Structured three-pass review process for documents. Each pass focuses on a different quality dimension, preventing the reviewer from getting distracted by surface issues while evaluating substance. The review is done when all three passes have their findings tables and the Final Summary gives a verdict.
 
 ## When to Use
 
@@ -30,7 +30,7 @@ Focus exclusively on whether the content is correct.
 - Outdated information (references to deprecated APIs, old patterns)
 - Incorrect references (file paths that don't exist, broken links)
 
-**For docs that name files, commands, endpoints, functions, or dependencies:** dispatch the `doc-claim-verifier` helper to extract and verify every factual claim against the filesystem. Its PASS/FAIL/UNVERIFIABLE report becomes the authoritative input to Pass 1. Manual reading misses drift; the helper doesn't.
+**For docs that name files, commands, endpoints, functions, or dependencies:** start the doc-claim-verifier helper to extract and verify every factual claim against the filesystem. Its PASS/FAIL/UNVERIFIABLE report becomes the authoritative input to Pass 1, because manual reading misses drift and the helper checks each claim.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
@@ -38,7 +38,7 @@ Prompt: `references/agents/doc-claim-verifier.md`. Inputs: the path of the docum
 
 **Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
-**Do NOT check for:** Grammar, formatting, tone, or completeness — those come later.
+**Leave for later:** grammar, formatting, tone and completeness. The later passes cover them, and mixing them in here lets surface issues crowd out substance.
 
 **Output after Pass 1:**
 ```markdown
@@ -60,7 +60,7 @@ Focus exclusively on whether the content is understandable.
 - Wall-of-text sections (need breaking up or summarizing)
 - Unclear structure (reader can't find what they need)
 
-**Do NOT check for:** Accuracy (done) or completeness (next pass).
+**Leave out:** accuracy (done) and completeness (next pass).
 
 **Output after Pass 2:**
 ```markdown

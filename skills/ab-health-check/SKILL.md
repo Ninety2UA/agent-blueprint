@@ -1,6 +1,6 @@
 ---
 name: ab-health-check
-description: "Trigger this skill when the user says 'health', 'health check', 'how's the project', 'project health', 'are things ok', 'any issues', 'is everything working', 'run diagnostics', 'check everything', or anything suggesting concern about overall project state. Trigger when the user seems worried about whether things are broken, or hasn't checked project health in a while — even without the word 'health'. Trigger even when the user just asks 'is the build passing' or 'are tests green' — a full health check across all 8 dimensions (build, tests, lint, deps, conventions, docs, backlog, git) is more useful than a narrow answer. DO NOT TRIGGER when the user wants a project status or progress update — use ab-project-status instead. DO NOT TRIGGER when the user wants to debug a specific failing test or error — use ab-systematic-debugging instead."
+description: "Runs a project health check across eight areas (build, tests, lint, dependencies, convention compliance, documentation freshness, backlog, git) with the commands from docs/context/CONVENTIONS.md, then reports a status table, the items that need attention and the next actions. Use when the user asks how the project is doing, whether everything is working or passing (including just the build or the tests), or wants diagnostics across the whole project. Not for a progress or status update (ab-project-status) or for debugging one failing test or error (ab-systematic-debugging)."
 ---
 
 # Health Check — Project Health Assessment
@@ -8,6 +8,8 @@ description: "Trigger this skill when the user says 'health', 'health check', 'h
 Run a comprehensive health assessment across all project dimensions. Report findings and flag items that need attention.
 
 ## Checks (run as many in parallel as possible)
+
+The build, test and lint commands come from `docs/context/CONVENTIONS.md`. Where it names none, use the ones the project's own manifest or build file defines (such as `package.json` scripts or a `Makefile`), and mark the row ⚠️ with "no command found" when there is none, so a missing command never reads as a pass.
 
 ### 1. Build Status
 ```bash
@@ -104,4 +106,8 @@ git branch --merged main | grep -v main | grep -v '*'
 2. [Second action]
 ```
 
-Present the report and ask: **"Want me to address any of these findings?"**
+Present the report, then offer to address the findings.
+
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
+
+Options: 1. address the items needing attention, most critical first; 2. address only the items the user picks; 3. leave everything as it is. Default when nobody answers: option 3, because a health check reports and changes nothing unasked.

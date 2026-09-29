@@ -1,218 +1,94 @@
 ---
 name: ab-scope-cutting
-description: "Trigger this skill when a feature is too large, a plan has grown unwieldy, or timeline pressure demands cutting scope. Trigger when the user says 'scope down', 'MVP', 'too big', 'what can we cut', 'simplify', 'reduce scope', 'deadline risk', 'we don't have time for all of this', 'this is taking too long', 'can we ship less', or 'minimum viable'. Trigger even when the user hasn't explicitly asked to cut scope — proactively suggest this skill whenever a plan has more than 10 tasks, an estimate exceeds available time, or the user expresses concern about timeline or complexity. Systematically separates must-haves from nice-to-haves and identifies the smallest useful deliverable. DO NOT TRIGGER when the feature is already minimal and cutting more would make it useless. DO NOT TRIGGER when the complexity is in the core (you need a different approach, not less scope)."
+description: "Cuts a feature or plan down to the smallest useful deliverable: lists everything in scope, sorts it with MoSCoW (must, should, could, won't), checks the must-haves still make a usable, testable, shippable feature, rewrites the plan around them and tracks the rest in BACKLOG.md. Use when a feature or plan is too big for the time available, a plan has more than about 10 tasks, a spike found more complexity than expected, or the user worries about the timeline or asks to scope down, simplify or find the MVP. Not for a feature that is already minimal, or one whose complexity sits in the core, which needs a different approach rather than less scope."
 ---
 
 # Scope Cutting
 
-## Overview
+The outcome is a revised plan holding only the must-haves, every cut item tracked in BACKLOG.md with the iteration it targets, and a short note to the user on what was cut and why. Every feature has a core that delivers value and a periphery that adds polish; under time or complexity pressure, ship the core and make the rest follow-ups. Cutting scope is engineering judgment, not failure: ship the smallest thing that is useful.
 
-Scope cutting is not failure — it's engineering judgment. Every feature has a core that delivers value and a periphery that adds polish. When time or complexity pressure hits, surgically remove the periphery and ship the core.
+## When to use
 
-**Core principle:** Ship the smallest thing that's useful. Everything else is a follow-up.
-
-## When to Use
-
-- A feature estimate exceeds the available time
-- A plan has grown beyond one focused session
-- You're 60% through a plan and realize it's bigger than expected
+- A feature estimate exceeds the available time, or a plan has grown beyond one focused session
+- You are 60% through a plan and it is bigger than expected, or a spike revealed more complexity than anticipated
 - The user says "this is taking too long" or "can we simplify?"
-- You're adding "while I'm here" improvements during implementation
-- A spike revealed more complexity than anticipated
+- You are adding "while I'm here" improvements during implementation
 
-**Don't use when:**
-- The feature is already minimal (cutting more would make it useless)
-- The complexity is in the core, not the periphery (you need a different approach, not less scope)
-- You haven't tried to estimate yet (estimate first, then cut if needed)
+Not when the feature is already minimal (cutting more would make it useless), when the complexity is in the core rather than the periphery (you need a different approach, not less scope), or before anyone has estimated (estimate first, then cut if needed).
 
-## The Iron Law
-
-<HARD-GATE>
-Never cut quality to save scope. Fewer features, done well, always beats more features done poorly. If you're tempted to skip tests, skip error handling, or skip validation to fit more features — you're cutting quality, not scope.
-</HARD-GATE>
+**Cut features, never quality.** Tests, error handling, input validation and basic security stay in whatever ships, because fewer features done well beat more features done poorly, and a defect shipped to fit one more feature costs more than that feature is worth. If you are tempted to skip any of them to fit more in, you are cutting quality, not scope.
 
 ## Process
 
-### Step 1: List Everything
+### Step 1: List everything
 
-Write down every task, feature, or requirement in the current scope. Include things you assumed but didn't write down.
+Write down every task, feature or requirement in the current scope, including the ones you assumed but never wrote down.
 
-```markdown
-## Current Scope: [feature name]
+Example: `references/worked-example.md` § Step 1 list.
 
-1. User authentication with email/password
-2. OAuth integration (Google, GitHub)
-3. Password reset flow
-4. Email verification
-5. Remember me / persistent sessions
-6. Account settings page
-7. Profile picture upload
-8. Two-factor authentication
-9. Session management (view/revoke active sessions)
-10. Audit log of login events
-```
-
-### Step 2: Classify Each Item
+### Step 2: Classify each item
 
 Use the MoSCoW method:
 
-| Priority | Meaning | Rule of Thumb |
+| Priority | Meaning | Rule of thumb |
 |----------|---------|---------------|
-| **Must** | Without this, the feature doesn't work or isn't useful | Users literally cannot use the feature without it |
-| **Should** | Important but the feature works without it | Users will ask for it soon after launch |
-| **Could** | Nice to have, adds polish | Users would appreciate but won't miss |
+| **Must** | Without this, the feature doesn't work or isn't useful | Users cannot use the feature without it |
+| **Should** | Important, but the feature works without it | Users will ask for it soon after launch |
+| **Could** | Nice to have, adds polish | Users would appreciate it but won't miss it |
 | **Won't** (this time) | Explicitly out of scope | Documented for future consideration |
 
-Apply the classification:
+Example: `references/worked-example.md` § Step 2 classification.
 
-```markdown
-## Scope Classification
+### Step 3: Validate the cut
 
-### Must Have (ship-blocking)
-1. User authentication with email/password
-4. Email verification
-
-### Should Have (next iteration)
-3. Password reset flow
-5. Remember me / persistent sessions
-6. Account settings page
-
-### Could Have (if time permits)
-2. OAuth integration (Google, GitHub)
-7. Profile picture upload
-
-### Won't Have (future work)
-8. Two-factor authentication
-9. Session management
-10. Audit log
-```
-
-### Step 3: Validate the Cut
-
-Check the "Must Have" list against these criteria:
+Check the Must list against these criteria:
 
 | Check | Question |
 |-------|----------|
-| **Usable** | Can a real user accomplish their goal with only the Must Haves? |
+| **Usable** | Can a real user accomplish their goal with only the Must items? |
 | **Coherent** | Does the reduced feature make sense, or does it feel broken? |
 | **Testable** | Can you write meaningful tests for the reduced scope? |
 | **Shippable** | Would you be comfortable deploying this to real users? |
-| **Extensible** | Can the Should/Could items be added later without rework? |
+| **Extensible** | Can the Should and Could items be added later without rework? |
 
-If any check fails, move items from Should → Must until the checks pass.
+If any check fails, move items from Should to Must until every check passes.
 
-### Step 4: Update the Plan
+### Step 4: Update the plan
 
-Rewrite the implementation plan with only the Must Haves. Move everything else to a "Follow-up" section.
+Rewrite the implementation plan with only the Must items, and move everything else to a "Follow-up" section. Then add each follow-up item to BACKLOG.md with the iteration or milestone it targets, because an untracked cut is forgotten and "later" without a target means never.
 
-```markdown
-## Revised Plan: [feature name] — MVP
+Example: `references/worked-example.md` § Step 4 revised plan.
 
-### This Iteration
-- [ ] Task 1: [must-have item]
-- [ ] Task 2: [must-have item]
-- [ ] Task 3: [must-have item]
+### Step 5: Communicate the cut
 
-### Follow-up (add to BACKLOG.md)
-- Password reset flow
-- Remember me / persistent sessions
-- Account settings page
-- OAuth integration
-- Profile picture upload
-- Two-factor authentication
-- Session management
-- Audit log
-```
+Tell the user, or the team, what ships now, what ships next, what is deferred, why, and the trade-off users will live with in the meantime. A silent cut surprises people who expected the full scope.
 
-Add the follow-up items to BACKLOG.md so they're tracked.
+Example: `references/worked-example.md` § Step 5 cut summary.
 
-### Step 5: Communicate the Cut
+## Ways to cut
 
-Tell the user (or team) what was cut and why:
+Walking skeleton, feature flag, hardcode and manual cuts, with what each one looks like: `references/patterns.md`.
 
-```markdown
-## Scope Reduction: [feature name]
+## Common mistakes
 
-**Original scope:** 10 items
-**Revised scope:** 2 items (Must Haves only)
-**Reason:** [complexity exceeded estimate / time constraint / dependency blocked]
+- **Cutting the wrong things.** Cutting the core to save the periphery leaves nothing worth shipping; error handling, input validation and basic security are part of the core.
+- **Cutting too late.** At 90% complete you have already paid for most of the work, so cut when you first suspect the scope is too large.
+- **Negotiating with yourself.** Once the cut is made, hold it: squeezing in "one more thing" is scope creep in reverse, and it reopens the time problem the cut solved.
 
-**What ships now:**
-- Email/password authentication
-- Email verification
+## Signs you need to cut
 
-**What ships next:**
-- Password reset, persistent sessions, account settings
-
-**What's deferred:**
-- OAuth, 2FA, session management, audit log
-
-**Trade-off:** Users can sign up and log in. They can't reset passwords yet —
-support team handles resets manually until the next iteration.
-```
-
-## Scope Cutting Patterns
-
-### The Walking Skeleton
-
-Ship the thinnest possible end-to-end flow. For a CRUD app:
-- One entity type
-- Create and Read only (no Update/Delete yet)
-- No pagination, no search, no filters
-- Minimal validation
-- Default styling only
-
-### The Feature Flag Cut
-
-Instead of removing code, gate it behind a feature flag:
-- Ship the core feature enabled by default
-- Keep partially-built features behind flags
-- Enable them incrementally as they're finished
-- Useful when the code is written but not tested
-
-### The Hardcode Cut
-
-Replace dynamic behavior with hardcoded values:
-- Settings page? Hardcode defaults, add settings later
-- Multi-currency support? Hardcode USD, add others later
-- Configurable templates? Ship one template, add customization later
-
-### The Manual Cut
-
-Replace automation with manual process:
-- Automated email notifications? Team sends them manually for now
-- Self-service onboarding? Admin creates accounts manually
-- Automated reporting? Export CSV, team builds reports manually
-
-## Common Mistakes
-
-**Cutting the wrong things** — Don't cut the core to save the periphery. Error handling, input validation, and basic security are never optional.
-
-**Cutting without communicating** — Silently reducing scope creates surprise. Always tell stakeholders what was cut and what the plan is to add it back.
-
-**Cutting too late** — Scope cutting at 90% completion means you've already paid for most of the work. Cut early, when you first suspect the scope is too large.
-
-**Not tracking what was cut** — If it's not in BACKLOG.md, it's forgotten. Every cut item needs a tracking entry.
-
-**"We'll add it later" without a plan** — "Later" means "never" without a concrete plan. Specify which iteration or milestone the cut items target.
-
-**Negotiating with yourself** — "I'll just squeeze in one more thing." No. The cut is the cut. Additional items are scope creep in reverse.
-
-## Red Flags That You Need to Cut Scope
-
-- Plan has more than 8-10 tasks for one session
+- The plan has more than 8-10 tasks for one session
 - You keep discovering new tasks during implementation
-- Estimated time exceeds available time by > 30%
-- Dependencies between tasks form a deep chain (> 4 levels)
-- You're tempted to skip tests "just this once" to fit everything in
+- The estimate exceeds the available time by more than 30%
+- Dependencies between tasks form a deep chain (more than 4 levels)
+- You are tempted to skip tests "just this once" to fit everything in
 - The user is asking "how much longer?"
 
-## Integration with Other Skills
+## Related skills
 
 | Situation | Skill |
 |-----------|-------|
-| Need to re-plan after cutting scope | ab-writing-plans |
-| Unsure what's truly essential | ab-brainstorming (re-explore with constraints) |
-| Cut items need to be tracked | Add to BACKLOG.md |
-| Spike revealed scope is larger than expected | ab-spike-exploration → ab-scope-cutting |
-| Reduced plan ready for execution | ab-executing-plans or ab-autonomous-loop |
+| Re-plan after cutting scope | the ab-writing-plans skill |
+| Unsure what is truly essential | the ab-brainstorming skill, re-exploring with the new constraints |
+| A spike revealed the scope is larger than expected | the ab-spike-exploration skill, then this one |
+| The reduced plan is ready to run | the ab-executing-plans or ab-autonomous-loop skill |

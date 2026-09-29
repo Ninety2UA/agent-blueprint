@@ -1,30 +1,26 @@
 ---
 name: ab-context-checkpoint
-description: "Trigger this skill when the context window is getting large and you need a recovery point, when switching between major tasks within a session, or before a risky operation (large refactor, dependency upgrade) where you want a rollback point. Trigger when significant progress has been made mid-session and preserving key decisions and state is important. Usually invoked internally by ab-pause-checkpoint, not directly by users. Captures current session state into a lightweight checkpoint file (CHECKPOINT-*.md) — faster and less comprehensive than ab-session-wrap. DO NOT TRIGGER at end of session — use ab-session-wrap instead for full documentation. DO NOT TRIGGER as the user-facing pause command — use ab-pause-checkpoint instead, which delegates to this skill."
+description: "Saves a lightweight recovery point mid-session: gathers the branch, recent commits, uncommitted changes and test state, then writes a timestamped docs/context/CHECKPOINT file with progress, decisions, next steps and open questions, or, near the end of a session, rewrites the Session Continuity section of docs/context/STATUS.md. Documentation only; faster and less complete than a session wrap. Use when the context window is getting large, before a risky operation such as a large refactor or dependency upgrade, when switching between major tasks, or after significant progress worth preserving. Mostly run by ab-pause-checkpoint. Not for the end of a session (ab-session-wrap) or as the user-facing pause (ab-pause-checkpoint)."
 ---
 
 # Context Checkpoint
 
-## Overview
-
-Capture the current session state into a lightweight checkpoint file. This is a faster, less comprehensive alternative to `ab-session-wrap` — use it when you need a save point but aren't ending the session.
+Capture the current session state in a lightweight checkpoint: a save point that is faster and less complete than the ab-session-wrap skill, for when the session goes on. The checkpoint is done when the file or section is written and the user has the Step 3 confirmation.
 
 ## When to Use
 
-- Mid-session when you've made significant progress and want a recovery point
+- Mid-session, after significant progress, as a recovery point
 - Before a risky operation (large refactor, dependency upgrade)
-- When the context window is getting large and you want to preserve key decisions
-- When switching focus within the same session (checkpoint current work, start new task)
+- When the context window is getting large and key decisions need preserving
+- When switching focus within the same session (checkpoint the current work, then start the new task)
 
-<HARD-GATE>
-This is a documentation-only operation. Do NOT modify source code, tests, or configuration files. If you discover code changes needed, note them in the checkpoint.
-</HARD-GATE>
+**Documentation only.** Change no source code, tests or configuration files, because a save point that edits code slips an unreviewed change in with it. If you find a code change is needed, note it in the checkpoint.
 
 ## Process
 
 ### Step 1: Gather State
 
-Quickly collect:
+Collect:
 ```bash
 # Current branch and recent commits
 git branch --show-current
@@ -36,15 +32,24 @@ git status --short
 # Current test/build state (if known)
 ```
 
+Include every uncommitted change in the checkpoint: forgetting what was changed but not committed is the most common context loss.
+
 ### Step 2: Write Checkpoint
 
-If the Session Continuity section of `docs/context/STATUS.md` already has content, update it in place. Otherwise, create a checkpoint file.
+Pick the target by situation:
 
-**Option A: Update Session Continuity** (preferred if session is near-end)
+| Situation | Action |
+|-----------|--------|
+| Mid-session save | Create checkpoint file (Option B) |
+| Before risky operation | Create checkpoint file (Option B) |
+| Nearly done for the day | Update Session Continuity instead (Option A) |
+| Switching focus | Create checkpoint file (Option B), note the switch |
 
-Rewrite the Session Continuity section at the top of `docs/context/STATUS.md` with the current state, in plain text (no HTML comments).
+**Option A: Update Session Continuity** (near the end of a session)
 
-**Option B: Create checkpoint file** (preferred for mid-session save points)
+Rewrite the Session Continuity section of `docs/context/STATUS.md`, at the top of the file, with the current state: update it in place when it already has content, and create it when it is missing. Write plain text with no HTML comments, because Hermes drops a context file that has one.
+
+**Option B: Create checkpoint file** (mid-session save points)
 
 Create `docs/context/CHECKPOINT-[YYYY-MM-DD-HHMM].md`:
 
@@ -74,7 +79,7 @@ Create `docs/context/CHECKPOINT-[YYYY-MM-DD-HHMM].md`:
 - [anything unresolved]
 ```
 
-**Keep and cut order.** A checkpoint (and any `/compact` focus instruction you give) keeps what can't be recovered and cuts what can:
+**Keep and cut order.** A checkpoint (and any focus instruction you give when the host compacts the context, such as Claude Code's `/compact`) keeps what can't be recovered and cuts what can:
 
 - **Protect:** the user's goal and constraints, locked decisions with their reasons, the current task's acceptance criteria, the file paths and commands in play, unresolved errors verbatim.
 - **Cut first:** tool output already acted on (old test logs, file dumps), superseded plans, repeated reads of the same file.
@@ -84,19 +89,4 @@ Create `docs/context/CHECKPOINT-[YYYY-MM-DD-HHMM].md`:
 
 Tell the user: "Checkpoint saved. You can resume from this point if context is lost."
 
-## Quick Reference
-
-| Situation | Action |
-|-----------|--------|
-| Mid-session save | Create checkpoint file |
-| Before risky operation | Create checkpoint file |
-| Nearly done for the day | Update Session Continuity instead |
-| Switching focus | Create checkpoint, note the switch |
-
-## Common Mistakes
-
-**Over-documenting** — A checkpoint should take 30 seconds to write. If you're spending more than a minute, you're writing a `ab-session-wrap`.
-
-**Modifying code** — This is documentation only. The checkpoint captures state, it doesn't change it.
-
-**Forgetting uncommitted changes** — Always run `git status` and include the results. The most common context loss is forgetting what was changed but not committed.
+A checkpoint should take about 30 seconds to write. If it is taking more than a minute, it is turning into a session wrap (the ab-session-wrap skill); keep it to the state someone needs to resume.

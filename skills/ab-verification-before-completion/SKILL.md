@@ -1,17 +1,17 @@
 ---
 name: ab-verification-before-completion
-description: "Trigger this skill EVERY time before claiming work is done, tests pass, a fix works, a build succeeds, or any completion status. Trigger when the user says 'verify', 'make sure it works', 'confirm it passes', 'check before committing', 'does it work', 'is it fixed', or 'run the tests'. Trigger even when you are confident the code is correct — always run verification commands and check their actual output before asserting success. Evidence before assertions, always. This applies before committing, before creating PRs, before reporting task completion, before saying 'all tests pass', and before any status claim whatsoever. If you haven't run the verification command in this message, you cannot claim it passes. No exceptions, no shortcuts, no relying on prior runs."
+description: "Backs every completion claim with fresh evidence: names the output that would prove the claim false, runs the full verification command, reads its output and exit code, and only then states the result, quoting that evidence. Use before saying work is done, tests pass, a build succeeds or a bug is fixed; before committing, opening a PR or reporting a task complete; and before trusting a helper's success report. A run from an earlier message does not count."
 ---
 
 # Verification Before Completion
 
 ## Overview
 
-Claiming work is complete without verification is dishonesty, not efficiency.
+A completion claim without verification is a guess presented as a fact. The person reading it acts on it, so an unverified "done" costs more than the check would have.
 
 **Core principle:** Evidence before claims, always.
 
-**Violating the letter of this rule is violating the spirit of this rule.**
+Rewording a claim to avoid this rule still breaks it, because the reader hears the same claim.
 
 ## The Iron Law
 
@@ -19,7 +19,7 @@ Claiming work is complete without verification is dishonesty, not efficiency.
 NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 ```
 
-If you haven't run the verification command in this message, you cannot claim it passes.
+If you haven't run the verification command in this message, you cannot claim it passes: code, dependencies and the working tree may have changed since the last run.
 
 ## The Gate Function
 
@@ -52,28 +52,30 @@ Skip any step = lying, not verifying
 | Requirements met | Line-by-line checklist | Tests passing |
 | Check is meaningful | Failing direction named before the run: the output that would refute the claim | A command that passes no matter what the code does |
 
-## Red Flags - STOP
+## Red Flags: Stop and Verify
+
+Each of these means a claim is about to outrun its evidence:
 
 - Using "should", "probably", "seems to"
 - Expressing satisfaction before verification ("Great!", "Perfect!", "Done!", etc.)
-- About to commit/push/PR without verification
-- Trusting agent success reports
+- About to commit, push or open a PR without verification
+- Trusting a helper's success report
 - Relying on partial verification
 - Thinking "just this once"
-- Tired and wanting work over
-- **ANY wording implying success without having run verification**
+- Tired and wanting the work over
+- Any wording that implies success without a verification run
 
 ## Rationalization Prevention
 
 | Excuse | Reality |
 |--------|---------|
-| "Should work now" | RUN the verification |
+| "Should work now" | Run the verification |
 | "I'm confident" | Confidence ≠ evidence |
-| "Just this once" | No exceptions |
+| "Just this once" | The skipped run is the one that would have caught it |
 | "Linter passed" | Linter ≠ compiler |
 | "Agent said success" | Verify independently |
-| "I'm tired" | Exhaustion ≠ excuse |
-| "Partial check is enough" | Partial proves nothing |
+| "I'm tired" | Exhaustion ≠ evidence |
+| "Partial check is enough" | Partial proves nothing about the rest |
 | "Different words so rule doesn't apply" | Spirit over letter |
 
 ## Key Patterns
@@ -111,32 +113,24 @@ Skip any step = lying, not verifying
 ## Why This Matters
 
 From accumulated failure notes:
-- your human partner said "I don't believe you" - trust broken
-- Undefined functions shipped - would crash
-- Missing requirements shipped - incomplete features
-- Time wasted on false completion → redirect → rework
-- Violates: "Honesty is a core value. If you lie, you'll be replaced."
+- The user said "I don't believe you": trust broken
+- Undefined functions shipped and would crash
+- Missing requirements shipped as incomplete features
+- Time lost to false completion, then redirect, then rework
+- An unverified claim is a false statement when it turns out wrong, and honesty is what the user relies on
 
 ## When To Apply
 
-**ALWAYS before:**
-- ANY variation of success/completion claims
-- ANY expression of satisfaction
-- ANY positive statement about work state
-- Committing, PR creation, task completion
-- Moving to next task
-- Delegating to agents
+Before:
+- any variation of a success or completion claim
+- any expression of satisfaction
+- any positive statement about the state of the work
+- committing, opening a PR, or reporting a task complete
+- moving to the next task
+- handing work to a helper
 
-**Rule applies to:**
-- Exact phrases
-- Paraphrases and synonyms
-- Implications of success
-- ANY communication suggesting completion/correctness
+The rule covers exact phrases, paraphrases and synonyms, implications of success, and any message that suggests the work is complete or correct.
 
 ## The Bottom Line
 
-**No shortcuts for verification.**
-
-Run the command. Read the output. THEN claim the result.
-
-This is non-negotiable.
+Run the command. Read the output. Then claim the result. Skipping this has no safe case, because the claim you skip checking is the one nobody else checks either.
