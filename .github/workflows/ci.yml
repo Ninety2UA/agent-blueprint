@@ -41,7 +41,9 @@ jobs:
         run: |
           set -e
           echo "Checking core files..."
-          test -f /tmp/blueprint-test/CLAUDE.md
+          test -f /tmp/blueprint-test/AGENTS.md
+          test "$(cat /tmp/blueprint-test/CLAUDE.md)" = "@AGENTS.md"
+          test -f /tmp/blueprint-test/.agent-blueprint/.gitignore
           test -f /tmp/blueprint-test/BACKLOG.md
           test -f /tmp/blueprint-test/blueprint.local.md
           test -f /tmp/blueprint-test/.gitignore

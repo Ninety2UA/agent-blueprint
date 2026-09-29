@@ -1,13 +1,6 @@
 {
   "_comment": "Today's violations, seeded once by U3 (KTD5). Entries may only be removed: an entry that no longer matches a violation fails the gate, and CI fails any entry added since the PR base. 'skills' must be empty when Phase 2 ends; 'manifests' (U11 drains the missing manifests, U12 the hooks/hooks.json entry) must be empty at release.",
-  "skills": {
-    "AGENTS.md": [
-      "html-comment"
-    ],
-    "templates/CLAUDE.md": [
-      "html-comment"
-    ]
-  },
+  "skills": {},
   "manifests": {
     ".agents/plugins/marketplace.json": [
       "missing-manifest"

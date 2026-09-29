@@ -19,7 +19,7 @@ REFS = os.path.join(SKILL, "references")
 HOSTS = ["claude", "codex", "agy", "grok", "pi", "cursor-agent", "hermes", "amp"]   # KTD15
 REMOVED = ["ab-agent-teams", "ab-team-execution"]
 # Surfaces outside skills/ that must not name a removed skill (the name map is exempt).
-SURFACES = ["AGENTS.md", "README.md", "index.html", "install.sh", ".claude-plugin", "hooks", "templates", "scripts",
+SURFACES = ["AGENTS.md", "README.md", "index.html", "install.sh", ".claude-plugin", "hooks", "scripts",
             "docs/images/promo-video.html"]
 MARKER = ".agent-blueprint/team/active.md"
 

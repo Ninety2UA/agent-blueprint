@@ -3,7 +3,7 @@
 # Customize which agents are active for this project's tech stack.
 # This file is gitignored — each developer can have their own config.
 
-# Review agents dispatched by /ab-review-swarm
+# Review agents dispatched by the ab-review-swarm skill
 # Comment out agents that aren't relevant to your stack.
 review-agents:
   # Always active (language-agnostic)
@@ -21,7 +21,7 @@ review-agents:
   # - schema-drift-detector      # Uncomment for projects with ORM schemas
 
 # Specialized agents (auto-dispatched by pipelines — not user-configurable)
-# These agents are used internally by /ab-build-pipeline, /ab-ship-pipeline, and /ab-orchestrate:
+# These agents are used internally by the ab-build-pipeline, ab-ship-pipeline and ab-orchestrate skills:
 #   - plan-checker             # Verifies plans are achievable before execution
 #   - integration-verifier     # Verifies tasks work together after each wave
 #   - deployment-verifier      # Pre-deployment verification (8 areas)
@@ -33,7 +33,7 @@ review-agents:
 #   - codebase-mapper          # Full codebase structure analysis
 #   - integration-checker      # Cross-component integration checks
 
-# Research agents dispatched by /ab-deep-research
+# Research agents dispatched by the ab-deep-research skill
 research-agents:
   - learnings-researcher
   - best-practices-researcher
@@ -45,7 +45,7 @@ research-agents:
 # Options: web-fullstack, api-backend, cli-tool, library, mobile, data-pipeline
 project-type: web-fullstack
 
-# Team work (/ab-orchestrate) needs no setting here: pass --wave-size N to change
+# Team work (the ab-orchestrate skill) needs no setting here: pass --wave-size N to change
 # the helpers per wave (default 4). It uses Claude Code Agent Teams when
 # CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS is "1" in an interactive session, and Codex
 # multi_agent_v2 when that feature is on; the tool's own switch is the only setting.
@@ -62,16 +62,22 @@ _Add project-specific configuration notes here. This section is read by agents f
 
 ## Stack Details
 
-<!-- Uncomment and fill in relevant sections -->
-<!-- - Primary language: TypeScript -->
-<!-- - Framework: Next.js 15 (App Router) -->
-<!-- - Database: PostgreSQL via Prisma -->
-<!-- - Testing: Vitest + Playwright -->
-<!-- - CI: GitHub Actions -->
+_Fill in the relevant lines, for example:_
+
+```text
+- Primary language: TypeScript
+- Framework: Next.js 15 (App Router)
+- Database: PostgreSQL via Prisma
+- Testing: Vitest + Playwright
+- CI: GitHub Actions
+```
 
 ## Review Focus Areas
 
-<!-- Add areas that reviewers should pay extra attention to -->
-<!-- - Authentication flows (OAuth + JWT) -->
-<!-- - Data privacy (PII handling, GDPR compliance) -->
-<!-- - Performance for endpoints with > 1000 req/min -->
+_Areas reviewers should pay extra attention to, for example:_
+
+```text
+- Authentication flows (OAuth + JWT)
+- Data privacy (PII handling, GDPR compliance)
+- Performance for endpoints with > 1000 req/min
+```

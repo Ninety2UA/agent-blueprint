@@ -2,7 +2,7 @@
 
 ## Current Objectives
 
-<!-- Define 3-5 key objectives for this quarter/phase. Be specific and measurable. Each goal should have a clear definition of done. -->
+_Define 3-5 key objectives for this quarter/phase. Be specific and measurable. Each goal should have a clear definition of done._
 
 ### 1. [Objective 1]
 - **Description:** [what and why]
@@ -24,7 +24,7 @@
 
 ## Milestones
 
-<!-- Major checkpoints on the path to objectives. A milestone is a verifiable state, not a task. -->
+_Major checkpoints on the path to objectives. A milestone is a verifiable state, not a task._
 
 | Milestone | Target | Status | Depends On |
 |-----------|--------|--------|------------|
@@ -46,7 +46,7 @@ When two tasks have the same priority, prefer the one that:
 
 ## Non-Goals
 
-<!-- Explicitly list what this project is NOT trying to do. This prevents scope creep and helps the agent push back when asked to build something off-goal. -->
+_Explicitly list what this project is NOT trying to do. This prevents scope creep and helps the agent push back when asked to build something off-goal._
 
 - Not building [X] — because [reason]
 - Not optimizing for [Y] yet — premature until [condition]

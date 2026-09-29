@@ -124,6 +124,21 @@ PLUGIN_DIR="$SOURCE_DIR"
 # Scripts that ship with the plugin (scripts/ also holds repo-only CI gates).
 PLUGIN_SCRIPTS=(ship.sh)
 
+# ─── Project scaffold (ab-project-start's assets, merged, never overwritten) ──
+scaffold_project() {
+    local py
+    py="$(command -v python3 || command -v python || true)"
+    if [ -z "$py" ]; then
+        error "Scaffolding needs python3 (or python) to merge the project files"
+        exit 1
+    fi
+    local args=("$PLUGIN_DIR/skills/ab-project-start/scripts/scaffold.py" "$TARGET_DIR")
+    if [ "$DRY_RUN" = true ]; then
+        args+=(--dry-run)
+    fi
+    "$py" "${args[@]}" | sed 's/^/    /'
+}
+
 # ─── Copy function with conflict handling ─────────────────────
 copy_item() {
     local src="$1"
@@ -224,13 +239,8 @@ if [ "$LEGACY" = true ]; then
     success "scripts/ installed"
 
     # Template/project files
-    if [ -d "$PLUGIN_DIR/templates" ]; then
-        find "$PLUGIN_DIR/templates" -type f | while read -r file; do
-            rel="${file#"$PLUGIN_DIR/templates"/}"
-            copy_item "$file" "$TARGET_DIR/$rel"
-        done
-        success "Project files installed (CLAUDE.md, docs/, etc.)"
-    fi
+    scaffold_project
+    success "Project files installed (AGENTS.md, CLAUDE.md, docs/, etc.)"
 
     # Settings
     if [ -f "$PLUGIN_DIR/.claude/settings.json" ]; then
@@ -285,7 +295,7 @@ if [ "$SCAFFOLD_ONLY" = false ]; then
     if [ "$DRY_RUN" = false ]; then
         mkdir -p "$CACHE_DIR"
         # Copy the plugin engine files from the repository root
-        for dir in skills hooks templates; do
+        for dir in skills hooks; do
             if [ -d "$PLUGIN_DIR/$dir" ]; then
                 cp -R "$PLUGIN_DIR/$dir" "$CACHE_DIR/$dir"
             fi
@@ -383,13 +393,8 @@ if [ -n "$TARGET_DIR" ]; then
 
     info "Scaffolding project at ${BOLD}$TARGET_DIR${NC}..."
 
-    if [ -d "$PLUGIN_DIR/templates" ]; then
-        find "$PLUGIN_DIR/templates" -type f | while read -r file; do
-            rel="${file#"$PLUGIN_DIR/templates"/}"
-            copy_item "$file" "$TARGET_DIR/$rel"
-        done
-        success "Project files scaffolded"
-    fi
+    scaffold_project
+    success "Project files scaffolded"
 
     # Placeholder directories
     if [ "$DRY_RUN" = false ]; then

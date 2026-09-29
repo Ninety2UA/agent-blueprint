@@ -16,9 +16,9 @@ _Kept current by the ab-session-wrap and ab-context-checkpoint skills. Full hist
 
 ## Current State of the Code
 
-- **Build:** not configured (run `/ab-project-start`)
-- **Tests:** not configured (run `/ab-project-start`)
-- **Lint:** not configured (run `/ab-project-start`)
+- **Build:** not configured (run the ab-project-start skill)
+- **Tests:** not configured (run the ab-project-start skill)
+- **Lint:** not configured (run the ab-project-start skill)
 - **Last verified:** —
 
 ## In Flight
@@ -31,7 +31,7 @@ _Kept current by the ab-session-wrap and ab-context-checkpoint skills. Full hist
 
 | Task | Status | Blockers | Notes |
 |------|--------|----------|-------|
-| Run `/ab-project-start` to configure project | — | — | — |
+| Run the ab-project-start skill to configure project | — | — | — |
 
 ## What's Done
 

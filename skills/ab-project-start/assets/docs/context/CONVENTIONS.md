@@ -2,7 +2,7 @@
 
 ## Tech Stack
 
-<!-- Fill in your actual stack. This is the first thing the agent reads before writing code. -->
+_Fill in your actual stack. This is the first thing the agent reads before writing code._
 
 - **Language:** [TypeScript / Python / etc.]
 - **Runtime:** [Node.js 20+ / Bun / Python 3.12+]
@@ -17,7 +17,7 @@
 
 ## Commands
 
-<!-- Fill in the actual commands. These are referenced by skills and agents. -->
+_Fill in the actual commands. These are referenced by skills and agents._
 
 ```bash
 # Install dependencies
@@ -89,7 +89,7 @@ Infrastructure configs in `infra/`. One-off scripts in `scripts/`.
 
 ## Patterns in Use
 
-<!-- Document patterns adopted in this project so the agent follows them consistently. -->
+_Document patterns adopted in this project so the agent follows them consistently._
 
 ### Data fetching
 [Describe the pattern — e.g., "All API calls go through src/lib/api-client.ts which handles auth headers and error parsing"]
@@ -135,7 +135,7 @@ Infrastructure configs in `infra/`. One-off scripts in `scripts/`.
 
 ## Environment Variables
 
-<!-- List all env vars the project uses with descriptions but NOT values. -->
+_List all env vars the project uses with descriptions but NOT values._
 
 | Variable | Required | Description |
 |----------|----------|-------------|
@@ -143,7 +143,7 @@ Infrastructure configs in `infra/`. One-off scripts in `scripts/`.
 
 ## Boundaries — Never Modify Without Explicit Permission
 
-<!-- List files/directories that should never be modified by the agent autonomously. -->
+_List files/directories that should never be modified by the agent autonomously._
 
 - `.env` and `.env.*` files — managed manually, may contain secrets
 - `*.lock` files — managed by package manager only

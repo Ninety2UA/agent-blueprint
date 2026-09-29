@@ -193,8 +193,6 @@ marketplace = ".claude-plugin/marketplace.json"
 check_triple("plugin.json description", plugin_json, json_get(plugin_json, ["description"]))
 check_triple("marketplace.json plugin description", marketplace,
              json_get(marketplace, ["plugins", 0, "description"]))
-check_triple("templates/CLAUDE.md Plugin-provided line", "templates/CLAUDE.md",
-             rd("templates/CLAUDE.md"))
 _idx = rd("index.html")
 check_triple("index.html meta/og description", "index.html",
              _idx.split('id="whats-new"')[0] if _idx is not None else None, min_matches=2)
@@ -321,7 +319,7 @@ if promo is not None:
                             % (promo_rel, lab, GT[key], num))
 
 claude_md = rd("AGENTS.md")  # canonical; CLAUDE.md is a symlink to it
-check_single("AGENTS.md architecture", "AGENTS.md", claude_md, r"(\d+) skills \(slash commands", "skills")
+check_single("AGENTS.md layout", "AGENTS.md", claude_md, r"(\d+) skills, each a folder", "skills")
 no_agent_count("AGENTS.md", "AGENTS.md", claude_md)
 
 readme = rd("README.md")

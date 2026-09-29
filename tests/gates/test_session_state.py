@@ -7,6 +7,7 @@ import unittest
 from gate_helpers import REPO
 
 SKILLS = os.path.join(REPO, "skills")
+ASSETS = os.path.join(SKILLS, "ab-project-start", "assets")   # the scaffold; dotfiles are stored without the dot
 # .claude/ paths a skill may still name: the host's own folders and the v3 install it migrates.
 HOST_OWNED = ("skills", "agents", "commands", "hooks", "plugins", "settings.json", "settings.local.json")
 CLAUDE_PATH = re.compile(r"\.claude/([A-Za-z0-9_.*<>{}-]+)")
@@ -55,7 +56,7 @@ class SessionState(unittest.TestCase):
         self.assertNotIn("CLAUDE.md", checkpoint)
 
     def test_status_template_has_the_section(self):
-        text = read(os.path.join(REPO, "templates", "docs", "context", "STATUS.md"))
+        text = read(os.path.join(ASSETS, "docs", "context", "STATUS.md"))
         self.assertIn("## Session Continuity", text)
         self.assertIn("**Start here:**", text)
         self.assertNotIn("<!--", text)
@@ -74,7 +75,7 @@ class SessionState(unittest.TestCase):
         self.assertIn("Never delete a run file", text)
 
     def test_agent_blueprint_gitignore(self):
-        lines = read(os.path.join(REPO, "templates", ".agent-blueprint", ".gitignore")).split("\n")
+        lines = read(os.path.join(ASSETS, "agent-blueprint", "gitignore")).split("\n")
         entries = [l.strip() for l in lines if l.strip() and not l.startswith("#")]
         for ignored in ("run/", "team/"):
             self.assertIn(ignored, entries)

@@ -6,7 +6,7 @@ Plans are created by the `ab-writing-plans` skill after a brainstorming session 
 
 ## Lifecycle
 
-1. **Created** by `/ab-brainstorming` → ab-writing-plans skill
+1. **Created** by the ab-brainstorming skill, then the ab-writing-plans skill
 2. **Executed** by ab-executing-plans skill or ab-subagent-driven-development skill
 3. **Updated** during execution as tasks are completed or deviations occur
 4. **Completed** when all tasks are done — add completion note at top

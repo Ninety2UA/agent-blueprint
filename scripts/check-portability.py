@@ -280,8 +280,7 @@ def prose_files(skill_dir):
 
 def instruction_files(repo):
     """The root instructions file and the template ones a scaffold ships."""
-    cands = ["AGENTS.md", "templates/AGENTS.md", "templates/CLAUDE.md",
-             "skills/ab-project-start/assets/AGENTS.md", "skills/ab-project-start/assets/CLAUDE.md"]
+    cands = ["AGENTS.md", "skills/ab-project-start/assets/AGENTS.md", "skills/ab-project-start/assets/CLAUDE.md"]
     out = []
     for c in cands:
         p = os.path.join(repo, c)
@@ -398,7 +397,7 @@ def check_hermes(paths, add):
 
 def check_instruction_length(repo, add):
     for path in instruction_files(repo):
-        if os.path.basename(path) != "AGENTS.md" and not path.endswith("templates/CLAUDE.md"):
+        if os.path.basename(path) != "AGENTS.md":
             continue
         n = len(read(path).splitlines())
         if n > INSTRUCTIONS_LINE_CAP:
