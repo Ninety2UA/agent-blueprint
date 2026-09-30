@@ -2,7 +2,7 @@
 name: ab-brainstorming
 description: "Turns an idea into an approved design before any code is written: settles what the repository answers, challenges the premise, asks the remaining questions one at a time, compares two or three approaches, presents the design in sections for approval, then saves it and hands off to ab-writing-plans. Use when the user wants to brainstorm or design a change, or when work involves design decisions, several viable approaches or three or more files, including when the user jumps straight to code on such work. Not for a trivial change under three files with one obvious approach (ab-quick-fix), or for recording decisions without exploring alternatives (ab-discuss)."
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Brainstorming Ideas Into Designs

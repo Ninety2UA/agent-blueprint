@@ -2,7 +2,7 @@
 name: ab-finishing-a-development-branch
 description: "Finishes a development branch whose work is done: runs the tests, has a read-only helper audit each plan item against the diff, offers to merge locally, push and open a PR, or keep the branch, and carries out the choice; discarding needs an explicit request and typed confirmation. Use when implementation is complete and tests pass, or the user says the work is done or ready to merge, or asks what now. Not for creating a PR alone (use ab-pr-workflow), or while work is in progress or tests fail."
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Finishing a Development Branch

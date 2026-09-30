@@ -3,7 +3,7 @@ name: ab-review-swarm
 description: "Reviews a change with specialized reviewers in parallel (quality, simplicity and tests always; security, performance, conventions, frontend, architecture, data and schema as the diff calls for), validates the findings and merges them into one prioritized P1/P2/P3 report. Use when a change is large (5+ files, several concerns, crossing modules) or consequential at any size (auth, money, data, a public contract, silent failures), before a production ship or major merge, or when asked for a full or multi-perspective review. Not for a quick single-perspective review of a small change (use ab-requesting-code-review)."
 argument-hint: "[optional: files or path to review] [--pr] [--full]"
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Review Swarm — Multi-Agent Parallel Review

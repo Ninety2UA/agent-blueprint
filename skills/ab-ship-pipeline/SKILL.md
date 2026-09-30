@@ -3,7 +3,7 @@ name: ab-ship-pipeline
 description: "Ships a feature end to end with no checkpoints: recorded assumptions, a verified and deepened plan, execution through ab-orchestrate, review until it converges, then commits and a PR body, tracked in .agent-blueprint/run/state.json. Use when the user wants a well-defined feature built hands-off, fire and forget, through to a pull request. Not for work the user approves stage by stage (ab-build-pipeline) or a change under three files (ab-quick-fix)."
 argument-hint: "<feature description> [--swarm] [--iterations N] [--convergence fast|deep|perfect] [--deploy] [--external]"
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Ship Pipeline — Autonomous End-to-End

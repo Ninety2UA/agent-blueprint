@@ -2,7 +2,7 @@
 name: ab-test-driven-development
 description: "Drives new code from tests with red-green-refactor: write one failing test, watch it fail for the expected reason, write the least code that passes, run the whole suite, then refactor while green. Code written before its test is deleted and rewritten from the test. Use when implementing a feature, fixing a bug, refactoring or changing behavior, before any implementation code and whether or not the user mentions tests. Not for backfilling tests on existing code that is not being changed (use ab-add-tests)."
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Test-Driven Development (TDD)

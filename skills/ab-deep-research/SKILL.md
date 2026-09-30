@@ -3,7 +3,7 @@ name: ab-deep-research
 description: "Researches a topic before planning: five helpers run in parallel (past learnings in docs/solutions/ and docs/research/, framework docs for the installed versions, industry best practices, git history, and a map of the code the change touches), and a synthesizer merges them into one brief in docs/research/ with consensus, unique insights, contradictions, gaps and a recommended approach. Use when planning or building in unfamiliar code or technology, before an architectural decision, major refactor or migration, when onboarding to an area of the codebase, or when the user asks to research, investigate or learn best practices before building. Not for a small, well-understood change (ab-quick-fix), debugging a failure (ab-systematic-debugging) or enriching an existing plan (ab-deepen-plan)."
 argument-hint: "<topic or feature to research>"
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Deep Research — Multi-Agent Parallel Research

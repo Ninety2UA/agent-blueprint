@@ -2,7 +2,7 @@
 name: ab-autonomous-loop
 description: "Runs a plan's tasks one after another with no human checkpoints: do the next unchecked task, verify it, tick it and commit, retry failures after a written reflection, and stop on a fatal error, a circuit breaker, a risk score or a hard cap. Often started by the pipeline skills. Use when a plan of mostly sequential tasks should run to the end unattended, or the user says to keep going until all of it is done. Not for review checkpoints between batches (ab-executing-plans) or tasks that can run in parallel (ab-orchestrate)."
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Autonomous Loop

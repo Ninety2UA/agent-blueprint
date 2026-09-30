@@ -2,7 +2,7 @@
 name: ab-executing-plans
 description: "Executes a written plan in this session in batches of three tasks: each task is followed step by step, verified, committed and ticked in a progress file; each batch ends with a report and a checkpoint for the user's feedback; a whole-branch review closes the run. Reads plans that use v3 skill names. Use when the user wants to work through a plan with human review between batches. Not for parallel or team work (ab-orchestrate) or fully autonomous runs (ab-autonomous-loop)."
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Executing Plans

@@ -3,7 +3,7 @@ name: ab-orchestrate
 description: "Runs a plan as team work: a task ledger, dependency-ordered waves of parallel helpers with file ownership or worktrees, integration checks between waves, lead-only commits, then review and sign-off. Works in every tool: helpers where the tool has them, one task after another where it does not, and Claude Code Agent Teams or Codex multi_agent_v2 when the user has switched them on. Use when a plan has four or more tasks, some of them independent, or when the user asks for parallel, team, wave or collaborative execution. Not for a sequential plan with review checkpoints between batches (ab-executing-plans) or a change under three files (ab-quick-fix)."
 argument-hint: "[path to plan file] [--no-review] [--wave-size N] [--iterations N] [--convergence fast|deep|perfect]"
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Orchestrate — Team Work in Waves

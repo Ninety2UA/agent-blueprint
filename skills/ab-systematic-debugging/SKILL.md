@@ -3,7 +3,7 @@ name: ab-systematic-debugging
 description: "Finds a bug's root cause before any fix: classifies the error, reproduces it, traces the bad value to its source, tests one hypothesis at a time against evidence tiers, fixes test-first, and questions the design after three failed fixes. Use when there is a bug, error, test failure, crash, regression, flaky test or unexpected behavior, even when the user wants to jump straight to a fix or says 'just change X to Y' without knowing why it broke. Not for new features (use ab-brainstorming) or tests for working code (use ab-add-tests)."
 argument-hint: "[describe the issue]"
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Systematic Debugging

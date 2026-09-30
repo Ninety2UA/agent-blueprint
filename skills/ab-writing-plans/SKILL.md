@@ -2,7 +2,7 @@
 name: ab-writing-plans
 description: "Turns an approved design or a clear spec into an implementation plan that records decisions, not code: exact file paths, each test and what it asserts, signatures and spec values, dependency order, verification commands, boundaries and a review focus, saved for review before anything runs. Use when an approved design or spec needs breaking into bite-sized executable tasks, when the user asks for a plan or implementation steps, or once ab-brainstorming has an approved design. Not for work with no design yet (ab-brainstorming), executing a plan (ab-executing-plans) or enriching one with research (ab-deepen-plan)."
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Writing Plans

@@ -2,7 +2,7 @@
 name: ab-subagent-driven-development
 description: "Runs a written plan in this session one task at a time: a fresh helper implements each task from its full text, a spec-compliance reviewer and then a code-quality reviewer check it, fix rounds repeat until both pass, and a final review covers the whole implementation. Use when a plan's tasks are mostly independent and you want clean context per task without leaving this session; usually invoked by another skill. Not for tightly coupled tasks that share state (execute those in order yourself), a separate session with human checkpoints (ab-executing-plans), or parallel team work (ab-orchestrate)."
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Subagent-Driven Development

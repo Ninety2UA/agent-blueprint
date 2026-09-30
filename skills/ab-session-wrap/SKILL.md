@@ -3,7 +3,7 @@ name: ab-session-wrap
 description: "Ends a work session from git history and the file system: shows a summary for the user to confirm, rewrites the Session Continuity section of docs/context/STATUS.md, records durable learnings, updates the status tables, goals, backlog, plans, specs and ADRs the session touched, and commits the docs. Documentation only. Use when the user is wrapping up or ending the session, and suggest it when a session ends without one. Not for a mid-session checkpoint or pause (use ab-pause-checkpoint)."
 argument-hint: "[optional: focus area]"
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Session Wrap-Up

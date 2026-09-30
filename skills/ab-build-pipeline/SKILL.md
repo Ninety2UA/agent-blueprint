@@ -3,7 +3,7 @@ name: ab-build-pipeline
 description: "Runs a feature through eight supervised stages (discuss, brainstorm, plan, execute, review, verify, optional deploy check, knowledge capture) with a checkpoint after each where the user approves, changes or stops; research and plan-check helpers feed the plan, and complex plans run as team waves. Use when building a non-trivial feature or multi-file change with oversight or approval between steps. Not for hands-off runs with no checkpoints (ab-ship-pipeline) or a change under three files with an obvious approach (ab-quick-fix)."
 argument-hint: "<feature description> [--quick] [--iterate N] [--deploy] [--team]"
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Build Pipeline — Full-Cycle Development

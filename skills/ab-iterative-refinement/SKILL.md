@@ -2,7 +2,7 @@
 name: ab-iterative-refinement
 description: "Runs review-fix-review cycles on a change until quality converges: a deslop pass, then per iteration an ab-review-swarm review, findings routed by tier, fixes through ab-resolve-in-parallel, tests, build and a commit, until the convergence mode is met (fast: no P1, deep: no P1 or P2, perfect: none) or max_iterations (default 3) runs out. Use when ab-ship-pipeline or ab-build-pipeline reaches review, or when the user wants code polished past a single review pass. Not for a trivial change (one ab-review-swarm pass) or findings that need an architecture change (re-plan)."
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Iterative Refinement
