@@ -28,6 +28,8 @@ class SessionState(unittest.TestCase):
         for path in glob.glob(os.path.join(SKILLS, "*", "**", "*.md"), recursive=True):
             if "/ab-writing-skills/examples/" in path:   # examples of host skill folders, not working folders
                 continue
+            if "/ab-migrate/" in path:   # names the v3 files it cleans out of a project
+                continue
             for m in CLAUDE_PATH.finditer(read(path)):
                 if not m.group(1).startswith(HOST_OWNED):
                     hits.append("%s: .claude/%s" % (os.path.relpath(path, REPO), m.group(1)))

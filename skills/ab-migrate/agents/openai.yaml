@@ -1,0 +1,3 @@
+# Codex: this skill runs only when the user asks for it by name (KTD12).
+policy:
+  allow_implicit_invocation: false

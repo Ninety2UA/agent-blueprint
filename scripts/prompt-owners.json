@@ -78,7 +78,8 @@
     {
       "owner": "docs/upgrade/v4-skill-names.tsv",
       "copies": [
-        "skills/ab-executing-plans/references/v4-skill-names.tsv"
+        "skills/ab-executing-plans/references/v4-skill-names.tsv",
+        "skills/ab-migrate/references/v4-skill-names.tsv"
       ]
     }
   ]

@@ -23,7 +23,7 @@ health-check	ab-health-check
 ideation	ab-ideation	
 iterative-refinement	ab-iterative-refinement	
 knowledge-compounding	ab-knowledge-compounding	
-migrate-to-plugin	ab-migrate-to-plugin	
+migrate-to-plugin	ab-migrate	renamed; cleans v3 installs out of a project and is manual-only
 migration-planning	ab-migration-planning	
 orchestrate	ab-orchestrate	
 pause-checkpoint	ab-pause-checkpoint	
