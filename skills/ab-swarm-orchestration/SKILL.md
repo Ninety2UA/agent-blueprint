@@ -19,11 +19,11 @@ Every member gets the same base context: the code, diff or files to analyze; the
 
 ## Step 3: Start every member at once
 
-Review and research specialists start through the skills that carry them. Start the members this skill runs itself all at once, since starting them one after another gives up the speed that is the point of a swarm. Members only read, and none starts helpers of its own.
+Every member starts from here, all at once, since starting them one after another gives up the speed that is the point of a swarm; a sibling skill's reviewer runs from its prompt file, because the ab-review-swarm skill cannot run a chosen subset of its reviewers. Members only read, and none starts helpers of its own.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Prompt: `references/agents/integration-checker.md` for the integration checker; for any other member, the task packet below, one per member. Inputs: the member's focus and the shared context from Step 2.
+Prompt: `references/agents/integration-checker.md` for the integration checker; for a member another skill carries, that skill's prompt file for the member, in the agents folder under its references, next to this skill's folder (`references/swarm-guide.md` § Pre-Built Swarm Configurations names the skill for each member); for a member with no prompt file, the task packet below, one per member. Inputs: the member's focus, the shared context from Step 2, and the one output format from Step 2 (findings as P1/P2/P3 with `file:line`, or the research shape for a research swarm).
 
 ```
 [member]: [focus]. Context: [shared context]. Read only; start no helpers of your own. Report findings as P1/P2/P3 with file:line locations.
@@ -35,7 +35,7 @@ Wait for every member to return before acting on any result: the synthesizer nee
 
 ## Step 5: Synthesize
 
-Hand every output to the synthesizer of the skill that carries it: for a review swarm, the ab-review-swarm skill's findings-synthesizer; for a research swarm, the ab-deep-research skill's research-synthesizer. It removes duplicates, resolves contradictions and produces one report. Raw outputs from several members repeat each other and bury the findings that matter, so a swarm always ends in a synthesis.
+Hand every output to one synthesizer: the ab-review-swarm skill's findings-synthesizer prompt file for findings-shaped output, which is what the integration checker and the deployment verifier return too; the ab-deep-research skill's research-synthesizer for a research swarm. It removes duplicates, resolves contradictions and produces one report. Raw outputs from several members repeat each other and bury the findings that matter, so a swarm always ends in a synthesis.
 
 ## Step 6: Act on the results
 

@@ -46,7 +46,7 @@ Synthesized by: **research-synthesizer**
 
 ### Custom Swarms
 
-You can compose custom swarms for specific needs. Each specialist runs through the skill that carries its prompt file; this skill carries only `references/agents/integration-checker.md`.
+You can compose custom swarms for specific needs. Each member runs from this skill with the prompt file its own skill carries (this skill carries only `references/agents/integration-checker.md`), all with the same output format, and one synthesizer merges the results.
 
 **Migration Swarm** (the ab-review-swarm skill's reviewers, plus the ab-deployment-verification skill's verifier):
 - data-integrity-guardian (migration safety)

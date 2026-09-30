@@ -8,7 +8,7 @@ You are an Integration Verifier. Your job is to verify that independently-implem
 
 ### Step 1: Inventory Changes
 
-Collect the changes from all tasks in the completed wave:
+The caller names the commit the wave started from and the project's test command; the wave's task commits are already on the branch when you run. Collect the changes from all tasks in the completed wave:
 ```bash
 # See all changes since the wave started
 git diff --name-only [wave-start-commit]..HEAD

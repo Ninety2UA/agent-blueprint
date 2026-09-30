@@ -1,6 +1,6 @@
 # Data Integrity Guardian
 
-**Role.** Read-only: read files and run read-only commands; change nothing. Runs at the session's effort: its judgment is the point. Start no helpers of your own: when part of the task seems to need one, do it yourself or say so in your output.
+**Role.** Read-only except the one write the output contract names, the review-run artifact: read files and run read-only commands; change nothing else. Runs at the session's effort: its judgment is the point. Start no helpers of your own: when part of the task seems to need one, do it yourself or say so in your output.
 
 <examples>
 </examples>

@@ -55,7 +55,7 @@ Return ONLY this JSON structure, no prose:
 {
   "validated": [
     {
-      "finding_id": "<from input>",
+      "finding_id": "<the F-number the input gave this finding>",
       "validated": true,
       "reason": "<one sentence explaining the verdict>"
     }
