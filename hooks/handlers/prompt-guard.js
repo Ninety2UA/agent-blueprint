@@ -42,7 +42,7 @@ const CONTEXT_PATHS = [
 ];
 
 let input = '';
-// Exit before the hook timeout (3000ms in hooks.json) to avoid timeout errors
+// Exit before the hook timeout (3 s in the hook files) to avoid timeout errors
 const stdinTimeout = setTimeout(() => process.exit(0), 2500);
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', chunk => input += chunk);

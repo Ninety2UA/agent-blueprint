@@ -1,0 +1,16 @@
+{
+  "name": "agent-blueprint",
+  "version": "3.8.0",
+  "private": true,
+  "description": "Skills, helper prompts and pipelines for AI-assisted engineering, portable across eight coding CLIs.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ninety2UA/agent-blueprint.git"
+  },
+  "pi": {
+    "skills": [
+      "./skills"
+    ]
+  }
+}

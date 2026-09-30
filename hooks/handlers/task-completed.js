@@ -9,7 +9,7 @@
  *   0 — Allow task completion
  *   2 — Prevent completion with feedback (issues found)
  *
- * Part of ab-orchestrate's Claude Code Agent Teams extra; registered in hooks.json.
+ * Part of ab-orchestrate's Claude Code Agent Teams extra; registered in hooks/claude-code.json.
  */
 
 const { execFileSync } = require('child_process');

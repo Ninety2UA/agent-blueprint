@@ -28,65 +28,47 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Test legacy install (dry-run)
+      - name: Dry run reports absent tools
         run: |
-          bash install.sh --local --legacy --dry-run /tmp/blueprint-test 2>&1 | tee /tmp/dry-run.log
-          grep -q "Dry run complete" /tmp/dry-run.log
-
-      - name: Run legacy install
-        run: |
-          bash install.sh --local --legacy --force /tmp/blueprint-test
-
-      - name: Verify installed files exist
-        run: |
+          set +e
+          bash install.sh --dry-run 2>&1 | tee /tmp/dry-run.log
           set -e
-          echo "Checking core files..."
+          grep -q "not installed" /tmp/dry-run.log
+          grep -q -- "--copy-dir" /tmp/dry-run.log
+
+      - name: Copy install into a skills folder
+        run: |
+          bash install.sh --copy-dir /tmp/ab-skills
+          SKILLS=$(find /tmp/ab-skills -mindepth 2 -maxdepth 2 -name 'SKILL.md' | wc -l | tr -d ' ')
+          echo "Skills: $SKILLS"
+          test "$SKILLS" -ge 53 || { echo "Expected >= 53 skills, got $SKILLS"; exit 1; }
+          test -f /tmp/ab-skills/.agent-blueprint-install.json
+          grep -q '"ab-quick-fix"' /tmp/ab-skills/.agent-blueprint-install.json
+
+      - name: Scaffold a project
+        run: |
+          bash install.sh --scaffold /tmp/blueprint-test
+          set -e
           test -f /tmp/blueprint-test/AGENTS.md
           test "$(cat /tmp/blueprint-test/CLAUDE.md)" = "@AGENTS.md"
           test -f /tmp/blueprint-test/.agent-blueprint/.gitignore
           test -f /tmp/blueprint-test/BACKLOG.md
           test -f /tmp/blueprint-test/blueprint.local.md
           test -f /tmp/blueprint-test/.gitignore
-
-          echo "Checking .claude/ structure..."
-          test -d /tmp/blueprint-test/.claude/skills
-          test -d /tmp/blueprint-test/.claude/hooks
-
-          # Count installed components
-          SKILLS=$(find /tmp/blueprint-test/.claude/skills -name 'SKILL.md' | wc -l | tr -d ' ')
-
-          echo "Skills: $SKILLS"
-
-          test "$SKILLS" -ge 45 || { echo "Expected >= 45 skills, got $SKILLS"; exit 1; }
-
-          echo "Checking docs/ structure..."
-          test -d /tmp/blueprint-test/docs/context
-          test -d /tmp/blueprint-test/docs/plans
-          test -d /tmp/blueprint-test/docs/specs
-          test -d /tmp/blueprint-test/docs/decisions
-          test -d /tmp/blueprint-test/docs/research
-          test -d /tmp/blueprint-test/docs/solutions
-          test -f /tmp/blueprint-test/docs/solutions/README.md
-
-          echo "Checking placeholder dirs..."
+          for d in context plans specs decisions research solutions; do test -d /tmp/blueprint-test/docs/$d; done
           test -d /tmp/blueprint-test/src
-          test -d /tmp/blueprint-test/tests
-          test -d /tmp/blueprint-test/infra
+          # A second run merges and changes nothing
+          bash install.sh --scaffold /tmp/blueprint-test | tee /tmp/rerun.log
+          grep -q "0 created, 0 merged" /tmp/rerun.log
 
-          echo "Checking legacy install copies only scripts/ship.sh and .claude-plugin/plugin.json..."
-          test -f /tmp/blueprint-test/scripts/ship.sh
-          test "$(ls /tmp/blueprint-test/scripts)" = "ship.sh"
-          test "$(ls /tmp/blueprint-test/.claude-plugin)" = "plugin.json"
-
-          echo "All checks passed!"
-
-      - name: Test --no-overwrite mode
+      - name: Legacy mode is retired
         run: |
-          mkdir -p /tmp/blueprint-nooverwrite
-          echo "ORIGINAL" > /tmp/blueprint-nooverwrite/CLAUDE.md
-          bash install.sh --local --legacy --no-overwrite --force /tmp/blueprint-nooverwrite
-          grep -q "ORIGINAL" /tmp/blueprint-nooverwrite/CLAUDE.md
-          echo "--no-overwrite mode passed!"
+          set +e
+          bash install.sh --legacy /tmp/never 2>&1 | tee /tmp/legacy.log
+          code=${PIPESTATUS[0]}
+          set -e
+          test "$code" -eq 2
+          grep -q "ab-migrate" /tmp/legacy.log
 
       - name: Verify plugin structure
         run: |
@@ -105,7 +87,9 @@ jobs:
           test -d skills
           test ! -e agents   # v4: helper prompts live in skills/*/references/agents/
           test -d hooks
-          test -f hooks/hooks.json
+          test -f hooks/claude-code.json
+          test -f hooks/codex.json
+          test ! -e hooks/hooks.json   # Grok loads that conventional path from any plugin (KTD11)
 
           echo "Plugin structure valid!"
 

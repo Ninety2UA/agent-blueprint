@@ -12,7 +12,8 @@ Each unit of work should make the next one easier, not harder. The patterns set 
 .claude-plugin/                          # plugin.json and marketplace.json (the repo root is the plugin root)
 skills/                                  # 53 skills, each a folder with SKILL.md, references/, and optional scripts/ and assets/
 skills/ab-project-start/assets/          # The project scaffold: AGENTS.md, CLAUDE.md (@AGENTS.md), docs/, BACKLOG.md
-hooks/hooks.json, hooks/handlers/        # Optional hooks for the hosts that run them
+hooks/claude-code.json, codex.json       # Hook files declared by path in each host's manifest (no hooks/hooks.json: Grok would load it)
+hooks/handlers/                          # The handlers; each exits unless it detects its own host
 scripts/                                 # Gates (check-*.py, check-drift.sh), sync-shared.py, the allowlist, prompt-owners.json
 tests/gates/                             # Unit tests for the gates and the skill contracts
 docs/upgrade/                            # The v3-to-v4 name map and upgrade notes

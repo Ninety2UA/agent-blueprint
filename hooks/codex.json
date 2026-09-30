@@ -1,0 +1,60 @@
+{
+  "description": "Agent Blueprint hooks for Codex CLI: session bootstrap, context monitoring, prompt-injection guard, commit validation and the ship-pipeline Stop guard. Codex has no Read or WebFetch tool, so the read-injection scanner and the fetch cache are absent here; the Agent Teams hooks are Claude Code only.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/hooks/handlers/session-start.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/hooks/handlers/prompt-guard.js\"",
+            "timeout": 3
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/hooks/handlers/validate-commit.js\"",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/hooks/handlers/context-monitor.js\"",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${PLUGIN_ROOT}/hooks/handlers/ship-loop.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

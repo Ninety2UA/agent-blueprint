@@ -49,7 +49,8 @@ REPO_ROOT="$(cd "$REPO_ROOT" && pwd)"
 # The repository root is the plugin root (v4 flattened plugins/<name>/ into it).
 PLUGIN_DIR="$REPO_ROOT"
 SKILLS_DIR="$PLUGIN_DIR/skills"
-HOOKS_JSON="$PLUGIN_DIR/hooks/hooks.json"
+# The hook count is the Claude Code file: it carries every handler (the Codex file is a subset).
+HOOKS_JSON="$PLUGIN_DIR/hooks/claude-code.json"
 
 echo ""
 echo "${BOLD}Drift gate${NC} — $REPO_ROOT"
@@ -57,7 +58,7 @@ echo "${BOLD}Drift gate${NC} — $REPO_ROOT"
 # ── Ground-truth source existence (fail loud, never vacuous) ──
 missing=0
 [[ -d "$SKILLS_DIR" ]] || { fail "required directory missing: skills/";        missing=1; }
-[[ -f "$HOOKS_JSON"  ]] || { fail "required file missing: hooks/hooks.json";    missing=1; }
+[[ -f "$HOOKS_JSON"  ]] || { fail "required file missing: hooks/claude-code.json";    missing=1; }
 if [[ $missing -ne 0 ]]; then
   fail "ground-truth sources missing under $PLUGIN_DIR — treated as drift, not a pass"
   exit 2
@@ -72,7 +73,7 @@ import json, sys
 try:
     data = json.load(open(sys.argv[1], encoding="utf-8"))
 except Exception as exc:                       # noqa: BLE001 - parse failure -> 0 -> loud fail below
-    sys.stderr.write("hooks.json parse error: %s\n" % exc)
+    sys.stderr.write("claude-code.json parse error: %s\n" % exc)
     print(0)
     sys.exit(0)
 count = 0
@@ -145,7 +146,6 @@ def json_get(rel, path):
 # Single-line "N skills ... N hooks" (separator-agnostic, never crosses a digit or newline,
 # so a leftover "N skills, N agents, N hooks" claim does not match and is reported).
 TRIPLE   = re.compile(r"(\d+) skills[^\d\n]+?(\d+) hooks")
-PROVIDES = re.compile(r"Plugin provides:\s*(\d+) skills[^\d\n]+?(\d+) hooks")
 LABELED  = re.compile(r"[├└]──\s*(\d+)\s+(skills|hooks)\b")  # README tree
 # v4 moved agents into skills as helper prompts; no current-state surface may still count them.
 AGENT_COUNT = re.compile(r"\b\d+\+?\s+(?:specialized\s+)?(?:sub)?agents\b|[├└]──\s*\d+\s+agents\b", re.IGNORECASE)
@@ -229,8 +229,7 @@ if idx_html is not None:
         failures.append("index.html: expected >=4 Skills/Hooks count widgets before #whats-new, "
                         "found %d — anchor changed, re-point the gate" % widgets)
 
-check_triple("install.sh 'Plugin provides' summary", "install.sh", rd("install.sh"),
-             min_matches=2, pattern=PROVIDES)
+# install.sh derives its version and skill count from the tree at run time, so it carries no claim to check.
 
 # index.html structural grids (before #whats-new): every skill and helper prompt must
 # be rendered — v3.4.0 added skills/agents that never reached the site grids — and
@@ -341,15 +340,6 @@ version = json_get(plugin_json, ["version"])
 if version is None:
     failures.append("plugin.json version: missing — cannot establish the canonical release version")
 else:
-    install = rd("install.sh")
-    if install is not None:
-        m = re.search(r'^VERSION="([^"]+)"', install, re.MULTILINE)
-        if not m:
-            failures.append('install.sh: VERSION="..." line not found — anchor changed, re-point the gate')
-        elif m.group(1) != version:
-            failures.append("install.sh VERSION: expected %s (matches plugin.json), found %s"
-                            % (version, m.group(1)))
-
     index = rd("index.html")
     if index is not None:
         hero = re.search(r'class="hero__badge">.*?v(\d+\.\d+\.\d+)', index, re.DOTALL)

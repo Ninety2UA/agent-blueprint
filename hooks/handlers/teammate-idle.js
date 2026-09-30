@@ -9,7 +9,7 @@
  *   0 — Allow teammate to go idle (all checks pass)
  *   2 — Send feedback and keep teammate working (issues found)
  *
- * Part of ab-orchestrate's Claude Code Agent Teams extra; registered in hooks.json.
+ * Part of ab-orchestrate's Claude Code Agent Teams extra; registered in hooks/claude-code.json.
  */
 
 const { execFileSync } = require('child_process');
