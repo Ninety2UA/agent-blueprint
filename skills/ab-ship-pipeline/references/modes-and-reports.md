@@ -52,7 +52,7 @@ Report completion in this shape:
 | Requirements | Locked [N] decisions | — |
 | Plan | Written + verified ([N] checker passes) | — |
 | Deepen | Enriched by [N] research helpers | — |
-| Execute | [wave/swarm] — [N] tasks completed | — |
+| Execute | [N] waves — [N] tasks completed | — |
 | Review | [N] iterations, converged at iteration [N] | — |
 | Compound | [captured/skipped] | — |
 | PR | Created: [PR URL], or body in .agent-blueprint/run/pr-body.md for the ship runner to publish | — |

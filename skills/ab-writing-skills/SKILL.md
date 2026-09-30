@@ -1,6 +1,6 @@
 ---
 name: ab-writing-skills
-description: "Writes, edits and tests skills that load and run in every tool Agent Blueprint supports: agentskills frontmatter, a SKILL.md under 8,000 bytes with detail in references/, capability snippets for host-dependent steps, prompt files for helpers, and a baseline test before the skill is written. Use when creating or editing a skill, rewriting its description or frontmatter, cutting it to size, or finding out why it does not trigger."
+description: "Writes, edits and tests skills that load and run in every tool Agent Blueprint supports: agentskills frontmatter, a SKILL.md under 8,000 bytes with detail in references/, capability snippets for host-dependent steps, prompt files for helpers, and a baseline test before the skill is written. Use when creating or editing a skill, rewriting its description or frontmatter, cutting it to size, or finding out why it does not trigger. Not for a project's own conventions (the project instructions file) or a rule a script can check (write the check)."
 ---
 
 # Writing Skills
@@ -19,9 +19,9 @@ For each host-dependent step, name the capability, then what a finished step ret
 
 ## Frontmatter and description
 
-- Keys: the agentskills fields plus `argument-hint` and `disable-model-invocation`. No `effort` or `model`: the user chooses both.
+- Keys: the agentskills fields plus `argument-hint` and `disable-model-invocation`; pipeline skills add `metadata.version`, equal to the release. No `effort` or `model`: the user chooses both.
 - `name`: `ab-` plus lowercase words joined by hyphens, equal to the folder name.
-- `description`, at most 1,024 characters: lead with what the skill does and how, then "Use when ..." with the situations that call for it. Tools that choose from a short catalog need the mechanism first. Keep it distinct from sibling skills; `scripts/check-skill-collisions.py` fails near-duplicates.
+- `description`, at most 1,024 characters: lead with what the skill does and how, then "Use when ..." with the situations that call for it, then "Not for ..." naming the sibling skill for each excluded case. Tools that choose from a short catalog need the mechanism first. Keep it distinct from sibling skills; the repository's `scripts/check-skill-collisions.py` fails near-duplicates.
 - A skill only the user should start is manual-only: `disable-model-invocation: true` plus `agents/openai.yaml` turning implicit invocation off, a narrow description, and no other skill naming it.
 
 Examples of good and weak descriptions: `references/cso-examples.md`.
@@ -37,7 +37,7 @@ Every rule, with its reason and gate id: `references/portable-authoring.md`.
 
 ## Capability snippets
 
-Eight steps depend on what the host can do, or must run the same way in every tool: **Helper step.**, **Asking the user.**, **Tracking tasks.**, **Lower effort.**, **Working folder.**, **Provenance record.**, **No-commit mode.** and **Bundled scripts.** Each has one fixed wording in `references/capability-snippets.md`. Paste the snippet as a paragraph of its own, byte for byte, and put the site's details (prompt file, inputs, default) in the next paragraph. Edit only the owner, then run `python3 scripts/sync-shared.py` to rewrite the copies.
+Eight steps depend on what the host can do, or must run the same way in every tool: **Helper step.**, **Asking the user.**, **Tracking tasks.**, **Lower effort.**, **Working folder.**, **Provenance record.**, **No-commit mode.** and **Bundled scripts.** Each has one fixed wording in `references/capability-snippets.md`. Paste the snippet as a paragraph of its own, byte for byte, and put the site's details (prompt file, inputs, default) in the next paragraph. Edit only the owner, then run the repository's `python3 scripts/sync-shared.py` to rewrite the copies.
 
 ## Helpers and prompt files
 
@@ -53,11 +53,11 @@ Watch a baseline fail first. Without seeing what an agent does with no skill, yo
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-The helper's prompt is the pressure scenario you wrote, following `testing-skills-with-subagents.md`; its input is whether the skill is loaded.
+No fixed prompt file here: the prompt is the pressure scenario you write following `testing-skills-with-subagents.md` in this skill's folder, its input is whether the skill under test is loaded, and it returns every choice and rationalization word for word. Without a helper the Red run proves nothing (you would test yourself): say so and leave the box unticked.
 
 1. **Red.** Run the pressure scenarios without the skill. Record the choices and the rationalizations, word for word.
 2. **Green.** Write the smallest skill that answers those failures. Run the same scenarios with it; the agent now complies.
-3. **Refactor.** Each new rationalization gets a counter and a rerun, until the scenarios pass.
+3. **Refactor.** Each new rationalization gets a counter and a rerun, until the scenarios pass. Stop after three rounds and report what survives.
 
 Test shapes by skill type, bulletproofing a discipline skill, and the rationalizations people use to skip testing: `references/testing-and-bulletproofing.md`. To measure trigger reliability, a host's own evaluation runner helps where one exists (Claude Code: `claude plugin eval`; same reference, § Native runner).
 

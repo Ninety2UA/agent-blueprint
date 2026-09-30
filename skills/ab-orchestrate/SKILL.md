@@ -20,10 +20,10 @@ The same run works everywhere. Where the tool can start helpers, a wave's worker
 
 ## Parse Arguments
 
-- **Plan file:** Path from arguments (if not provided, look for the most recent plan in `docs/plans/`)
+- **Plan file:** Path from arguments; otherwise the newest file in `docs/plans/`, named in the strategy announcement so a supervised user can redirect. If there is none, stop and say the ab-writing-plans skill comes first.
 - **`--no-review`:** Skip the built-in review and sign-off (used when called from ab-ship-pipeline or ab-build-pipeline, which handle review themselves)
 - **`--wave-size N`:** Most workers per wave (default 4). The host's limit in `references/host-limits.tsv` can lower it, never raise it.
-- **`--iterations N`:** Max review-improve iterations (default: 1 = single pass, max: 10). When > 1, the review uses the ab-iterative-refinement skill instead of a single ab-review-swarm pass.
+- **`--iterations N`:** Max review-improve iterations (default 1, max 10). At 1 the review is one ab-review-swarm pass plus up to three fix-and-recheck rounds (coordinator § 4c); above 1 it runs through the ab-iterative-refinement skill instead.
 - **`--convergence fast|deep|perfect`:** Review convergence mode (default: `fast`). `fast` = exit when P1=0, `deep` = exit when P1+P2=0, `perfect` = exit when all findings=0. Only applies when `--iterations` > 1.
 
 ## Coordinate
@@ -37,7 +37,7 @@ Read `references/coordinator.md` and follow it with these settings:
 - Review mode: [with-review | no-review]
 - Review iterations: [N] (default 1)
 - Review convergence: [fast|deep|perfect] (default fast)
-- Autonomous mode: [autonomous if called from ab-ship-pipeline, supervised otherwise]
+- Autonomous mode: [autonomous when the calling skill says so (ab-ship-pipeline does) or `AGENT_BLUEPRINT_RUNNER` is `1`; supervised otherwise]
 - Project conventions: docs/context/CONVENTIONS.md; agent config: blueprint.local.md
 
 The run: read the plan completely, open the ledger, and build the first wave. For each wave, start the workers, integrate each finished task (checks, commit, ledger), and run the integration verifier. After the last wave, run tests + build + lint. Then:
@@ -67,6 +67,6 @@ When the coordinator's report is ready:
 
 When called standalone, orchestrate is **self-contained**: execution + review + sign-off, all handled by this session following the coordinator instructions. When called from a pipeline, the pipeline handles review to avoid double work.
 
-## When to reach for a native workflow instead
+## Native workflows
 
-For large autonomous fan-outs, users can opt into a native dynamic workflow ("use a workflow" / ultracode) instead of wave orchestration. The facts that decide between the two: the Workflow tool is available on all paid plans, the API, and Bedrock/Vertex/Foundry, with Pro enabling it in `/config`; it runs in `claude -p` and the Agent SDK when a `Workflow` allow rule, auto or bypass mode, or a PreToolUse hook approves it; it can be disabled per user (`disableWorkflows`, `CLAUDE_CODE_DISABLE_WORKFLOWS=1`) and org-wide; its default size guideline is `medium` (under 10 agents from CLI 2.1.271, `workflowSizeGuideline`), and Pro defaults to `small` (under 5); it runs 16 agents concurrently by default, adjustable from 1 to 256 with `CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS`, and up to 1,000 per run; in interactive subscription sessions a run pauses at a usage limit and resumes after the reset (not in `-p`, the SDK, or teammates); ultracode sessions also exempt Agent-tool subagents from the 20-concurrent subagent cap; and it takes no mid-run user input, so any sign-off between stages means one workflow per stage. Wave orchestration stays the ungated, portable default: it assumes no specific CLI floor, no paid plan, and keeps working where the Workflow tool is disabled per-user or org-wide. No core pipeline depends on the Workflow tool, so reaching for a native workflow is a deliberate opt-in for scale — not a replacement.
+On Claude Code a user may opt into a native dynamic workflow for a large autonomous fan-out instead of waves; `references/native-workflow.md` has the facts that decide between the two. Waves stay the ungated, portable default, and no pipeline depends on the Workflow tool.

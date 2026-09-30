@@ -35,7 +35,7 @@ Everything that is not a flag is the feature description. The flags are in `refe
 
 ### Stage 0: Initialize Loop & Detect Continuation
 
-Ship only a feature: route the request with `references/stages.md` § Intake, then run `references/stages.md` § Continuation checks, and skip to the stage that needs work. At an `iteration` of 20 or more, stop before Stage 1 as `blocked`, the ceiling as `reason`, and report what was completed and what failed; state.json keeps the count, so a deliberate restart starts from an empty `.agent-blueprint/run/`. The ceiling is fixed; the ship runner's limit is the user's knob below it.
+Ship only a feature: route the request with `references/stages.md` § Intake, then run `references/stages.md` § Continuation checks, and skip to the stage that needs work. At an `iteration` of 20 or more, stop before Stage 1 as `blocked`, the ceiling as `reason`, and report what was completed and what failed; state.json keeps the count; only the runner or the user clears `.agent-blueprint/run/` for a restart, never this skill. The ceiling is fixed; the runner's limit is the user's knob below it.
 
 ### Stage 1: Requirements (Auto-Discuss)
 
@@ -54,13 +54,13 @@ Invoke the ab-deepen-plan skill on the plan file.
 
 ### Stage 4: Execute
 
-Invoke the ab-orchestrate skill with the plan file and `--no-review` flag, in both modes (with or without `--swarm`). It needs no user approval, since plan-checker verified the plan; review is Stage 5's job.
+Invoke the ab-orchestrate skill with the plan file, the `--no-review` flag and autonomous mode, in both modes (with or without `--swarm`). It needs no user approval, since plan-checker verified the plan; review is Stage 5's job. If its report shows a task not done or a failed integration, stop as `blocked` naming them: partial work is not reviewed.
 
 ### Stage 5: Iterative Review
 
 **No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
 
-Invoke the ab-iterative-refinement skill (with `--swarm`, alongside browser testing: `references/modes-and-reports.md` § Swarm-mode review), passing `max_iterations` (`--iterations`, default 3), `convergence` (`--convergence`, default `fast`), `scope` (this branch vs main, `git diff main...HEAD`, or in no-commit mode the working tree) and earlier rounds' Skip and Defer decisions, so declined findings stay declined (ab-iterative-refinement Step 2a).
+Invoke the ab-iterative-refinement skill (with `--swarm`, alongside browser testing: `references/modes-and-reports.md` § Swarm-mode review), passing `max_iterations` (`--iterations`, default 3), `convergence` (`--convergence`, default `fast`), `scope` (this branch against its merge base with the default branch, or in no-commit mode the working tree) and earlier rounds' Skip and Defer decisions, so declined findings stay declined (ab-iterative-refinement Step 2a).
 
 If it ends without converging (P1 > 0 for `fast`, P1+P2 > 0 for `deep`, any finding for `perfect`), stop as `blocked`: "Review found unresolved critical issues after [N] iterations. Use the ab-build-pipeline skill to address manually." Write no PR body: a PR claims the work is ready.
 
@@ -70,7 +70,7 @@ If the work solved a non-trivial problem, invoke the ab-knowledge-compounding sk
 
 ### Stage 7: Ship It
 
-1. **Commit** `feat(<scope>): <description>` (in no-commit mode, into `commit-msg.md`).
+1. **Commit** what is still uncommitted as `feat(<scope>): <description>` (in no-commit mode, into `commit-msg.md`).
 2. **PR body.** Write it to `.agent-blueprint/run/pr-body.md`, the one path the runner publishes, per `references/stages.md` § PR body. A blocking plan audit stops the run as `blocked`, with nothing published.
 3. **Deploy check** (with `--deploy`): `references/stages.md` § Deploy check.
 4. **Finish.** Driver `runner`: with the commits (or `commit-msg.md`) and `pr-body.md` in place, set `done`; the runner scans for secrets, pushes and opens the PR. Driver `interactive`: scan the outgoing range and `pr-body.md` for secrets, then publish, per `references/stages.md` § Publish; set `done` after.

@@ -94,4 +94,4 @@ The lead alone integrates, commits and runs the authoritative tests. A helper's 
 
 ## Resuming
 
-The ledger is the record of the run. A new session, in this tool or another, continues from it: it reads the ledger, treats `running` tasks with no integrated commit as `pending`, and builds the next wave. When the last wave passes, set the run's status to `done`. Never delete the ledger or its folder; set the status instead.
+The ledger is the record of the run. A new session, in this tool or another, continues from it: it reads the ledger, treats `running` tasks with no integrated commit as `pending`, and builds the next wave. When the last wave passes, the coordinator closes the ledger (`references/coordinator.md` § Phase 6): `done`, or `blocked` with the reason. Never delete the ledger or its folder; set the status instead.

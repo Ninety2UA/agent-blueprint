@@ -63,7 +63,7 @@ Checkpoint: the user approves the plan. Default when nobody answers: the plan as
 
 **No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
 
-This covers the skill Stage 4 runs, the Stage 5 fixes and the Stage 5 review.
+No-commit mode covers the skill Stage 4 runs, the Stage 5 fixes and the Stage 5 review.
 
 ### Stage 5: Review (Quality Check)
 
@@ -85,7 +85,7 @@ If the work solved a non-trivial problem (a hard bug, a framework gotcha, an arc
 
 - Fix or report a failed stage; never move past it, since later stages build on it.
 - Use the ab-systematic-debugging skill for bugs during execution.
-- If review finds critical issues, return to Stage 4 to fix them before Stage 6.
+- If a review finding needs a plan change, return to Stage 4 and take a fresh checkpoint; otherwise Stage 5 fixes it in place before Stage 6.
 - Decide or ask per the decision boundary in ab-executing-plans: a must-ask category is a blocker here (this pipeline has checkpoints), a decision you can detect and roll back is decided and recorded, and everything else is asked at a checkpoint with two or three options, the recommended one as its default.
 - When blocked, stop at a checkpoint with the blocker instead of guessing. Default when nobody answers: stop, with the work so far and the blocker in the report.
 

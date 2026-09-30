@@ -79,7 +79,7 @@ If blocking issues persist after 3 passes, stop the pipeline with `status` `bloc
 
 ## Danger scan
 
-Before execution, scan the verified plan for irreversible operations (deleting data, migrations on shared databases, force-push or history rewrite, publishing or sending anything outside the repo), pushes to a protected branch, and deleting or skipping tests. Route each hit through the decision boundary (SKILL.md Stage 1) and log it in `decisions`; the scan never stops the run by itself.
+Before execution, scan the verified plan for irreversible operations (deleting data, migrations on shared databases, force-push or history rewrite, publishing or sending anything outside the repo), pushes to a protected branch, and deleting or skipping tests. A migration on a shared database is the one hit that stops the run, as `needs-human` (`references/guardrails.md` § When NOT to Use); route every other hit through the decision boundary (SKILL.md Stage 1) and log it in `decisions`, never stopping on it.
 
 ## PR body
 

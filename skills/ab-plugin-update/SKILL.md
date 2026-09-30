@@ -1,6 +1,6 @@
 ---
 name: ab-plugin-update
-description: "Upgrades the Agent Blueprint plugin itself to its latest release: finds how Agent Blueprint was installed in the current tool, runs or shows that tool's own plugin manager command (Claude Code, Codex and the other supported tools), sends skills that install.sh copied into a skills folder to a re-run of the installer, then checks the installed version against the latest release. Use when the user asks to upgrade, refresh or reinstall Agent Blueprint itself. Not for a project's own dependencies (ab-dependency-management) or for cleaning an old in-project v2 copy out of a repository."
+description: "Upgrades the Agent Blueprint plugin itself to its latest release: finds how Agent Blueprint was installed in the current tool, runs or shows that tool's own plugin manager command (Claude Code, Codex and the other supported tools), re-runs install.sh for copy installs, then checks the installed version against the latest release. Use when the user asks to upgrade, refresh or reinstall Agent Blueprint itself. Not for a project's own dependencies (ab-dependency-management) or for cleaning an old in-project v2 copy out of a repository."
 disable-model-invocation: true
 ---
 
@@ -24,7 +24,7 @@ Look at where this skill's own folder (the one holding this SKILL.md) lives, and
 | a git checkout of Agent Blueprint (a local development install, or a folder the tool reads directly) | checkout |
 | a project's `.claude/skills/`, `.claude/agents/` or `.claude/commands/` | old in-project copy |
 
-Note the installed version: in Claude Code from `claude plugin list --json` (the `agent-blueprint@agent-blueprint` row, with its scope); elsewhere from the plugin's manifest if the tool shows one; otherwise "unknown".
+Note the installed version: in Claude Code from `claude plugin list --json` (the `agent-blueprint@agent-blueprint` row, with its scope); elsewhere from `.claude-plugin/plugin.json` at the root of the installed plugin (walk up from this skill's folder); otherwise "unknown".
 
 If the folder fits no row, ask which route applies.
 
@@ -43,17 +43,20 @@ The user started this skill to get the upgrade done, so run a command yourself w
   claude plugin update agent-blueprint@agent-blueprint
   ```
 
-  Add `--scope project` or `--scope local` when the `claude plugin list --json` row shows it is installed for one project, and `--yes` when no terminal is attached. Claude Code before 2.1.246 rejects the bare `plugin@marketplace` name; then use `/plugin` and pick the update, or `/plugin install agent-blueprint@agent-blueprint`, which refreshes the marketplace first and installs the latest version.
-- **Codex.** Upgrade it through Codex's plugin command (`codex plugin`; its `--help` lists the subcommands), from the marketplace it was added from.
+  Add `--scope project` or `--scope local` when the `claude plugin list --json` row shows it is installed for one project, and `--yes` when no terminal is attached. If the update command rejects the `plugin@marketplace` name, use `/plugin` and pick the update, or `/plugin install agent-blueprint@agent-blueprint`, which refreshes the marketplace first and installs the latest version.
+- **Codex.** Upgrade it through Codex's plugin command (`codex plugin`; its `--help` lists the subcommands), from the marketplace it was added from. If that command has no update subcommand, use the copy-install route.
 - **Another tool's plugin or skill manager** (Antigravity's `agy plugin`, Grok Build's plugin command, Pi's `pi`, Cursor CLI's `cursor-agent plugin`, Amp's `amp skill`): tell the user to run that manager's update for agent-blueprint. Where you are not sure the manager has an update, use the copy-install route instead.
-- **Copy install.** Re-run the installer from a fresh checkout. It detects the installed tools and installs into each, and its install record lets it remove skills that were renamed or deleted since the last run. Show the dry run's output before the real run:
+- **Copy install.** Re-run the installer from a fresh checkout. It detects the installed tools and installs into each, replacing the copied skills. Run the dry run first and show its output.
 
   ```bash
   CHECKOUT=$(mktemp -d)
   git clone --depth 1 https://github.com/Ninety2UA/agent-blueprint.git "$CHECKOUT/agent-blueprint"
   bash "$CHECKOUT/agent-blueprint/install.sh" --dry-run
-  bash "$CHECKOUT/agent-blueprint/install.sh"
   ```
+
+  **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
+
+  Ask whether to run it for real (`bash "$CHECKOUT/agent-blueprint/install.sh"`). Default when nobody answers: proceed, since the user started this skill to get the upgrade done.
 
   Keep the checkout until Step 3 has read its version, then remove that temporary folder.
 - **Checkout.** Pull it with `git -C <checkout> pull --ff-only`. If the pull stops because the checkout has local changes, show them and stop: they are the user's.

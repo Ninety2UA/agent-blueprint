@@ -14,7 +14,7 @@ Keep it to two or three exchanges with the user: learn everything you can from t
 
 **Bundled scripts.** Paths such as `scripts/run.sh` are relative to this skill's own folder, the one holding its SKILL.md, not to the project. Run a script through its interpreter (`bash` for `.sh`; `python3`, or `python` if that is missing, for `.py`) instead of relying on its executable bit, and if the interpreter is missing, say so and stop that step.
 
-Run `scripts/scaffold.py <project directory>`. It copies this skill's `assets/` into the project without overwriting anything:
+Run `scripts/scaffold.py <project directory>` through `python3` (`.` when the user named none). It copies this skill's `assets/` into the project without overwriting anything:
 
 - files the project lacks are created;
 - an existing `AGENTS.md` keeps every section it has and gains only the template sections it lacks;
@@ -63,7 +63,7 @@ Fill in `docs/context/STATUS.md`: today's date, the current state (what is in fl
 
 ## Step 6: README and git
 
-If `README.md` still holds template text, fill in the name, description, prerequisites and the setup, dev, test and lint commands, and keep its architecture part short with a link to `docs/decisions/`.
+If there is no `README.md`, create a short one; if it still holds template text, fill in the name, description, prerequisites and the setup, dev, test and lint commands. Keep its architecture part short with a link to `docs/decisions/`.
 
 If the project has no `.git`, run `git init` and commit the scaffold, naming the files you created: `chore: initialize project with Agent Blueprint`. If git already exists, commit nothing; report what changed so the user can review it first, since the scaffold touched files they own.
 
@@ -74,7 +74,7 @@ If the project has no `.git`, run `git init` and commit the scaffold, naming the
 ✓ CONVENTIONS.md — [stack and commands]
 ✓ GOALS.md — [N objectives]
 ✓ STATUS.md — [current state]
-✓ README.md — [updated / unchanged]
+✓ README.md — [created / updated / unchanged]
 ✓ Git — [initialized / already existed]
 Gaps: [anything still "not yet known"]
 ```

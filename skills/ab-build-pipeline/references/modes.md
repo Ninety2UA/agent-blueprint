@@ -16,6 +16,6 @@ This can be combined with other flags: `--quick --iterate 3`
 
 ## Quick Mode
 
-If the user specifies `--quick` or the change is small (< 3 files, clarity ≥ 0.8 per `references/ambiguity-gate.md`):
+If the user specifies `--quick`, or the change is three to five files with clarity ≥ 0.8 per `references/ambiguity-gate.md` (fewer than three belongs to the ab-quick-fix skill):
 - Skip Stage 1 (Discuss) and Stage 2 (Brainstorm)
 - Go directly to Plan → Execute → Review → Verify
