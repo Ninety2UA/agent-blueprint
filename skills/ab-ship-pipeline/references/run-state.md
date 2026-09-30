@@ -57,7 +57,7 @@ The runner exports two variables into every session it starts, and the skills re
 | `AGENT_BLUEPRINT_RUNNER` | `1` | The ship runner drives this session. Set `driver` to `runner`, stop at `done`, and leave publishing to the runner |
 | `AGENT_BLUEPRINT_GIT_WRITABLE` | `1` or `0` | Whether the host's posture can write `.git`, from the runner's preflight probe. At `0` the skills run in no-commit mode |
 
-In no-commit mode a skill makes no commits: it leaves its changes in the working tree and adds the message it would have used to `commit-msg.md`, and the runner commits after the session. Review steps then review the working tree and untracked files against the merge base, since there is no commit range yet. Outside the runner neither variable is set, and a skill that finds `.git` read-only when it commits falls back to the same mode.
+In no-commit mode a skill makes no commits: it leaves its changes in the working tree and adds the message it would have used to `commit-msg.md`, and the runner commits after the session (with git hooks disabled, then empties `commit-msg.md` so the next message starts clean). Review steps then review the working tree and untracked files against the merge base, since there is no commit range yet. Outside the runner neither variable is set, and a skill that finds `.git` read-only when it commits falls back to the same mode.
 
 ## What the runner keeps itself
 

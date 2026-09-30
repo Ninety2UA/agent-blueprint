@@ -102,14 +102,30 @@ jobs:
       - name: Run ShellCheck on install.sh
         run: shellcheck install.sh
 
-      - name: Run ShellCheck on ship.sh
-        run: shellcheck --exclude=SC2317,SC2329 scripts/ship.sh
+      - name: Run ShellCheck on the ship runner
+        run: shellcheck skills/ab-ship-pipeline/scripts/run.sh skills/ab-ship-pipeline/scripts/hosts.sh skills/ab-ship-pipeline/scripts/scan-secrets.sh
+
+      - name: Run ShellCheck on the runner tests
+        run: shellcheck tests/runner/run-tests.sh tests/runner/fake-host.sh
 
       - name: Run ShellCheck on check-drift.sh
         run: shellcheck scripts/check-drift.sh
 
       - name: Run ShellCheck on hook handlers
         run: shellcheck hooks/handlers/*.sh
+
+  runner-tests:
+    name: Runner Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      # Every scenario drives the fake host in tests/runner/fake-host.sh; no real host runs.
+      - name: Ship runner scenarios
+        run: bash tests/runner/run-tests.sh
 
   drift-gate:
     name: Drift Gate

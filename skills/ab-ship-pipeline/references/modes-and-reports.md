@@ -24,9 +24,17 @@ Start the ab-ship-pipeline skill with the feature in an ordinary session. `drive
 
 ### External loop: the ship runner
 
-Run the ship runner from a terminal, before any session, with the feature description and the flags. It starts a **fresh headless session per iteration** (Ralph-style) in any of the supported tools, with `AGENT_BLUEPRINT_RUNNER=1` set, so each iteration gets a clean context window. State persists via git, plan files, and state.json. Best for large features that may exhaust context.
+The ship runner is `scripts/run.sh` in this skill's folder. Run it from a terminal, on a feature branch with a clean tree, before any session:
 
-The runner decides from state.json whether to start another iteration, stop, or publish. When the skill sets `done`, the runner scans the outgoing range and `pr-body.md` for secrets, pushes to the remote it recorded at the start, and opens or updates the PR. It is the only process that cleans up run files. Passing `--external` to the skill has the same effect as the marker variable.
+```text
+bash <this skill's folder>/scripts/run.sh --host <host> "<feature>" [--max N] [--iterations-timeout SECS]
+    [--allow-unguarded] [--allow-ci-changes] [--resume] [--plugin-dir PATH] [--dry-run]
+    [--swarm] [--deploy] [--iterations N] [--convergence MODE]
+```
+
+`--host` is one of `claude`, `codex`, `agy`, `grok`, `pi`, `cursor-agent`, `hermes`, `amp`. It starts a **fresh headless session per iteration** (Ralph-style) in that tool, under the least-privileged posture that completes a run (`scripts/hosts.sh` holds the table), with `AGENT_BLUEPRINT_RUNNER=1` set, so each iteration gets a clean context window. State persists via git, plan files, and state.json. Best for large features that may exhaust context. `--max` caps the iterations below the skill's ceiling of 20; `--iterations-timeout` kills an iteration that runs past it; `--allow-unguarded` is required for a host whose posture has no guard (Pi, Amp, Antigravity); `--dry-run` runs the preflight checks and starts nothing.
+
+The runner decides from state.json whether to start another iteration, stop, or publish. When the skill sets `done`, the runner scans the outgoing range and `pr-body.md` for secrets, pushes to the remote it recorded at the start, and opens or updates the PR. It is the only process that cleans up run files. `--resume` continues a stopped run from the iteration the runner recorded; the host and the opt-in flags always come from the command line. Passing `--external` to the skill has the same effect as the marker variable.
 
 ## Comparison: ab-build-pipeline vs ab-ship-pipeline vs the ship runner
 
