@@ -8,6 +8,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 
 from gate_helpers import REPO, read, write
@@ -113,6 +114,17 @@ class SessionStart(unittest.TestCase):
     def test_cursor_gets_nothing(self):
         result = run_hook("session-start.js", CURSOR_PAYLOAD, self.dir, env={"CURSOR_AGENT": "1"}, home=self.home)
         self.assertEqual((result.returncode, result.stdout), (0, ""))
+
+    def test_resets_a_stale_team_marker_and_keeps_a_fresh_one(self):
+        marker = write(self.dir, ".agent-blueprint/team/active.md", "active: true\n")
+        result = run_hook("session-start.js", CLAUDE_PAYLOAD, self.dir, home=self.home)
+        self.assertNotIn("active.md", result.stdout)
+        self.assertEqual(read(marker), "active: true\n")
+        stale = time.time() - 13 * 3600
+        os.utime(marker, (stale, stale))
+        result = run_hook("session-start.js", CLAUDE_PAYLOAD, self.dir, home=self.home)
+        self.assertIn("active: false", result.stdout)
+        self.assertEqual(read(marker), "active: false\n")
 
 
 class StopHook(unittest.TestCase):

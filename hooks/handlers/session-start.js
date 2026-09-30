@@ -56,6 +56,18 @@ readInput((input) => {
     } catch (e) { /* ignore */ }
   }
 
+  // A team run that crashed leaves .agent-blueprint/team/active.md at "active: true", and the
+  // TeammateIdle and TaskCompleted hooks keep gating every later session. A marker older than
+  // half a day belongs to no live run (teammates start minutes after it is written), so reset it.
+  const teamMarker = path.join(cwd, '.agent-blueprint', 'team', 'active.md');
+  try {
+    const ageHours = (Date.now() - fs.statSync(teamMarker).mtimeMs) / 3600000;
+    if (ageHours > 12 && /^active:\s*true\s*$/m.test(fs.readFileSync(teamMarker, 'utf-8'))) {
+      fs.writeFileSync(teamMarker, 'active: false\n');
+      lines.push('Reset .agent-blueprint/team/active.md to "active: false": it was left active by a team run ' + Math.round(ageHours) + ' hours ago.');
+    }
+  } catch (e) { /* no marker */ }
+
   // Reset the context monitor for a fresh session.
   const ctxStateFile = path.join(os.tmpdir(), 'claude-blueprint', 'ctx-' + Buffer.from(cwd).toString('hex').slice(0, 16) + '.json');
   try { if (fs.existsSync(ctxStateFile)) fs.unlinkSync(ctxStateFile); } catch (e) { /* ignore */ }
