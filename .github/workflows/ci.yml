@@ -105,8 +105,11 @@ jobs:
       - name: Run ShellCheck on the ship runner
         run: shellcheck skills/ab-ship-pipeline/scripts/run.sh skills/ab-ship-pipeline/scripts/hosts.sh skills/ab-ship-pipeline/scripts/scan-secrets.sh
 
-      - name: Run ShellCheck on the runner tests
-        run: shellcheck tests/runner/run-tests.sh tests/runner/fake-host.sh
+      - name: Run ShellCheck on the runner and hook tests
+        run: shellcheck tests/runner/run-tests.sh tests/runner/fake-host.sh tests/hooks/run-tests.sh
+
+      - name: Run ShellCheck on skill scripts
+        run: shellcheck skills/*/scripts/*.sh
 
       - name: Run ShellCheck on check-drift.sh
         run: shellcheck scripts/check-drift.sh

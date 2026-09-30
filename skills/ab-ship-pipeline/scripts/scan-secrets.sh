@@ -18,18 +18,20 @@ set -euo pipefail
 
 usage() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; }
 
-# Case-sensitive, key-shaped tokens. Written so that no literal in this file looks like a key.
-STRICT_PATTERNS='(A3T[A-Z0-9]|AKIA|ASIA|ABIA|ACCA)[A-Z0-9]{16}
-gh[pousr]_[A-Za-z0-9]{36,}
-github_pat_[A-Za-z0-9_]{22,}
-glpat-[A-Za-z0-9_-]{20,}
-xox[baprs]-[A-Za-z0-9-]{10,}
-sk_live_[0-9A-Za-z]{24,}
-AIza[0-9A-Za-z_-]{35}
-sk-ant-[A-Za-z0-9_-]{20,}
-sk-[A-Za-z0-9]{32,}
-eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}
------BEGIN[[:space:]]+([A-Z]+[[:space:]]+)*PRIVATE[[:space:]]+KEY-----'
+# Case-sensitive, key-shaped tokens, one per line as PATTERN<tab>LABEL (the \t below become
+# tabs). Written so that no literal in this file looks like a key.
+STRICT_TABLE=$(printf '%b' '(A3T[A-Z0-9]|AKIA|ASIA|ABIA|ACCA)[A-Z0-9]{16}\tcloud access key
+gh[pousr]_[A-Za-z0-9]{36,}\tGitHub token
+github_pat_[A-Za-z0-9_]{22,}\tGitHub token
+glpat-[A-Za-z0-9_-]{20,}\tGitLab token
+xox[baprs]-[A-Za-z0-9-]{10,}\tSlack token
+sk_live_[0-9A-Za-z]{24,}\tStripe live key
+AIza[0-9A-Za-z_-]{35}\tGoogle API key
+sk-ant-[A-Za-z0-9_-]{20,}\tAPI key
+sk-[A-Za-z0-9]{32,}\tAPI key
+eyJ[A-Za-z0-9_-]{10,}\\.eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\tJWT
+-----BEGIN[[:space:]]+([A-Z]+[[:space:]]+)*PRIVATE[[:space:]]+KEY-----\tprivate key block')
+STRICT_PATTERNS=$(printf '%s\n' "$STRICT_TABLE" | cut -f1)
 # Case-insensitive: an assignment of a secret-named variable to a long opaque value.
 LOOSE_PATTERNS='(api[_-]?key|apikey|secret[_-]?key|client[_-]?secret|access[_-]?key|private[_-]?key|auth[_-]?token|access[_-]?token|secret|password|passwd|token)[[:space:]]*[=:][[:space:]]*["'"'"']?[A-Za-z0-9_/+.=-]{20,}'
 
@@ -38,26 +40,15 @@ join_patterns() { printf '%s' "$1" | tr '\n' '|' | sed 's/|$//'; }
 STRICT_ERE=$(join_patterns "$STRICT_PATTERNS")
 LOOSE_ERE="$LOOSE_PATTERNS"
 
-kind_of() {   # the first pattern that matches the line, as a short label
-    local line="$1" n=0 pat
-    while IFS= read -r pat; do
-        n=$((n + 1))
+kind_of() {   # the label of the first pattern that matches the line
+    local line="$1" pat label
+    while IFS="$(printf '\t')" read -r pat label; do
         if printf '%s\n' "$line" | grep -qE -e "$pat"; then
-            case $n in
-                1) echo "cloud access key" ;;
-                2|3) echo "GitHub token" ;;
-                4) echo "GitLab token" ;;
-                5) echo "Slack token" ;;
-                6) echo "Stripe live key" ;;
-                7) echo "Google API key" ;;
-                8|9) echo "API key" ;;
-                10) echo "JWT" ;;
-                11) echo "private key block" ;;
-            esac
+            echo "$label"
             return 0
         fi
     done <<EOF
-$STRICT_PATTERNS
+$STRICT_TABLE
 EOF
     echo "secret assignment"
 }

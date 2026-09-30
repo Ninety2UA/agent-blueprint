@@ -35,11 +35,10 @@ cd "$PROJECT"
 V3_AGENTS="architecture-strategist best-practices-researcher bug-reproduction-validator code-reviewer code-simplicity-reviewer codebase-context-mapper codebase-mapper convention-enforcer data-integrity-guardian deployment-verifier doc-claim-verifier findings-synthesizer findings-validator framework-docs-researcher frontend-reviewer git-history-analyzer integration-checker integration-verifier learnings-researcher pattern-mapper performance-oracle plan-checker pr-comment-resolver research-synthesizer schema-drift-detector security-sentinel team-lead test-coverage-reviewer test-gap-analyzer"
 V3_HANDLERS="context-monitor.js prompt-guard.js read-injection-scanner.js sdd-cache-post.sh sdd-cache-pre.sh session-start.js ship-loop.sh task-completed.js teammate-idle.js validate-commit.js"
 
-v3_skill() {   # is $1 one of the v3 skill names?
-    [ -f "$NAME_MAP" ] || return 1
-    awk -F'\t' -v n="$1" 'NR > 1 && $1 == n { found = 1 } END { exit !found }' "$NAME_MAP"
-}
+# The v3 skill names, read from the name map once (first column, header skipped).
+V3_SKILLS=$([ -f "$NAME_MAP" ] && awk -F'\t' 'NR > 1 { printf "%s ", $1 }' "$NAME_MAP")
 in_list() { case " $2 " in *" $1 "*) return 0 ;; esac; return 1; }
+v3_skill() { in_list "$1" "$V3_SKILLS"; }   # is $1 one of the v3 skill names?
 
 found=0
 remove_paths=()
@@ -49,35 +48,36 @@ plan_rm() { remove_paths+=("$1"); note "remove  $1"; }
 if [ -d .claude/skills ]; then
     for d in .claude/skills/*/; do
         [ -d "$d" ] || continue
-        n=$(basename "$d")
+        n=${d%/}; n=${n##*/}
         if v3_skill "$n" || v3_skill "${n#ab-}"; then plan_rm "${d%/}"; fi
     done
 fi
 if [ -d .claude/commands ]; then
     for f in .claude/commands/*.md; do
         [ -f "$f" ] || continue
-        n=$(basename "$f" .md)
+        n=${f##*/}; n=${n%.md}
         if v3_skill "$n"; then plan_rm "$f"; fi
     done
 fi
 if [ -d .claude/agents ]; then
     for f in .claude/agents/*.md; do
         [ -f "$f" ] || continue
-        if in_list "$(basename "$f" .md)" "$V3_AGENTS"; then plan_rm "$f"; fi
+        n=${f##*/}; n=${n%.md}
+        if in_list "$n" "$V3_AGENTS"; then plan_rm "$f"; fi
     done
 fi
 for hookdir in .claude/hooks hooks/handlers; do
     [ -d "$hookdir" ] || continue
     for f in "$hookdir"/*; do
         [ -f "$f" ] || continue
-        if in_list "$(basename "$f")" "$V3_HANDLERS"; then plan_rm "$f"; fi
+        if in_list "${f##*/}" "$V3_HANDLERS"; then plan_rm "$f"; fi
     done
 done
 if [ -f hooks/hooks.json ] && grep -q 'CLAUDE_PLUGIN_ROOT\|hooks/handlers' hooks/hooks.json; then plan_rm hooks/hooks.json; fi
 if [ -f scripts/ship.sh ] && grep -q -i 'blueprint\|ship-pipeline\|<promise>DONE</promise>' scripts/ship.sh; then plan_rm scripts/ship.sh; fi
 if [ -f .claude-plugin/plugin.json ] && grep -q '"claude-code-blueprint"' .claude-plugin/plugin.json; then plan_rm .claude-plugin/plugin.json; fi
 for f in .claude/ship-*.local.md .claude/team-active.local.md; do
-    [ -f "$f" ] && note "aside   $f -> .agent-blueprint/run/v3/$(basename "$f")"
+    [ -f "$f" ] && note "aside   $f -> .agent-blueprint/run/v3/${f##*/}"
 done
 rename_claude=false
 if [ -f CLAUDE.md ] && [ ! -L CLAUDE.md ] && [ ! -e AGENTS.md ]; then
@@ -106,7 +106,7 @@ done
 for f in .claude/ship-*.local.md .claude/team-active.local.md; do
     [ -f "$f" ] || continue
     mkdir -p .agent-blueprint/run/v3
-    mv "$f" ".agent-blueprint/run/v3/$(basename "$f")"
+    mv "$f" ".agent-blueprint/run/v3/${f##*/}"
     echo "moved $f aside"
 done
 if [ "$rename_claude" = true ]; then

@@ -40,7 +40,10 @@ error()   { echo -e "  ${RED}✗${NC} $1" >&2; }
 plan()    { echo -e "  ${DIM}would run:${NC} $1"; }
 
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ALL_HOSTS=(claude codex agy grok pi cursor-agent hermes amp)
+# The host list is the ship runner's adapter table (AB_HOSTS), so the two never drift.
+# shellcheck source=skills/ab-ship-pipeline/scripts/hosts.sh disable=SC1091
+. "$SOURCE_DIR/skills/ab-ship-pipeline/scripts/hosts.sh"
+read -r -a ALL_HOSTS <<< "$AB_HOSTS"
 COPY_HOSTS=(codex grok pi cursor-agent amp)      # scan ~/.agents/skills
 DRY_RUN=false
 ONLY=""
@@ -137,7 +140,6 @@ run() {
     if [ "$DRY_RUN" = true ]; then plan "$*"; else "$@"; fi
 }
 
-claude_installed=false
 if listed claude; then
     info "Claude Code: plugin install through its marketplace commands"
     if claude plugin marketplace list 2>/dev/null | grep -q 'agent-blueprint'; then
@@ -145,15 +147,15 @@ if listed claude; then
     else
         run claude plugin marketplace add "$SOURCE_DIR"
     fi
-    if claude plugin list 2>/dev/null | grep -q 'agent-blueprint@agent-blueprint'; then
+    plugins=$(claude plugin list 2>/dev/null || true)
+    if printf '%s' "$plugins" | grep -q 'agent-blueprint@agent-blueprint'; then
         run claude plugin update agent-blueprint@agent-blueprint
     else
         run claude plugin install agent-blueprint@agent-blueprint
     fi
-    if claude plugin list 2>/dev/null | grep -q 'claude-code-blueprint@'; then
+    if printf '%s' "$plugins" | grep -q 'claude-code-blueprint@'; then
         warn "The v3 plugin claude-code-blueprint is still installed; run the ab-migrate skill so the two sets of skills do not both load."
     fi
-    claude_installed=true
     success "Claude Code: agent-blueprint@agent-blueprint"
 fi
 
@@ -167,7 +169,7 @@ fi
 copy_reasons=()
 for h in "${COPY_HOSTS[@]}"; do
     listed "$h" || continue
-    if [ "$h" = amp ] && [ "$claude_installed" = true ]; then
+    if [ "$h" = amp ] && listed claude; then
         info "Amp: covered by the Claude Code install (Amp reads Claude Code's plugin cache); no copy needed for it"
         continue
     fi
@@ -239,7 +241,7 @@ copy_skills() {
             *) success "$h: covered by the copy in $COPY_DIR" ;;
         esac
     done
-    if listed cursor-agent && [ "$claude_installed" = true ]; then
+    if listed cursor-agent && listed claude; then
         warn "Cursor CLI can also import Claude Code plugins; keep one route or it lists every skill twice."
     fi
 }

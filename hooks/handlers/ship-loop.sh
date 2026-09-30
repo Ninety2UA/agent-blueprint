@@ -25,8 +25,7 @@ HOOK_INPUT=$(cat 2>/dev/null || echo "")
 
 # shellcheck source=hooks/handlers/host.sh disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/host.sh"
-HOST=$(detect_host "$HOOK_INPUT")
-[ "$HOST" = claude ] || [ "$HOST" = codex ] || exit 0
+require_host "$HOOK_INPUT" claude codex
 
 [ -n "${AGENT_BLUEPRINT_RUNNER:-}" ] && exit 0
 [ -f "$STATE_FILE" ] || exit 0

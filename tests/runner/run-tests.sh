@@ -379,6 +379,16 @@ t21_bad_session_id_status_and_driver_fail() {
     assert_no_file pwned
 }
 
+t27_wrong_version_and_exit_code_fail_but_interactive_driver_passes() {
+    new_repo t27
+    scenario "wrong-version commit:a.txt exit:7" "state-driver:interactive commit:b.txt" "state:done:ship commit:c.txt pr-body"
+    run_runner --host fake "feature"
+    assert_out "fake exited 7 (checking the state file, not the exit code)"
+    assert_out "iteration 1: failed — provenance names ab-ship-pipeline 0.0.1"
+    assert_out "iteration 2: status running, stage plan"
+    assert_rc 0 && assert_out "failed iterations: 1"
+}
+
 t22_resume_takes_the_host_from_the_command_line() {
     new_repo t22
     scenario "state:running:plan commit:a.txt" "state:done:ship commit:b.txt pr-body"
@@ -447,7 +457,8 @@ t14_state_pr_body_path_is_ignored t15_default_branch_refused t16_unguarded_hosts
 t17_interactive_stop_hook_stands_down t18_no_commit_mode_runner_commits t19_secrets_stop_the_publish
 t20_ci_paths_remote_url_and_prepush_hook t21_bad_session_id_status_and_driver_fail
 t22_resume_takes_the_host_from_the_command_line t23_unscaffolded_repo_resume_and_clean_branch
-t24_needs_human_then_auth_then_resume t25_secret_before_resume_still_caught t26_review_sees_the_diff_with_read_only_git"
+t24_needs_human_then_auth_then_resume t25_secret_before_resume_still_caught t26_review_sees_the_diff_with_read_only_git
+t27_wrong_version_and_exit_code_fail_but_interactive_driver_passes"
 
 SELECTED="${*:-$ALL}"
 PASSED=0 FAILED=0

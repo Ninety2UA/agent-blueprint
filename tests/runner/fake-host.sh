@@ -96,7 +96,7 @@ for step in $LINE; do
         change:*)        echo "change from call $N" >> "$arg" ;;
         commit-msg:*)    printf '%s\n' "$(printf '%s' "$arg" | tr '_' ' ')" > "$RUN_DIR/commit-msg.md" ;;
         pr-body)         printf '# Fake feature\n\nBody written by the fake host on call %s.\n' "$N" > "$RUN_DIR/pr-body.md" ;;
-        pr-body-secret)  printf '# Fake feature\n\nToken for the reviewer: ghp_%s\n' "$(printf 'A%.0s' 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36)" > "$RUN_DIR/pr-body.md" ;;
+        pr-body-secret)  printf '# Fake feature\n\nToken for the reviewer: ghp_%s\n' "$(printf 'A%.0s' {1..36})" > "$RUN_DIR/pr-body.md" ;;
         pr-body-symlink:*)
             rm -f "$RUN_DIR/pr-body.md"
             ln -s "$arg" "$RUN_DIR/pr-body.md" ;;
@@ -124,7 +124,7 @@ for step in $LINE; do
             printf '#!/bin/sh\ntouch "%s/hook-ran"\nexit 0\n' "$PWD/$RUN_DIR" > "$hooks/pre-push"
             chmod +x "$hooks/pre-push" ;;
         secret-commit)
-            printf 'aws_access_key_id = AKIA%s\n' "$(printf 'Q%.0s' 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)" > config.ini
+            printf 'aws_access_key_id = AKIA%s\n' "$(printf 'Q%.0s' {1..16})" > config.ini
             git add config.ini
             git commit -q -m "chore: add config" ;;
         gh-unauth)       touch "${AGENT_BLUEPRINT_FAKE_GH_DIR:?}/unauth" ;;

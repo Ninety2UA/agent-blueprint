@@ -3,6 +3,15 @@
 # Usage: source it, then `HOST=$(detect_host "$HOOK_INPUT")` where HOOK_INPUT is the stdin JSON.
 # Prints claude, codex or other. Payload first, environment second, for the reasons in host.js.
 
+# require_host INPUT HOST...: exit 0 quietly unless the detected host is one of HOST...
+require_host() {
+  local input="$1" host
+  shift
+  host=$(detect_host "$input")
+  for h in "$@"; do [ "$host" = "$h" ] && return 0; done
+  exit 0
+}
+
 detect_host() {
   local input="$1" transcript=""
   if [ -n "${CURSOR_AGENT:-}${CURSOR_CONVERSATION_ID:-}${GROK_SESSION_ID:-}" ] || [ "${GROK_AGENT:-}" = "1" ]; then
