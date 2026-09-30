@@ -13,6 +13,7 @@
 // not to create false-positive deadlocks.
 
 const path = require('path');
+const { detectHost } = require('./host');
 
 // Prompt injection patterns — catches obvious injection attempts
 const INJECTION_PATTERNS = [
@@ -34,11 +35,13 @@ const INJECTION_PATTERNS = [
 // Files/directories that become agent context
 const CONTEXT_PATHS = [
   'docs/',
+  'AGENTS.md',
   'CLAUDE.md',
   'BACKLOG.md',
   'blueprint.local.md',
+  '.agent-blueprint/',
+  '.agents/skills/',
   '.claude/skills/',
-  '.claude/agents/',
 ];
 
 let input = '';
@@ -51,6 +54,7 @@ process.stdin.on('end', () => {
   clearTimeout(stdinTimeout);
   try {
     const data = JSON.parse(input);
+    if (detectHost(data) === 'other') process.exit(0);
     const toolName = data.tool_name;
 
     // Only scan Write and Edit operations

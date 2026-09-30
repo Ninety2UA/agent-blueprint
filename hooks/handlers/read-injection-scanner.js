@@ -11,6 +11,7 @@
 //         can review file contents that may contain embedded directives.
 
 const path = require('path');
+const { detectHost } = require('./host');
 
 // Standard injection patterns -- superset of prompt-guard.js plus
 // summarisation-survival shapes ("retain this through compression", etc.)
@@ -75,6 +76,7 @@ process.stdin.on('end', () => {
   clearTimeout(stdinTimeout);
   try {
     const data = JSON.parse(input);
+    if (detectHost(data) !== 'claude') process.exit(0);
     if (data.tool_name !== 'Read') process.exit(0);
 
     const filePath = data.tool_input?.file_path || '';

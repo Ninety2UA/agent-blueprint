@@ -22,6 +22,9 @@ REMOVED = ["ab-agent-teams", "ab-team-execution"]
 SURFACES = ["AGENTS.md", "README.md", "index.html", "install.sh", ".claude-plugin", "hooks", "scripts",
             "docs/images/promo-video.html"]
 MARKER = ".agent-blueprint/team/active.md"
+# The hooks act only on the host they were written for (KTD11): run them as Claude Code.
+CLAUDE_ENV = {k: v for k, v in os.environ.items() if not k.startswith(("CURSOR_", "GROK_", "CODEX_"))}
+CLAUDE_ENV["CLAUDECODE"] = "1"
 
 
 def section(text, heading):
@@ -231,8 +234,8 @@ class AgentTeamsHooks(unittest.TestCase):
             fh.write(content)
 
     def hook(self, name):
-        return subprocess.run(["node", os.path.join(REPO, "hooks", "handlers", name)], cwd=self.dir,
-                              capture_output=True, text=True, timeout=60)
+        return subprocess.run(["node", os.path.join(REPO, "hooks", "handlers", name)], cwd=self.dir, input="{}",
+                              capture_output=True, text=True, timeout=60, env=CLAUDE_ENV)
 
     def test_no_marker_means_no_action(self):
         self.assertEqual(self.hook("task-completed.js").returncode, 0)
@@ -270,8 +273,8 @@ class TeammateIdleGuard(unittest.TestCase):
             os.makedirs(os.path.join(self.dir, ".agent-blueprint", "team"), exist_ok=True)
             with open(os.path.join(self.dir, MARKER), "w") as fh:
                 fh.write(marker)
-        return subprocess.run(["node", os.path.join(REPO, "hooks", "handlers", "teammate-idle.js")], cwd=self.dir,
-                              capture_output=True, text=True, timeout=120)
+        return subprocess.run(["node", os.path.join(REPO, "hooks", "handlers", "teammate-idle.js")], cwd=self.dir, input="{}",
+                              capture_output=True, text=True, timeout=120, env=CLAUDE_ENV)
 
     def test_no_marker_means_no_action(self):
         self.assertEqual(self.idle().returncode, 0)

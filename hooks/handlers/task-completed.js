@@ -15,6 +15,15 @@
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { detectHost, readInput } = require('./host');
+
+// Agent Teams exist only in Claude Code; any other host gets a silent allow.
+readInput((input) => {
+  if (detectHost(input) !== 'claude') process.exit(0);
+  main();
+}, 2000);
+
+function main() {
 
 // Guard: only act while ab-orchestrate runs the Agent Teams extra, which writes
 // "active: true" to this file at the start and "active: false" at the end.
@@ -93,4 +102,5 @@ if (issues.length > 0) {
   process.exit(2); // Prevent completion
 } else {
   process.exit(0); // Allow completion
+}
 }

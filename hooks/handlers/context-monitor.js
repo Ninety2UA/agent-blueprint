@@ -20,6 +20,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { detectHost } = require('./host');
 
 const cwd = process.cwd();
 const stateDir = path.join(os.tmpdir(), 'claude-blueprint');
@@ -74,6 +75,7 @@ function runMonitor() {
     const input = chunks.join('').trim();
     if (input) {
       const data = JSON.parse(input);
+      if (detectHost(data) === 'other') return;
       toolName = data.tool_name || data.toolName || '';
     }
   } catch {
