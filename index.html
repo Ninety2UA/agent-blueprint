@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agent Blueprint — Production-Grade Plugin for AI-Assisted Development</title>
-  <meta name="description" content="53 skills and 10 hooks. A structured operating system for Claude Code that compounds across sessions.">
+  <title>Agent Blueprint — 53 Skills for Eight Coding CLIs</title>
+  <meta name="description" content="53 skills and 10 hooks. One way of working that compounds across sessions, in Claude Code, Codex, Antigravity, Grok Build, Pi, Cursor CLI, Hermes and Amp.">
   <meta property="og:title" content="Agent Blueprint">
-  <meta property="og:description" content="Production-grade Claude Code plugin. 53 skills and 10 hooks covering the full development lifecycle.">
+  <meta property="og:description" content="Skills for AI-assisted development that run in eight coding CLIs. 53 skills and 10 hooks covering the full development lifecycle.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://ninety2ua.github.io/agent-blueprint/">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1a2e'/><text x='50' y='72' font-size='60' font-weight='700' fill='%23D4A574' text-anchor='middle' font-family='system-ui'>B</text></svg>">
@@ -2228,8 +2228,8 @@
         <li><a href="#why">Why</a></li>
         <li><a href="#features">Features</a></li>
         <li><a href="#pipelines">Pipelines</a></li>
-        <li><a href="#orchestration">Agents</a></li>
-        <li><a href="#ralph">Ralph Loop</a></li>
+        <li><a href="#orchestration">Helpers</a></li>
+        <li><a href="#ralph">Ship Runner</a></li>
         <li><a href="#quality">Quality</a></li>
         <li><a href="#knowledge">Knowledge</a></li>
         <li><a href="#platform">Platform</a></li>
@@ -2254,8 +2254,8 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           v4.0.0 &mdash; Agent Blueprint
         </div>
-        <h1>Claude Code<br><span class="gradient-text">Blueprint</span></h1>
-        <p class="hero__tagline">"Each unit of engineering work should make subsequent units easier &mdash; not harder."</p>
+        <h1>Agent<br><span class="gradient-text">Blueprint</span></h1>
+        <p class="hero__tagline">53 skills for AI-assisted development that run in eight coding CLIs: Claude Code, Codex, Antigravity, Grok Build, Pi, Cursor CLI, Hermes and Amp. "Each unit of engineering work should make subsequent units easier &mdash; not harder."</p>
         <div class="hero__stats">
           <span class="hero__stat">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 1 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10a3 3 0 0 1 0 6h-1a3 3 0 1 1 0-6h1Z"/><path d="M5 10a3 3 0 0 0 0 6h1a3 3 0 0 0 0-6H5Z"/><path d="M12 18a3 3 0 0 1 3 3v1a3 3 0 1 1-6 0v-1a3 3 0 0 1 3-3Z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -2284,23 +2284,23 @@
             <span class="term__dot term__dot--red"></span>
             <span class="term__dot term__dot--yellow"></span>
             <span class="term__dot term__dot--green"></span>
-            <span class="term__title">claude</span>
+            <span class="term__title">any of the eight CLIs</span>
           </div>
           <div class="term__body">
-            <span class="term__line"><span class="term__prompt">$</span> <span class="term__cmd">claude</span></span>
-            <span class="term__line"><span class="term__success">&gt;</span> <span class="term__cmd">/ab-brainstorming</span> add user authentication</span>
+            <span class="term__line"><span class="term__prompt">$</span> <span class="term__cmd">codex</span></span>
+            <span class="term__line"><span class="term__success">&gt;</span> <span class="term__cmd">$ab-brainstorming</span> add user authentication</span>
             <span class="term__line"><span class="term__output">&nbsp;&nbsp;Brainstorming 3 design options...</span></span>
             <span class="term__line"><span class="term__output">&nbsp;&nbsp;Writing implementation plan...</span></span>
             <span class="term__line"><span class="term__success">&nbsp;&nbsp;&#10003; Plan ready &mdash; 6 tasks, 2 waves</span></span>
             <span class="term__line">&nbsp;</span>
-            <span class="term__line"><span class="term__success">&gt;</span> <span class="term__cmd">/ab-orchestrate</span></span>
+            <span class="term__line"><span class="term__success">&gt;</span> <span class="term__cmd">$ab-orchestrate</span></span>
             <span class="term__line"><span class="term__output">&nbsp;&nbsp;Wave 1: 3 tasks in parallel...</span></span>
             <span class="term__line"><span class="term__output">&nbsp;&nbsp;Integration verified &#10003;</span></span>
             <span class="term__line"><span class="term__output">&nbsp;&nbsp;Wave 2: 3 tasks in parallel...</span></span>
             <span class="term__line"><span class="term__success">&nbsp;&nbsp;&#10003; All tasks complete</span></span>
             <span class="term__line">&nbsp;</span>
-            <span class="term__line"><span class="term__success">&gt;</span> <span class="term__cmd">/ab-review-swarm</span></span>
-            <span class="term__line"><span class="term__output">&nbsp;&nbsp;Dispatching 8 reviewers...</span><span class="term__cursor"></span></span>
+            <span class="term__line"><span class="term__success">&gt;</span> <span class="term__cmd">$ab-review-swarm</span></span>
+            <span class="term__line"><span class="term__output">&nbsp;&nbsp;Starting 8 reviewer helpers...</span><span class="term__cursor"></span></span>
           </div>
         </div>
       </div>
@@ -2332,8 +2332,8 @@
         </div>
         <div class="stats-bar__divider"></div>
         <div class="stats-bar__item">
-          <span class="stats-bar__number">2</span>
-          <span class="stats-bar__label">Loop Mechanisms</span>
+          <span class="stats-bar__number">8</span>
+          <span class="stats-bar__label">Coding CLIs</span>
         </div>
       </div>
     </div>
@@ -2343,11 +2343,11 @@
   <section class="why" id="why">
     <div class="container">
       <div class="section-header reveal">
-        <h2>Why Blueprint?</h2>
-        <p>Stop reinventing the wheel every session</p>
+        <h2>Why Agent Blueprint?</h2>
+        <p>Stop reinventing the wheel every session, in every tool</p>
       </div>
       <div class="why__text reveal">
-        Most AI coding sessions start from scratch: no conventions, no memory, no workflow. Each session reinvents the wheel. Blueprint fixes that by giving Claude Code a <strong>structured operating system</strong> &mdash; a set of skills, agents, and documentation patterns that compound across sessions.
+        Most AI coding sessions start from scratch: no conventions, no memory, no workflow. Each session reinvents the wheel, and each switch to another tool throws away what the last one learned. Agent Blueprint gives a coding agent <strong>one way of working that is the same in every tool</strong>: skills that take a feature from design to a pull request, helper prompts for the analysis that benefits from a fresh context, and project documents under <code>docs/</code> that carry state from one session to the next.
       </div>
       <blockquote class="why__quote reveal">
         Each unit of engineering work should make subsequent units easier &mdash; not harder.
@@ -2358,7 +2358,7 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
           </div>
           <h3>Structured</h3>
-          <p>A complete operating system for Claude Code &mdash; skills, helper prompts, and quality gates that activate automatically.</p>
+          <p>Skills, helper prompts and quality gates that run in Claude Code, Codex, Antigravity, Grok Build, Pi, Cursor CLI, Hermes and Amp, from one shared skill tree.</p>
         </div>
         <div class="why__card">
           <div class="why__card-icon">
@@ -2383,7 +2383,7 @@
     <div class="container">
       <div class="section-header reveal">
         <h2>What You Get</h2>
-        <p>A full development lifecycle toolkit, installed as a single plugin</p>
+        <p>A full development lifecycle toolkit, installed once per tool</p>
       </div>
       <div class="grid-4 reveal reveal-stagger">
         <div class="feature-card">
@@ -2395,19 +2395,20 @@
           <p>Workflow modules: TDD, systematic debugging, brainstorming, wave orchestration, swarm coordination, knowledge compounding, and more.</p>
         </div>
         <div class="feature-card">
+          <span class="feature-card__number">30</span>
           <div class="feature-card__icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
           <h3>Helper Prompts</h3>
-          <p>Instructions for security audits, performance and code review, research, and architecture analysis, shipped inside the skills that use them. They run as subagents where the tool has them, and inline where it does not.</p>
+          <p>Prompt files for security audits, performance and code review, research and architecture analysis, shipped inside the skills that use them. A helper runs one where the tool has subagents; the session follows it where not. Helpers inherit your model and effort.</p>
         </div>
         <div class="feature-card">
-          <span class="feature-card__number">0</span>
+          <span class="feature-card__number">8</span>
           <div class="feature-card__icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
           </div>
-          <h3>Commands</h3>
-          <p>All commands merged into skills in v3.2. Every skill is a direct entry point &mdash; <code>/ab-brainstorming</code>, <code>/ab-ship-pipeline</code>, <code>/ab-review-swarm</code>, and more.</p>
+          <h3>Coding CLIs</h3>
+          <p>A native manifest per tool that has a plugin system, and a plain skills copy for the rest. Every skill is picked from its description or named by you: <code>ab-brainstorming</code>, <code>ab-ship-pipeline</code>, <code>ab-review-swarm</code>, and more.</p>
         </div>
         <div class="feature-card">
           <span class="feature-card__number">10</span>
@@ -2415,7 +2416,7 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
           </div>
           <h3>Hooks</h3>
-          <p>Session start bootstrap, context monitoring, prompt injection guard, ship loop exit guard, task completion, teammate idle detection.</p>
+          <p>Optional guards for Claude Code (10 handlers) and Codex (5): session-start pointer, context monitor, injection scanners, commit check, ship-pipeline Stop guard, Agent Teams gates. No pipeline depends on them.</p>
         </div>
       </div>
     </div>
@@ -2426,28 +2427,28 @@
     <div class="container">
       <div class="section-header reveal">
         <h2>Pipelines</h2>
-        <p>Four execution modes for every situation</p>
+        <p>Four execution modes, the same in every tool</p>
       </div>
       <div class="grid-4 reveal reveal-stagger">
         <div class="pipeline-card">
-          <span class="pipeline-card__tag">/ab-build-pipeline</span>
+          <span class="pipeline-card__tag">ab-build-pipeline</span>
           <h3>Supervised</h3>
-          <p>Full-cycle pipeline with checkpoints between every stage. Human in the loop at every gate. Best for guided feature development.</p>
+          <p>Eight stages with a checkpoint after each, where you approve, change or stop. Research and plan-check helpers feed the plan. Best for guided feature development.</p>
         </div>
         <div class="pipeline-card">
-          <span class="pipeline-card__tag">/ab-ship-pipeline</span>
+          <span class="pipeline-card__tag">ab-ship-pipeline</span>
           <h3>Autonomous</h3>
-          <p>Zero checkpoints, fire-and-forget. Plans, executes in dependency-ordered waves, iteratively reviews (3 cycles), and opens a PR automatically.</p>
+          <p>No checkpoints. Locks assumptions, plans, executes in dependency-ordered waves, reviews until the findings converge, and writes the commits and the PR body, tracked in <code>state.json</code>.</p>
         </div>
         <div class="pipeline-card">
-          <span class="pipeline-card__tag">/ab-quick-fix</span>
+          <span class="pipeline-card__tag">ab-quick-fix</span>
           <h3>Fast-Track</h3>
           <p>For small, well-understood changes under 3 files. Write a failing test, fix it, verify, commit. TDD in its purest form.</p>
         </div>
         <div class="pipeline-card">
-          <span class="pipeline-card__tag">ship.sh</span>
-          <h3>Ralph Loop</h3>
-          <p>External bash loop that spawns a fresh 200K context per iteration. State persists via git. Handles context exhaustion gracefully.</p>
+          <span class="pipeline-card__tag">run.sh --host &lt;host&gt;</span>
+          <h3>Ship Runner</h3>
+          <p>Drives ab-ship-pipeline unattended through your tool's headless mode: a fresh session per iteration, state in <code>state.json</code>, a secret scan before it pushes and opens the PR. Any of the eight tools.</p>
         </div>
       </div>
 
@@ -2462,10 +2463,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td><code>/ab-build-pipeline</code></td><td>Between every stage</td><td>Single pass</td><td>Human-guided features</td></tr>
-            <tr><td><code>/ab-ship-pipeline</code></td><td>None</td><td>3 iterative cycles</td><td>Single-context fire-and-forget</td></tr>
-            <tr><td><code>ship.sh</code></td><td>None</td><td>3 iterative cycles</td><td>Large features, context exhaustion</td></tr>
-            <tr><td><code>/ab-quick-fix</code></td><td>None</td><td>None</td><td>Trivial changes (&lt; 3 files)</td></tr>
+            <tr><td><code>ab-build-pipeline</code></td><td>Between every stage</td><td>Single pass (or <code>--iterate N</code>)</td><td>Human-guided features</td></tr>
+            <tr><td><code>ab-ship-pipeline</code></td><td>None</td><td>3 iterative cycles</td><td>Fire-and-forget in one session</td></tr>
+            <tr><td><code>run.sh --host &lt;host&gt;</code> (ship runner)</td><td>None</td><td>3 iterative cycles</td><td>Unattended runs, large features, context exhaustion</td></tr>
+            <tr><td><code>ab-quick-fix</code></td><td>None</td><td>None</td><td>Trivial changes (&lt; 3 files)</td></tr>
+            <tr><td><code>ab-orchestrate</code></td><td>Between waves</td><td>Single pass (or <code>--iterations N</code>)</td><td>Team work: a plan's tasks in dependency-ordered waves</td></tr>
           </tbody>
         </table>
       </div>
@@ -2486,7 +2488,7 @@
             <h4>Orient</h4>
           </div>
           <p>Load context, review status, understand what's in flight</p>
-          <span class="wf-card__cmd">/ab-project-status</span>
+          <span class="wf-card__cmd">ab-project-status</span>
         </div>
         <div class="wf-card wf-card--2">
           <div class="wf-card__header">
@@ -2494,23 +2496,23 @@
             <h4>Design</h4>
           </div>
           <p>Brainstorm 3+ options, present tradeoffs, get human approval</p>
-          <span class="wf-card__cmd">/ab-brainstorming</span>
+          <span class="wf-card__cmd">ab-brainstorming</span>
         </div>
         <div class="wf-card wf-card--3">
           <div class="wf-card__header">
             <div class="wf-card__num">3</div>
             <h4>Plan</h4>
           </div>
-          <p>Break into bite-sized tasks with file paths and test strategies</p>
-          <span class="wf-card__cmd">/ab-deepen-plan</span>
+          <p>Tasks that record decisions: file paths, each test and what it asserts, signatures</p>
+          <span class="wf-card__cmd">ab-writing-plans</span>
         </div>
         <div class="wf-card wf-card--4">
           <div class="wf-card__header">
             <div class="wf-card__num">4</div>
             <h4>Build</h4>
           </div>
-          <p>Execute with TDD. Verify with evidence. Dispatch review agents</p>
-          <span class="wf-card__cmd">/ab-orchestrate</span>
+          <p>Execute with TDD. Verify with evidence. Review with helpers</p>
+          <span class="wf-card__cmd">ab-orchestrate</span>
         </div>
         <div class="wf-card wf-card--5">
           <div class="wf-card__header">
@@ -2518,7 +2520,7 @@
             <h4>Ship</h4>
           </div>
           <p>Merge, update docs, capture learnings for next session</p>
-          <span class="wf-card__cmd">/ab-session-wrap</span>
+          <span class="wf-card__cmd">ab-session-wrap</span>
         </div>
       </div>
       <p class="workflow__desc reveal">
@@ -2531,30 +2533,30 @@
   <section class="orchestration" id="orchestration">
     <div class="container">
       <div class="section-header reveal">
-        <h2>Multi-Agent Orchestration</h2>
-        <p>Four coordination patterns &mdash; each designed for a specific type of work</p>
+        <h2>Helpers, Swarms and Team Work</h2>
+        <p>Four coordination patterns, each for a specific kind of work. Helpers run where the tool has subagents; the session does the work itself where it does not.</p>
       </div>
       <div class="grid-4 reveal reveal-stagger">
         <div class="orch-card">
-          <span class="orch-card__cmd">/ab-review-swarm</span>
+          <span class="orch-card__cmd">ab-review-swarm</span>
           <h3>Review Swarm</h3>
-          <p>6-10 specialized reviewers (security, performance, architecture, code quality, test coverage, data integrity) dispatched in parallel. A <strong>findings-synthesizer</strong> merges into a unified P1/P2/P3 report.</p>
+          <p>Specialized reviewers in parallel: quality, simplicity and tests always; security, performance, conventions, frontend, architecture, data and schema as the diff calls for. A <strong>findings-validator</strong> re-checks them and a <strong>findings-synthesizer</strong> merges them into one P1/P2/P3 report.</p>
           <div class="orch-card__img-wrap"><img src="docs/images/review-swarm.png" alt="Review Swarm — parallel reviewers → findings-synthesizer → unified report" loading="lazy"></div>
         </div>
         <div class="orch-card">
-          <span class="orch-card__cmd">/ab-deep-research</span>
+          <span class="orch-card__cmd">ab-deep-research</span>
           <h3>Research Swarm</h3>
           <p>Five research helpers work in parallel: best practices, git history, framework docs, codebase context, and past solutions. A <strong>research-synthesizer</strong> consolidates into one brief.</p>
           <div class="orch-card__img-wrap"><img src="docs/images/research-swarm.png" alt="Research Swarm — 5 parallel researchers → research-synthesizer" loading="lazy"></div>
         </div>
         <div class="orch-card">
-          <span class="orch-card__cmd">/ab-orchestrate</span>
+          <span class="orch-card__cmd">ab-orchestrate</span>
           <h3>Team Work</h3>
           <p>Runs a plan through a <strong>task ledger</strong> in dependency-ordered <strong>waves</strong>: one helper per task, each owning its files or its own worktree, and the lead commits. An <strong>integration-verifier</strong> validates between waves. Works in every tool, one task after another where there are no helpers.</p>
           <div class="orch-card__img-wrap"><img src="docs/images/wave-orchestration.png" alt="Wave Orchestration — dependency-ordered waves with integration verification" loading="lazy"></div>
         </div>
         <div class="orch-card">
-          <span class="orch-card__cmd">/ab-orchestrate</span>
+          <span class="orch-card__cmd">ab-orchestrate</span>
           <h3>Native Team Extras</h3>
           <p>When switched on, team work runs on <strong>Claude Code Agent Teams</strong> (interactive sessions, with quality hooks) or <strong>Codex multi_agent_v2</strong> (long-lived helpers that take follow-up tasks). The ledger stays the task list.</p>
           <div class="orch-card__img-wrap"><img src="docs/images/agent-teams.png" alt="Agent Teams — collaborative instances with shared task list and messaging" loading="lazy"></div>
@@ -2567,8 +2569,8 @@
   <section class="agents" id="agents">
     <div class="container">
       <div class="section-header reveal">
-        <h2>Agent Ecosystem</h2>
-        <p>Helper prompts in 6 groups, each shipped inside the skill that uses it</p>
+        <h2>Helper Prompts</h2>
+        <p>30 helper prompts in 6 groups, each shipped inside the skill that uses it. No prompt carries a model or an effort tier: helpers inherit the session's choice.</p>
       </div>
       <div class="agents__groups reveal reveal-stagger">
         <!-- Review Team -->
@@ -2844,16 +2846,16 @@
     </div>
   </section>
 
-  <!-- ===== RALPH LOOP / CONTEXT EXHAUSTION ===== -->
+  <!-- ===== SHIP RUNNER / UNATTENDED RUNS ===== -->
   <section class="ralph" id="ralph">
     <div class="container">
       <div class="section-header reveal">
-        <h2>Persistent Execution</h2>
-        <p>Two-layer defense against context exhaustion and premature exit</p>
+        <h2>Unattended Runs</h2>
+        <p>One ship runner for any of the eight tools, driven by a state file</p>
       </div>
 
       <p class="ralph__intro reveal">
-        Large features can exhaust Claude's 200K context window. When that happens, most setups just stop. Blueprint has <strong>two redundant loop mechanisms</strong> that keep work going &mdash; one inside the session, one outside &mdash; each solving a different failure mode.
+        Large features can exhaust a session's context. When that happens, most setups just stop. Agent Blueprint's ship runner starts a <strong>fresh headless session per iteration</strong> in whichever tool you name and reads the run's state file between iterations, so work continues in every tool, with or without hooks.
       </p>
 
       <!-- Nested visual diagram -->
@@ -2861,18 +2863,18 @@
         <div class="ralph__layer ralph__layer--outer">
           <span class="ralph__layer-label ralph__layer-label--outer">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            OUTER LOOP &mdash; scripts/ship.sh
+            SHIP RUNNER &mdash; skills/ab-ship-pipeline/scripts/run.sh --host &lt;host&gt; "&lt;feature&gt;"
           </span>
-          <h3 class="ralph__layer-title">External Bash Loop</h3>
-          <p class="ralph__layer-desc">Runs <em>outside</em> Claude in your terminal. Spawns a fresh Claude process per iteration &mdash; each gets a clean 200K context window. State persists through git commits and plan files. Max 10 iterations (configurable with <code>--max</code>).</p>
+          <h3 class="ralph__layer-title">A fresh session per iteration</h3>
+          <p class="ralph__layer-desc">Runs <em>outside</em> the agent in your terminal. Each iteration is a new headless process of the tool you named (<code>claude</code>, <code>codex</code>, <code>agy</code>, <code>grok</code>, <code>pi</code>, <code>cursor-agent</code>, <code>hermes</code> or <code>amp</code>) with a clean context. State persists through git, the plan file and <code>.agent-blueprint/run/state.json</code>.</p>
 
           <div class="ralph__flow">
             <div class="ralph__step">
               <div class="ralph__step-icon ralph__step-icon--gold">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
-              <span class="ralph__step-text">Spawn</span>
-              <span class="ralph__step-sub">Fresh 200K</span>
+              <span class="ralph__step-text">Start</span>
+              <span class="ralph__step-sub">Fresh session</span>
             </div>
             <span class="ralph__arrow">&rarr;</span>
             <div class="ralph__step">
@@ -2880,7 +2882,7 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
               </div>
               <span class="ralph__step-text">Execute</span>
-              <span class="ralph__step-sub">/ab-ship-pipeline</span>
+              <span class="ralph__step-sub">ab-ship-pipeline</span>
             </div>
             <span class="ralph__arrow">&rarr;</span>
             <div class="ralph__step">
@@ -2895,8 +2897,8 @@
               <div class="ralph__step-icon ralph__step-icon--green">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               </div>
-              <span class="ralph__step-text">Check</span>
-              <span class="ralph__step-sub">&lt;promise&gt;DONE&lt;/promise&gt;</span>
+              <span class="ralph__step-text">Read</span>
+              <span class="ralph__step-sub">state.json</span>
             </div>
             <span class="ralph__arrow">&rarr;</span>
             <div class="ralph__step">
@@ -2910,92 +2912,92 @@
 
           <div class="ralph__loop-arrow">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-            Loop until &lt;promise&gt;DONE&lt;/promise&gt; or max iterations reached
+            Loop until state.json says done, blocked or needs-human, or the iteration limit is reached
           </div>
 
-          <!-- Inner loop nested inside -->
+          <!-- Publish step nested inside -->
           <div class="ralph__layer ralph__layer--inner">
             <span class="ralph__layer-label ralph__layer-label--inner">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              INNER GUARD &mdash; ship-loop.sh (Stop Hook)
+              PUBLISH &mdash; the runner, never the agent
             </span>
-            <h3 class="ralph__layer-title">Session Exit Guard</h3>
-            <p class="ralph__layer-desc">Runs <em>inside</em> Claude's session as a Stop hook. When Claude tries to exit before work is complete, the hook <strong>blocks the exit and re-injects the original prompt</strong>. Same session, growing context. Max 5 internal retries.</p>
+            <h3 class="ralph__layer-title">Checked before anything leaves the machine</h3>
+            <p class="ralph__layer-desc">When the state says <code>done</code>, the runner checks that there are new commits since the base it recorded, that the PR body exists at its fixed path, and that the provenance marker names the skill and its version. Then it scans the outgoing range and the PR body for secrets, pushes only to the remote and branch it recorded at preflight, and opens or updates the PR.</p>
 
             <div class="ralph__flow">
               <div class="ralph__step">
                 <div class="ralph__step-icon ralph__step-icon--purple">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                 </div>
-                <span class="ralph__step-text">Claude stops</span>
+                <span class="ralph__step-text">Done check</span>
               </div>
               <span class="ralph__arrow ralph__arrow--purple">&rarr;</span>
               <div class="ralph__step">
                 <div class="ralph__step-icon ralph__step-icon--purple">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </div>
-                <span class="ralph__step-text">Check promise</span>
+                <span class="ralph__step-text">Secret scan</span>
               </div>
               <span class="ralph__arrow ralph__arrow--purple">&rarr;</span>
               <div class="ralph__step">
                 <div class="ralph__step-icon ralph__step-icon--red">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </div>
-                <span class="ralph__step-text">Block exit</span>
+                <span class="ralph__step-text">Hit? needs-human</span>
               </div>
               <span class="ralph__arrow ralph__arrow--purple">&rarr;</span>
               <div class="ralph__step">
                 <div class="ralph__step-icon ralph__step-icon--purple">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
                 </div>
-                <span class="ralph__step-text">Re-inject prompt</span>
+                <span class="ralph__step-text">Push and open the PR</span>
               </div>
             </div>
 
             <div class="ralph__loop-arrow">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--purple-rgb), 0.5)" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-              Promise-based unlock &mdash; exact match of &lt;promise&gt;DONE&lt;/promise&gt; required
+              The runner records the base, branch and remote itself at preflight; nothing in state.json can move them
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Detail cards for the two mechanisms -->
+      <!-- Detail cards -->
       <div class="ralph__details">
         <div class="ralph__detail-card reveal">
           <h4>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            Outer Loop: Context Reset
+            The State File Decides
           </h4>
           <p>
-            <code>scripts/ship.sh</code> runs in your terminal as a bash loop. Each iteration runs <code>claude --print</code> as a completely fresh process. Work accumulates via git commits &mdash; the plan file stays on disk, changes are committed, and each new Claude instance picks up where the last left off. Includes a braille spinner with 8-stage detection showing what stage the pipeline is in.
+            The skill writes <code>.agent-blueprint/run/state.json</code> whole at every stage change: status, stage, iteration, host, driver, a decisions log and a provenance marker. The runner treats every field as untrusted input and never ends a run on text the agent printed, so echoed skill text cannot fake completion.
           </p>
         </div>
         <div class="ralph__detail-card reveal">
           <h4>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple-light)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Inner Guard: Exit Prevention
+            Least Privilege per Host
           </h4>
           <p>
-            <code>ship-loop.sh</code> is a Stop hook that fires when Claude tries to end the session. It checks for <code>&lt;promise&gt;DONE&lt;/promise&gt;</code> in the last output. If missing, it blocks the exit and re-injects the original prompt as a new message &mdash; Claude continues working in the same session. Session-isolated by branch name to prevent cross-contamination.
+            Claude Code <code>--permission-mode auto</code>; Codex <code>workspace-write</code> with network on (<code>.git</code> is read-only there, so the skill leaves a commit message and the runner commits); Cursor CLI <code>--force --sandbox enabled</code>; Grok Build <code>--always-approve --sandbox workspace</code>. Pi, Amp and Antigravity can only run unguarded and need <code>--allow-unguarded</code>; there the agent holds your git and <code>gh</code> credentials.
           </p>
         </div>
         <div class="ralph__detail-card reveal">
           <h4>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            Completion Signal
+            Hooks Where They Exist
           </h4>
           <p>
-            Both loops gate on the same signal: <code>&lt;promise&gt;DONE&lt;/promise&gt;</code>. This isn't a string Claude casually outputs &mdash; the <code>/ab-ship-pipeline</code> skill only emits it after all 7 pipeline stages complete (requirements &rarr; plan &rarr; deepen &rarr; execute &rarr; review &rarr; compound &rarr; ship). No false positives.
+            In Claude Code and Codex the <code>ship-loop.sh</code> Stop hook keeps an interactive ship session from stopping while the state says <code>running</code>, and stands down under the runner, since a blocked stop would stall every headless iteration. The other six tools have no hooks and need none: the runner and the state file are the guarantee.
           </p>
         </div>
         <div class="ralph__detail-card reveal">
           <h4>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            State Persistence
+            When It Stops
           </h4>
           <p>
-            Between iterations, state persists through multiple channels: <strong>git commits</strong> (code changes), <strong>plan files</strong> (task progress), <strong>progress tracking</strong> (<code>.claude/ship-progress.local.md</code>), and <strong>iteration logs</strong> (<code>.claude/ship-logs/</code>). Each new process reads the current state of the repo and continues from where the last one stopped.
+            The skill sets <code>blocked</code> or <code>needs-human</code> with a reason when it cannot finish; its own ceiling is 20 iterations and the runner's limit is your knob below it. A run is stalled when the stage, the commit history and the team ledger are all unchanged for two iterations. <code>--resume</code> continues from the runner's own record, and the <code>ab-forensics</code> skill reads what a failed run left behind.
           </p>
         </div>
       </div>
@@ -3008,7 +3010,7 @@
           <div class="ralph__circuit-item"><span>5</span> identical errors in a row</div>
           <div class="ralph__circuit-item"><span>4+</span> tasks touching the same file</div>
           <div class="ralph__circuit-item"><span>20%</span> WTF-likelihood risk threshold</div>
-          <div class="ralph__circuit-item"><span>3Q</span> Reflection Gate before every retry</div>
+          <div class="ralph__circuit-item"><span>20</span> iterations, the skill's hard ceiling</div>
         </div>
       </div>
     </div>
@@ -3053,7 +3055,7 @@
         </div>
       </div>
       <div class="quality__callout reveal">
-        These aren't suggestions &mdash; they're hard gates. Claude will stop and course-correct if any gate is skipped.
+        These aren't suggestions &mdash; they're hard gates. The agent stops and course-corrects if any gate is skipped, in every tool.
       </div>
     </div>
   </section>
@@ -3081,7 +3083,7 @@
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             </div>
             <span class="knowledge__step-text">Capture</span>
-            <span class="knowledge__step-sub">/ab-knowledge-compounding</span>
+            <span class="knowledge__step-sub">ab-knowledge-compounding</span>
           </div>
           <span class="knowledge__arrow">&rarr;</span>
           <div class="knowledge__step">
@@ -3097,7 +3099,7 @@
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </div>
             <span class="knowledge__step-text">Auto-Consult</span>
-            <span class="knowledge__step-sub">/ab-brainstorming</span>
+            <span class="knowledge__step-sub">ab-brainstorming</span>
           </div>
           <span class="knowledge__arrow">&rarr;</span>
           <div class="knowledge__step">
@@ -3134,14 +3136,14 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </div>
           <h3>Automatic Consultation</h3>
-          <p>Planning skills like <code>/ab-brainstorming</code> and <code>/ab-deep-research</code> automatically search past solutions before starting new work. No manual lookup needed.</p>
+          <p>Planning skills like <code>ab-brainstorming</code> and <code>ab-deep-research</code> search past solutions before starting new work. No manual lookup needed.</p>
         </div>
         <div class="knowledge__card">
           <div class="knowledge__card-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           </div>
           <h3>Zero Manual Effort</h3>
-          <p>The <code>/ab-session-wrap</code> skill captures learnings automatically at the end of every session. Knowledge compounds without extra work from you.</p>
+          <p>The <code>ab-session-wrap</code> skill captures learnings at the end of every session, whichever tool ran it. Knowledge compounds without extra work from you.</p>
         </div>
       </div>
     </div>
@@ -3152,7 +3154,7 @@
     <div class="container">
       <div class="section-header reveal">
         <h2>Session Continuity</h2>
-        <p>Pick up exactly where you left off &mdash; every time</p>
+        <p>Pick up exactly where you left off &mdash; every time, in any tool</p>
       </div>
 
       <!-- Before / After comparison -->
@@ -3193,11 +3195,11 @@
           <div class="continuity__flow">
             <div class="continuity__flow-step">
               <span class="continuity__flow-arrow">&rarr;</span>
-              CLAUDE.md Session Continuity auto-updated
+              docs/context/STATUS.md Session Continuity rewritten each session
             </div>
             <div class="continuity__flow-step">
               <span class="continuity__flow-arrow">&rarr;</span>
-              <code>/ab-resume-session</code> loads full context
+              <code>ab-resume-session</code> loads full context
             </div>
             <div class="continuity__flow-step">
               <span class="continuity__flow-arrow">&rarr;</span>
@@ -3209,7 +3211,7 @@
             </div>
             <div class="continuity__flow-step">
               <span class="continuity__flow-arrow">&rarr;</span>
-              Decisions preserved across sessions
+              Decisions preserved across sessions and tools
             </div>
           </div>
         </div>
@@ -3224,7 +3226,7 @@
               <span class="code-block__dot" style="background:#febc2e"></span>
               <span class="code-block__dot" style="background:#28c840"></span>
             </div>
-            <span class="code-block__title">CLAUDE.md &mdash; Session Continuity</span>
+            <span class="code-block__title">docs/context/STATUS.md &mdash; Session Continuity</span>
           </div>
           <div class="code-block__body">
             <span class="term__line"><span class="kw">## Session Continuity</span></span>
@@ -3253,31 +3255,38 @@
     <div class="container">
       <div class="section-header reveal">
         <h2>Get Started</h2>
-        <p>Install once, available in every project</p>
+        <p>One install route per tool, from a checkout of the repository</p>
       </div>
+      <div class="table-wrap reveal">
+        <table class="pipeline-table" style="margin-top: 0;">
+          <thead>
+            <tr>
+              <th>Host</th>
+              <th>Install</th>
+              <th>Invoke a skill</th>
+              <th>Hooks</th>
+              <th>Helpers</th>
+              <th>Manual-only</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Claude Code (<code>claude</code>)</td><td><code>claude plugin marketplace add &lt;checkout&gt;</code>, then <code>claude plugin install agent-blueprint@agent-blueprint</code>. Also serves Amp.</td><td><code>/</code> + name</td><td>10 handlers</td><td>Subagents, worktrees</td><td>Enforced</td></tr>
+            <tr><td>Codex (<code>codex</code>)</td><td><code>bash install.sh --only codex</code> (the shared copy in <code>~/.agents/skills</code>); on a Codex-only machine, <code>codex plugin marketplace add &lt;checkout&gt;</code> then <code>codex plugin add agent-blueprint@agent-blueprint</code> instead, never both.</td><td><code>$</code> + name</td><td>5 handlers with the plugin route, after trust in <code>/hooks</code></td><td>Subagents, file ownership</td><td>Enforced</td></tr>
+            <tr><td>Antigravity (<code>agy</code>)</td><td><code>agy plugin install &lt;checkout&gt;</code></td><td><code>/</code> + name</td><td>None</td><td>Subagents, worktrees</td><td>Not verified</td></tr>
+            <tr><td>Grok Build (<code>grok</code>)</td><td><code>bash install.sh --only grok</code>: one copy in <code>~/.agents/skills</code>, which also serves Codex, Pi, Cursor CLI and Amp</td><td><code>/</code> + name</td><td>None</td><td>Subagents, worktrees</td><td>Enforced</td></tr>
+            <tr><td>Pi (<code>pi</code>)</td><td><code>bash install.sh --only pi</code></td><td><code>/skill:</code> + name</td><td>None</td><td>With <code>pi-subagents</code>; inline without it</td><td>Enforced</td></tr>
+            <tr><td>Cursor CLI (<code>cursor-agent</code>)</td><td><code>bash install.sh --only cursor-agent</code>. Cursor also imports a Claude Code plugin install: keep one route.</td><td><code>/</code> + name</td><td>None</td><td>Subagents, worktrees</td><td>Enforced</td></tr>
+            <tr><td>Hermes (<code>hermes</code>)</td><td><code>bash install.sh --only hermes</code>, then list <code>~/.agents/skills</code> under <code>skills.external_dirs</code> in <code>~/.hermes/config.yaml</code></td><td><code>/</code> + name</td><td>None</td><td>Subagents, two per one-shot run</td><td>Cannot enforce</td></tr>
+            <tr><td>Amp (<code>amp</code>)</td><td><code>bash install.sh --only amp</code>, or nothing when Claude Code has the plugin</td><td>Ask in prose</td><td>None</td><td>Subagents, file ownership</td><td>Cannot enforce</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="workflow__desc reveal" style="margin-bottom: 2.5rem;">
+        Two skills are manual-only and run only when you name them: <code>ab-plugin-update</code> and <code>ab-migrate</code>. Every host picks the others from their descriptions when a request matches. Each tool has a support note under <code>docs/hosts/</code> with its trust step, what is missing there, unattended safety and its smoke-test status.
+      </p>
       <div class="install__grid reveal reveal-stagger">
         <div class="install__step">
-          <p class="install__label"><span class="install__step-num">1</span> Plugin Marketplace</p>
-          <div class="code-block">
-            <div class="code-block__header">
-              <div class="code-block__dots">
-                <span class="code-block__dot" style="background:#ff5f57"></span>
-                <span class="code-block__dot" style="background:#febc2e"></span>
-                <span class="code-block__dot" style="background:#28c840"></span>
-              </div>
-              <span class="code-block__title">claude</span>
-              <button class="code-block__copy" data-copy="/plugin marketplace add Ninety2UA/agent-blueprint&#10;/plugin install agent-blueprint">Copy</button>
-            </div>
-            <div class="code-block__body">
-              <span class="term__line"><span class="cmd">/plugin marketplace add</span></span>
-              <span class="term__line">&nbsp;&nbsp;Ninety2UA/agent-blueprint</span>
-              <span class="term__line"><span class="cmd">/plugin install</span></span>
-              <span class="term__line">&nbsp;&nbsp;agent-blueprint</span>
-            </div>
-          </div>
-        </div>
-        <div class="install__step">
-          <p class="install__label"><span class="install__step-num">2</span> Or One-Line Install</p>
+          <p class="install__label"><span class="install__step-num">1</span> Clone and Install</p>
           <div class="code-block">
             <div class="code-block__header">
               <div class="code-block__dots">
@@ -3286,18 +3295,18 @@
                 <span class="code-block__dot" style="background:#28c840"></span>
               </div>
               <span class="code-block__title">terminal</span>
-              <button class="code-block__copy" data-copy="curl -fsSL https://raw.githubusercontent.com/Ninety2UA/agent-blueprint/main/install.sh | bash">Copy</button>
+              <button class="code-block__copy" data-copy="git clone https://github.com/Ninety2UA/agent-blueprint.git&#10;bash agent-blueprint/install.sh">Copy</button>
             </div>
             <div class="code-block__body">
-              <span class="term__line"><span class="str">curl</span> -fsSL \</span>
-              <span class="term__line">&nbsp;&nbsp;https://raw.githubusercontent.com/</span>
-              <span class="term__line">&nbsp;&nbsp;Ninety2UA/agent-blueprint/</span>
-              <span class="term__line">&nbsp;&nbsp;main/install.sh | <span class="kw">bash</span></span>
+              <span class="term__line"><span class="str">git</span> clone https://github.com/</span>
+              <span class="term__line">&nbsp;&nbsp;Ninety2UA/agent-blueprint.git</span>
+              <span class="term__line"><span class="kw">bash</span> agent-blueprint/install.sh</span>
+              <span class="term__line"><span class="cmt"># detects your tools; --dry-run, --only HOSTS</span></span>
             </div>
           </div>
         </div>
         <div class="install__step">
-          <p class="install__label"><span class="install__step-num">3</span> Set Up Your Project</p>
+          <p class="install__label"><span class="install__step-num">2</span> Set Up Your Project</p>
           <div class="code-block">
             <div class="code-block__header">
               <div class="code-block__dots">
@@ -3305,21 +3314,41 @@
                 <span class="code-block__dot" style="background:#febc2e"></span>
                 <span class="code-block__dot" style="background:#28c840"></span>
               </div>
-              <span class="code-block__title">claude</span>
-              <button class="code-block__copy" data-copy="claude&#10;> /ab-project-start&#10;> /ab-brainstorming">Copy</button>
+              <span class="code-block__title">your tool</span>
+              <button class="code-block__copy" data-copy="use the ab-project-start skill&#10;use the ab-brainstorming skill: add user authentication">Copy</button>
             </div>
             <div class="code-block__body">
-              <span class="term__line"><span class="term__prompt">$</span> <span class="str">claude</span></span>
-              <span class="term__line"><span class="term__success">&gt;</span> <span class="cmd">/ab-project-start</span> <span class="cmt"># scaffold docs</span></span>
-              <span class="term__line"><span class="term__success">&gt;</span> <span class="cmd">/ab-brainstorming</span> <span class="cmt"># first feature</span></span>
+              <span class="term__line"><span class="term__success">&gt;</span> <span class="cmd">use the ab-project-start skill</span></span>
+              <span class="term__line"><span class="cmt">&nbsp;&nbsp;# scaffolds AGENTS.md and docs/</span></span>
+              <span class="term__line"><span class="term__success">&gt;</span> <span class="cmd">use the ab-brainstorming skill</span></span>
               <span class="term__line"><span class="term__success">&#10003;</span> <span class="term__success">Ready to build</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="install__step">
+          <p class="install__label"><span class="install__step-num">3</span> Update</p>
+          <div class="code-block">
+            <div class="code-block__header">
+              <div class="code-block__dots">
+                <span class="code-block__dot" style="background:#ff5f57"></span>
+                <span class="code-block__dot" style="background:#febc2e"></span>
+                <span class="code-block__dot" style="background:#28c840"></span>
+              </div>
+              <span class="code-block__title">terminal</span>
+              <button class="code-block__copy" data-copy="claude plugin update agent-blueprint@agent-blueprint">Copy</button>
+            </div>
+            <div class="code-block__body">
+              <span class="term__line"><span class="cmt"># Claude Code</span></span>
+              <span class="term__line"><span class="str">claude</span> plugin update agent-blueprint@agent-blueprint</span>
+              <span class="term__line"><span class="cmt"># copy installs: git pull, then</span></span>
+              <span class="term__line"><span class="kw">bash</span> install.sh</span>
             </div>
           </div>
         </div>
       </div>
       <div class="section-header reveal" style="margin-top: 3rem;">
         <h3>Update to latest version</h3>
-        <p>Run <code>claude plugin update agent-blueprint@agent-blueprint</code> from a terminal (or <code>/plugin install agent-blueprint@agent-blueprint</code> inside a session, which refreshes the marketplace first) to re-fetch the latest version from GitHub. Then run <code>/reload-plugins</code> (or restart).</p>
+        <p>Claude Code: <code>claude plugin update agent-blueprint@agent-blueprint</code>, then <code>/reload-plugins</code>. Copy installs: <code>git pull</code> in the checkout and run <code>bash install.sh</code> again; the install record removes skills that were renamed or dropped. In any tool, the <code>ab-plugin-update</code> skill finds the route you used, runs it and checks the installed version. Moving a project from v3? The <code>ab-migrate</code> skill removes the old plugin's traces and renames <code>CLAUDE.md</code> to <code>AGENTS.md</code>.</p>
       </div>
     </div>
   </section>
@@ -3329,7 +3358,7 @@
     <div class="container">
       <div class="section-header reveal">
         <h2>All 53 Skills</h2>
-        <p>Every skill in the Blueprint, organized by category</p>
+        <p>Every skill, organized by category. Each one runs in all eight tools; name it the way your tool names skills, or describe the task and let the tool pick it.</p>
       </div>
       <div class="skills-grid reveal reveal-stagger">
         <!-- Pipelines -->
@@ -3437,7 +3466,7 @@
               <span class="skill-tag">ab-codebase-mapping</span>
               <span class="skill-tag">ab-changelog-generation</span>
               <span class="skill-tag">ab-plugin-update</span>
-              <span class="skill-tag">ab-migrate-to-plugin</span>
+              <span class="skill-tag">ab-migrate</span>
               <span class="skill-tag">ab-dependency-management</span>
               <span class="skill-tag">ab-deployment-verification</span>
               <span class="skill-tag">ab-migration-planning</span>
@@ -3514,7 +3543,7 @@
     <div class="container">
       <div class="section-header reveal">
         <h2>Platform Currency</h2>
-        <p>Every sync cycle audits the Claude Code platform and adopts what fits &mdash; as guarded opt-ins, never core dependencies</p>
+        <p>Native host features are adopted as guarded opt-ins, never core dependencies: Claude Code Agent Teams and Codex multi_agent_v2 sit on top of the portable team ledger, and every pipeline runs without them</p>
       </div>
       <div class="reveal" style="background:#fff; border-radius:16px; padding:22px; margin-bottom:1.5rem; box-shadow:0 10px 30px rgba(0,0,0,0.25);">
         <img src="docs/images/platform-sync-cycle.png" alt="Platform-sync cycle — Audit (68 CLI versions) → Gate 1 → Adopt + verify (Part 1, v3.4.0) → Delta sweep (Part 2, 4 repos) → Gate 2 → Import + close (v3.5.0), codified into the /cli-watch + /repo-watch watchers" style="display:block; width:100%; height:auto; border-radius:8px;" loading="lazy">
@@ -3540,10 +3569,28 @@
       <div class="section-header reveal">
         <span class="new__badge">v4.0.0</span>
         <h2>What's New</h2>
-        <p>Agent Blueprint: the same 53 skills in eight coding CLIs. Claude Code, Codex, Antigravity, Grok Build, Pi, Cursor CLI, Hermes and Amp each get a native manifest or a plain skills copy; helpers, questions and working folders adapt to the host; the ship runner drives an unattended run in any of them.</p>
+        <p>Agent Blueprint: the same 53 skills in eight coding CLIs. Claude Code, Codex, Antigravity, Grok Build, Pi, Cursor CLI, Hermes and Amp each get a native manifest or a plain skills copy; helpers, questions and working folders adapt to the host; the ship runner drives an unattended run in any of them. A clean break from claude-code-blueprint v3.8.0, with an upgrade guide and a decision record for the reversal of the single-harness scope.</p>
+      </div>
+      <div class="grid-4 reveal reveal-stagger">
+        <div class="new-card">
+          <h3>Eight Hosts, One Skill Tree</h3>
+          <p>A committed manifest per tool that has a plugin system and a plain copy for the rest, all pointing at one <code>skills/</code> tree. Every skill carries the <code>ab-</code> prefix so a shared skills folder never collides with another pack. <code>install.sh</code> detects your tools and gives each its route.</p>
+        </div>
+        <div class="new-card">
+          <h3>Helper Prompts, Your Model and Effort</h3>
+          <p>The 29 agents became 30 prompt files inside the skills that use them. No prompt carries a model or an effort tier: helpers inherit the session's choice, and where a tool has no subagents the skill follows the prompt itself and returns the same output shape.</p>
+        </div>
+        <div class="new-card">
+          <h3>AGENTS.md and .agent-blueprint/</h3>
+          <p><code>AGENTS.md</code> is the instructions file every host reads, with a one-line <code>CLAUDE.md</code> importing it. Working files moved from <code>.claude/</code> to <code>.agent-blueprint/</code>; session notes live in <code>docs/context/STATUS.md</code>. Team work merged into <code>ab-orchestrate</code> with a portable ledger and native extras.</p>
+        </div>
+        <div class="new-card">
+          <h3>Ship Runner, Optional Hooks, New Gates</h3>
+          <p>One runner drives <code>ab-ship-pipeline</code> unattended in any host through <code>state.json</code>. Hooks stay as enhancements for Claude Code and Codex. Portability and manifest gates hold every skill to the rules for all eight hosts, and <code>ab-migrate</code> cleans a v3 project.</p>
+        </div>
       </div>
       <!-- v3.8.0 -->
-      <div class="section-header reveal">
+      <div class="section-header reveal" style="margin-top: 4rem;">
         <span class="new__badge">v3.8.0</span>
         <h2>Earlier</h2>
         <p>A combined watcher cycle &mdash; twenty-five ideas from six watched repositories grafted onto existing skills and agents, and every platform claim re-verified against Claude Code 2.1.283 for Opus 5.5</p>
@@ -3630,7 +3677,7 @@
         </div>
         <div class="new-card">
           <h3>Native-First Plugin Update</h3>
-          <p><code>/ab-plugin-update</code> tries <code>claude plugin update</code> first &mdash; scope-aware and cache-verified &mdash; and keeps the manual sync as fallback. Update copy now says <code>/reload-plugins</code>, not restart.</p>
+          <p><code>ab-plugin-update</code> tries <code>claude plugin update</code> first &mdash; scope-aware and cache-verified &mdash; and keeps the manual sync as fallback. Update copy now says <code>/reload-plugins</code>, not restart.</p>
         </div>
         <div class="new-card">
           <h3>Validator Job &amp; Anchor Gate</h3>
@@ -3774,7 +3821,7 @@
           <p>New agent finds 3&ndash;5 existing analogs for each new file in a plan, emits <code>PATTERNS.md</code> with line-numbered code excerpts. Stops new code from inventing structure that already exists.</p>
         </div>
         <div class="new-card">
-          <h3>/ab-forensics Skill</h3>
+          <h3>ab-forensics Skill</h3>
           <p>New post-mortem skill diagnoses failed <code>/ship</code> runs against ship-logs and git state. Investigates 4 anomaly categories. Read-only. Redacts sensitive content.</p>
         </div>
         <div class="new-card">
@@ -3833,7 +3880,7 @@
         </div>
         <div class="new-card">
           <h3>Key Renames</h3>
-          <p><code>/build</code> &rarr; <code>/ab-build-pipeline</code>, <code>/ship</code> &rarr; <code>/ab-ship-pipeline</code>, <code>/planning</code> &rarr; <code>/ab-brainstorming</code>, <code>/quick</code> &rarr; <code>/ab-quick-fix</code>, <code>/start</code> &rarr; <code>/ab-project-start</code>, <code>/status</code> &rarr; <code>/ab-project-status</code>, <code>/wrap</code> &rarr; <code>/ab-session-wrap</code>, <code>/compound</code> &rarr; <code>/ab-knowledge-compounding</code>, <code>/debug</code> &rarr; <code>/ab-systematic-debugging</code>, <code>/update</code> &rarr; <code>/ab-plugin-update</code>, <code>/team</code> &rarr; <code>/ab-orchestrate</code>, <code>/review</code> &rarr; <code>/ab-requesting-code-review</code>, <code>/ideate</code> &rarr; <code>/ab-ideation</code>, <code>/map</code> &rarr; <code>/ab-codebase-mapping</code>, <code>/backlog</code> &rarr; <code>/ab-backlog-triage</code>, <code>/health</code> &rarr; <code>/ab-health-check</code>, <code>/pause</code> &rarr; <code>/ab-pause-checkpoint</code>, <code>/resume</code> &rarr; <code>/ab-resume-session</code>, <code>/pr</code> &rarr; <code>/ab-pr-workflow</code>, <code>/changelog</code> &rarr; <code>/ab-changelog-generation</code>, <code>/deepen</code> &rarr; <code>/ab-deepen-plan</code></p>
+          <p><code>/build</code> &rarr; <code>ab-build-pipeline</code>, <code>/ship</code> &rarr; <code>ab-ship-pipeline</code>, <code>/planning</code> &rarr; <code>ab-brainstorming</code>, <code>/quick</code> &rarr; <code>ab-quick-fix</code>, <code>/start</code> &rarr; <code>ab-project-start</code>, <code>/status</code> &rarr; <code>ab-project-status</code>, <code>/wrap</code> &rarr; <code>ab-session-wrap</code>, <code>/compound</code> &rarr; <code>ab-knowledge-compounding</code>, <code>/debug</code> &rarr; <code>ab-systematic-debugging</code>, <code>/update</code> &rarr; <code>ab-plugin-update</code>, <code>/team</code> &rarr; <code>ab-orchestrate</code>, <code>/review</code> &rarr; <code>ab-requesting-code-review</code>, <code>/ideate</code> &rarr; <code>ab-ideation</code>, <code>/map</code> &rarr; <code>ab-codebase-mapping</code>, <code>/backlog</code> &rarr; <code>ab-backlog-triage</code>, <code>/health</code> &rarr; <code>ab-health-check</code>, <code>/pause</code> &rarr; <code>ab-pause-checkpoint</code>, <code>/resume</code> &rarr; <code>ab-resume-session</code>, <code>/pr</code> &rarr; <code>ab-pr-workflow</code>, <code>/changelog</code> &rarr; <code>ab-changelog-generation</code>, <code>/deepen</code> &rarr; <code>ab-deepen-plan</code></p>
         </div>
         <div class="new-card">
           <h3>Direct Skill Entry</h3>
@@ -3853,11 +3900,11 @@
           <p>Install once, available in every project. Zero engine files in your git history.</p>
         </div>
         <div class="new-card">
-          <h3>/ab-project-start Scaffolding</h3>
+          <h3>ab-project-start Scaffolding</h3>
           <p>Project files (CLAUDE.md, docs/, BACKLOG.md) created on demand per project.</p>
         </div>
         <div class="new-card">
-          <h3>/ab-migrate-to-plugin</h3>
+          <h3>ab-migrate-to-plugin</h3>
           <p>Transition v2.x in-project files to plugin mode. Removes engine files, keeps project state.</p>
         </div>
         <div class="new-card">
@@ -3881,7 +3928,7 @@
             <svg class="faq__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="faq__answer"><div class="faq__answer-inner">
-            Yes. The blueprint installs as a plugin &mdash; it adds zero files to your project. Run the plugin install steps, then <code>/ab-project-start</code> to scaffold the docs structure. Your existing code is never touched.
+            Yes. The blueprint installs in your tool and adds zero engine files to your project. Install it for your tool, then ask for the <code>ab-project-start</code> skill in the project: it scaffolds <code>AGENTS.md</code> and <code>docs/</code> by merging into what exists. Your existing code and instructions are never overwritten.
           </div></div>
         </div>
         <div class="faq__item">
@@ -3890,34 +3937,34 @@
             <svg class="faq__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="faq__answer"><div class="faq__answer-inner">
-            No. Skills activate contextually. If you never do TDD, the ab-test-driven-development skill won't activate. The template works with any subset &mdash; you can also configure which agents are active per project via <code>blueprint.local.md</code>.
+            No. Skills are picked from their descriptions when a request matches. If you never do TDD, <code>ab-test-driven-development</code> never runs. The blueprint works with any subset, and <code>blueprint.local.md</code> chooses which review and research helpers run for your stack.
           </div></div>
         </div>
         <div class="faq__item">
           <button class="faq__question">
-            How do agents differ from skills?
+            How do helper prompts differ from skills?
             <svg class="faq__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="faq__answer"><div class="faq__answer-inner">
-            <strong>Skills</strong> are instructions for the main Claude session &mdash; they guide Claude's behavior during your conversation. <strong>Agents</strong> are separate subprocesses dispatched via the Task tool, each with their own 200K context window. Use agents for focused analysis that benefits from isolation.
+            <strong>Skills</strong> are instructions for the main session; they guide the work during your conversation. <strong>Helper prompts</strong> are files a skill hands to a helper for focused analysis that benefits from a fresh context. Where the tool has subagents the helper runs in its own context; where it does not, the session follows the prompt itself. Both return the prompt's Output section.
           </div></div>
         </div>
         <div class="faq__item">
           <button class="faq__question">
-            Will this slow down Claude?
+            Will this slow my sessions down?
             <svg class="faq__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="faq__answer"><div class="faq__answer-inner">
-            No. CLAUDE.md adds minimal context. Skills and agents are loaded on-demand, not upfront. Most of the intelligence is in skill files which are only read when triggered.
+            No. <code>AGENTS.md</code> adds a small amount of context. Skills load when they run, not up front, and each <code>SKILL.md</code> stays under 8,000 bytes with its detail in <code>references/</code>, read at the point of use.
           </div></div>
         </div>
         <div class="faq__item">
           <button class="faq__question">
-            What is /ab-ship-pipeline and when should I use it?
+            What is ab-ship-pipeline and when should I use it?
             <svg class="faq__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="faq__answer"><div class="faq__answer-inner">
-            <code>/ab-ship-pipeline</code> is the fully autonomous pipeline &mdash; zero checkpoints, fire-and-forget. It plans, researches, executes via a dedicated team-lead agent, iteratively reviews (3 cycles), and opens a PR. Use it for well-defined features. For large features that may exhaust context, use <code>scripts/ship.sh</code> from your terminal.
+            <code>ab-ship-pipeline</code> is the autonomous pipeline: no checkpoints. It locks assumptions, plans, researches, executes through <code>ab-orchestrate</code>, reviews until the findings converge, and writes the commits and the PR body. Use it for well-defined features. To run it unattended, or for a large feature that may exhaust a session's context, use the ship runner: <code>skills/ab-ship-pipeline/scripts/run.sh --host &lt;host&gt; "&lt;feature&gt;"</code>.
           </div></div>
         </div>
         <div class="faq__item">
@@ -3926,7 +3973,7 @@
             <svg class="faq__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="faq__answer"><div class="faq__answer-inner">
-            Two mechanisms at different layers. <strong>Inside</strong> a session, the <code>ship-loop.sh</code> Stop hook blocks premature exit (max 5 retries, same context). <strong>Outside</strong> a session, <code>scripts/ship.sh</code> spawns fresh Claude processes &mdash; each gets a clean 200K context, state persists via git.
+            The ship runner starts a new headless session per iteration in the tool you name, so each begins with a clean context; state persists through git, the plan file and <code>.agent-blueprint/run/state.json</code>. In Claude Code and Codex the <code>ship-loop.sh</code> Stop hook also keeps an interactive ship session from stopping while the state says running, and stands down under the runner.
           </div></div>
         </div>
         <div class="faq__item">
@@ -3935,7 +3982,34 @@
             <svg class="faq__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="faq__answer"><div class="faq__answer-inner">
-            After solving a non-trivial problem, <code>/ab-knowledge-compounding</code> saves it as a structured document in <code>docs/solutions/</code>. Future <code>/ab-brainstorming</code> and <code>/ab-deep-research</code> skills automatically search this directory before starting new work. Your project builds institutional knowledge over time.
+            After solving a non-trivial problem, <code>ab-knowledge-compounding</code> saves it as a structured document in <code>docs/solutions/</code>. <code>ab-brainstorming</code> and <code>ab-deep-research</code> search this directory before starting new work. Your project builds institutional knowledge over time, whichever tool opens it.
+          </div></div>
+        </div>
+        <div class="faq__item">
+          <button class="faq__question">
+            Which tool should I use?
+            <svg class="faq__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq__answer"><div class="faq__answer-inner">
+            Whichever you already use. The table under <a href="#install">Get Started</a> shows what each tool gets: hooks only in Claude Code and Codex, helpers everywhere except Pi without <code>pi-subagents</code>, manual-only enforced everywhere except Amp and Hermes. The pipelines run end to end in all eight; the support note under <code>docs/hosts/</code> for your tool says what is different there and its smoke-test status.
+          </div></div>
+        </div>
+        <div class="faq__item">
+          <button class="faq__question">
+            Does it work without hooks?
+            <svg class="faq__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq__answer"><div class="faq__answer-inner">
+            Yes. Hooks exist only for Claude Code (10 handlers) and Codex (5, after you trust them in <code>/hooks</code>). The other six hosts lose only what the hooks add: the session-start pointer to <code>docs/context/STATUS.md</code>, the injection scanners, the context monitor, the commit-message check, the fetch cache, the ship-pipeline Stop guard and the Agent Teams gates. No pipeline depends on them; the ship runner drives an unattended run through <code>state.json</code> in every tool.
+          </div></div>
+        </div>
+        <div class="faq__item">
+          <button class="faq__question">
+            How do I move a project from v3?
+            <svg class="faq__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq__answer"><div class="faq__answer-inner">
+            Install v4, then ask for the <code>ab-migrate</code> skill in the project. It finds the v3 plugin and every in-project copy the blueprint made, shows the list, asks once, removes only those files behind a backup branch, renames <code>CLAUDE.md</code> to <code>AGENTS.md</code> with a one-line <code>CLAUDE.md</code> that imports it, and prints the uninstall command for the v3 plugin. The name map is in <a href="https://github.com/Ninety2UA/agent-blueprint/blob/main/docs/upgrade/v4.md" target="_blank" rel="noopener">docs/upgrade/v4.md</a>.
           </div></div>
         </div>
       </div>
@@ -3956,7 +4030,7 @@
             </svg>
             Blueprint
           </a>
-          <p>Production-grade Claude Code plugin for AI-assisted software development. By Ninety2UA.</p>
+          <p>53 skills for AI-assisted development that run in eight coding CLIs. By Ninety2UA.</p>
         </div>
         <div>
           <h4 class="footer__heading">Product</h4>
@@ -3974,12 +4048,14 @@
             <li><a href="https://github.com/Ninety2UA/agent-blueprint" target="_blank" rel="noopener">GitHub</a></li>
             <li><a href="https://github.com/Ninety2UA/agent-blueprint/issues" target="_blank" rel="noopener">Issues</a></li>
             <li><a href="https://github.com/Ninety2UA/agent-blueprint/releases" target="_blank" rel="noopener">Releases</a></li>
+            <li><a href="https://github.com/Ninety2UA/agent-blueprint/tree/main/docs/hosts" target="_blank" rel="noopener">Support notes per tool</a></li>
+            <li><a href="https://github.com/Ninety2UA/agent-blueprint/blob/main/docs/upgrade/v4.md" target="_blank" rel="noopener">Upgrade from v3</a></li>
             <li><a href="https://github.com/Ninety2UA/agent-blueprint/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Contributing</a></li>
           </ul>
         </div>
       </div>
       <div class="footer__bottom">
-        &copy; 2026 Ninety2UA. MIT License. Built for use with <a href="https://claude.ai/claude-code">Claude Code</a> by Anthropic.
+        &copy; 2026 Ninety2UA. MIT License. Runs in Claude Code, Codex, Antigravity, Grok Build, Pi, Cursor CLI, Hermes and Amp.
       </div>
     </div>
   </footer>

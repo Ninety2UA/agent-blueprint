@@ -1,44 +1,78 @@
 <p align="center">
-  <img src="docs/images/hero-banner.svg" alt="Claude Code Project Template" width="100%">
+  <img src="docs/images/hero-banner.svg" alt="Agent Blueprint" width="100%">
 </p>
 
 <p align="center">
-  <strong>Production-grade Claude Code plugin for AI-assisted software development</strong>
+  <strong>53 skills for AI-assisted development that run in eight coding CLIs: Claude Code, Codex, Antigravity, Grok Build, Pi, Cursor CLI, Hermes and Amp</strong>
 </p>
 
 <p align="center">
+  <a href="#runs-in-eight-tools">Install</a> ·
   <a href="#how-does-this-compare">Compare</a> ·
-  <a href="#whats-new-in-v380--plans-as-decisions-and-opus-55-currency">What's New</a> ·
+  <a href="#whats-new-in-v400--agent-blueprint">What's New</a> ·
   <a href="#quick-start">Quick Start</a> ·
   <a href="#what-you-get">What You Get</a> ·
   <a href="#workflow">Workflow</a> ·
-  <a href="#autonomous-pipeline-ship-pipeline">Ship</a> ·
-  <a href="#team-work--swarms">Team Work</a> ·
+  <a href="#team-work-and-swarms">Team Work</a> ·
+  <a href="#model-and-effort">Model and Effort</a> ·
   <a href="#skills-reference">Skills</a> ·
-  <a href="#agents-reference">Agents</a> ·
+  <a href="#helper-prompts-reference">Helpers</a> ·
   <a href="#customization">Customization</a> ·
-  <a href="#error-recovery">Error Recovery</a>
+  <a href="#faq">FAQ</a>
 </p>
 
 ---
 
 <p align="center">
-  <img src="docs/images/overview.gif" alt="Agent Blueprint overview — 7 scenes showing skills, agents, pipelines, and multi-agent orchestration" width="90%">
+  <img src="docs/images/overview.gif" alt="Agent Blueprint overview: skills, pipelines, helper prompts and team work in eight coding CLIs" width="90%">
 </p>
 
-## Why This Template?
+## Why Agent Blueprint
 
-Most AI coding sessions start from scratch: no conventions, no memory, no workflow. Each session reinvents the wheel. This template fixes that.
+Most AI coding sessions start from scratch: no conventions, no memory, no workflow. Each session reinvents the wheel, and each switch to another tool throws away what the last one learned.
 
-It gives Claude Code a **structured operating system** — a set of skills, agents, and documentation patterns that compound across sessions. The result: higher quality code, fewer regressions, and a codebase that gets easier to work on over time.
+Agent Blueprint gives a coding agent one way of working that is the same in every tool: skills that take a feature from design through review to a pull request, helper prompts for the analysis that benefits from a fresh context, and project documents that carry state from one session to the next. Conventions, decisions and solved problems live in the repository under `docs/`, so they are there whichever of the eight tools opens it next.
 
 **The core philosophy:**
 
 > *Each unit of engineering work should make subsequent units easier — not harder.*
 
+## Runs in eight tools
+
+One set of skills and one install route per tool. The commands below install from a checkout of this repository, because the `agent-blueprint` git URL exists only once the repository is renamed at release; `<checkout>` is the path of the clone.
+
+```bash
+git clone https://github.com/Ninety2UA/agent-blueprint.git
+cd agent-blueprint
+```
+
+| Host | Binary | Install | What else covers it | Hooks | Helpers | Manual-only skills | Support note |
+|---|---|---|---|---|---|---|---|
+| Claude Code | `claude` | `claude plugin marketplace add <checkout>`, then `claude plugin install agent-blueprint@agent-blueprint` | Nothing; this install also serves Amp, which reads Claude Code's plugin cache | 10 handlers | Subagents, worktree isolation | Enforced | [claude-code.md](docs/hosts/claude-code.md) |
+| Codex | `codex` | `bash install.sh --only codex` (the shared copy in `~/.agents/skills`); on a Codex-only machine, `codex plugin marketplace add <checkout>` then `codex plugin add agent-blueprint@agent-blueprint` instead (0.155.1), never both | That copy also serves Grok Build, Pi, Cursor CLI and Amp | 5 handlers with the plugin route, after you trust them in `/hooks`; none with the copy | Subagents, file ownership | Enforced | [codex.md](docs/hosts/codex.md) |
+| Antigravity | `agy` | `agy plugin install <checkout>` | Nothing; Antigravity does not read `~/.agents/skills` | None | Subagents, worktree isolation | Not verified | [antigravity.md](docs/hosts/antigravity.md) |
+| Grok Build | `grok` | `bash install.sh --only grok` (one copy in `~/.agents/skills`) | That copy also serves Codex, Pi, Cursor CLI and Amp | None | Subagents, worktree isolation | Enforced | [grok-build.md](docs/hosts/grok-build.md) |
+| Pi | `pi` | `bash install.sh --only pi` | The shared copy | None | With the `pi-subagents` package; inline without it | Enforced | [pi.md](docs/hosts/pi.md) |
+| Cursor CLI | `cursor-agent` | `bash install.sh --only cursor-agent` | The shared copy; Cursor also imports a Claude Code plugin install, so keep one route | None | Subagents, worktree isolation | Enforced | [cursor-cli.md](docs/hosts/cursor-cli.md) |
+| Hermes | `hermes` | `bash install.sh --only hermes`, then list `~/.agents/skills` under `skills.external_dirs` in `~/.hermes/config.yaml` | The shared copy, once listed there | None | Subagents (`delegate_task`), two per one-shot run | Cannot enforce | [hermes.md](docs/hosts/hermes.md) |
+| Amp | `amp` | `bash install.sh --only amp`, or nothing when Claude Code has the plugin | The shared copy or the Claude Code install | None | Subagents, file ownership | Cannot enforce | [amp.md](docs/hosts/amp.md) |
+
+Every host picks a skill from its description when a request matches it. To name one yourself:
+
+| Host | Explicit invocation |
+|---|---|
+| Claude Code, Antigravity, Grok Build, Cursor CLI, Hermes | `/` followed by the skill name |
+| Codex | `$` followed by the skill name |
+| Pi | `/skill:` followed by the skill name |
+| Amp | Ask in prose ("use the ab-brainstorming skill"); Amp removed user invocation of skills in May 2026 |
+
+Two skills are manual-only and run only when you name them: `ab-plugin-update` and `ab-migrate`. Claude Code, Codex, Grok Build, Pi and Cursor CLI enforce that; Amp and Hermes cannot, which their support notes say. Hermes keeps the bare `ab-` names through `skills.external_dirs`; installed as a Hermes plugin, the skills would be namespaced.
+
+`bash install.sh` does the routing for you. It detects the tools on `PATH`, uses each tool's own route where one exists (Claude Code's marketplace commands, `agy plugin install`), writes one copy of `skills/` into `~/.agents/skills` for the rest, records that copy in `~/.agents/skills/.agent-blueprint-install.json` so a re-run removes skills that were renamed or dropped since, and prints the `skills.external_dirs` lines Hermes needs. `--dry-run` prints what would run and changes nothing; `--only HOSTS` limits it to a comma-separated list (`claude,codex,agy,grok,pi,cursor-agent,hermes,amp`); `--copy-dir DIR` copies the skills somewhere else, for a machine with no tool on `PATH`; `--scaffold DIR` only scaffolds a project's files; a trailing project path scaffolds that project after installing. `--legacy` is retired: it exits with a message pointing at the `ab-migrate` skill, because v4 no longer copies itself into a project's `.claude/`.
+
 ## How Does This Compare?
 
-Before committing to any tool, it helps to understand the landscape. We've analyzed **19 repos and frameworks** across the Claude Code ecosystem — over 1.15M combined GitHub stars — through direct source code inspection, not marketing claims.
+Before committing to any tool, it helps to understand the landscape. We've analyzed **19 repos and frameworks** across the coding-agent ecosystem — over 1.15M combined GitHub stars — through direct source code inspection, not marketing claims.
 
 <p align="center">
   <img src="docs/images/ecosystem-guide.png" alt="Claude Code Tools Guide — curated ecosystem subset" width="90%">
@@ -50,7 +84,7 @@ Before committing to any tool, it helps to understand the landscape. We've analy
 
 ## Latest: Ecosystem-Wide Analysis
 
-Every component in Blueprint is informed by what works (and what doesn't) across the broader ecosystem. We analyze repos at the source code level — reading implementation, not just READMEs — and either absorb the best patterns into existing skills and agents, or document exactly why we rejected them.
+Every component in Agent Blueprint is informed by what works (and what doesn't) across the broader ecosystem. We analyze repos at the source code level — reading implementation, not just READMEs — and either absorb the best patterns into existing skills and agents, or document exactly why we rejected them.
 
 | Repo / Tool | Stars | Verdict | What We Took |
 |---|---|---|---|
@@ -79,13 +113,32 @@ Every component in Blueprint is informed by what works (and what doesn't) across
 <a id="gsd-core-provenance"></a>
 > **† gsd-core provenance.** `open-gsd/gsd-core` is a **post-abandonment community fork** of `gsd-build/get-shit-done` (created 2026-05-22, after the original maintainer went dark and the associated `$GSD` token was linked to a rug-pull). Maintainer safety is **unconfirmed**. It appears here for analysis completeness only; any pattern from a GSD-lineage repo is re-implemented from the described idea, never copied from fork source — so the supply-chain risk to this project is negligible.
 
-### The latest two releases: a platform-sync cycle
+### v3.4.0 and v3.5.0: a platform-sync cycle
 
 v3.4.0 and v3.5.0 were produced by a single **platform-sync cycle** — one initiative in two maintainer-gated parts. Part 1 audited the entire Claude Code platform delta since the last sync and adopted what fit; Part 2 re-analyzed four external repos and imported what earned its place. The audit method is now codified into two reusable monthly watchers — `/cli-watch` (platform) and `/repo-watch` (external repos) — maintainer workspace tooling that drives the release cadence, not part of the shipped plugin.
 
 <p align="center">
   <img src="docs/images/platform-sync-cycle.png" alt="Platform-sync cycle — Audit (68 CLI versions) → Gate 1 → Adopt + verify (Part 1, v3.4.0) → Delta sweep (Part 2, 4 repos) → Gate 2 → Import + close (v3.5.0), codified into the /cli-watch + /repo-watch watchers" width="90%">
 </p>
+
+### What's New in v4.0.0 — Agent Blueprint
+
+A clean break. `claude-code-blueprint` v3.8.0 becomes Agent Blueprint v4.0.0: one set of skills that installs natively in eight coding CLIs, and a repository renamed `agent-blueprint` (GitHub redirects the old name). The upgrade guide is [docs/upgrade/v4.md](docs/upgrade/v4.md); the decision record for the reversal of the single-harness scope is [docs/learnings/2026-10-portability-decision.md](docs/learnings/2026-10-portability-decision.md).
+
+- **Eight hosts with native manifests** — Claude Code, Codex, Antigravity, Grok Build, Pi, Cursor CLI, Hermes and Amp. Each tool with a plugin system gets a committed manifest that points at the one `skills/` tree (`.claude-plugin/`, `.codex-plugin/`, the root `plugin.json` for Antigravity, `.grok-plugin/`, the `pi` key in `package.json`, `.cursor-plugin/`); Hermes and Amp read the skills as plain files. `install.sh` detects the installed tools and gives each its route: see [Runs in eight tools](#runs-in-eight-tools) and the support note per host under `docs/hosts/`.
+- **`ab-` prefix on every skill** — 53 skills, each named `ab-…`, so a shared skills folder never collides with another pack's `brainstorming`. The old-to-new map is `docs/upgrade/v4-skill-names.tsv`: `agent-teams` and `team-execution` merged into `ab-orchestrate`, and `migrate-to-plugin` became `ab-migrate`.
+- **Agents became helper prompts** — the 29 agent files are now 30 prompt files inside the skills that use them (`skills/<skill>/references/agents/`), and helpers inherit the session's model and effort: no prompt carries a tier, so a session at `xhigh` reviews at `xhigh`. Where a tool has no subagents, the skill follows the prompt itself and returns the same output shape.
+- **`AGENTS.md` is the instructions file** — every host reads it, and `CLAUDE.md` holds the single line `@AGENTS.md` for Claude Code. The `ab-project-start` scaffold merges into what a project already has and never overwrites it.
+- **Working files under `.agent-blueprint/`** — plans in progress, review runs, debug notes, the team ledger and run state leave `.claude/`, which other tools treat as foreign. Session notes live in `docs/context/STATUS.md`.
+- **Team work in every tool** — `ab-orchestrate` runs a plan through a file ledger in dependency-ordered waves, with helpers where the tool has them and one task after another where it does not. Claude Code Agent Teams and Codex `multi_agent_v2` are optional extras on top of the ledger.
+- **One ship runner for any host** — `skills/ab-ship-pipeline/scripts/run.sh --host <host> "<feature>"` starts a fresh session per iteration and reads `.agent-blueprint/run/state.json` between them; it pushes and opens the PR only after its own secret scan. Hosts that can only run unguarded need `--allow-unguarded`.
+- **Hooks as optional enhancements** — `hooks/claude-code.json` (10 handlers) and `hooks/codex.json` (5). The other six hosts run every pipeline without them.
+- **Portability and manifest gates** — `scripts/check-portability.py` (the rules for all eight hosts, with an allowlist that only shrinks), `scripts/check-manifests.py` (every manifest and every skill at one version), a hard 8,000-byte cap on every `SKILL.md`, snippet sync, and a drift gate that now counts helper prompts.
+- **`ab-migrate`** — cleans a v3 project: the v3 plugin, in-project copies left by `install.sh --legacy`, `scripts/ship.sh` and old run state, behind a backup branch and one question.
+- **Scope reversal, on record** — v3 declared multi-harness work out of scope. The decision record explains why that changed and carries the ledger of where every v3 instruction rule went (`docs/upgrade/v4-instruction-rules.md`): enforced by a gate or hook, kept as a principle with its reason, or dropped.
+
+<details>
+<summary>Release history (v2.3 to v3.8.0)</summary>
 
 ### What's New in v3.8.0 — Plans as Decisions and Opus 5.5 Currency
 
@@ -131,7 +184,7 @@ The second `/cli-watch` cycle audited 47 CLI releases (2.1.213 → 2.1.268, 1,38
 - **Model-agnostic task tracking** — Claude Code removed TodoWrite and the Task tools on Opus 4.8, Sonnet 5, Fable 5 and newer, so `ab-executing-plans`, `ab-subagent-driven-development` and `ab-writing-skills` now track progress in a plan-scoped `.claude/plans/<plan>.progress.local.md` (git-ignored in new scaffolds, with a `git check-ignore` guard for older projects).
 - **Limits and lineup refreshed** — the 200-subagent session cap is gone; the real limits are 20 concurrent subagents and a spawn depth of 3. The opt-in effort mapping now points at Opus 5 / Fable 5.1, and effort tiers are documented as honored on every model from CLI 2.1.267.
 - **Native alternatives as they behave today** — dynamic-workflow gating (paid plans, Pro opt-in, org switch, `-p`/SDK support), `/goal` check-ins and its headless loop, teammate model rules, and the bundled `/deep-research` workflow that shared a name with the research-swarm skill until v4 added the `ab-` prefix.
-- **Native-first plugin update** — `/ab-plugin-update` tries `claude plugin update` (scope-aware, cache-verified) before falling back to the manual sync; README and site copy now say `/reload-plugins` instead of "restart".
+- **Native-first plugin update** — `ab-plugin-update` tries `claude plugin update` (scope-aware, cache-verified) before falling back to the manual sync; README and site copy now say `/reload-plugins` instead of "restart".
 - **Two new gates** — a CI job runs `claude plugin validate --strict` on the plugin and marketplace manifests, and the drift gate now catches a stale README "What's New" nav anchor (negative-tested).
 - **Diagrams re-rendered** — the effort-tiers and platform-currency images are regenerated from source with the new labels.
 
@@ -192,7 +245,7 @@ Third-pass deep analysis of [gsd-build/get-shit-done](https://github.com/gsd-bui
 - **Adversarial stance phrasing** — code-reviewer, security-sentinel, integration-checker, findings-synthesizer, plan-checker now lead with explicit "assume X is broken until evidence proves otherwise" framing.
 
 **P2 — refinements and additions:**
-- **`/ab-forensics` skill (new)** — post-mortem of failed `/ship` runs against `.claude/ship-logs/` + git state. Investigates 4 anomaly categories (stuck loops, missing artifacts, abandoned work, crashes). Read-only. Redacts sensitive content before producing reports.
+- **`ab-forensics` skill (new)** — post-mortem of failed `/ship` runs against `.claude/ship-logs/` + git state. Investigates 4 anomaly categories (stuck loops, missing artifacts, abandoned work, crashes). Read-only. Redacts sensitive content before producing reports.
 - **Conventional-commits validator (opt-in)** — new `validate-commit.js` PreToolUse hook on Bash. Validates `type(scope): subject ≤ 72 chars`. Off by default; opt-in via `.claude/blueprint.local.json`.
 - **Calibration tiers** — Full / Standard / Minimal-decisive scaling in `research-synthesizer` and `plan-checker`.
 - **LOCKED-vs-LOCKED hard-blocker rule** — two contradictory locked decisions in DECISIONS.md is a hard BLOCKER, never auto-resolved.
@@ -230,8 +283,8 @@ Full framework audit (5 parallel reviewers + Team Lead cross-check) across all 5
 
 **Key changes:**
 - **Plugin architecture** — 54 skills, 29 agents, 8 hooks provided by the plugin, not copied into your project
-- **`/ab-project-start` scaffolding** — project files (CLAUDE.md, docs/, BACKLOG.md) created on demand per project
-- **`/ab-migrate-to-plugin`** — skill to transition v2.x projects to plugin mode
+- **`ab-project-start` scaffolding** — project files (CLAUDE.md, docs/, BACKLOG.md) created on demand per project
+- **`ab-migrate-to-plugin`** — skill to transition v2.x projects to plugin mode
 - **All slash commands are skills** — invoked by name, content loads directly (no sandbox gap)
 - **Legacy mode preserved** — `--legacy` flag in install.sh for users who prefer in-project files
 
@@ -248,29 +301,29 @@ Commands were thin wrappers that couldn't load skill content due to Claude Code'
 
   | Old (v3.1) | New (v3.2) |
   |------------|------------|
-  | `/build` | `/ab-build-pipeline` |
-  | `/ship` | `/ab-ship-pipeline` |
-  | `/planning` | `/ab-brainstorming` |
-  | `/quick` | `/ab-quick-fix` |
-  | `/start` | `/ab-project-start` |
-  | `/status` | `/ab-project-status` |
-  | `/wrap` | `/ab-session-wrap` |
-  | `/compound` | `/ab-knowledge-compounding` |
-  | `/debug` | `/ab-systematic-debugging` |
-  | `/update` | `/ab-plugin-update` |
-  | `/team` | `/ab-orchestrate` |
-  | `/review` | `/ab-requesting-code-review` |
-  | `/ideate` | `/ab-ideation` |
-  | `/map` | `/ab-codebase-mapping` |
-  | `/backlog` | `/ab-backlog-triage` |
-  | `/health` | `/ab-health-check` |
-  | `/pause` | `/ab-pause-checkpoint` |
-  | `/resume` | `/ab-resume-session` |
-  | `/pr` | `/ab-pr-workflow` |
-  | `/changelog` | `/ab-changelog-generation` |
-  | `/deepen` | `/ab-deepen-plan` |
+  | `/build` | `ab-build-pipeline` |
+  | `/ship` | `ab-ship-pipeline` |
+  | `/planning` | `ab-brainstorming` |
+  | `/quick` | `ab-quick-fix` |
+  | `/start` | `ab-project-start` |
+  | `/status` | `ab-project-status` |
+  | `/wrap` | `ab-session-wrap` |
+  | `/compound` | `ab-knowledge-compounding` |
+  | `/debug` | `ab-systematic-debugging` |
+  | `/update` | `ab-plugin-update` |
+  | `/team` | `ab-orchestrate` |
+  | `/review` | `ab-requesting-code-review` |
+  | `/ideate` | `ab-ideation` |
+  | `/map` | `ab-codebase-mapping` |
+  | `/backlog` | `ab-backlog-triage` |
+  | `/health` | `ab-health-check` |
+  | `/pause` | `ab-pause-checkpoint` |
+  | `/resume` | `ab-resume-session` |
+  | `/pr` | `ab-pr-workflow` |
+  | `/changelog` | `ab-changelog-generation` |
+  | `/deepen` | `ab-deepen-plan` |
 
-  Unchanged: `/ab-discuss`, `/ab-orchestrate`, `/ab-deep-research`, `/ab-review-swarm`, `/ab-add-tests`, `/ab-migrate-to-plugin`
+  Unchanged: `ab-discuss`, `ab-orchestrate`, `ab-deep-research`, `ab-review-swarm`, `ab-add-tests`, `ab-migrate-to-plugin`
 
 ### What was new in v2.3
 
@@ -371,7 +424,7 @@ Analyzed a hybrid multi-model coordination framework (Claude Code as lead + Gemi
 - **Contradiction resolution rules for findings-synthesizer** — 4-step protocol: same problem → more specific fix; different problems → address both; genuine contradiction → conservative position wins + log reasoning; one approves one flags → flag wins
 - **Structured escalation format for ab-iterative-refinement** — when convergence fails, present "both perspectives + my recommendation" with lettered options instead of a flat findings list
 
-**Rejected:** Multi-model delegation via CLI (fragile, adds dependencies, loses native tool access), file-based coordination protocol (I/O overhead unnecessary for same-model systems), assignment heuristic matrix (designed for heterogeneous agents), Phase 0 whole-repo analysis (our 5-agent research swarm is more thorough), CONTRACTS.md (GSD import of interface context extraction is fresher), attribution changelog (git blame already handles this), research skip conditions (already covered by `/ab-quick-fix` and session awareness).
+**Rejected:** Multi-model delegation via CLI (fragile, adds dependencies, loses native tool access), file-based coordination protocol (I/O overhead unnecessary for same-model systems), assignment heuristic matrix (designed for heterogeneous agents), Phase 0 whole-repo analysis (our 5-agent research swarm is more thorough), CONTRACTS.md (GSD import of interface context extraction is fresher), attribution changelog (git blame already handles this), research skip conditions (already covered by `ab-quick-fix` and session awareness).
 
 </details>
 
@@ -383,7 +436,7 @@ Analyzed [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode) —
 **Imported:**
 
 - **Evidence hierarchy for ab-systematic-debugging** — 6-tier credibility ranking (direct reproduction > reproduction script > logs/traces > converging sources > code-path inference > speculation). Prevents treating speculation as fact. Cross-referenced in findings-synthesizer confidence tiering
-- **Ambiguity gating for pipeline entry** — dimension-weighted requirement scoring (scope 40%, constraints 30%, criteria 30%) with 0.8 clarity threshold. Gates `/ab-ship-pipeline` Stage 1 and `/ab-build-pipeline` Stage 1. Brownfield variant adds context clarity at 15%
+- **Ambiguity gating for pipeline entry** — dimension-weighted requirement scoring (scope 40%, constraints 30%, criteria 30%) with 0.8 clarity threshold. Gates `ab-ship-pipeline` Stage 1 and `ab-build-pipeline` Stage 1. Brownfield variant adds context clarity at 15%
 - **Deslop pass for ab-iterative-refinement** — pre-review cleaning step targeting AI text patterns (over-hedged language, filler transitions, restating-the-obvious comments, redundant type annotations). Step 0.5 in ab-iterative-refinement, referenced from ab-autonomous-loop Step 7
 
 **Rejected:** Multi-AI routing (unpredictable cross-model behavior, already rejected in multi-agent framework analysis), MCP bridge + LSP + AST integration (environment-level tool, breaks zero-dependency guarantee), magic keywords (semantic landmines that conflict with project names), `.omc/` state directory (fragments state across three locations), Deep Interview mode (target users know what to build), notification routing (infrastructure-layer concern), Ralplan consensus planning (analysis paralysis risk — plan-checker is sufficient).
@@ -403,100 +456,87 @@ Not every analysis leads to adoption. These three repos were analyzed in depth a
 
 </details>
 
+</details>
+
 ## Quick Start
 
-### Install as a Claude Code plugin
+### Install
 
-Inside any Claude Code session:
-
-```
-/plugin marketplace add Ninety2UA/agent-blueprint
-/plugin install agent-blueprint
-```
-
-That's it — the blueprint is now available in **all your projects**. No per-project files cluttering your git history.
+Pick your tool in the [eight-tool table](#runs-in-eight-tools) and run its route from a checkout, or let `bash install.sh` detect the tools you have and install for each.
 
 ### Set up a project
 
-```bash
-claude          # Start Claude Code — plugin loads automatically
-> /ab-project-start    # Scaffolds project files (CLAUDE.md, docs/) + interactive setup
-> /ab-brainstorming    # Brainstorm and plan your first feature
-```
-
-### Alternative: one-line install via script
+Start a session in your tool inside the project and ask for the `ab-project-start` skill. It scaffolds `AGENTS.md` (plus a one-line `CLAUDE.md` that imports it), `docs/context/`, `BACKLOG.md` and `.agent-blueprint/.gitignore` by merging into what exists, then fills in conventions, goals and status from the codebase and a short conversation. To scaffold without a session:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Ninety2UA/agent-blueprint/main/install.sh | bash
+bash install.sh --scaffold /path/to/your/project
 ```
 
-### Legacy mode (copy all files into project)
+### First feature
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/Ninety2UA/agent-blueprint/main/install.sh | bash -s -- --legacy /path/to/your/project
-```
+Ask for the `ab-brainstorming` skill with the idea. It settles what the repository already answers, compares two or three approaches, gets your approval on the design and saves a plan under `docs/plans/`. From there, `ab-build-pipeline` runs the plan with a checkpoint after every stage, `ab-ship-pipeline` runs it end to end without one, and `ab-orchestrate` runs it as team work in parallel waves.
 
-### Update to latest version
+### Update
 
-From a terminal:
+| Install route | Update |
+|---|---|
+| Claude Code plugin | `claude plugin update agent-blueprint@agent-blueprint`, then `/reload-plugins` |
+| Codex plugin | Codex's `codex plugin` command from the marketplace you added; the `ab-plugin-update` skill finds the subcommand, or falls back to the copy route |
+| Antigravity | `git pull` in the checkout, then `agy plugin install <checkout>` again (not verified) |
+| Copy installs (Grok Build, Pi, Cursor CLI, Hermes, Amp, or Codex through the copy) | `git pull` in the checkout, then `bash install.sh` again; the install record removes skills that were renamed or dropped |
 
-```bash
-claude plugin update agent-blueprint@agent-blueprint
-```
+In any tool, the `ab-plugin-update` skill works out which route you used, runs it, and checks the installed version against `main`.
 
-Or, inside any Claude Code session, `/plugin install agent-blueprint@agent-blueprint` — which refreshes the marketplace catalog first. Either path re-fetches the latest version from GitHub and updates the plugin cache. All projects get the update automatically — run `/reload-plugins` (or restart) to use the new version.
+### Migrate from v3
 
-### Migrate from v2.x
-
-Already using the blueprint with in-project files? Install the plugin, then run `/ab-migrate-to-plugin` to remove the in-project engine files.
+A project that used `claude-code-blueprint` still carries v3 traces: the plugin under its old name, in-project copies from `install.sh --legacy`, `scripts/ship.sh`, ship state files under `.claude/`, and a `CLAUDE.md` that should become `AGENTS.md`. Install v4, then ask for the `ab-migrate` skill in the project: it lists the traces, asks once, removes only the blueprint's own files behind a backup branch, and prints the uninstall command for the v3 plugin. The full path, with the old-to-new name map, is in [docs/upgrade/v4.md](docs/upgrade/v4.md).
 
 ## What You Get
-
-<p align="center">
-  <img src="docs/images/project-structure.png" alt="Project Structure" width="90%">
-</p>
 
 ### Project structure
 
 ```
-Plugin (installed globally, zero files in your project)
-├── 53 skills            /ab-build-pipeline, /ab-ship-pipeline, /ab-brainstorming, /ab-review-swarm, /ab-orchestrate, /ab-forensics, ...
-│                        TDD, ab-wave-orchestration, swarms, ab-iterative-refinement, ...
-└── 10 hooks              session-start, context-monitor, prompt-guard, read-injection-scanner, validate-commit (opt-in), ship-loop, sdd-cache (pre/post) + 2 for the Agent Teams extra
+Plugin (installed in your tool, zero files in your project)
+├── 53 skills            skills/<name>/SKILL.md with references/ (prompt files, procedures) and optional scripts/ and assets/
+│                        ab-build-pipeline, ab-ship-pipeline, ab-brainstorming, ab-review-swarm, ab-orchestrate, ab-migrate, ...
+├── 30 helper prompts    skills/<skill>/references/agents/<name>.md: a helper runs it where the tool has subagents, the session follows it where not
+└── 10 hooks             hooks/claude-code.json (session-start, prompt-guard, validate-commit, sdd-cache pre and post, context-monitor,
+                         read-injection-scanner, ship-loop, task-completed, teammate-idle) and hooks/codex.json (five of them)
 
-your-project/ (scaffolded by /ab-project-start)
+your-project/ (scaffolded by ab-project-start)
+├── AGENTS.md              # Project instructions; every tool reads it
+├── CLAUDE.md              # One line, @AGENTS.md, so Claude Code loads the same file
+├── BACKLOG.md             # Idea and bug capture inbox
+├── blueprint.local.md     # Per-developer helper configuration (gitignored)
+├── .agent-blueprint/      # The blueprint's working files; run/ and team/ are ignored, plans and notes are tracked
 ├── docs/
-│   ├── context/        # GOALS.md · STATUS.md · CONVENTIONS.md
-│   ├── plans/          # Implementation plans
-│   ├── specs/          # Feature specifications
-│   ├── decisions/      # Architecture Decision Records
-│   ├── research/       # Spike results & evaluations
-│   └── solutions/      # Institutional knowledge (created by /ab-knowledge-compounding)
-├── src/                # Your application code
-├── tests/              # Your test suite
-├── infra/              # Deployment & infrastructure
-├── CLAUDE.md           # Master orchestration — Claude reads this first
-├── BACKLOG.md          # Idea & bug capture inbox
-└── blueprint.local.md  # Per-project agent config (gitignored)
+│   ├── context/           # STATUS.md (session continuity), GOALS.md, CONVENTIONS.md, DECISIONS.md
+│   ├── plans/             # Implementation plans
+│   ├── specs/             # Feature specifications
+│   ├── decisions/         # Architecture decision records
+│   ├── research/          # Spike results and evaluations
+│   ├── learnings/         # LEARNINGS.md: patterns and gotchas learned here
+│   └── solutions/         # Solved problems, written by ab-knowledge-compounding
+├── src/                   # Your application code
+├── tests/                 # Your test suite
+└── infra/                 # Deployment and infrastructure
 ```
 
 ### What each piece does
 
 | Component | Purpose |
 |-----------|---------|
-| **CLAUDE.md** | Master configuration that Claude reads at session start. Contains behavioral rules, session continuity, agent team hierarchy, skill triggers, and project-specific learnings. |
-| **Skills** | Workflow modules that activate at specific points — TDD, debugging, code review, wave orchestration, swarm coordination, knowledge compounding. They enforce quality gates automatically. |
-| **Agents** | Specialized subprocesses dispatched for focused analysis — security audits, performance reviews, architecture evaluation. Organized into teams (review swarm, research swarm, execution waves). Each gets a fresh 200K context. |
-| **docs/context/** | Living project state — goals, current status, conventions, execution state. Updated every session by `/ab-session-wrap`. |
-| **docs/solutions/** | Institutional knowledge — solved problems documented by `/ab-knowledge-compounding` and searched by `/ab-brainstorming` before future work. |
-| **BACKLOG.md** | Quick-capture inbox for ideas, bugs, and tasks. Triaged by `/ab-backlog-triage` into prioritized work. |
-| **blueprint.local.md** | Per-project agent configuration — choose which review/research agents are relevant for your tech stack. Gitignored so each developer can customize. |
+| **AGENTS.md** | The project instructions every tool loads: how work is done here and why, where things are, when to decide and when to ask. `CLAUDE.md` imports it for Claude Code. |
+| **Skills** | Workflow modules that run at specific points: brainstorming, planning, TDD, debugging, review, team work, shipping, knowledge capture. Each is a folder with a `SKILL.md` under 8,000 bytes and its detail in `references/`. |
+| **Helper prompts** | Prompt files for focused analysis (security, performance, architecture, research, plan checking) inside the skill that uses them. A helper runs one in its own context where the tool has subagents; otherwise the session follows the file itself, and either way returns the same output shape. |
+| **Hooks** | Optional guards for Claude Code and Codex: a session-start pointer to `STATUS.md`, injection scanners, a commit-message check, the ship-pipeline Stop guard, the Agent Teams gates. No pipeline depends on them. |
+| **docs/context/** | Living project state: goals, status with the Session Continuity notes, conventions, locked decisions. Updated every session by `ab-session-wrap`. |
+| **docs/solutions/** | Institutional knowledge: solved problems written by `ab-knowledge-compounding` and searched by `ab-brainstorming` and `ab-deep-research` before new work. |
+| **.agent-blueprint/** | Working files: run state, the team ledger, review runs, debug notes, plans in progress. Its own `.gitignore` keeps run state out of commits. |
+| **BACKLOG.md** | Quick-capture inbox for ideas, bugs and tasks, triaged by `ab-backlog-triage` into prioritized work. |
+| **blueprint.local.md** | Per-developer choice of which review and research helpers run for this stack. Gitignored. |
 
 ## Workflow
-
-<p align="center">
-  <img src="docs/images/workflow.png" alt="Development Workflow" width="90%">
-</p>
 
 ### The development loop
 
@@ -506,68 +546,53 @@ Every feature follows this flow:
   <img src="docs/images/dev-loop.png" alt="Orient → Design → Plan → Build → Ship → next feature" width="90%">
 </p>
 
-**1. Orient** — Load context with `/ab-project-status` or set up with `/ab-project-start`
+**1. Orient** — Load context with `ab-project-status` or `ab-resume-session`, or set up with `ab-project-start`.
 
-**2. Ideate** (optional) — Run `/ab-ideation` to discover what's worth building. AI scans your codebase and surfaces ranked improvement ideas.
+**2. Ideate** (optional) — `ab-ideation` scans the codebase, learnings and git history and ranks improvement ideas.
 
-**3. Design** — Brainstorm options with `/ab-brainstorming`. Present tradeoffs. Get human approval before any code is written.
+**3. Design** — `ab-brainstorming` presents tradeoffs and gets your approval before any code is written.
 
-**4. Plan** — Break the approved design into tasks that record decisions, not code: exact file paths, each test and what it asserts, signatures, and a Review Focus list of spec-implied edge cases. The user reviews the saved plan before it runs. After the plan is written, choose: deepen with research (`/ab-deepen-plan`), execute sequentially (subagent-driven), or execute as team work in parallel waves (`/ab-orchestrate`).
+**4. Plan** — The approved design becomes tasks that record decisions, not code: exact file paths, each test and what it asserts, signatures, and a Review Focus list. You review the saved plan before it runs. Then choose: deepen it with research (`ab-deepen-plan`), execute it one task at a time (`ab-subagent-driven-development` or `ab-executing-plans`), or run it as team work in parallel waves (`ab-orchestrate`).
 
-**5. Build** — Execute using TDD (red-green-refactor). Verify with evidence. Dispatch code review agents.
+**5. Build** — TDD (red-green-refactor), verification with evidence, and a code review from a helper.
 
-**6. Ship** — Merge the branch. Update all documentation with `/ab-session-wrap`. Capture learnings for next session.
+**6. Ship** — Merge the branch, update the project docs with `ab-session-wrap`, and capture what was learned for the next session.
 
 ### Lightweight workflow for small changes
 
-Not everything needs the full 5-step flow. Bug fixes with obvious root causes, typo fixes, config changes, and adding tests for existing behavior can use a shortcut:
+Not everything needs the full flow. Bug fixes with an obvious root cause, typos, config changes and tests for existing behavior take the short path, `ab-quick-fix`:
 
 <p align="center">
   <img src="docs/images/lightweight-workflow.png" alt="Write failing test → Fix it → Verify → Commit" width="80%">
 </p>
 
-The boundary is clear: if you're touching 4+ files, adding a new API, or unsure of the approach, use the full workflow. See CLAUDE.md for the complete criteria.
+The boundary: a change that touches four or more files, adds an API or changes a data model goes through `ab-brainstorming` and then `ab-build-pipeline`. The scaffolded `AGENTS.md` states the same rule.
 
-### Autonomous pipeline: `/ab-ship-pipeline`
+### Autonomous pipeline: `ab-ship-pipeline`
 
 <p align="center">
-  <img src="docs/images/ship-pipeline.png" alt="/ship Pipeline" width="90%">
+  <img src="docs/images/ship-pipeline.png" alt="Ship pipeline stages: requirements, plan, deepen, execute, review, compound, ship" width="90%">
 </p>
 
-For well-defined features you want to fire and forget, `/ab-ship-pipeline` runs the entire development lifecycle autonomously — zero checkpoints, zero user input. It plans, researches, executes via a dedicated team-lead agent, iteratively reviews (3 cycles by default), and opens a PR.
+For a well-defined feature you want built hands-off, `ab-ship-pipeline` runs the whole lifecycle without checkpoints: it locks assumptions as decisions, writes and verifies a plan, deepens it, executes it through `ab-orchestrate`, reviews until the findings converge (three cycles by default), captures knowledge, then commits and writes the PR body. It tracks itself in `.agent-blueprint/run/state.json` and stops as `blocked` or `needs-human` with a reason when it cannot finish.
+
+Two ways to run it:
 
 ```bash
-# Inside Claude — interactive mode (single session)
-> /ab-ship-pipeline add JWT authentication with refresh tokens
+# In a session, in any of the eight tools: ask for the skill with the feature
+use the ab-ship-pipeline skill: add JWT authentication with refresh tokens
 
-# From terminal — external loop mode (fresh 200K context per iteration)
-./scripts/ship.sh "add JWT authentication with refresh tokens" --max 10
+# Unattended, from a terminal: the ship runner drives your tool's headless mode
+bash skills/ab-ship-pipeline/scripts/run.sh --host codex "add JWT authentication with refresh tokens"
 ```
 
-**Two loop mechanisms handle context exhaustion:**
+The runner (`skills/ab-ship-pipeline/scripts/run.sh --host <host> "<feature>"`, with `<host>` one of `claude`, `codex`, `agy`, `grok`, `pi`, `cursor-agent`, `hermes`, `amp`) works the same in every tool:
 
-| Mechanism | Where it runs | Context reset | Purpose |
-|-----------|--------------|---------------|---------|
-| **`ship-loop.sh`** (Stop hook) | Inside Claude session | No (same session) | Blocks premature exit — Claude gives up too early |
-| **`scripts/ship.sh`** (bash loop) | Outside, in terminal | Yes (fresh process) | Handles context exhaustion — spawns fresh 200K per iteration |
-
-The external loop (`ship.sh`) is inspired by [Ralph](https://github.com/snarktank/ralph) — each iteration is a brand new Claude process with clean context. State persists via git commits, plan files, and progress tracking. The inner Stop hook guards against Claude stopping before `<promise>DONE</promise>` is output within a single session.
-
-As of v3.4.0, interactive runs can also opt into the platform-native `/goal` command for condition-based completion. It's a **complement, never a replacement**: a skill can't invoke `/goal`, and `ship-loop.sh` is the only guard that works headless (`-p` / CI / `ship.sh`), so the Stop hook stays the guarantee while `/goal` adds a live overlay for interactive sessions.
-
-<p align="center">
-  <img src="docs/images/goal-opt-in.png" alt="/ship completion guard — ship-loop.sh is the always-on default that works headless; native /goal is an interactive opt-in complement, never a replacement" width="90%">
-</p>
-
-**Pipeline comparison:**
-
-| Pipeline | Checkpoints | Review | Best for |
-|----------|-------------|--------|----------|
-| `/ab-build-pipeline` | Between every stage | Single pass (or `--iterate N`) | Human-guided features |
-| `/ab-ship-pipeline` (interactive) | None | 3 iterative cycles | Single-context fire-and-forget |
-| `ship.sh` (external) | None | 3 iterative cycles | Large features, context exhaustion |
-| `/ab-quick-fix` | None | None | Trivial changes (< 3 files) |
-| `/ab-orchestrate` | Between waves | Single pass (or `--iterations N`) | Team work: dependency-ordered waves through a task ledger |
+- **A fresh session per iteration.** Each iteration is a new headless process with a clean context; state persists through git, the plan file and `state.json`, which the runner reads between iterations and the skill writes whole at every stage change.
+- **The state file decides, not the transcript.** A run is done only when `state.json` says `done`, there are new commits since the recorded base, the PR body exists at `.agent-blueprint/run/pr-body.md`, and the provenance marker names the skill and its version. Echoed text can never end a run early.
+- **The runner publishes.** The skill commits and writes the PR body; the runner scans the outgoing range and the body for secrets, pushes only to the remote and branch it recorded at preflight, and opens or updates the PR. Where the host's posture cannot write `.git` (Codex `workspace-write`), the skill leaves its changes in the working tree with the message in `commit-msg.md`, and the runner commits after each iteration.
+- **Least privilege per host.** Claude Code `--permission-mode auto`; Codex `workspace-write` with network on; Cursor CLI `--force` with `--sandbox enabled`; Grok Build `--always-approve --sandbox workspace`. Pi, Amp and Antigravity (`--dangerously-skip-permissions`) can only run with no guard, so the runner needs `--allow-unguarded` for them, and on those hosts the agent holds your git and `gh` credentials: the runner's publish checks do not contain it.
+- **Stop conditions.** The skill's own ceiling is 20 iterations; the runner's limit is your knob below it. A run stalls out when the stage, the commit history and the team ledger are all unchanged for two iterations. `--resume` continues a run from the runner's own record.
 
 ### Quality gates
 
@@ -575,85 +600,109 @@ As of v3.4.0, interactive runs can also opt into the platform-native `/goal` com
   <img src="docs/images/quality-gates.png" alt="Quality Gates" width="90%">
 </p>
 
-Five non-negotiable checkpoints enforce quality at every stage:
+Five checkpoints hold at every stage:
 
 | Gate | Rule | Enforced By |
 |------|------|-------------|
-| **1** | No code without design approval | `ab-brainstorming` skill |
-| **2** | No production code without a failing test first | `ab-test-driven-development` skill |
-| **3** | No fix without root cause investigation | `ab-systematic-debugging` skill |
-| **4** | No completion claim without fresh verification evidence | `ab-verification-before-completion` skill |
-| **5** | No merge without code review | `ab-requesting-code-review` skill |
-
-These aren't suggestions — they're hard gates. Claude will stop and course-correct if any gate is skipped.
+| **1** | No code without design approval | `ab-brainstorming` |
+| **2** | No production code without a failing test first | `ab-test-driven-development` |
+| **3** | No fix without root cause investigation | `ab-systematic-debugging` |
+| **4** | No completion claim without fresh verification evidence | `ab-verification-before-completion` |
+| **5** | No merge without code review | `ab-requesting-code-review` |
 
 ### Consistency gates (CI)
 
-Beyond the workflow gates above, two exact-match gates run in CI to keep the repo honest — both derive their truth from the filesystem rather than trusting hand-maintained numbers:
+The repository keeps itself honest with gates that derive their truth from the tree rather than from hand-maintained numbers. CI runs all of them on every pull request; `AGENTS.md` lists them for maintainers.
 
-<p align="center">
-  <img src="docs/images/consistency-gates.png" alt="Two CI consistency gates — check-drift.sh derives counts from the filesystem and verifies them everywhere including website widgets; check-skill-collisions.py flags near-duplicate skill descriptions by Jaccard overlap" width="90%">
-</p>
+| Command | Checks |
+|---------|--------|
+| `bash scripts/check-drift.sh` | Count and version claims on every surface (manifests, README, website, promo source, `AGENTS.md`) match the tree: 53 skills, 10 hooks, 30 helper prompts, one version |
+| `python3 scripts/check-skill-collisions.py` | Frontmatter YAML, `references/` pointers and § headings resolve, no near-duplicate descriptions |
+| `python3 scripts/check-portability.py` | The portability rules for all eight hosts: agentskills frontmatter only, the `ab-` prefix, the 8,000-byte cap, no host variables or cross-skill paths, no slash names, the manual-only pairing, no text Hermes would quarantine |
+| `python3 scripts/check-manifests.py` | Every host manifest and every skill's `metadata.version` agree with the release |
+| `python3 scripts/sync-shared.py --check` | Snippet and shared-file copies match their owners |
+| `python3 -m unittest discover -s tests/gates` | The gate and skill-contract tests |
+| `claude plugin validate --strict .claude-plugin/plugin.json` | The plugin manifest, with Claude Code's own validator |
 
-- **Drift gate** (`scripts/check-drift.sh`) — derives skill/agent/hook counts from the filesystem and checks them against every manifest, doc, installer, and **website widget**, plus exact version-string equality. It retired the manual count sweeps that drifted three times.
-- **Skill-collision gate** (`scripts/check-skill-collisions.py`) — computes pairwise description overlap (Jaccard) across all skills and fails on near-duplicates (warn ≥50%, fail ≥75%) that would route ambiguously — a failure a single-skill trigger test can't catch. The same script fails on skill structure: skill or agent frontmatter that isn't valid YAML, and, inside a skill, a `references/` pointer, a relative link, or a `§ heading` cited after a pointer that doesn't resolve.
+The ship runner has its own tests under `tests/runner/`, which drive `run.sh` against a fake host through its scenarios. The smoke test runs outside CI: before a release it runs a sample project through the main pipelines in every installed tool's headless mode before a release and writes a pass/fail table per tool and pipeline; a tool that fails only because of a vendor bug ships marked degraded in its support note, with the upstream link, and a failure in the blueprint's own code blocks the release.
 
-A third CI job validates the plugin and marketplace manifests with the CLI's own validator (`claude plugin validate --strict`).
+## Team Work and Swarms
 
-## Team Work & Swarms
+Helpers run one at a time or as coordinated groups. The same patterns work in every tool: a helper runs where the tool has subagents, and the session does the work itself where it does not.
 
-Helpers are organized into coordinated teams for multi-helper workflows. Three orchestration patterns are built in:
+### Team work (`ab-orchestrate`)
 
-### Review Swarm (`/ab-review-swarm`)
-
-Dispatches 6-10 specialized reviewers in parallel, each analyzing the same code from a different angle. A findings-synthesizer merges all results into one prioritized report (P1/P2/P3).
-
-<p align="center">
-  <img src="docs/images/review-swarm.png" alt="Review Swarm — 6-10 parallel reviewers → findings synthesizer" width="90%">
-</p>
-
-### Research Swarm (`/ab-deep-research`)
-
-Spawns 5 research agents in parallel before planning, then synthesizes findings into a unified research brief.
-
-<p align="center">
-  <img src="docs/images/research-swarm.png" alt="Research Swarm — 5 parallel researchers → research synthesizer" width="90%">
-</p>
-
-### Team Work (`/ab-orchestrate`)
-
-Runs a plan as a team with this session as the lead. The lead keeps a task ledger in `.agent-blueprint/team/<run>/`, groups tasks by dependency into waves (tasks that share a file never share a wave, and no wave exceeds the tool's helper limit), and starts one helper per task, each owning its files or working in its own worktree. It commits each finished task itself and runs an integration verifier between waves. In a tool without helpers the lead does the tasks one after another through the same ledger, and a run can resume from the ledger in another session or another tool.
+Runs a plan as a team with this session as the lead. The lead keeps a task ledger in `.agent-blueprint/team/<run>/`, groups tasks by dependency into waves (tasks that share a file never share a wave), and starts one helper per task, each owning its files or working in its own worktree. The lead alone integrates, commits each finished task and runs an integration verifier between waves. Wave size defaults to four and never exceeds the host's helper limit in `skills/ab-orchestrate/references/host-limits.tsv` (Claude Code 20, Codex 4, Pi 4 with `pi-subagents`, Hermes 3 interactive and 2 one-shot; Antigravity, Grok Build, Cursor CLI and Amp document no cap). A run can resume from the ledger in another session or another tool.
 
 <p align="center">
   <img src="docs/images/wave-orchestration.png" alt="Wave Orchestration — dependency-ordered waves with integration verification" width="90%">
 </p>
 
-Where the user has switched on a native team feature, team work uses it on top of the ledger: **Claude Code Agent Teams** (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"`, interactive sessions only, with the blueprint's TeammateIdle and TaskCompleted quality hooks) and **Codex `multi_agent_v2`** (`multi_agent_v2 = true` under `[features]`, long-lived helpers that take follow-up tasks).
+Where you have switched on a native team feature, the lead uses it on top of the ledger, as `references/native-extras.md` describes: **Claude Code Agent Teams** (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, interactive sessions only, with the blueprint's TeammateIdle and TaskCompleted hooks) and **Codex `multi_agent_v2`** (`multi_agent_v2 = true` under `[features]`, long-lived helpers that take follow-up tasks). The ledger stays the task list either way.
 
 <p align="center">
   <img src="docs/images/agent-teams.png" alt="Agent Teams — collaborative instances with shared task list and messaging" width="90%">
 </p>
 
-**When to use which:**
+### Review swarm (`ab-review-swarm`)
 
-| Pattern | Best For | Key Feature |
-|---------|----------|-------------|
-| **Swarms** (`/ab-review-swarm`, `/ab-deep-research`) | Parallel analysis — same code, different lenses | Read-only, synthesizer merges outputs |
-| **Team work** (`/ab-orchestrate`) | Implementing a plan's tasks | Task ledger, waves, file ownership or worktrees, lead-only commits |
+Reviews a change with specialized reviewers in parallel: quality, simplicity and tests always; security, performance, conventions, frontend, architecture, data and schema as the diff calls for. A validator re-checks the findings and a synthesizer merges them into one prioritized P1/P2/P3 report.
 
-The typical workflow combines both: `/ab-deep-research` (swarm) → `/ab-brainstorming` → `/ab-orchestrate` (team work) → `/ab-review-swarm` (swarm).
+<p align="center">
+  <img src="docs/images/review-swarm.png" alt="Review Swarm — parallel reviewers → findings synthesizer" width="90%">
+</p>
 
-### Knowledge Loop (`/ab-knowledge-compounding`)
+### Research swarm (`ab-deep-research`)
 
-Each solved problem becomes searchable institutional knowledge. Future `/ab-brainstorming` and `/ab-deep-research` skills automatically consult past solutions.
+Five helpers research a topic in parallel before planning (past learnings, framework docs for the installed versions, industry best practices, git history, and a map of the code the change touches), and a synthesizer turns their findings into one brief.
+
+<p align="center">
+  <img src="docs/images/research-swarm.png" alt="Research Swarm — 5 parallel researchers → research synthesizer" width="90%">
+</p>
+
+### Knowledge loop (`ab-knowledge-compounding`)
+
+Each solved problem becomes a searchable solution document in `docs/solutions/`. `ab-brainstorming` and `ab-deep-research` search it before new work, so the project stops repeating its mistakes.
 
 <p align="center">
   <img src="docs/images/knowledge-loop.png" alt="Knowledge Loop — solve → compound → search → plan → repeat" width="90%">
 </p>
 
-### Per-Project Configuration
+**When to use which:**
 
-Edit `blueprint.local.md` to enable/disable agents for your stack. No need for Rails reviewers on a Python project.
+| Pattern | Best for | Key feature |
+|---------|----------|-------------|
+| **Swarms** (`ab-review-swarm`, `ab-deep-research`) | Parallel analysis: same input, different lenses | Read-only helpers; a synthesizer merges the outputs |
+| **Team work** (`ab-orchestrate`) | Implementing a plan's tasks | Task ledger, waves, file ownership or worktrees, lead-only commits |
+
+A typical feature combines them: `ab-deep-research`, then `ab-brainstorming`, then `ab-orchestrate`, then `ab-review-swarm`.
+
+## Model and Effort
+
+The blueprint never picks a model or an effort level for you, in any tool. No skill or helper prompt sets a model or an effort, so a pipeline reasons at whatever level your session runs, and a helper inherits the session's choice wherever the tool passes it on. A prompt whose role header says it is safe at lower effort may run lower only where the tool takes a per-helper effort and you have not asked for your level everywhere. The blueprint never switches models to save effort.
+
+| Host | Set the model | Set the effort | Helpers inherit them? |
+|---|---|---|---|
+| Claude Code | `/model` in a session, or `claude --model <model>` | `/effort`, `claude --effort <level>`, or `CLAUDE_CODE_EFFORT_LEVEL`; a level saved in settings applies below those | Yes: a helper without an `effort` of its own inherits the session level (the Agent tool takes no effort parameter); verified on 2.1.284 |
+| Codex | `/model` in a session, or `codex -m <model>` | `model_reasoning_effort` in `~/.codex/config.toml` (`low` to `ultra`, by model) | Yes: a subagent inherits the parent's model and effort unless configured otherwise, and `spawn_agent` can override effort per helper |
+| Antigravity | `/model` in a session (persisted); `agy models` lists them | `--model` and `--effort low\|medium\|high` are reported by third-party write-ups: not verified | Not verified: a subagent definition can set a model tier, and no per-dispatch override is documented |
+| Grok Build | `/model`, `grok -m <model>`, or `[models] default` in `~/.grok/config.toml` | `--effort none\|minimal\|low\|medium\|high\|xhigh\|max` | Not verified: per-dispatch model and effort are not documented |
+| Pi | `/model`, or `pi --model <pattern>[:thinking]` | `/thinking`, or `--thinking off\|minimal\|low\|medium\|high\|xhigh\|max` (clamped to the model) | Only with the `pi-subagents` package, which takes a per-dispatch `model:"provider/id:level"`; inheritance not verified |
+| Cursor CLI | `/model` picker, or `cursor-agent --model 'id[effort=high]'` | Inside the model string: `id[effort=high]`; there is no separate effort flag | Helpers defined in agent files can say `model: inherit`; for the blueprint's ad-hoc helpers, not verified |
+| Hermes | `/model` in a session, or `hermes -m <model> --provider <provider>` | `/reasoning high` in a session, or `agent.reasoning_effort` in `~/.hermes/config.yaml` | No: helpers use the global `delegation.model` and `delegation.reasoning_effort` settings, not the session choice |
+| Amp | The Dial: a mode (`low`, `medium`, `high`, `ultra`) sets model, effort, prompt and tools together, chosen before the first message and fixed for the thread | Part of the mode | Not verified: no per-dispatch model from a prompt |
+
+### Claude Code specifics
+
+Opus 5.5 is the default model on every plan from CLI 2.1.280 and starts sessions at `medium` effort; other current models start at `high`. A level set with `--effort`, `/effort` or the environment variable wins over settings, and settings win over the model default. Some reference points:
+
+| Session setting | Fits |
+|-----------------|------|
+| Opus 5.5 at `high` | A solid default for pipeline runs |
+| Opus 5.5 at `xhigh`, or Fable 5.1 at `high` | More careful on hard or high-stakes work; slower and costlier |
+| Opus 5.5 at `medium` (its starting level) or lower | Small tasks, quick fixes and questions |
+
+The ship runner passes no model or effort flag of its own, so an unattended run uses the defaults you have saved in the tool.
 
 ## Skills Reference
 
@@ -661,83 +710,109 @@ Edit `blueprint.local.md` to enable/disable agents for your stack. No need for R
   <img src="docs/images/skills-map.png" alt="Skills Map" width="90%">
 </p>
 
-Skills are workflow modules that activate at specific development phases. They contain detailed instructions, flowcharts, and examples that guide Claude through each step.
+Skills are workflow modules that run at specific points of development. Each is a folder under `skills/` with a `SKILL.md` that stays under 8,000 bytes and a `references/` folder with the detail it loads at the point of use.
+
+### Pipelines
+
+| Skill | What it does | When |
+|-------|-------------|------|
+| [**ab-build-pipeline**](skills/ab-build-pipeline/) | Runs a feature through eight supervised stages (discuss, brainstorm, plan, execute, review, verify, optional deploy check, knowledge capture) with a checkpoint after each | A feature you approve stage by stage |
+| [**ab-ship-pipeline**](skills/ab-ship-pipeline/) | Ships a feature end to end with no checkpoints, tracked in `.agent-blueprint/run/state.json`; the ship runner drives it unattended | A well-defined feature, fire and forget |
+| [**ab-quick-fix**](skills/ab-quick-fix/) | A small, well-understood change through a short test-first loop, then a commit on a branch | Under three files, obvious approach |
+| [**ab-orchestrate**](skills/ab-orchestrate/) | Runs a plan as team work: ledger, dependency-ordered waves, file ownership or worktrees, lead-only commits, review and sign-off | Four or more tasks, some independent |
 
 ### Design phase
 
-| Skill | What it does | Trigger |
-|-------|-------------|---------|
-| [**ab-brainstorming**](skills/ab-brainstorming/) | Explores 3+ design options with tradeoff analysis before any creative work | `/ab-brainstorming` or before any new feature |
-| [**ab-writing-plans**](skills/ab-writing-plans/) | Converts approved design into implementation plan with bite-sized tasks | After design approval |
-| [**ab-spike-exploration**](skills/ab-spike-exploration/) | Timeboxed investigation to answer a specific technical question before committing to an approach | Significant technical uncertainty |
-| [**ab-scope-cutting**](skills/ab-scope-cutting/) | Systematically separates must-haves from nice-to-haves using MoSCoW classification | Feature too large or deadline at risk |
+| Skill | What it does | When |
+|-------|-------------|------|
+| [**ab-brainstorming**](skills/ab-brainstorming/) | Turns an idea into an approved design: settles what the repository answers, challenges the premise, compares two or three approaches, saves the plan | Before any new feature |
+| [**ab-discuss**](skills/ab-discuss/) | Captures and locks the user's decisions before planning, with prior art from ADRs, plans and learnings | Ambiguous choices ahead of a plan |
+| [**ab-ideation**](skills/ab-ideation/) | Generates grounded improvement ideas from learnings, structure and git history, and saves five to seven ranked survivors | "What's worth building?" |
+| [**ab-writing-plans**](skills/ab-writing-plans/) | Turns an approved design into a plan that records decisions, not code: file paths, each test and what it asserts, signatures, verification commands, review focus | After design approval |
+| [**ab-deepen-plan**](skills/ab-deepen-plan/) | Enriches a plan with five read-only research helpers in parallel; findings go under each section as research notes | A plan that needs more evidence |
+| [**ab-deep-research**](skills/ab-deep-research/) | Researches a topic with five helpers in parallel and one synthesized brief | Before planning something unfamiliar |
+| [**ab-spike-exploration**](skills/ab-spike-exploration/) | A timeboxed, hands-on spike with throwaway code that answers one technical question, reported to `docs/research/` | Significant technical uncertainty |
+| [**ab-scope-cutting**](skills/ab-scope-cutting/) | Cuts a feature to the smallest useful deliverable with MoSCoW and checks the must-haves still ship | Feature too large or deadline at risk |
 
 ### Execution phase
 
-| Skill | What it does | Trigger |
-|-------|-------------|---------|
-| [**ab-executing-plans**](skills/ab-executing-plans/) | Executes plans in batches with review checkpoints. Tracks assumptions with `[cascading]` impact flags | Separate session from planning |
-| [**ab-test-driven-development**](skills/ab-test-driven-development/) | Enforces red-green-refactor for all code changes | Before any code implementation |
-| [**ab-subagent-driven-development**](skills/ab-subagent-driven-development/) | Dispatches fresh subagent per task with two-stage review | In-session plan execution |
-| [**ab-dispatching-parallel-agents**](skills/ab-dispatching-parallel-agents/) | Runs independent investigations concurrently | 2+ independent failure domains |
-| [**ab-using-git-worktrees**](skills/ab-using-git-worktrees/) | Creates isolated git workspace for feature work | Before major features |
+| Skill | What it does | When |
+|-------|-------------|------|
+| [**ab-executing-plans**](skills/ab-executing-plans/) | Executes a plan in batches of three tasks with a checkpoint after each batch and a whole-branch review at the end | Plan execution in this session |
+| [**ab-subagent-driven-development**](skills/ab-subagent-driven-development/) | A fresh helper per task, then a spec reviewer and a code reviewer, with fix rounds until both pass | Plan execution with two-stage review |
+| [**ab-autonomous-loop**](skills/ab-autonomous-loop/) | Runs a plan's tasks with no checkpoints: verify, tick, commit, retry after a written reflection, stop on a circuit breaker or a risk score | "Just do it all" |
+| [**ab-test-driven-development**](skills/ab-test-driven-development/) | Red-green-refactor: one failing test, the least code that passes, the whole suite, then refactor | Any new code |
+| [**ab-source-driven-development**](skills/ab-source-driven-development/) | Writes framework- and library-specific code from the official docs for the installed version, citing the URL or marking it unverified | Framework or library APIs |
+| [**ab-dispatching-parallel-agents**](skills/ab-dispatching-parallel-agents/) | One focused helper per independent problem, all started at once, then integrated | Two or more unrelated failures |
+| [**ab-using-git-worktrees**](skills/ab-using-git-worktrees/) | An isolated git worktree on a new branch for feature or parallel work | Before major features |
 
 ### Quality phase
 
-| Skill | What it does | Trigger |
-|-------|-------------|---------|
-| [**ab-systematic-debugging**](skills/ab-systematic-debugging/) | Root cause investigation before any fix is attempted. Step 0 error classification fast-paths syntax errors and quarantines flaky tests | Any bug or test failure |
-| [**ab-verification-before-completion**](skills/ab-verification-before-completion/) | Requires fresh evidence before claiming work is done | Before any success claim |
-| [**ab-requesting-code-review**](skills/ab-requesting-code-review/) | Dispatches code-reviewer agent for automated review | After completing a task |
-| [**ab-receiving-code-review**](skills/ab-receiving-code-review/) | Evaluates review feedback technically, not defensively | When review feedback arrives |
+| Skill | What it does | When |
+|-------|-------------|------|
+| [**ab-systematic-debugging**](skills/ab-systematic-debugging/) | Root cause before any fix: classify, reproduce, trace, one hypothesis at a time against evidence tiers, fix test-first | Any bug or test failure |
+| [**ab-verification-before-completion**](skills/ab-verification-before-completion/) | Fresh evidence before any completion claim: the output that would prove it false, the full command, its exit code | Before saying work is done |
+| [**ab-requesting-code-review**](skills/ab-requesting-code-review/) | A fast single-reviewer review of a guarded range with the code-reviewer helper | After a task or before a merge |
+| [**ab-receiving-code-review**](skills/ab-receiving-code-review/) | Acts on review feedback by verifying each item first, then one change at a time with a test, or a technical pushback | When review feedback arrives |
+| [**ab-review-swarm**](skills/ab-review-swarm/) | Specialized reviewers in parallel, findings validated and merged into one P1/P2/P3 report | Significant changes |
+| [**ab-iterative-refinement**](skills/ab-iterative-refinement/) | Review-fix-review cycles until the findings converge (fast, deep or perfect) | Ship pipeline reviews, `ab-build-pipeline --iterate N` |
+| [**ab-add-tests**](skills/ab-add-tests/) | Backfills tests for code that has none, ranked by risk, with the user choosing which gaps to fill | Improving coverage |
+| [**ab-browser-testing**](skills/ab-browser-testing/) | Verifies UI changes in a real browser through a browser automation tool, including error states and viewports | After UI changes |
+| [**ab-document-review**](skills/ab-document-review/) | Three-pass review of a document (accuracy against the repository, clarity, completeness) with a verdict | Specs, plans, READMEs, runbooks |
 
 ### Completion phase
 
-| Skill | What it does | Trigger |
-|-------|-------------|---------|
-| [**ab-finishing-a-development-branch**](skills/ab-finishing-a-development-branch/) | Structured merge workflow with options for squash, rebase, or merge | After all tests pass |
-| [**ab-session-wrap**](skills/ab-session-wrap/) | Documents work done, updates all project docs, captures learnings. Regenerates from source of truth — never summarizes previous summaries | `/ab-session-wrap` or end of session |
+| Skill | What it does | When |
+|-------|-------------|------|
+| [**ab-finishing-a-development-branch**](skills/ab-finishing-a-development-branch/) | Tests, a plan audit against the diff, then merge locally, push and open a PR, or keep the branch; discarding only on request | After all tests pass |
+| [**ab-pr-workflow**](skills/ab-pr-workflow/) | The pull request lifecycle: checks on the pushed commit, a motivation-first body scanned for secrets, self-review, comment resolution, merge onto a green main | Creating or finishing a PR |
+| [**ab-session-wrap**](skills/ab-session-wrap/) | Ends a session from git history and the file system: rewrites the Session Continuity notes in `docs/context/STATUS.md`, records learnings, updates the docs | End of a session |
+| [**ab-knowledge-compounding**](skills/ab-knowledge-compounding/) | Records a solved problem in `docs/solutions/` with search terms and cross-links | After a non-trivial problem |
+| [**ab-changelog-generation**](skills/ab-changelog-generation/) | Release notes from git history in Keep a Changelog format | Preparing a release |
 
-### Operations phase
+### Session management
 
-| Skill | What it does | Trigger |
-|-------|-------------|---------|
-| [**ab-codebase-mapping**](skills/ab-codebase-mapping/) | Maps unfamiliar codebase into structured documentation | `/ab-codebase-mapping` or before modifying unfamiliar code |
-| [**ab-context-checkpoint**](skills/ab-context-checkpoint/) | Mid-session state capture — lighter than `/ab-session-wrap` | `/ab-pause-checkpoint` or before risky operations |
-| [**ab-pr-workflow**](skills/ab-pr-workflow/) | End-to-end PR lifecycle — create, self-review, handle feedback | `/ab-pr-workflow` or when creating pull requests |
-| [**ab-resolve-in-parallel**](skills/ab-resolve-in-parallel/) | Batch-resolves independent items concurrently | 2+ independent items to fix |
-| [**ab-deployment-verification**](skills/ab-deployment-verification/) | Go/no-go pre-deploy checklist across 8 areas | Before any production deployment |
-| [**ab-document-review**](skills/ab-document-review/) | Structured three-pass critique (accuracy, clarity, completeness) | When reviewing specs, plans, or docs |
-| [**ab-changelog-generation**](skills/ab-changelog-generation/) | Release notes from git history in Keep a Changelog format | `/ab-changelog-generation` or preparing a release |
-| [**ab-migration-planning**](skills/ab-migration-planning/) | Safe migration plans with rollback procedures | Database/API/dependency migrations |
-| [**ab-performance-profiling**](skills/ab-performance-profiling/) | Profile-driven investigation — measure before optimizing | When something is "slow" |
-| [**ab-browser-testing**](skills/ab-browser-testing/) | Verify UI changes via Playwright MCP browser tools | After UI changes need visual verification |
-| [**ab-autonomous-loop**](skills/ab-autonomous-loop/) | Iterate through plan tasks with retry, backoff, circuit breaker (3 no-progress / 5 same-error), degradation detection (rising difficulty, hot-file signals), and mandatory Reflection Gate before every retry (3-question self-check enforced by HARD-GATE) | Autonomous plan execution — "just do it all" |
-| [**ab-iterative-refinement**](skills/ab-iterative-refinement/) | Review→fix→review cycles with 3 convergence modes (fast/deep/perfect), early exit on convergence | `/ab-ship-pipeline` Stage 5, `/ab-build-pipeline --iterate N` |
-| [**ab-dependency-management**](skills/ab-dependency-management/) | Evaluates, adds, upgrades, and removes dependencies with safety gates | Adding, upgrading, or auditing dependencies |
+| Skill | What it does | When |
+|-------|-------------|------|
+| [**ab-project-start**](skills/ab-project-start/) | Scaffolds `AGENTS.md`, `CLAUDE.md`, `docs/context/` and `BACKLOG.md` by merging, then fills in conventions, goals and status | New project, or adopting the blueprint |
+| [**ab-project-status**](skills/ab-project-status/) | Where the project stands: code state, work in flight, goal progress, top three next actions | Start of a session |
+| [**ab-resume-session**](skills/ab-resume-session/) | Reloads what earlier sessions left and checks whether HEAD moved since the handoff | Picking up earlier work |
+| [**ab-pause-checkpoint**](skills/ab-pause-checkpoint/) | A quick mid-session snapshot plus the execution state in `docs/context/STATE.md` | Stepping away |
+| [**ab-context-checkpoint**](skills/ab-context-checkpoint/) | A timestamped recovery point with progress, decisions, next steps and open questions | Before risky operations or a long session |
+| [**ab-session-continuity**](skills/ab-session-continuity/) | Keeps `docs/context/STATE.md` current across session boundaries with a HEAD stamp | During wave orchestration |
+| [**ab-backlog-triage**](skills/ab-backlog-triage/) | Sorts the `BACKLOG.md` inbox into prioritized, typed items against the goals | Inbox grows |
+| [**ab-health-check**](skills/ab-health-check/) | Eight areas (build, tests, lint, dependencies, conventions, docs, backlog, git) with the project's own commands | Periodic check |
 
-### Orchestration phase
+### Operations
 
-| Skill | What it does | Trigger |
-|-------|-------------|---------|
-| [**ab-wave-orchestration**](skills/ab-wave-orchestration/) | Groups tasks by dependency into waves, parallel within waves, integration verification between | `/ab-orchestrate` or plans with mixed dependencies |
-| [**ab-swarm-orchestration**](skills/ab-swarm-orchestration/) | Coordinates multiple specialized agents analyzing the same input in parallel | `/ab-review-swarm`, `/ab-deep-research`, or custom swarms |
-| [**ab-knowledge-compounding**](skills/ab-knowledge-compounding/) | Documents solved problems as searchable institutional knowledge in docs/solutions/ | `/ab-knowledge-compounding` or after solving non-trivial problems |
-| [**ab-session-continuity**](skills/ab-session-continuity/) | Manages STATE.md for execution tracking across session boundaries | `/ab-pause-checkpoint`, `/ab-resume-session`, or during wave orchestration |
+| Skill | What it does | When |
+|-------|-------------|------|
+| [**ab-codebase-mapping**](skills/ab-codebase-mapping/) | Maps an unfamiliar codebase, read-only, into structured documentation with file paths | Before modifying unfamiliar code |
+| [**ab-resolve-in-parallel**](skills/ab-resolve-in-parallel/) | Fixes a batch of independent items at once, one helper per item, then checks for conflicts | PR comments, review findings, test failures |
+| [**ab-deployment-verification**](skills/ab-deployment-verification/) | A go/no-go check across eight areas with concrete evidence | Before a production deployment |
+| [**ab-migration-planning**](skills/ab-migration-planning/) | A migration plan whose every step can be undone: blast radius, expand-contract steps, rollbacks | Database, API or dependency migrations |
+| [**ab-performance-profiling**](skills/ab-performance-profiling/) | Measure, profile, one optimization at a time against the noise floor, reverted attempts recorded | When something is "slow" |
+| [**ab-dependency-management**](skills/ab-dependency-management/) | Adds, upgrades and removes dependencies through five gates, pinned and committed with the lockfile | Dependency changes |
+| [**ab-forensics**](skills/ab-forensics/) | Diagnoses a failed, stalled or aborted automated run after the fact from its logs, run state and git history | A ship run that did not finish |
+
+### Orchestration primitives
+
+| Skill | What it does | When |
+|-------|-------------|------|
+| [**ab-wave-orchestration**](skills/ab-wave-orchestration/) | Groups dependent tasks into waves of parallel helpers with an integration verifier between waves | Four or more tasks with mixed dependencies |
+| [**ab-swarm-orchestration**](skills/ab-swarm-orchestration/) | Several read-only specialist helpers on the same input, one dimension each, merged by a synthesizer | Custom swarms |
 
 ### Meta
 
-| Skill | What it does | Trigger |
-|-------|-------------|---------|
-| [**ab-writing-skills**](skills/ab-writing-skills/) | Creates and tests new skills using TDD for documentation | When creating new skills |
+| Skill | What it does | When |
+|-------|-------------|------|
+| [**ab-writing-skills**](skills/ab-writing-skills/) | Writes, edits and tests skills that load in every supported tool: agentskills frontmatter, the 8,000-byte cap, capability snippets, prompt files, a test first | Creating or changing skills |
+| [**ab-plugin-update**](skills/ab-plugin-update/) | Upgrades Agent Blueprint itself through the tool's own route or a re-run of `install.sh`, then checks the version. Manual-only | Upgrading the blueprint |
+| [**ab-migrate**](skills/ab-migrate/) | Cleans a v3 install out of a project and renames `CLAUDE.md` to `AGENTS.md` behind a backup branch. Manual-only | Moving a project from v3 |
 
 ## Helper Prompts Reference
 
-<p align="center">
-  <img src="docs/images/agents-ecosystem.png" alt="Helper prompt groups" width="90%">
-</p>
-
-Helpers are prompt files inside the skills that use them (`skills/<skill>/references/agents/<name>.md`). A skill starts a helper where the tool has subagents and follows the same file itself where it does not; either way the result comes back in the prompt's Output format. A prompt that several skills use has one owner and byte-identical copies, checked by `scripts/sync-shared.py --check`.
+Helpers are prompt files inside the skills that use them (`skills/<skill>/references/agents/<name>.md`). A skill starts a helper where the tool has subagents and follows the same file itself where it does not; either way the result comes back in the prompt's Output section. A prompt that several skills use has one owner and byte-identical copies, checked by `scripts/sync-shared.py --check`.
 
 | Helper | Domain | When it runs |
 |-------|--------|-----------------|
@@ -748,261 +823,192 @@ Helpers are prompt files inside the skills that use them (`skills/<skill>/refere
 | [**performance-oracle**](skills/ab-review-swarm/references/agents/performance-oracle.md) | Bottlenecks, N+1 queries, algorithmic complexity | After features are built, on performance concerns |
 | [**best-practices-researcher**](skills/ab-deep-research/references/agents/best-practices-researcher.md) | Industry standards, library documentation | When needing external guidance |
 | [**git-history-analyzer**](skills/ab-deep-research/references/agents/git-history-analyzer.md) | Code evolution, pattern archaeology | When understanding why code is the way it is |
-| [**learnings-researcher**](skills/ab-deep-research/references/agents/learnings-researcher.md) | Past solutions, decisions, patterns | Before planning — searches docs/ for prior art |
+| [**learnings-researcher**](skills/ab-deep-research/references/agents/learnings-researcher.md) | Past solutions, decisions, patterns | Before planning: searches docs/ for prior art |
 | [**plan-checker**](skills/ab-deepen-plan/references/agents/plan-checker.md) | Plan validation, gap detection | After writing a plan, before execution |
-| [**integration-checker**](skills/ab-swarm-orchestration/references/agents/integration-checker.md) | Component wiring, connection validation | After implementation — verifies components connect |
-| [**bug-reproduction-validator**](skills/ab-systematic-debugging/references/agents/bug-reproduction-validator.md) | Bug reproduction, fix verification | When debugging — validates repro steps and fixes |
+| [**integration-checker**](skills/ab-swarm-orchestration/references/agents/integration-checker.md) | Component wiring, connection validation | After implementation: verifies components connect |
+| [**bug-reproduction-validator**](skills/ab-systematic-debugging/references/agents/bug-reproduction-validator.md) | Bug reproduction, fix verification | When debugging: validates repro steps and fixes |
 | [**codebase-mapper**](skills/ab-codebase-mapping/references/agents/codebase-mapper.md) | Architecture, conventions, stack analysis | Onboarding to unfamiliar code or before modifying it |
-| [**pr-comment-resolver**](skills/ab-pr-workflow/references/agents/pr-comment-resolver.md) | Targeted PR comment resolution | Processing review feedback — one comment per agent |
+| [**pr-comment-resolver**](skills/ab-pr-workflow/references/agents/pr-comment-resolver.md) | Targeted PR comment resolution | Processing review feedback: one comment per helper |
 | [**test-gap-analyzer**](skills/ab-add-tests/references/agents/test-gap-analyzer.md) | Coverage gaps, test generation | Improving coverage or before major refactors |
-| [**research-synthesizer**](skills/ab-deep-research/references/agents/research-synthesizer.md) | Multi-agent output consolidation | After parallel research — unifies findings |
-| [**deployment-verifier**](skills/ab-deployment-verification/references/agents/deployment-verifier.md) | Deployment readiness verification | Before deploying — checks 8 critical areas |
-| [**schema-drift-detector**](skills/ab-review-swarm/references/agents/schema-drift-detector.md) | Unrelated schema/migration changes | Reviewing PRs — catches scope creep in data layer |
-| [**frontend-reviewer**](skills/ab-review-swarm/references/agents/frontend-reviewer.md) | UI/UX code quality review | Reviewing frontend code — a11y, responsive, perf |
+| [**research-synthesizer**](skills/ab-deep-research/references/agents/research-synthesizer.md) | Multi-helper output consolidation | After parallel research: unifies findings |
+| [**deployment-verifier**](skills/ab-deployment-verification/references/agents/deployment-verifier.md) | Deployment readiness verification | Before deploying: checks 8 critical areas |
+| [**schema-drift-detector**](skills/ab-review-swarm/references/agents/schema-drift-detector.md) | Unrelated schema/migration changes | Reviewing PRs: catches scope creep in the data layer |
+| [**frontend-reviewer**](skills/ab-review-swarm/references/agents/frontend-reviewer.md) | UI/UX code quality review | Reviewing frontend code: a11y, responsive, perf |
 | [**convention-enforcer**](skills/ab-review-swarm/references/agents/convention-enforcer.md) | CONVENTIONS.md compliance checking | Reviewing code against project standards |
 | [**data-integrity-guardian**](skills/ab-review-swarm/references/agents/data-integrity-guardian.md) | Migration safety, transactions, rollback plans | PRs with migrations, schema changes, data transforms |
-| [**test-coverage-reviewer**](skills/ab-review-swarm/references/agents/test-coverage-reviewer.md) | Test quality, assertion meaningfulness, edge cases | After implementation — verifies tests actually validate behavior |
+| [**test-coverage-reviewer**](skills/ab-review-swarm/references/agents/test-coverage-reviewer.md) | Test quality, assertion meaningfulness, edge cases | After implementation: verifies tests validate behavior |
 | [**framework-docs-researcher**](skills/ab-deep-research/references/agents/framework-docs-researcher.md) | Current framework docs for installed versions | Before planning features that use specific framework APIs |
-| [**codebase-context-mapper**](skills/ab-deep-research/references/agents/codebase-context-mapper.md) | Focused impact map for a specific change | Before planning — maps files and dependencies a change will touch |
-| [**integration-verifier**](skills/ab-wave-orchestration/references/agents/integration-verifier.md) | Cross-task integration verification | After wave completion — ensures parallel implementations work together |
-| [**findings-synthesizer**](skills/ab-review-swarm/references/agents/findings-synthesizer.md) | Review swarm output consolidation | After `/ab-review-swarm` — de-duplicates and prioritizes all findings |
-| [**pattern-mapper**](skills/ab-executing-plans/references/agents/pattern-mapper.md) | Analog-file mapping for new code | Between research and execution — grounds new files in existing conventions |
-| [**implementer**](skills/ab-subagent-driven-development/references/agents/implementer.md) | One plan task, test first, with a self-review | Subagent-driven development — a fresh helper per task |
-| [**spec-reviewer**](skills/ab-subagent-driven-development/references/agents/spec-reviewer.md) | Built what the task asked, nothing more | Subagent-driven development — after each implementer, before code review |
-| [**doc-claim-verifier**](skills/ab-document-review/references/agents/doc-claim-verifier.md) | Doc claims vs live codebase | Reviewing READMEs, ADRs, runbooks — catches doc drift after refactors |
-| [**findings-validator**](skills/ab-review-swarm/references/agents/findings-validator.md) | Independent re-verification of review findings | Between `/ab-review-swarm` and synthesis — suppresses false positives |
+| [**codebase-context-mapper**](skills/ab-deep-research/references/agents/codebase-context-mapper.md) | Focused impact map for a specific change | Before planning: maps the files and dependencies a change touches |
+| [**integration-verifier**](skills/ab-wave-orchestration/references/agents/integration-verifier.md) | Cross-task integration verification | After a wave completes: parallel implementations work together |
+| [**findings-synthesizer**](skills/ab-review-swarm/references/agents/findings-synthesizer.md) | Review swarm output consolidation | After `ab-review-swarm`: de-duplicates and prioritizes all findings |
+| [**pattern-mapper**](skills/ab-executing-plans/references/agents/pattern-mapper.md) | Analog-file mapping for new code | Between research and execution: grounds new files in existing conventions |
+| [**implementer**](skills/ab-subagent-driven-development/references/agents/implementer.md) | One plan task, test first, with a self-review | Subagent-driven development: a fresh helper per task |
+| [**spec-reviewer**](skills/ab-subagent-driven-development/references/agents/spec-reviewer.md) | Built what the task asked, nothing more | Subagent-driven development: after each implementer, before code review |
+| [**doc-claim-verifier**](skills/ab-document-review/references/agents/doc-claim-verifier.md) | Doc claims vs live codebase | Reviewing READMEs, ADRs, runbooks: catches doc drift after refactors |
+| [**findings-validator**](skills/ab-review-swarm/references/agents/findings-validator.md) | Independent re-verification of review findings | Between `ab-review-swarm` and synthesis: suppresses false positives |
 
 ### How helpers run
 
-A helper runs in its own context where the tool can start one; otherwise the main session follows the prompt file itself. Helpers run individually or as coordinated swarms:
+A helper runs in its own context where the tool can start one; otherwise the main session follows the prompt file itself. Each prompt opens with a role header (what it may change, whether it is safe at lower effort, and that it starts no helpers of its own) and ends with an Output section, so both paths return the same shape. Helpers run individually or as coordinated groups:
 
-**Single dispatch** — one helper, one focused job:
+**Single dispatch**, one helper for one job:
+
 ```
 Main session -> helper with references/agents/security-sentinel.md -> findings -> act on results
 ```
 
-**Swarm dispatch** — multiple agents, same input, different lenses:
+**Swarm dispatch**, several helpers on the same input with different lenses:
 
 <p align="center">
-  <img src="docs/images/dispatch-swarm.png" alt="Swarm dispatch — 5 agents → findings-synthesizer → unified report" width="90%">
+  <img src="docs/images/dispatch-swarm.png" alt="Swarm dispatch — parallel reviewers → findings-synthesizer → unified report" width="90%">
 </p>
 
-**Wave dispatch** — parallel within waves, worktree-isolated, sequential between:
+**Wave dispatch**, parallel within a wave, sequential between waves:
 
 <p align="center">
   <img src="docs/images/dispatch-wave.png" alt="Wave dispatch — parallel within waves, integration-verifier between" width="90%">
 </p>
 
-**Agent team dispatch** — collaborative instances with shared task list:
+**Team dispatch**, with a native team feature switched on: long-lived teammates with file ownership and messaging on top of the ledger:
 
 <p align="center">
-  <img src="docs/images/dispatch-team.png" alt="Agent team dispatch — teammates with file ownership, shared tasks + messaging" width="90%">
+  <img src="docs/images/dispatch-team.png" alt="Team dispatch — teammates with file ownership, shared tasks and messaging" width="90%">
 </p>
-
-## Slash Commands
-
-Skills are invoked as slash commands. Each skill's content loads directly — no indirection.
-
-| Skill | What it does |
-|-------|-------------|
-| **`/ab-project-start`** | Interactive project setup. Fills in CONVENTIONS.md, GOALS.md, STATUS.md through a guided conversation. |
-| **`/ab-ideation`** | Generate and rank improvement ideas. Scans codebase, backlog, and git history to surface what's worth building. |
-| **`/ab-brainstorming`** | Brainstorming session. Explores design options, presents tradeoffs, gets approval, then creates implementation plan. |
-| **`/ab-build-pipeline`** | Full-cycle supervised pipeline with checkpoints between every stage. Supports `--iterate N` for iterative review and `--team` for team-lead dispatch. |
-| **`/ab-ship-pipeline`** | Fully autonomous pipeline — zero checkpoints, fire-and-forget. Plans, executes via team-lead, iteratively reviews (3 cycles), and opens a PR. |
-| **`/ab-discuss`** | Capture decisions before planning. Explores requirements, locks decisions that planners must honor. |
-| **`/ab-deepen-plan`** | Enrich an existing plan with parallel research agents. Dispatches all configured researchers in parallel, then merges findings into the plan. |
-| **`/ab-requesting-code-review`** | Dispatches code-reviewer agent against your current changes. |
-| **`/ab-review-swarm`** | Multi-agent parallel review — dispatches 6-10 specialized reviewers, synthesizes findings into prioritized P1/P2/P3 report. |
-| **`/ab-deep-research`** | Multi-agent parallel research — spawns 5 research agents, synthesizes into unified brief for planning. |
-| **`/ab-knowledge-compounding`** | Document a solved problem for future reference. Creates searchable entry in docs/solutions/. |
-| **`/ab-orchestrate`** | Team work — runs a plan through a task ledger in dependency-ordered waves, with helpers in parallel where the tool has them and Claude Code Agent Teams or Codex `multi_agent_v2` when switched on. Supports `--wave-size N`, `--iterations N` and `--convergence fast\|deep\|perfect` for iterative review. |
-| **`/ab-project-status`** | Shows current project state, goal alignment, blockers, and suggests next actions. |
-| **`/ab-systematic-debugging [issue]`** | Root cause investigation. Gathers evidence, forms hypotheses, tests them systematically. |
-| **`/ab-backlog-triage`** | Triages inbox items in BACKLOG.md into prioritized tasks using GOALS.md context. |
-| **`/ab-session-wrap`** | End-of-session documentation. Updates CLAUDE.md session continuity, STATUS.md, and captures learnings. Distinguishes planning-only vs implementation sessions — won't mark goals as done if only a plan was written. |
-| **`/ab-pr-workflow`** | Create, manage, or respond to pull requests. Full PR lifecycle. |
-| **`/ab-codebase-mapping`** | Map an unfamiliar codebase into structured documentation before modifying it. |
-| **`/ab-resume-session`** | Resume work from where the last session left off. Loads context and orients you. |
-| **`/ab-pause-checkpoint`** | Quick mid-session checkpoint. Captures state without full `/ab-session-wrap`. |
-| **`/ab-quick-fix`** | Fast-track a small, well-understood change with TDD and verification gates. |
-| **`/ab-changelog-generation`** | Generate release notes from git history using Keep a Changelog format. |
-| **`/ab-add-tests`** | Analyze test coverage gaps and generate tests for untested code paths. |
-| **`/ab-health-check`** | Comprehensive project health check — build, tests, lint, deps, conventions, docs, backlog, git. |
-| **`/ab-migrate-to-plugin`** | Migrate v2.x in-project files to v3.0 plugin mode. Removes engine files, keeps project state. |
-| **`/ab-plugin-update`** | Update the blueprint plugin to the latest version from GitHub. Self-service — no reinstall needed. |
-
-### Typical session flow
-
-**Supervised (human in the loop):**
-```bash
-claude
-> /ab-resume-session                           # Reload context from last session
-> /ab-ideation                                 # "What's worth building?" — AI generates ranked ideas
-> /ab-deep-research add OAuth2 login           # Research the chosen idea (5 agents in parallel)
-> /ab-brainstorming add OAuth2 login           # Design + plan based on research findings
-> /ab-orchestrate                              # Execute as team work in dependency-ordered waves
-> /ab-review-swarm                             # Multi-agent review (6-10 reviewers in parallel)
-> /ab-knowledge-compounding OAuth2 sessions    # Document the solution for future reference
-> /ab-session-wrap                             # Document everything for next session
-```
-
-**Autonomous (fire and forget):**
-```bash
-# Inside Claude — single session
-claude
-> /ab-ship-pipeline add OAuth2 login with JWT refresh tokens --iterations 5
-
-# From terminal — with context-exhaustion recovery
-./scripts/ship.sh "add OAuth2 login with JWT refresh tokens" --max 10 --swarm
-```
 
 ## Customization
 
 ### Adapting to your project
 
-After installation, run `/ab-project-start` to configure:
+After installation, ask for the `ab-project-start` skill to fill in:
 
-- **GOALS.md** — Your 3-5 project objectives and priority framework
-- **CONVENTIONS.md** — Your tech stack, naming conventions, file structure patterns
-- **STATUS.md** — Current project state, known issues, recent work
+- **GOALS.md**: three to five project objectives with a priority each
+- **CONVENTIONS.md**: the stack, the test, lint and dev commands, naming, file layout
+- **STATUS.md**: the current state, known issues, recent work
+- **AGENTS.md**: the instructions every tool loads; the scaffold merges its sections into an existing file and keeps yours
 
 ### Adding your own skills
 
-In plugin mode, skills are provided by the plugin. To add project-specific skills, create them in your project's `.claude/skills/your-skill-name/SKILL.md` (local overrides take precedence). The plugin includes a `ab-writing-skills` skill that uses TDD to create and test new skills:
+The plugin's skills are installed once; project-specific skills live in your project's own skills folder (`.agents/skills/` for the tools that read it, or wherever your tool looks). Ask for the `ab-writing-skills` skill to write one; it holds the rules and the test-first method:
 
-```bash
-claude
-> Create a new skill for database migration workflows
-# Claude will use the ab-writing-skills skill to:
+- agentskills frontmatter only (`name`, `description`, plus `argument-hint` and `disable-model-invocation`), no `model` or `effort`
+- the whole `SKILL.md` under 8,000 bytes, with detail moved into `references/` at the point of use
+- other skills named in prose, never with a slash, because every host invokes skills differently
+- host-dependent steps pasted from the capability snippets in `skills/ab-writing-skills/references/capability-snippets.md` (helper step, asking the user, task tracking, lower effort, working folder, provenance, no-commit mode, bundled scripts), so the skill runs in every tool
+- no host variables such as `${CLAUDE_PLUGIN_ROOT}`, no `$ARGUMENTS`, no path outside the skill's own folder
+
+```text
+> Create a skill for database migration workflows
+# The ab-writing-skills skill will:
 # 1. Write a failing test scenario
 # 2. Create the skill
-# 3. Verify it handles the test scenario correctly
+# 3. Verify it handles the scenario
 ```
 
 ### Adding your own helper prompts
 
-Put a prompt file in the skill that dispatches it, under `references/agents/<name>.md`, with no frontmatter. Open it with a one-line role header (what it may change, whether it is safe at lower effort, and that it starts no helpers of its own) and end it with an `## Output` section, so a helper run and an inline run return the same shape. The `ab-writing-skills` skill covers the details.
+Put a prompt file in the skill that dispatches it, under `references/agents/<name>.md`, with no frontmatter. Open it with a one-line role header (what it may change, whether it is safe at lower effort, and that it starts no helpers of its own) and end it with an `## Output` section, so a helper run and an inline run return the same shape. The skill hands work to it with the helper-step snippet. The `ab-writing-skills` skill covers the details.
 
-### Effort
+### Platform currency
 
-Helper prompts carry no effort tier. A helper runs at the session's effort (in Claude Code 2.1.284 the general-purpose helper inherits it), and a prompt whose role header says it is safe at lower effort may run lower only where the tool takes a per-helper effort and you have not asked for your level throughout.
-
-#### Session model and effort: your choice
-
-The blueprint never picks a model or an effort level for you, in Claude Code or in any other tool. Neither skills nor helper prompts set an `effort:`, so a main-session pipeline (`/ab-ship-pipeline`, `/ab-build-pipeline`, `/lfg`-style runs) reasons at whatever level your session runs. A skill-level `effort:` would override a higher level you chose, which is why skills don't carry one.
-
-Opus 5.5 is the default model on every plan from CLI 2.1.280, and it **starts sessions at `medium` effort** (other current models start at `high`). An `effortLevel` saved in user settings before per-model `/effort` does not carry over to Opus 5.5. From 2.1.280, Opus 4.7, Opus 4.8, and Fable 5 no longer hold their launch default over the level set by settings, `--settings`, or `-p`. Some reference points:
-
-| Session setting | Fits |
-|-----------------|------|
-| Opus 5.5 at `high` | A solid default for pipeline runs |
-| Opus 5.5 at `xhigh`, or Fable 5.1 at `high` | More careful on hard or high-stakes work; slower and costlier |
-| Opus 5.5 at `medium` (its starting level) or lower | Fine for small tasks, quick fixes, and questions |
-
-Set them in a session with `/model` and `/effort`, or at launch with `claude --model <model> --effort <level>`. `scripts/ship.sh` passes no `--model` or `--effort` of its own, so its runs use your saved defaults.
-
-### Platform currency (2026-07 sync, refreshed 2026-09)
-
-The blueprint tracks new Claude Code platform features and adopts them as **opt-ins** — no core pipeline is allowed to depend on a gated or experimental capability (a deliberate stability guardrail). Where a native feature overlaps something the template already does, the table records why the template's own mechanism stays the default.
-
-<p align="center">
-  <img src="docs/images/platform-currency.png" alt="Native platform features adopted as guarded opt-ins — effort tiers and Claude 5 shipped, /goal and /loop and caps opt-in, Workflow tool and fast mode gated" width="90%">
-</p>
+The blueprint adopts a host's native features only as opt-ins: no pipeline depends on a gated or experimental capability. Where a native feature overlaps something the blueprint already does, the table records why the blueprint's own mechanism stays the default.
 
 | Platform feature | Blueprint's stance | Gating |
 |------------------|--------------------|--------|
-| **Effort tiers** (`effort: low/medium/high`) | Retired in v4: helper prompts carry no tier and run at the session's effort (see "Effort" above) | None |
-| **`/goal`** (condition-based completion) | Opt-in complement to the ship loop's Stop-hook guard | None; generally available in the CLI |
-| **Native `/loop` + ScheduleWakeup** | Add interval/scheduled reruns, but `/loop` is session-scoped and does **not** reset context, circuit-break, or detect degradation — so `ab-autonomous-loop` keeps its own circuit breaker and degradation detection | None; complementary, not a replacement |
-| **Workflow tool / `/workflows` / ultracode** | Opt-in for very large autonomous fan-outs — default size guideline `medium` (under 10 agents; Pro defaults to `small`, under 5), 16 concurrent agents by default (adjustable 1–256 via `CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS`) and 1,000 per run, runs pause and resume across a usage-limit reset in interactive subscription sessions (not `-p`), no mid-run user input; wave orchestration stays the ungated, portable default | Available on all paid plans, the API, and Bedrock/Vertex/Foundry (Pro enables it in `/config`); runs in `claude -p`/SDK only behind a `Workflow` allow rule, auto or bypass mode, or a PreToolUse hook; disable-able per user (`disableWorkflows` / `CLAUDE_CODE_DISABLE_WORKFLOWS=1`) and org-wide |
-| **Fast mode** | Opt-in only | Gated: Opus 5.5 (the default), Opus 5, and Opus 4.8 only; research preview, pricing subject to change |
-| **Claude 5 lineup** (Opus 5.5, Opus 5, Sonnet 5, Fable 5.1, Haiku 4.5) | Every agent ships `model: inherit`, so agents ride the session model automatically — no per-agent pins. Opus 5.5 (`claude-opus-5-5`, CLI 2.1.280+) is the default on every plan, Pro and Team Standard included, and starts sessions at `medium` effort (see "Session model and effort" above); Fable 5.1 answers to the `fable` alias | None; opt-in model mapping documented above |
-| **Per-session caps** | Large swarms and research sweeps stay within the native limits — there is no per-session subagent total since CLI 2.1.224, only a concurrency cap and a nesting depth (ultracode sessions are exempt from the concurrency cap) | 20 concurrent subagents by default (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`), nested spawns to depth 3 (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`), 200 WebSearches per session unchanged |
-| **Native injection hardening** (Agent tool, CLI v2.1.210) | Reinforces — does not replace — the template's custom read/prompt scanners and `<<DATA_START>>`/`<<DATA_END>>` markers, which still cover the main-session Write/Edit and Read surfaces native hardening does not observe | None; defense-in-depth |
-| **Bundled `/deep-research` workflow** | Claude Code bundles a web-search fan-out workflow of that name (manual-invoke only); the blueprint's research swarm is `ab-deep-research`, so the two no longer share a name | None |
+| **Claude Code Agent Teams** and **Codex `multi_agent_v2`** | Optional extras for `ab-orchestrate` on top of the portable ledger; team work runs without them in every tool | Switched on by you: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (interactive sessions only) or `multi_agent_v2 = true` under `[features]` |
+| **Claude Code `/goal`** (condition-based completion) | A complement for interactive runs; the ship runner and its state file are the guarantee, since a skill cannot invoke `/goal` and it does not run headless | None; generally available in the CLI |
+| **Native `/loop` + ScheduleWakeup** (Claude Code) | Adds scheduled reruns, but `/loop` is session-scoped and does not reset context, circuit-break or detect degradation, so `ab-autonomous-loop` keeps its own circuit breaker and degradation detection | None; complementary, not a replacement |
+| **Workflow tool / `/workflows` / ultracode** (Claude Code) | Opt-in for very large autonomous fan-outs; wave orchestration stays the ungated, portable default | Paid plans, the API and Bedrock/Vertex/Foundry; in `claude -p` only behind a `Workflow` allow rule, auto or bypass mode, or a PreToolUse hook |
+| **Fast mode** (Claude Code) | Opt-in only | Opus 5.5, Opus 5 and Opus 4.8; research preview, pricing subject to change |
+| **Per-session caps** (Claude Code) | Swarms and research sweeps stay within the native limits: no per-session subagent total since CLI 2.1.224, only a concurrency cap and a nesting depth; `host-limits.tsv` records the other hosts' caps | 20 concurrent subagents by default (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`), spawn depth 3 (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`), 200 WebSearches per session |
+| **Native injection hardening** (Claude Code Agent tool) | Reinforces, does not replace, the blueprint's own read and write scanners (Claude Code and Codex hooks) and the data markers helpers wrap external text in, which cover the main-session surfaces native hardening does not observe | None; defense in depth |
+| **Bundled `/deep-research` workflow** (Claude Code) | Claude Code bundles a web-search fan-out workflow of that name; the blueprint's research swarm is `ab-deep-research`, so the two no longer share a name | None |
+| **Hermes skill security scan** | Skills, prompt files and instruction files carry none of the phrases Hermes treats as injection, no instruction to edit the instructions file by name, and no HTML comments; the portability gate mirrors those checks | Runs on every skill Hermes installs or indexes |
 
 ### Adjusting quality gates
 
-Quality gates are encoded in the skill files. To relax a gate (e.g., skip code review for docs-only changes), edit the corresponding skill's `SKILL.md` and add your exception criteria.
+The gates are encoded in the skill files. To relax one (for example, no code review for docs-only changes), edit the corresponding skill's `SKILL.md` and add your exception criteria; keep the file under 8,000 bytes.
 
 ### Install options
 
 ```bash
-# Plugin mode (default) — installs plugin for all projects
-./install.sh
+# Detect the installed tools and install for each
+bash install.sh
 
-# Plugin + scaffold a specific project
-./install.sh /path/to/project
+# Install and scaffold a project
+bash install.sh /path/to/project
 
-# Scaffold only (plugin already installed)
-./install.sh --scaffold /path/to/project
+# Scaffold only (the blueprint is already installed)
+bash install.sh --scaffold /path/to/project
 
-# Legacy mode — copy all files into project (v2.x behavior)
-./install.sh --legacy /path/to/project
+# One or more tools only
+bash install.sh --only claude,codex
 
-# Preview what would be installed
-./install.sh --dry-run
+# Copy the skills somewhere else (a machine with no tool on PATH)
+bash install.sh --copy-dir /path/to/skills
+
+# Preview what would run or be copied
+bash install.sh --dry-run
 ```
 
 ## Documentation structure
 
-The template includes **example docs** in each category so you can see the expected format immediately. Delete them when you start your project (they're clearly marked as examples).
+The scaffold includes **example docs** in each category so you can see the expected format immediately. Delete them when you start your project; they are clearly marked as examples.
 
 | Example file | Shows you how to write |
 |-------------|----------------------|
-| `docs/decisions/001-example-project-structure.md` | Architecture Decision Records |
-| `docs/plans/2026-03-04-example-user-auth.md` | Implementation plans with bite-sized tasks |
+| `docs/decisions/001-example-project-structure.md` | Architecture decision records |
+| `docs/plans/2026-03-04-example-user-auth.md` | Implementation plans that record decisions |
 | `docs/specs/example-csv-export.md` | Feature specifications with acceptance criteria |
 | `docs/research/example-jwt-refresh-strategies.md` | Research docs with findings and recommendations |
 
-The `docs/` directory uses four categories, each with its own lifecycle:
+The `docs/` directory uses these categories, each with its own lifecycle:
 
 | Directory | Contains | Lifecycle |
 |-----------|----------|-----------|
-| `docs/context/` | GOALS.md, STATUS.md, CONVENTIONS.md | Updated every session |
+| `docs/context/` | STATUS.md (with the Session Continuity notes), GOALS.md, CONVENTIONS.md, DECISIONS.md | Updated every session |
 | `docs/plans/` | `YYYY-MM-DD-topic.md` implementation plans | Created per feature, archived when done |
 | `docs/specs/` | `feature-name.md` specifications | Created before building, stable after approval |
 | `docs/decisions/` | `NNN-kebab-case-title.md` ADRs | Created when choosing between options, permanent |
 | `docs/research/` | Spike results, tool evaluations | Created during exploration, referenced later |
-| `docs/solutions/` | Solved problems, institutional knowledge | Created by `/ab-knowledge-compounding`, searched by `/ab-brainstorming` and `/ab-deep-research` |
+| `docs/learnings/` | LEARNINGS.md: patterns and gotchas | Appended by `ab-session-wrap` |
+| `docs/solutions/` | Solved problems, institutional knowledge | Created by `ab-knowledge-compounding`, searched by `ab-brainstorming` and `ab-deep-research` |
 
 ## How it works under the hood
 
 ### Context loading order
 
-When Claude starts a session, it loads context in this order:
+Every tool loads `AGENTS.md` from the project root as its instructions; Claude Code loads it through the `@AGENTS.md` line in `CLAUDE.md` (a symlink works too), and Amp, Cursor CLI, Grok Build, Pi, Hermes, Codex and Antigravity read `AGENTS.md` directly. From there a session reads, in this order:
 
-1. **CLAUDE.md** — Behavioral rules, session continuity, agent team hierarchy, skill/agent dispatch tables
-2. **docs/context/STATUS.md** — What happened recently, what's in flight
-3. **docs/context/STATE.md** — Execution state for resuming in-progress work (wave progress, task completion)
-4. **docs/context/GOALS.md** — What we're trying to achieve
-5. **docs/context/CONVENTIONS.md** — How we write code here
-6. **BACKLOG.md** — What's waiting to be done
-7. **docs/solutions/** — Institutional knowledge searched before planning
-8. **blueprint.local.md** — Per-project agent configuration
-9. **Skills** — Activated contextually based on what's happening
-10. **Agents** — Dispatched on-demand for focused analysis (individually or as swarms)
+1. **AGENTS.md**: how work is done here and why, where things are, the skills to use, when to decide and when to ask
+2. **docs/context/STATUS.md**: the Session Continuity notes and what is in flight
+3. **docs/context/CONVENTIONS.md**: the stack and the commands, read before writing code
+4. **docs/context/STATE.md**: execution state for resuming in-progress work (wave progress, task completion)
+5. **docs/context/GOALS.md** and **DECISIONS.md**: what the project is for and what is locked
+6. **BACKLOG.md**: what is waiting
+7. **docs/solutions/** and **docs/learnings/**: searched before planning
+8. **blueprint.local.md**: which helpers run for this stack
+9. **Skills**: picked from their descriptions as the work calls for them, or named by you
+10. **Helper prompts**: run by the skills that use them, in a helper or inline
+
+In Claude Code and Codex the session-start hook also points the session at `STATUS.md`; elsewhere `AGENTS.md` says to read it first.
 
 ### Context window management
 
-Large features can exhaust Claude's context window. The template has layered defenses:
+Large features can exhaust a session's context. The blueprint has layered defenses:
 
 | Layer | Mechanism | What it does |
 |-------|-----------|-------------|
-| **Prevention** | Subagent isolation | Each agent gets fresh 200K context; main session only sees results |
-| **Detection** | `context-monitor.js` (PostToolUse hook) | Warns at 150 tool calls, escalates at 200, detects analysis paralysis at 8+ consecutive reads |
-| **Inner guard** | `ship-loop.sh` (Stop hook) | Blocks premature exit within a session — re-injects the prompt (max 5 retries) |
-| **Outer loop** | `scripts/ship.sh` (bash) | Spawns fresh Claude process per iteration — true context reset (max 10, configurable) |
-| **Circuit breakers** | `ab-autonomous-loop` skill | Stops after 3 no-progress iterations or 5 identical errors. Degradation detection catches rising difficulty and hot-file churn before hard stalls. Mandatory Reflection Gate before every retry forces agents to verbalize what failed and confirm a different approach |
+| **Prevention** | Helper isolation | Where the tool has subagents, each helper works in a fresh context and the main session sees only its output |
+| **Detection** | `context-monitor.js` (PostToolUse hook, Claude Code and Codex) | Warns at 150 tool calls, escalates at 200, flags analysis paralysis at 8+ consecutive reads |
+| **Fresh context per iteration** | The ship runner | Starts a new headless session per iteration in any tool; state persists through git, the plan file and `state.json` |
+| **Session guard** | `ship-loop.sh` (Stop hook, Claude Code and Codex) | Keeps an interactive ship run from stopping while `state.json` says `running`; stands down under the runner |
+| **Circuit breakers** | `ab-autonomous-loop` | Stops after 3 no-progress iterations or 5 identical errors; degradation detection catches rising difficulty and hot-file churn; a reflection gate before every retry |
 
-The inner guard and outer loop solve different problems: the Stop hook catches Claude quitting early (same session, growing context), while the external bash loop handles genuine context exhaustion (fresh 200K per iteration, state persists via git).
-
-To trim what loads in the first place, run `/skill-doctor` (CLI 2.1.261+) — it reports which loaded skills go unused and what each costs in context.
+The runner and the Stop hook solve different problems: the hook catches an interactive session quitting early (same session, growing context), while the runner handles genuine context exhaustion (a fresh session per iteration, state on disk), and it does so in every tool, hooks or not.
 
 ### Session continuity
 
-The `Session Continuity` section in CLAUDE.md acts as a handoff note between sessions:
+The Session Continuity section of `docs/context/STATUS.md` is the handoff note between sessions, and between tools:
 
 ```markdown
 ## Session Continuity
@@ -1022,126 +1028,135 @@ The `Session Continuity` section in CLAUDE.md acts as a handoff note between ses
 
 **Current state of the code:**
 - Build: passing
-- Tests: 2 failing (expected — the ones we need to write)
+- Tests: 2 failing (expected: the ones we need to write)
 - Uncommitted changes: none
 ```
 
-This is updated automatically by `/ab-session-wrap` at the end of each session.
+`ab-session-wrap` rewrites it at the end of each session from git history and the file system, never from an earlier summary, and `ab-resume-session` reads it first.
 
 ## Error recovery
 
-CLAUDE.md includes built-in guidance for common failure scenarios:
+The scaffolded `AGENTS.md` carries guidance for common failures:
 
 | Situation | Recovery |
 |-----------|----------|
-| Test fails after code change | Don't iterate blindly — use `ab-systematic-debugging` skill |
+| Test fails after code change | Don't iterate blindly; use the `ab-systematic-debugging` skill |
 | Merge conflict | Read both sides, understand intent, then resolve |
-| Broken build after dep update | Pin previous version, BACKLOG the upgrade |
-| Corrupted worktree | Create fresh from main, cherry-pick completed commits |
-| Agent returns bad results | Verify findings manually before acting |
+| Broken build after dep update | Pin the previous version, put the upgrade in BACKLOG.md |
+| Corrupted worktree | Create a fresh one from main, cherry-pick completed commits |
+| Helper returns bad results | Verify the findings before acting on them |
 | Lost uncommitted changes | Check `git stash list`, `git reflog`, `git fsck --lost-found` |
+| A ship run stalls or aborts | Read `.agent-blueprint/run/state.json` and its `reason`; the `ab-forensics` skill reads the logs, run state and git history |
 
 ## FAQ
 
 <details>
+<summary><strong>Which tool should I use?</strong></summary>
+
+Whichever you already use. The [eight-tool table](#runs-in-eight-tools) shows what each one gets: hooks only in Claude Code and Codex, helpers everywhere except Pi without `pi-subagents`, manual-only enforced everywhere except Amp and Hermes. The pipelines run end to end in all eight; the support note under `docs/hosts/` for your tool says what is different there and its smoke-test status.
+</details>
+
+<details>
+<summary><strong>Does it work without hooks?</strong></summary>
+
+Yes. Hooks exist only for Claude Code (`hooks/claude-code.json`, 10 handlers) and Codex (`hooks/codex.json`, 5; Codex runs them after you trust them in `/hooks`). The other six hosts lose only what the hooks add: the session-start pointer to `docs/context/STATUS.md`, the injection scanners on writes and reads, the context monitor, the commit-message check, the fetch cache, the ship-pipeline Stop guard, and the Agent Teams gates. No pipeline depends on any of them; the ship runner drives an unattended run through `state.json`, in every tool.
+</details>
+
+<details>
 <summary><strong>Can I use this with an existing project?</strong></summary>
 
-Yes. In plugin mode (default), the blueprint installs as a plugin — it adds zero files to your project. Run `/plugin marketplace add Ninety2UA/agent-blueprint` then `/plugin install agent-blueprint`, then `/ab-project-start` in your project to scaffold the docs structure. Your existing code is never touched.
+Yes. The blueprint installs in your tool and adds zero engine files to your project. Install it for your tool, then ask for the `ab-project-start` skill in the project: it scaffolds `AGENTS.md` and `docs/` by merging into what exists. Your existing code and instructions are never overwritten.
 </details>
 
 <details>
 <summary><strong>Do I need all the skills?</strong></summary>
 
-No. Skills activate contextually. If you never do TDD, the ab-test-driven-development skill won't activate. You can also delete any skill directory you don't want. The template works with any subset.
+No. Skills are picked from their descriptions when a request matches. If you never do TDD, `ab-test-driven-development` never runs. You can also delete any skill folder you don't want; the blueprint works with any subset.
 </details>
 
 <details>
-<summary><strong>How do agents differ from skills?</strong></summary>
+<summary><strong>How do helper prompts differ from skills?</strong></summary>
 
-**Skills** are instructions for the main Claude session — they guide Claude's behavior during your conversation. **Agents** are separate subprocesses dispatched via the Task tool, each with their own 200K context window. Use agents for focused analysis that benefits from isolation (security audits, deep code reviews).
+**Skills** are instructions for the main session: they guide the work during your conversation. **Helper prompts** are files a skill hands to a helper for focused analysis (a security audit, a plan check, a deep code review) that benefits from a fresh context. Where the tool has subagents the helper runs in its own context; where it does not, the session follows the prompt itself. Both return the prompt's Output section.
 </details>
 
 <details>
-<summary><strong>Will this slow down Claude?</strong></summary>
+<summary><strong>Will this slow my sessions down?</strong></summary>
 
-CLAUDE.md adds minimal context. Skills and agents are loaded on-demand, not upfront. The template is designed to be lightweight — most of the intelligence is in the skill files which are only read when triggered.
+`AGENTS.md` adds a small amount of context. Skills load when they run, not up front, and each `SKILL.md` stays under 8,000 bytes with its detail in `references/`, loaded at the point of use. Most of the content is only read when it is needed.
 </details>
 
 <details>
 <summary><strong>Can I use this with Claude Code in my IDE?</strong></summary>
 
-Yes. The template works identically in VS Code, JetBrains, and the CLI. Slash commands, skills, and agents are all available in every environment.
+Yes. The plugin works the same in the Claude Code CLI and its VS Code and JetBrains extensions; skills, helper prompts and hooks are available in each.
 </details>
 
 <details>
 <summary><strong>How do I update the blueprint?</strong></summary>
 
-**Plugin mode (v3.0+):** Run `claude plugin update agent-blueprint@agent-blueprint` (or `/plugin install agent-blueprint@agent-blueprint` again) — it updates the cached plugin for all projects; then run `/reload-plugins` (or restart).
+Claude Code: `claude plugin update agent-blueprint@agent-blueprint`, then `/reload-plugins`. Copy installs: `git pull` in the checkout and re-run `bash install.sh`. Any tool: ask for the `ab-plugin-update` skill, which finds the route you used, runs it and checks the version. Your project files (`AGENTS.md`, `docs/`, `BACKLOG.md`) are never touched.
+</details>
 
-**Legacy mode (v2.x):** Use `--legacy` with `--force` to refresh in-project files.
+<details>
+<summary><strong>How do I move a project from v3 (claude-code-blueprint)?</strong></summary>
 
-Your project-specific files (CLAUDE.md, docs/, BACKLOG.md) are never touched.
+Install v4, then ask for the `ab-migrate` skill in the project. It finds the v3 plugin and every in-project copy the blueprint made, shows the list, asks once, removes only those files behind a `blueprint-v3-backup` branch, renames `CLAUDE.md` to `AGENTS.md` with a one-line `CLAUDE.md` that imports it, and prints the uninstall command for the v3 plugin. The name map and the folder changes are in [docs/upgrade/v4.md](docs/upgrade/v4.md).
 </details>
 
 <details>
 <summary><strong>What are the example docs? Should I keep them?</strong></summary>
 
-The template includes example files in `docs/decisions/`, `docs/plans/`, `docs/specs/`, and `docs/research/` showing the expected format for each document type. They're clearly marked as examples. Delete them when you start your own project — they're there to help you understand the structure.
+The scaffold includes example files in `docs/decisions/`, `docs/plans/`, `docs/specs/` and `docs/research/` showing the expected format for each document type. They are clearly marked as examples. Delete them when you start your own project.
 </details>
 
 <details>
 <summary><strong>Do small bug fixes need the full brainstorm/plan flow?</strong></summary>
 
-No. The template includes a **lightweight workflow** for small, well-understood changes (< 3 files, obvious root cause). Write a failing test, fix it, verify, commit. See the "Lightweight Workflow" section in CLAUDE.md for the full criteria.
+No. `ab-quick-fix` covers small, well-understood changes (under three files, obvious approach): write a failing test, fix it, verify, commit. The scaffolded `AGENTS.md` states the boundary.
 </details>
 
 <details>
-<summary><strong>What are agent swarms and when should I use them?</strong></summary>
+<summary><strong>What are swarms and when should I use them?</strong></summary>
 
-Agent swarms dispatch multiple specialized agents in parallel on the same input. `/ab-review-swarm` runs 6-10 reviewers simultaneously (security, performance, code quality, etc.) and merges their findings. `/ab-deep-research` runs 5 research agents in parallel before planning. Use swarms for significant changes — they consume more tokens but catch issues a single reviewer would miss. For small changes (< 50 lines), a single `/ab-requesting-code-review` is usually sufficient.
-</details>
-
-<details>
-<summary><strong>What is wave orchestration?</strong></summary>
-
-Wave orchestration (`/ab-orchestrate`) groups plan tasks by dependency. Independent tasks run in parallel within each "wave," while dependent tasks wait for their prerequisites. An integration-verifier checks that parallel implementations work together between waves. It's the sweet spot between fully sequential execution and fully parallel — maximizing speed without breaking dependency order.
-</details>
-
-<details>
-<summary><strong>What is knowledge compounding?</strong></summary>
-
-After solving a non-trivial problem, `/ab-knowledge-compounding` saves it as a structured document in `docs/solutions/`. Future `/ab-brainstorming` and `/ab-deep-research` skills automatically search this directory before starting new work. Over time, your project builds institutional knowledge that prevents repeated mistakes and informs better plans.
+A swarm runs several helpers in parallel on the same input. `ab-review-swarm` reviews a change from several angles (quality, simplicity, tests, and security, performance, conventions, frontend, architecture, data and schema as the diff calls for) and merges the findings. `ab-deep-research` runs five researchers before planning. Use swarms for significant changes; they cost more tokens and catch what a single reviewer misses. For a small change, a single `ab-requesting-code-review` is usually enough.
 </details>
 
 <details>
 <summary><strong>How does team work differ from swarms?</strong></summary>
 
-Swarms are read-only helpers that analyze the same code from different angles and report back to a synthesizer. Team work (`/ab-orchestrate`) implements a plan: the lead keeps a task ledger, runs tasks in dependency-ordered waves with each helper owning its files, and commits each finished task itself. It runs in every supported tool, one task after another where the tool has no helpers, and uses Claude Code Agent Teams (an experimental feature, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"`) or Codex `multi_agent_v2` when the user has switched them on.
+Swarms are read-only helpers that analyze the same input and report to a synthesizer. Team work (`ab-orchestrate`) implements a plan: the lead keeps a task ledger, runs tasks in dependency-ordered waves with each helper owning its files, and commits each finished task itself. It runs in every supported tool, one task after another where the tool has no helpers, and uses Claude Code Agent Teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) or Codex `multi_agent_v2` when you have switched them on.
 </details>
 
 <details>
-<summary><strong>What is /ab-ship-pipeline and when should I use it?</strong></summary>
+<summary><strong>What is ab-ship-pipeline and when should I use it?</strong></summary>
 
-`/ab-ship-pipeline` is the fully autonomous development pipeline — zero checkpoints, fire-and-forget. It plans, researches, executes via a dedicated team-lead agent, iteratively reviews (3 cycles by default), and opens a PR. Use it for well-defined features where you don't need to approve each stage. For large features that may exhaust context, use `scripts/ship.sh` from your terminal — it spawns a fresh Claude process per iteration so each run gets a clean 200K context window. State persists through git commits and plan files.
+`ab-ship-pipeline` is the autonomous pipeline: no checkpoints. It locks assumptions, plans, researches, executes through `ab-orchestrate`, reviews until the findings converge, captures knowledge, and commits with a PR body. Use it for well-defined features where you don't need to approve each stage. For a large feature that may exhaust a session's context, or to run it unattended, use the ship runner (`skills/ab-ship-pipeline/scripts/run.sh --host <host> "<feature>"`), which starts a fresh session per iteration in the tool you name.
 </details>
 
 <details>
 <summary><strong>How does context exhaustion recovery work?</strong></summary>
 
-Two mechanisms work at different layers. **Inside** a session, the `ship-loop.sh` Stop hook blocks premature exit — if Claude tries to stop before `<promise>DONE</promise>` is output, the hook re-injects the prompt (max 5 retries, same context). **Outside** a session, `scripts/ship.sh` is a bash loop that spawns fresh Claude processes — each iteration gets a clean 200K context window, and state persists via git. The external loop is inspired by [Ralph](https://github.com/snarktank/ralph)'s approach to long-running agent loops.
+The ship runner starts a new headless session per iteration, so each one begins with a clean context; state persists through git commits, the plan file and `.agent-blueprint/run/state.json`, which the skill writes at every stage change and the runner reads between iterations. In Claude Code and Codex, the `ship-loop.sh` Stop hook also keeps an interactive ship session from stopping while the state says `running`; it stands down under the runner.
 </details>
 
 <details>
-<summary><strong>How do I configure which agents run for my project?</strong></summary>
+<summary><strong>Is an unattended run safe?</strong></summary>
 
-Edit `blueprint.local.md` (gitignored, so each developer can customize). It has YAML frontmatter listing which review and research agents to dispatch. Comment out agents that aren't relevant to your stack — no point running a frontend-reviewer on a CLI tool.
+The runner uses the least-privileged headless posture each tool offers (Claude Code `--permission-mode auto`, Codex `workspace-write`, Cursor CLI `--sandbox enabled`, Grok Build `--sandbox workspace`), scans every outgoing change and the PR body for secrets before it pushes, pushes only to the remote and branch it recorded at preflight, and stops as `needs-human` if `.git/config` changed or the range touches CI configuration. Pi, Amp and Antigravity can only run unguarded, so they need `--allow-unguarded`, and there the agent holds your git and `gh` credentials. Amp headless threads are visible to your workspace by default, per its docs.
+</details>
+
+<details>
+<summary><strong>How do I choose which helpers run for my project?</strong></summary>
+
+Edit `blueprint.local.md` (gitignored, so each developer can customize). It lists which review and research helpers `ab-review-swarm` and `ab-deep-research` dispatch. Comment out the ones that don't apply to your stack; a frontend reviewer has nothing to do on a CLI tool.
 </details>
 
 ## Contributing
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the rules skills follow so they run in every tool, the gates to run before a pull request, and the AI-assistance line a PR body ends with.
 
-If you've built a useful skill or agent, consider submitting it for inclusion in the template.
+If you've built a useful skill or helper prompt, consider submitting it.
 
 ## License
 
@@ -1150,5 +1165,5 @@ MIT License. See [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  <sub>Built for use with <a href="https://claude.ai/claude-code">Claude Code</a> by Anthropic</sub>
+  <sub>Agent Blueprint runs in Claude Code, Codex, Antigravity, Grok Build, Pi, Cursor CLI, Hermes and Amp. By Ninety2UA.</sub>
 </p>
