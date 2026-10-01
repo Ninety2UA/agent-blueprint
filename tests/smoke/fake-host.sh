@@ -44,9 +44,8 @@ case "$MODE" in
     fail)
         [ -n "${AGENT_BLUEPRINT_HOOK_TRACE:-}" ] && printf 'session-start.js\tother\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$AGENT_BLUEPRINT_HOOK_TRACE"
         case "$PROMPT" in
-            *"Agent Blueprint plugin"*)
-                mkdir -p "$RUN_DIR/provenance"; echo '{"skill": "ab-plugin-update"}' > "$RUN_DIR/provenance/ab-plugin-update.json"
-                reply "Upgrading Agent Blueprint... nothing newer was found." ;;
+            *"names start with ab-p"*)
+                reply "ab-pause-checkpoint ab-plugin-update ab-pr-workflow ab-project-start" ;;
             *) reply "I could not do that." ;;
         esac
         exit 0 ;;
@@ -57,8 +56,8 @@ case "$PROMPT" in
         reply "HARBOR-19" ;;
     *"autonomous ship pipeline"*)
         reply "ab-ship-pipeline" ;;
-    *"Agent Blueprint plugin"*)
-        reply "ab-plugin-update is a manual-only skill, so I did not run it; start it yourself when you want the upgrade." ;;
+    *"names start with ab-p"*)
+        reply "ab-pause-checkpoint ab-performance-profiling ab-pr-workflow ab-project-start ab-project-status" ;;
     *"Ship runner iteration"*)
         # The runner's prompt: implement the feature, commit, write the PR body, set done.
         cp "$HERE/fake-solution/cli.py" src/notes/cli.py

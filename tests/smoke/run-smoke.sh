@@ -106,7 +106,7 @@ on_signal() {
 trap on_signal INT TERM
 
 # ─── Per-cell bookkeeping ─────────────────────────────────────
-HOST="" CELL="" CELL_START=0 LOG="" LASTMSG="" FINAL="" RESULTS="" HOST_LOG_DIR=""
+HOST="" CELL="" CELL_START=0 LOG="" LASTMSG="" FINAL="" RESULTS="" HOST_LOG_DIR="" HOST_PLUGIN_DIR=""
 SESSION="" LINK="" CHECK_RC=0 CHECK_REASON="" RUN_RC=0
 # What one host's cells remember for a later cell: the canary's trace file and the build's session.
 CANARY_TRACE="" BUILD_SESSION="" BUILD_CHECKED=false SMOKE_TRACE_FILE=""
@@ -182,12 +182,12 @@ run_scenario() {
     shift
     scenario="$SMOKE_SCENARIOS/$name"
     new_work "$CELL" "$scenario"
-    prompt=$(fill_prompt "$scenario" "$HOST" "$PLUGIN_DIR")
+    prompt=$(fill_prompt "$scenario" "$HOST" "$HOST_PLUGIN_DIR")
     secs=$(cell_timeout "$name")
     printf '=== %s · %s · host %s · timeout %ss · work %s ===\n--- prompt ---\n%s\n--- output ---\n' "$CELL" "$(now_utc)" "$HOST" "$secs" "$WORK" "$prompt" >> "$LOG"
     RUN_RC=0
     if [ -n "$SMOKE_TRACE_FILE" ]; then export AGENT_BLUEPRINT_HOOK_TRACE="$SMOKE_TRACE_FILE"; fi
-    run_host_timed "$HOST" "$secs" "$LOG" "$prompt" "$LASTMSG" "$PLUGIN_DIR" "$@" || RUN_RC=$?
+    run_host_timed "$HOST" "$secs" "$LOG" "$prompt" "$LASTMSG" "$HOST_PLUGIN_DIR" "$@" || RUN_RC=$?
     unset AGENT_BLUEPRINT_HOOK_TRACE
     host_final_message "$HOST" "$LOG" "$LASTMSG" > "$FINAL" 2>/dev/null || true
     usage_fields "$HOST" "$LOG"
@@ -286,7 +286,7 @@ cell_manual_only() {
 cell_discovery() {
     local dirs count
     new_work discovery "$SMOKE_SCENARIOS/discovery"
-    dirs=$(cd "$WORK" && host_catalog_dirs "$HOST" "$PLUGIN_DIR")
+    dirs=$(cd "$WORK" && host_catalog_dirs "$HOST" "$HOST_PLUGIN_DIR")
     printf '=== catalog locations ===\n%s\n' "${dirs:-<none>}" >> "$LOG"
     count=$(printf '%s\n' "$dirs" | python3 -c '
 import os, sys
@@ -317,11 +317,11 @@ else:
             finish_cell fail "no ab- skill in the host's catalog locations (${dirs:-none found})"; return 0 ;;
     esac
     local prompt secs
-    prompt=$(fill_prompt "$SMOKE_SCENARIOS/discovery" "$HOST" "$PLUGIN_DIR")
+    prompt=$(fill_prompt "$SMOKE_SCENARIOS/discovery" "$HOST" "$HOST_PLUGIN_DIR")
     secs=$(cell_timeout discovery)
     printf '=== %s · host %s · timeout %ss ===\n--- prompt ---\n%s\n--- output ---\n' "$(now_utc)" "$HOST" "$secs" "$prompt" >> "$LOG"
     RUN_RC=0
-    run_host_timed "$HOST" "$secs" "$LOG" "$prompt" "$LASTMSG" "$PLUGIN_DIR" || RUN_RC=$?
+    run_host_timed "$HOST" "$secs" "$LOG" "$prompt" "$LASTMSG" "$HOST_PLUGIN_DIR" || RUN_RC=$?
     host_final_message "$HOST" "$LOG" "$LASTMSG" > "$FINAL" 2>/dev/null || true
     usage_fields "$HOST" "$LOG"
     SESSION=$(session_of_log "$LOG")
@@ -427,7 +427,8 @@ cell_ship() {
     feature=$(head -1 "$SMOKE_SCENARIOS/ship/feature.txt")
     secs=$(cell_timeout ship)
     runner="$SMOKE_REPO/skills/ab-ship-pipeline/scripts/run.sh"
-    local args=(--host "$HOST" "$feature" --max 6 --plugin-dir "$PLUGIN_DIR")
+    local args=(--host "$HOST" "$feature" --max 6)
+    [ -n "$HOST_PLUGIN_DIR" ] && args+=(--plugin-dir "$HOST_PLUGIN_DIR")
     unguarded=$(host_unguarded "$HOST")
     [ "$unguarded" = 1 ] && args+=(--allow-unguarded)
     [ -n "$TIMEOUT_OVERRIDE" ] && args+=(--iterations-timeout "$TIMEOUT_OVERRIDE")
@@ -489,6 +490,20 @@ run_cell() {
     esac
 }
 
+# host_plugin_dir HOST: the checkout, for a host that takes a plugin directory and has no installed
+# copy of the blueprint; empty otherwise. A host with the installed copy and the plugin directory
+# would list every skill twice (KTD18), so the installed copy wins.
+host_plugin_dir() {
+    local d
+    case "$1" in claude|cursor-agent|agy|fake) ;; *) echo ""; return 0 ;; esac
+    while IFS= read -r d; do
+        [ -n "$d" ] && [ -f "$d/ab-ship-pipeline/SKILL.md" ] && { echo ""; return 0; }
+    done <<LIST
+$(host_catalog_dirs "$1" "")
+LIST
+    echo "$PLUGIN_DIR"
+}
+
 # ─── One host, every selected cell ────────────────────────────
 run_host_all() {
     HOST="$1"
@@ -497,6 +512,7 @@ run_host_all() {
     RESULTS="$HOST_LOG_DIR/results.jsonl"
     : > "$RESULTS"
     CANARY_TRACE="" BUILD_SESSION="" BUILD_CHECKED=false
+    HOST_PLUGIN_DIR=$(host_plugin_dir "$HOST")
     local bin version out rc=0 c
     bin=$(host_bin "$HOST")
     version=$(host_version "$HOST")

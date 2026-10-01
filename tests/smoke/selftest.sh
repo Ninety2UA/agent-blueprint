@@ -52,13 +52,14 @@ check "fake · hooks passes when a native host's handlers write the trace" [ "$(
 check "fake · debug is degraded (vendor bug) with the link" [ "$(state_of "$J" fake debug)" = "degraded (vendor bug)" ]
 check "the table links the vendor bug" grep -q 'degraded (vendor bug)](https://example.com/vendor/1)' "$M"
 check "a missing provenance record is named" grep -q "no provenance record for ab-build-pipeline" <<<"$(reason_of "$J" fake build)"
-check "the manual-only failure is named" grep -q "Upgrading Agent Blueprint" <<<"$(reason_of "$J" fake manual-only)"
+check "the manual-only failure is named" grep -q "offers the manual-only skill ab-plugin-update" <<<"$(reason_of "$J" fake manual-only)"
 for c in canary build ship; do check "pi · $c is not-installed" [ "$(state_of "$J" pi "$c")" = not-installed ]; done
 check "the discovery cell from the pass run survived the partial run (merge)" [ "$(state_of "$J" fake discovery)" = pass ]
 check "the table shows both hosts" grep -q '^| pi |' "$M"
 
 echo "== hang mode: timeout; a duplicated catalog fails discovery; foreign hooks that fire fail"
-AGENT_BLUEPRINT_FAKE_CATALOG="$REPO/skills" AGENT_BLUEPRINT_SMOKE_FAKE_MODE=hang AGENT_BLUEPRINT_FAKE_HOOKS=foreign \
+ln -sfn "$REPO/skills" "$WORK/second-catalog"   # the same skills reachable through a second catalog location
+AGENT_BLUEPRINT_FAKE_CATALOG="$REPO/skills:$WORK/second-catalog" AGENT_BLUEPRINT_SMOKE_FAKE_MODE=hang AGENT_BLUEPRINT_FAKE_HOOKS=foreign \
     bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 3 --cell discovery,canary > "$WORK/hang.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/hang.log"; exit 1; }
 check "fake · canary is timeout" [ "$(state_of "$J" fake canary)" = timeout ]
 check "fake · discovery fails on a name counted twice" grep -q "counted twice" <<<"$(reason_of "$J" fake discovery)"

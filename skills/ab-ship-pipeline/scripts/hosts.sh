@@ -210,12 +210,13 @@ host_catalog_dirs() {
             _existing "$HOME/.gemini/antigravity-cli/skills" "$HOME/.gemini/config/skills" ".agents/skills" ".agent/skills" ;;
         grok)
             for d in "$HOME"/.grok/plugins/*/skills .grok/plugins/*/skills; do _existing "$d"; done
-            _existing "$HOME/.agents/skills" "$HOME/.grok/skills" ".grok/skills" "$HOME/.claude/skills" ".claude/skills"
-            [ -n "$plugin_dir" ] && _existing "$plugin_dir/skills" ;;
+            _existing "$HOME/.agents/skills" "$HOME/.grok/skills" ".grok/skills" "$HOME/.claude/skills" ".claude/skills" ;;
         pi)
             _existing "$HOME/.pi/agent/skills" ".pi/skills" "$HOME/.agents/skills" ".agents/skills" ;;
         cursor-agent)
             for d in "$HOME"/.cursor/plugins/local/*/skills; do _existing "$d"; done
+            # Cursor imports the plugins Claude Code has enabled, with their skills.
+            _enabled_plugin_skill_dirs claude "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
             _existing ".agents/skills" ".cursor/skills" "$HOME/.agents/skills" "$HOME/.cursor/skills" \
                       ".claude/skills" ".codex/skills" "$HOME/.claude/skills" "$HOME/.codex/skills"
             [ -n "$plugin_dir" ] && _existing "$plugin_dir/skills" ;;

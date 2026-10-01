@@ -1,42 +1,484 @@
 {
   "hosts": {
-    "claude": {
+    "agy": {
       "cells": {
         "canary": {
-          "cost_usd": 0.6312,
-          "date": "2026-09-30T23:22:43Z",
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:54Z",
           "link": "",
-          "log": "tests/smoke/logs/20261001-012239/claude/canary.log",
-          "reason": "final message names HARBOR-19",
-          "seconds": 4,
-          "session": "0345dd46-72fa-4edd-957d-26fb66b37359",
-          "state": "pass",
-          "tokens": 31548
+          "log": "tests/smoke/logs/20261001-214053/agy/canary.log",
+          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
+          "seconds": 0,
+          "session": "",
+          "state": "fail",
+          "tokens": null
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:54Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/agy/discovery.log",
+          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
+          "seconds": 0,
+          "session": "",
+          "state": "fail",
+          "tokens": null
         },
         "hooks": {
           "cost_usd": null,
-          "date": "2026-09-30T23:22:43Z",
+          "date": "2026-10-01T19:40:55Z",
           "link": "",
-          "log": "tests/smoke/logs/20261001-012239/claude/hooks.log",
+          "log": "tests/smoke/logs/20261001-214053/agy/hooks.log",
+          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
+          "seconds": 0,
+          "session": "",
+          "state": "fail",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/agy/manual-only.log",
+          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
+          "seconds": 0,
+          "session": "",
+          "state": "fail",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/agy/upgrade.log",
+          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
+          "seconds": 0,
+          "session": "",
+          "state": "fail",
+          "tokens": null
+        }
+      },
+      "version": "1.2.14"
+    },
+    "amp": {
+      "cells": {
+        "canary": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:57Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/amp/canary.log",
+          "reason": "amp not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:57Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/amp/discovery.log",
+          "reason": "amp not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:57Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/amp/hooks.log",
+          "reason": "amp not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:57Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/amp/manual-only.log",
+          "reason": "amp not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:57Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/amp/upgrade.log",
+          "reason": "amp not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        }
+      },
+      "version": "not installed"
+    },
+    "claude": {
+      "cells": {
+        "canary": {
+          "cost_usd": 0.4173,
+          "date": "2026-10-01T19:41:08Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/claude/canary.log",
+          "reason": "final message names HARBOR-19",
+          "seconds": 7,
+          "session": "5bcdb576-f82c-4f58-9537-a4070449168a",
+          "state": "pass",
+          "tokens": 31544
+        },
+        "discovery": {
+          "cost_usd": 0.4179,
+          "date": "2026-10-01T20:03:25Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/claude/discovery.log",
+          "reason": "53 ab- skills once each in 7 location(s); the answer names ab-ship-pipeline",
+          "seconds": 4,
+          "session": "4d822986-736e-44ee-af85-b398be921c79",
+          "state": "pass",
+          "tokens": 31568
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:41:08Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/claude/hooks.log",
           "reason": "handlers wrote the trace: session-start.js x1, ship-loop.sh x1 (from the canary run)",
           "seconds": 0,
           "session": "",
           "state": "pass",
           "tokens": null
         },
+        "manual-only": {
+          "cost_usd": 0.4483,
+          "date": "2026-10-01T20:03:34Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/claude/manual-only.log",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 9,
+          "session": "7289ddf0-e27f-476a-a0d2-d4b1d661147f",
+          "state": "pass",
+          "tokens": 32194
+        },
         "upgrade": {
           "cost_usd": null,
-          "date": "2026-09-30T23:23:12Z",
+          "date": "2026-10-01T19:42:39Z",
           "link": "",
-          "log": "tests/smoke/logs/20261001-012309/claude/upgrade.log",
+          "log": "tests/smoke/logs/20261001-214053/claude/upgrade.log",
           "reason": "14 checks passed: both plugin ids listed, detect-v3.sh reported and removed the v3 traces, the session-start warning names the v3 plugin",
-          "seconds": 2,
+          "seconds": 3,
           "session": "",
           "state": "pass",
           "tokens": null
         }
       },
       "version": "2.1.284 (Claude Code)"
+    },
+    "codex": {
+      "cells": {
+        "canary": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:41:21Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/codex/canary.log",
+          "reason": "final message names HARBOR-19",
+          "seconds": 13,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:03:42Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/codex/discovery.log",
+          "reason": "53 ab- skills once each in 10 location(s); the answer names ab-ship-pipeline",
+          "seconds": 22,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:41:21Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/codex/hooks.log",
+          "reason": "plugin hooks run only after trust on codex; the review cell covers the untrusted path (AE1)",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:03:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/codex/manual-only.log",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 13,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:42:56Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/codex/upgrade.log",
+          "reason": "the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4)",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        }
+      },
+      "version": "codex-cli 0.155.1"
+    },
+    "cursor-agent": {
+      "cells": {
+        "canary": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:41:13Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/cursor-agent/canary.log",
+          "reason": "final message names HARBOR-19",
+          "seconds": 16,
+          "session": "cd0c9341-64f7-4fe4-9ca3-6e96c9ae53aa",
+          "state": "pass",
+          "tokens": null
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:03:37Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/cursor-agent/discovery.log",
+          "reason": "53 ab- skills once each in 8 location(s); the answer names ab-ship-pipeline",
+          "seconds": 16,
+          "session": "5505a6c3-c3dd-4507-8619-a335d3328ba2",
+          "state": "pass",
+          "tokens": null
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:41:13Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/cursor-agent/hooks.log",
+          "reason": "no blueprint hook fired (from the canary run)",
+          "seconds": 0,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:04:08Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/cursor-agent/manual-only.log",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 31,
+          "session": "cc0acc49-862c-48d8-8850-5d1e624a6864",
+          "state": "pass",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:46:11Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/cursor-agent/upgrade.log",
+          "reason": "the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4)",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        }
+      },
+      "version": "2026.09.10-fd3934a"
+    },
+    "grok": {
+      "cells": {
+        "canary": {
+          "cost_usd": 0.1055,
+          "date": "2026-10-01T19:41:08Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/grok/canary.log",
+          "reason": "final message names HARBOR-19",
+          "seconds": 10,
+          "session": "",
+          "state": "pass",
+          "tokens": 84794
+        },
+        "discovery": {
+          "cost_usd": 0.0829,
+          "date": "2026-10-01T20:03:28Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/grok/discovery.log",
+          "reason": "53 ab- skills once each in 3 location(s); the answer names ab-ship-pipeline",
+          "seconds": 6,
+          "session": "",
+          "state": "pass",
+          "tokens": 42346
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:41:09Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/grok/hooks.log",
+          "reason": "no blueprint hook fired (from the canary run)",
+          "seconds": 0,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": 0.0865,
+          "date": "2026-10-01T20:03:38Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/grok/manual-only.log",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 10,
+          "session": "",
+          "state": "pass",
+          "tokens": 42842
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:42:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/grok/upgrade.log",
+          "reason": "the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4)",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        }
+      },
+      "version": "grok 1.0.34 (3736acbc8658) [stable]"
+    },
+    "hermes": {
+      "cells": {
+        "canary": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:56Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/hermes/canary.log",
+          "reason": "hermes not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:56Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/hermes/discovery.log",
+          "reason": "hermes not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:56Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/hermes/hooks.log",
+          "reason": "hermes not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:56Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/hermes/manual-only.log",
+          "reason": "hermes not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:57Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/hermes/upgrade.log",
+          "reason": "hermes not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        }
+      },
+      "version": "not installed"
+    },
+    "pi": {
+      "cells": {
+        "canary": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/pi/canary.log",
+          "reason": "pi not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/pi/discovery.log",
+          "reason": "pi not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/pi/hooks.log",
+          "reason": "pi not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/pi/manual-only.log",
+          "reason": "pi not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/pi/upgrade.log",
+          "reason": "pi not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        }
+      },
+      "version": "not installed"
     }
   },
   "release": "4.0.0",
@@ -64,7 +506,44 @@
         "claude"
       ],
       "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "canary",
+        "discovery",
+        "hooks",
+        "manual-only",
+        "upgrade"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude,codex,cursor-agent,agy,grok,pi,hermes,amp --cell discovery,canary,hooks,manual-only,upgrade --plugin-dir . --v3-dir /private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/u15-v3 --timeout 600 --jobs 5",
+      "date": "2026-10-01 19:46 UTC",
+      "hosts": [
+        "agy",
+        "amp",
+        "claude",
+        "codex",
+        "cursor-agent",
+        "grok",
+        "hermes",
+        "pi"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "discovery",
+        "manual-only"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude,codex,cursor-agent,grok --cell discovery,manual-only --plugin-dir . --timeout 600 --jobs 4",
+      "date": "2026-10-01 20:04 UTC",
+      "hosts": [
+        "claude",
+        "codex",
+        "cursor-agent",
+        "grok"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
     }
   ],
-  "updated": "2026-09-30 23:23 UTC"
+  "updated": "2026-10-01 20:04 UTC"
 }
