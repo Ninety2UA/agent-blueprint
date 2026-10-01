@@ -43,6 +43,7 @@ SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # The host list is the ship runner's adapter table (AB_HOSTS), so the two never drift.
 # shellcheck source=skills/ab-ship-pipeline/scripts/hosts.sh disable=SC1091
 . "$SOURCE_DIR/skills/ab-ship-pipeline/scripts/hosts.sh"
+# shellcheck disable=SC2153   # AB_HOSTS comes from hosts.sh, sourced above
 read -r -a ALL_HOSTS <<< "$AB_HOSTS"
 COPY_HOSTS=(codex grok pi cursor-agent amp)      # scan ~/.agents/skills
 DRY_RUN=false
@@ -181,7 +182,16 @@ if listed hermes; then copy_reasons+=(hermes); fi
 RECORD="$COPY_DIR/.agent-blueprint-install.json"
 copy_skills() {
     info "Copying ${SKILL_COUNT} skills into $COPY_DIR (one copy covers: ${copy_reasons[*]})"
-    local previous=() name src dest
+    local previous=() name src dest src_real copy_real
+    # The copy replaces each skill folder, so a destination that is the source itself (the path,
+    # or a symlink to it) would delete the checkout's skills before copying them.
+    src_real=$(cd "$SOURCE_DIR/skills" && pwd -P)
+    copy_real=$(cd "$COPY_DIR" 2>/dev/null && pwd -P || true)
+    case "$copy_real/" in
+        "$src_real"/*)
+            error "--copy-dir points into this checkout's own skills folder ($src_real); choose another directory"
+            exit 2 ;;
+    esac
     if [ -f "$RECORD" ]; then
         while IFS= read -r name; do previous+=("$name"); done < <(sed -n 's/^ *"\(ab-[a-z0-9-]*\)".*/\1/p' "$RECORD")
     fi
@@ -194,8 +204,11 @@ copy_skills() {
             echo -e "    ${DIM}copy  $name${NC}"
         else
             mkdir -p "$COPY_DIR"
+            # Copy next to the destination first, then swap, so a failed copy leaves the old skill in place.
+            rm -rf "${dest:?}.new"
+            cp -R "$src" "$dest.new"
             rm -rf "${dest:?}"
-            cp -R "$src" "$dest"
+            mv "$dest.new" "$dest"
         fi
     done
     # A skill in the last record that no longer exists in the source was renamed or deleted.

@@ -110,6 +110,30 @@ class Installer(unittest.TestCase):
         self.assertTrue(os.path.isdir(os.path.join(copy, "my-own-skill")))
         self.assertIn("Removed ab-quick-fix", out)
 
+    def test_only_limits_the_hosts_and_rejects_unknown_names(self):
+        for tool in ("claude", "codex"):
+            self.fake_tool(tool)
+        code, out = self.run_install("--only", "claude")
+        self.assertEqual(code, 0, out)
+        self.assertIn("claude plugin install agent-blueprint@agent-blueprint", self.calls())
+        self.assertFalse(os.path.exists(os.path.join(self.home, ".agents", "skills")), "codex was not asked for")
+        code, out = self.run_install("--only", "claude,emacs")
+        self.assertEqual(code, 2)
+        self.assertIn("Unknown host in --only: emacs", out)
+
+    def test_copy_dir_inside_the_checkout_skills_is_refused(self):
+        checkout = os.path.join(self.root, "checkout")
+        shutil.copytree(REPO, checkout, symlinks=True, ignore=shutil.ignore_patterns(".git", "node_modules"))
+        installer = os.path.join(checkout, "install.sh")
+        link = os.path.join(self.root, "alias")
+        os.symlink(os.path.join(checkout, "skills"), link)
+        for target in (os.path.join(checkout, "skills"), link):
+            code, out = self.run_install("--copy-dir", target, source=installer)
+            self.assertEqual(code, 2, out)
+            self.assertIn("own skills folder", out)
+            self.assertEqual(sorted(d for d in os.listdir(os.path.join(checkout, "skills")) if d.startswith("ab-")), SKILLS)
+            self.assertTrue(os.path.isfile(os.path.join(checkout, "skills", "ab-quick-fix", "SKILL.md")))
+
     def test_scaffold_only(self):
         project = os.path.join(self.root, "project")
         code, out = self.run_install("--scaffold", project)
