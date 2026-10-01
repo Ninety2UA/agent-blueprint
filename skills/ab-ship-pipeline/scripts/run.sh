@@ -35,11 +35,29 @@ if [ -t 1 ]; then
 else
     GREEN=''; YELLOW=''; RED=''; BLUE=''; DIM=''; BOLD=''; NC=''
 fi
-info()    { echo -e "  ${BLUE}▸${NC} $1"; }
-success() { echo -e "  ${GREEN}✓${NC} $1"; }
-warn()    { echo -e "  ${YELLOW}!${NC} $1"; }
-error()   { echo -e "  ${RED}✗${NC} $1" >&2; }
-transition() { echo -e "  ${BOLD}→${NC} $1"; }
+# The message is printed with %s: text that came from state.json or the host keeps its
+# backslashes literal, so it cannot smuggle escape sequences into the terminal.
+info()    { printf '  %b▸%b %s\n' "$BLUE" "$NC" "$1"; }
+success() { printf '  %b✓%b %s\n' "$GREEN" "$NC" "$1"; }
+warn()    { printf '  %b!%b %s\n' "$YELLOW" "$NC" "$1"; }
+error()   { printf '  %b✗%b %s\n' "$RED" "$NC" "$1" >&2; }
+transition() { printf '  %b→%b %s\n' "$BOLD" "$NC" "$1"; }
+# A push URL may carry credentials (https://user:token@host/...); never print them.
+mask_url() { printf '%s' "$1" | sed -E 's#://[^/@]*@#://***@#'; }
+# pr_repo_from_url URL: HOST/OWNER/REPO for a hosted remote, empty for a local path. The runner
+# passes it to every gh call, so gh's own default repository (which `gh repo set-default` or a
+# second remote can point elsewhere) never decides where the pull request goes.
+pr_repo_from_url() {
+    local u="$1"
+    case "$u" in
+        file://*|/*|./*|../*|~*) echo ""; return 0 ;;
+        *://*) u="${u#*://}"; u="${u#*@}" ;;
+        *@*:*) u="${u#*@}"; u="${u/://}" ;;
+        *) echo ""; return 0 ;;
+    esac
+    u="${u%/}"; u="${u%.git}"
+    case "$u" in */*/*) echo "$u" ;; *) echo "" ;; esac
+}
 
 # shellcheck source=hosts.sh disable=SC1091
 . "$SCRIPT_DIR/hosts.sh"
@@ -49,8 +67,6 @@ RUN_DIR=".agent-blueprint/run"
 STATE_FILE="$RUN_DIR/state.json"
 PR_BODY="$RUN_DIR/pr-body.md"
 COMMIT_MSG="$RUN_DIR/commit-msg.md"
-LOG_DIR="$RUN_DIR/logs"
-LOCK_FILE="$RUN_DIR/lock"
 TEAM_DIR=".agent-blueprint/team"
 CEILING=20
 BACKOFF="${AGENT_BLUEPRINT_RUNNER_BACKOFF:-30}"
@@ -58,13 +74,13 @@ MAX_TRANSIENT=5
 PROBE_TIMEOUT=180
 
 # ─── Arguments ────────────────────────────────────────────────
-HOST="" FEATURE="" MAX=10 TIMEOUT="" ALLOW_UNGUARDED=false ALLOW_CI=false RESUME=false PLUGIN_DIR="" DRY_RUN=false
+RUN_HOST="" FEATURE="" MAX=10 TIMEOUT="" ALLOW_UNGUARDED=false ALLOW_CI=false RESUME=false PLUGIN_DIR="" DRY_RUN=false
 SKILL_FLAGS=""
 usage() { sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; }
 while [ $# -gt 0 ]; do
     case "$1" in
-        --host)               [ $# -ge 2 ] || { usage; exit 1; }; HOST="$2"; shift 2 ;;
-        --host=*)             HOST="${1#--host=}"; shift ;;
+        --host)               [ $# -ge 2 ] || { usage; exit 1; }; RUN_HOST="$2"; shift 2 ;;
+        --host=*)             RUN_HOST="${1#--host=}"; shift ;;
         --max)                [ $# -ge 2 ] || { usage; exit 1; }; MAX="$2"; shift 2 ;;
         --max=*)              MAX="${1#--max=}"; shift ;;
         --iterations-timeout) [ $# -ge 2 ] || { usage; exit 1; }; TIMEOUT="$2"; shift 2 ;;
@@ -86,20 +102,20 @@ while [ $# -gt 0 ]; do
 done
 FEATURE=$(printf '%s' "$FEATURE" | tr '\n\r' '  ')
 
-[ -n "$HOST" ] || { error "--host is required (one of: $AB_HOSTS)"; exit 1; }
-host_known "$HOST" || { error "Unknown host: $HOST (one of: $AB_HOSTS)"; exit 1; }
+[ -n "$RUN_HOST" ] || { error "--host is required (one of: $AB_HOSTS)"; exit 1; }
+host_known "$RUN_HOST" || { error "Unknown host: $RUN_HOST (one of: $AB_HOSTS)"; exit 1; }
 case "$MAX" in ''|*[!0-9]*) error "--max wants a number"; exit 1 ;; esac
 [ "$MAX" -ge 1 ] || { error "--max must be at least 1"; exit 1; }
 if [ "$MAX" -gt "$CEILING" ]; then warn "--max $MAX is above the skill's fixed ceiling of $CEILING; using $CEILING"; MAX=$CEILING; fi
-[ -n "$TIMEOUT" ] || TIMEOUT=$(host_timeout "$HOST")
+[ -n "$TIMEOUT" ] || TIMEOUT=$(host_timeout "$RUN_HOST")
 case "$TIMEOUT" in ''|*[!0-9]*) error "--iterations-timeout wants a number of seconds"; exit 1 ;; esac
 if [ -n "$PLUGIN_DIR" ]; then
     PLUGIN_DIR="$(cd "$PLUGIN_DIR" 2>/dev/null && pwd)" || { error "--plugin-dir is not a directory"; exit 1; }
 fi
 
 # KTD15: an unguarded posture needs the explicit flag, on a fresh run and on --resume alike.
-if [ "$(host_unguarded "$HOST")" = 1 ] && [ "$ALLOW_UNGUARDED" != true ]; then
-    error "$HOST runs unattended with no guard: $(host_posture "$HOST")"
+if [ "$(host_unguarded "$RUN_HOST")" = 1 ] && [ "$ALLOW_UNGUARDED" != true ]; then
+    error "$RUN_HOST runs unattended with no guard: $(host_posture "$RUN_HOST")"
     echo "  Pass --allow-unguarded to accept that for this run." >&2
     exit 1
 fi
@@ -148,18 +164,32 @@ git remote get-url --push "$REMOTE" >/dev/null 2>&1 || { error "Remote '$REMOTE'
 REPO_HASH=$(printf '%s' "$REPO" | sha256_stdin | cut -c1-16)
 STATE_ROOT="${XDG_STATE_HOME:-$HOME/.local/state}/agent-blueprint/$REPO_HASH"
 RECORD="$STATE_ROOT/record"
+# Everything the runner itself writes (logs, the lock, the host's last-message file) sits next to
+# the record, outside the working tree: the agent can plant a symlink at any path inside the tree,
+# and a write through it would land wherever the link points.
+LOG_DIR="$STATE_ROOT/logs"
+LOCK_FILE="$STATE_ROOT/lock"
+
+# tree_link: prints the first blueprint path that is a symlink; the runner refuses to write below one.
+tree_link() {
+    local p
+    for p in .agent-blueprint "$RUN_DIR" .agent-blueprint/.gitignore "$COMMIT_MSG"; do
+        [ -L "$p" ] && { echo "$p"; return 0; }
+    done
+    return 1
+}
 
 echo ""
-echo -e "  ${BOLD}Ship runner${NC} — $HOST on $BRANCH ${DIM}($REPO)${NC}"
+printf '  %bShip runner%b — %s on %s %b(%s)%b\n' "$BOLD" "$NC" "$RUN_HOST" "$BRANCH" "$DIM" "$REPO" "$NC"
 [ "$DRY_RUN" = true ] && info "Dry run: preflight only, nothing starts."
 
 # ─── Preflight ────────────────────────────────────────────────
-GIT_WRITABLE=$(host_git_writable_default "$HOST")
-info "Posture: $(host_posture "$HOST")"
-[ "$(host_unguarded "$HOST")" = 1 ] && warn "Unguarded posture accepted with --allow-unguarded"
-HELPERS=$(host_max_helpers "$HOST"); [ "$HELPERS" = "-" ] && HELPERS="no documented cap"
+GIT_WRITABLE=$(host_git_writable_default "$RUN_HOST")
+info "Posture: $(host_posture "$RUN_HOST")"
+[ "$(host_unguarded "$RUN_HOST")" = 1 ] && warn "Unguarded posture accepted with --allow-unguarded"
+HELPERS=$(host_max_helpers "$RUN_HOST"); [ "$HELPERS" = "-" ] && HELPERS="no documented cap"
 info "Helpers per wave: $HELPERS · iteration timeout: ${TIMEOUT}s · max iterations: $MAX"
-host_preflight "$HOST" "$REPO" || exit 1
+host_preflight "$RUN_HOST" "$REPO" || exit 1
 
 command -v gh >/dev/null 2>&1 || { error "gh is not installed; the runner opens the pull request with it"; exit 1; }
 if gh auth status >/dev/null 2>&1; then
@@ -170,6 +200,11 @@ else
 fi
 
 write_gitignore() {
+    local link
+    if link=$(tree_link); then
+        error "$link is a symlink; the runner does not write through links. Replace it with a regular file or folder."
+        exit 1
+    fi
     [ -f .agent-blueprint/.gitignore ] && return 0
     mkdir -p .agent-blueprint
     cat > .agent-blueprint/.gitignore <<'EOF'
@@ -196,24 +231,30 @@ info "Working tree clean"
 
 # ─── Dry run stops here ───────────────────────────────────────
 if [ "$DRY_RUN" = true ]; then
-    info "Would record base $(git rev-parse --short HEAD), branch $BRANCH, push URL $(git remote get-url --push "$REMOTE")"
-    info "Would run per iteration: $(host_bin "$HOST") with the skill prompt for: ${FEATURE:-<feature>}"
-    info "Skill reference on this host: $(host_skill_ref "$HOST")${SKILL_FLAGS:+ · flags:$SKILL_FLAGS}"
+    DRY_URL=$(git remote get-url --push "$REMOTE")
+    DRY_REPO=$(pr_repo_from_url "$DRY_URL")
+    info "Would record base $(git rev-parse --short HEAD), branch $BRANCH, push URL $(mask_url "$DRY_URL")${DRY_REPO:+, pull requests in $DRY_REPO}"
+    info "Would run per iteration: $(host_bin "$RUN_HOST") with the skill prompt for: ${FEATURE:-<feature>}"
+    info "Skill reference on this host: $(host_skill_ref "$RUN_HOST")${SKILL_FLAGS:+ · flags:$SKILL_FLAGS}"
     success "Dry run complete"
     exit 0
 fi
 
 # ─── Lock ─────────────────────────────────────────────────────
-mkdir -p "$RUN_DIR" "$LOG_DIR"
-if [ -f "$LOCK_FILE" ]; then
+mkdir -p "$RUN_DIR"
+( umask 077; mkdir -p "$STATE_ROOT" "$LOG_DIR" )
+# noclobber makes the create atomic, so two runners started together cannot both take the lock.
+take_lock() { ( set -C; echo "$$" > "$LOCK_FILE" ) 2>/dev/null; }
+if ! take_lock; then
     OTHER=$(head -1 "$LOCK_FILE" 2>/dev/null | tr -cd '0-9')
     if [ -n "$OTHER" ] && kill -0 "$OTHER" 2>/dev/null; then
-        error "Another runner (PID $OTHER) holds $LOCK_FILE for this tree; wait for it or stop it first"
+        error "Another runner (PID $OTHER) holds the lock for this repository ($LOCK_FILE); wait for it or stop it first"
         exit 1
     fi
     warn "Stale lock from PID ${OTHER:-?}; taking over"
+    rm -f "$LOCK_FILE"
+    take_lock || { error "Another runner took the lock at the same moment; try again"; exit 1; }
 fi
-echo "$$" > "$LOCK_FILE"
 HOLD_LOCK=true
 CHILD=""
 release_lock() { [ "$HOLD_LOCK" = true ] && rm -f "$LOCK_FILE"; HOLD_LOCK=false; }
@@ -231,19 +272,19 @@ on_signal() {
     warn "Interrupted: stopping the host's process group"
     kill_child
     release_lock
-    echo -e "  ${BOLD}Stopped.${NC} Continue later with: $0 --host $HOST --resume"
+    printf '  %bStopped.%b Continue later with: %s --host %s --resume\n' "$BOLD" "$NC" "$0" "$RUN_HOST"
     exit 130
 }
 trap on_signal INT TERM
 trap 'release_lock' EXIT
 
 # ─── Record: the runner's own memory of the run ───────────────
-declare REC_base="" REC_branch="" REC_remote="" REC_push_url="" REC_config_hash="" REC_prepush_hash="" REC_iteration=0 REC_feature="" REC_git_writable=""
+declare REC_base="" REC_branch="" REC_remote="" REC_push_url="" REC_pr_repo="" REC_config_hash="" REC_prepush_hash="" REC_iteration=0 REC_feature="" REC_git_writable=""
 load_record() {
     local k v
     while IFS='=' read -r k v; do
         case "$k" in
-            base) REC_base="$v" ;; branch) REC_branch="$v" ;; remote) REC_remote="$v" ;; push_url) REC_push_url="$v" ;;
+            base) REC_base="$v" ;; branch) REC_branch="$v" ;; remote) REC_remote="$v" ;; push_url) REC_push_url="$v" ;; pr_repo) REC_pr_repo="$v" ;;
             config_hash) REC_config_hash="$v" ;; prepush_hash) REC_prepush_hash="$v" ;; iteration) REC_iteration="$v" ;;
             feature) REC_feature="$v" ;; git_writable) REC_git_writable="$v" ;;
         esac
@@ -251,15 +292,19 @@ load_record() {
     case "$REC_iteration" in ''|*[!0-9]*) REC_iteration=0 ;; esac
 }
 save_record() {
+    local old_umask
+    old_umask=$(umask)
+    umask 077   # the record holds the push URL, which may carry a credential
     mkdir -p "$STATE_ROOT"
     {
         echo "repo=$REPO"
-        echo "host=$HOST"
+        echo "host=$RUN_HOST"
         echo "feature=$REC_feature"
         echo "base=$REC_base"
         echo "branch=$REC_branch"
         echo "remote=$REC_remote"
         echo "push_url=$REC_push_url"
+        echo "pr_repo=$REC_pr_repo"
         echo "config_hash=$REC_config_hash"
         echo "prepush_hash=$REC_prepush_hash"
         echo "iteration=$REC_iteration"
@@ -267,6 +312,7 @@ save_record() {
         echo "updated=$(now_utc)"
     } > "$RECORD.tmp"
     mv "$RECORD.tmp" "$RECORD"
+    umask "$old_umask"
 }
 prepush_hook_path() { echo "$(git rev-parse --git-path hooks)/pre-push"; }
 
@@ -286,12 +332,13 @@ else
     REC_branch="$BRANCH"
     REC_remote="$REMOTE"
     REC_push_url=$(git remote get-url --push "$REMOTE")
+    REC_pr_repo=$(pr_repo_from_url "$REC_push_url")
     REC_config_hash=$(sha256_file "$(git rev-parse --git-path config)")
     REC_prepush_hash=$(sha256_file "$(prepush_hook_path)")
     REC_iteration=0
     REC_feature="$FEATURE"
     save_record
-    info "Recorded base $(git rev-parse --short "$REC_base") on $BRANCH, push URL $REC_push_url"
+    info "Recorded base $(git rev-parse --short "$REC_base") on $BRANCH, push URL $(mask_url "$REC_push_url")${REC_pr_repo:+, pull requests in $REC_pr_repo}"
 fi
 
 # ─── Running the host under a timeout ─────────────────────────
@@ -299,7 +346,7 @@ fi
 run_host() {
     local secs="$1" log="$2" prompt="$3" lastmsg="$4" ticks=0 rc=0
     set -m
-    ( host_run "$HOST" "$prompt" "$PLUGIN_DIR" "$lastmsg" ) >> "$log" 2>&1 </dev/null &
+    ( host_run "$RUN_HOST" "$prompt" "$PLUGIN_DIR" "$lastmsg" ) >> "$log" 2>&1 </dev/null &
     CHILD=$!
     set +m
     while kill -0 "$CHILD" 2>/dev/null; do
@@ -375,7 +422,8 @@ PY
         # No python3: a line-based reader for the flat fields; the checks below reject anything odd.
         local text prov
         text=$(tr -d '\000-\037' < "$STATE_FILE")
-        field() { printf '%s' "$text" | sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -1; }
+        # The first match: top-level keys come before the decisions array, whose entries carry their own stage and reason.
+        field() { printf '%s' "$text" | grep -o "\"$1\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | sed -n '1p' | sed 's/^[^:]*:[[:space:]]*"\(.*\)"$/\1/'; }
         prov=$(printf '%s' "$text" | sed -n 's/.*"provenance"[[:space:]]*:[[:space:]]*{\([^}]*\)}.*/\1/p' | head -1)
         echo "status=$(field status)"
         echo "stage=$(field stage)"
@@ -437,17 +485,21 @@ fingerprint() {
 commit_for_skill() {
     local n="$1" msg
     [ -n "$(git status --porcelain --untracked-files=all)" ] || return 0
-    if [ -f "$COMMIT_MSG" ] && [ ! -L "$COMMIT_MSG" ] && [ -s "$COMMIT_MSG" ]; then
+    msg=""
+    if [ -f "$COMMIT_MSG" ] && [ ! -L "$COMMIT_MSG" ]; then
         msg=$(tr -d '\000' < "$COMMIT_MSG")
-    else
+    fi
+    # git refuses an empty or whitespace-only message; fall back rather than lose the commit.
+    if [ -z "$(printf '%s' "$msg" | tr -d '[:space:]')" ]; then
         msg="chore(ship): iteration $n changes (no commit message left by the skill)"
     fi
-    git add -A
-    if git -c core.hooksPath=/dev/null commit -q -m "$msg"; then
+    if git add -A 2>/dev/null && git -c core.hooksPath=/dev/null commit -q -m "$msg"; then
         transition "iteration $n: committed the working tree for the skill ($(git rev-parse --short HEAD))"
-        if [ -f "$COMMIT_MSG" ]; then : > "$COMMIT_MSG"; fi   # consumed; the next message starts clean
+        # Consumed; the next message starts clean. A link is removed, never written through.
+        if [ -L "$COMMIT_MSG" ]; then rm -f "$COMMIT_MSG"; elif [ -f "$COMMIT_MSG" ]; then : > "$COMMIT_MSG"; fi
     else
-        warn "iteration $n: commit failed; the changes stay in the working tree"
+        # Publishing now would ship an earlier commit as if it were the finished work.
+        needs_human "the runner could not commit the changes iteration $n left in the working tree" "run git status, commit them by hand (or fix what blocks the commit), then re-run"
     fi
     return 0
 }
@@ -457,7 +509,7 @@ needs_human() {
     echo ""
     transition "status: needs-human — $1"
     [ -n "${2:-}" ] && echo "    Fix: $2"
-    echo "    Then continue with: $0 --host $HOST --resume"
+    echo "    Then continue with: $0 --host $RUN_HOST --resume"
     exit 3
 }
 
@@ -470,6 +522,9 @@ done_check() {
     done
     if ! git merge-base --is-ancestor "$REC_base" HEAD 2>/dev/null; then
         echo "the branch no longer contains the recorded base $(git rev-parse --short "$REC_base")"; return 1
+    fi
+    if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+        echo "tracked files still have uncommitted changes"; return 1
     fi
     if [ "$(git rev-list --count "$REC_base..HEAD")" -eq 0 ]; then
         echo "no commits since the recorded base"; return 1
@@ -486,7 +541,7 @@ publish() {
     gh auth status >/dev/null 2>&1 || needs_human "gh is not authenticated, so the pull request cannot be opened" "gh auth login"
 
     url_now=$(git remote get-url --push "$REC_remote" 2>/dev/null || true)
-    [ "$url_now" = "$REC_push_url" ] || needs_human "the push URL of $REC_remote changed from $REC_push_url to ${url_now:-<none>}" "git remote set-url --push $REC_remote $REC_push_url"
+    [ "$url_now" = "$REC_push_url" ] || needs_human "the push URL of $REC_remote changed from $(mask_url "$REC_push_url") to $(mask_url "${url_now:-<none>}")" "set it back with git remote set-url --push $REC_remote <the recorded URL>"
     cfg_now=$(sha256_file "$(git rev-parse --git-path config)")
     [ "$cfg_now" = "$REC_config_hash" ] || needs_human ".git/config changed during the run; nothing is pushed until it is reviewed" "inspect $(git rev-parse --git-path config), restore it, then re-run"
     hook_now=$(sha256_file "$(prepush_hook_path)")
@@ -524,20 +579,24 @@ publish() {
             *) needs_human "git push failed" "read the message above, fix it, then re-run" ;;
         esac
     fi
-    success "Pushed $REC_branch to $REC_push_url"
+    success "Pushed $REC_branch to $(mask_url "$REC_push_url")"
 
     title=$(printf '%s' "$FEATURE" | cut -c1-72)
     [ -n "$title" ] || title="$REC_branch"
-    number=$(gh pr list --head "$REC_branch" --state open --json number --jq '.[0].number' 2>/dev/null || true)
+    # Every gh call names the repository the branch was pushed to, and only a pull request whose
+    # head is a branch of that same repository is updated (a fork's branch can share the name).
+    local gh_repo=()
+    [ -n "$REC_pr_repo" ] && gh_repo=(--repo "$REC_pr_repo")
+    number=$(gh pr list ${gh_repo[@]+"${gh_repo[@]}"} --head "$REC_branch" --state open --json number,isCrossRepository --jq '[.[] | select(.isCrossRepository == false)][0].number // empty' 2>/dev/null || true)
     number=$(printf '%s' "$number" | tr -cd '0-9')
     if [ -n "$number" ]; then
-        if ! out=$(gh pr edit "$number" --body-file "$body_copy" 2>&1); then
+        if ! out=$(gh pr edit "$number" ${gh_repo[@]+"${gh_repo[@]}"} --body-file "$body_copy" 2>&1); then
             printf '%s\n' "$out" | tail -5 | sed 's/^/      /'
             needs_human "gh pr edit #$number failed" "gh auth status; then re-run"
         fi
         success "Updated pull request #$number"
     else
-        if ! out=$(gh pr create --head "$REC_branch" --title "$title" --body-file "$body_copy" 2>&1); then
+        if ! out=$(gh pr create ${gh_repo[@]+"${gh_repo[@]}"} --head "$REC_branch" --title "$title" --body-file "$body_copy" 2>&1); then
             printf '%s\n' "$out" | tail -5 | sed 's/^/      /'
             needs_human "gh pr create failed" "gh auth status; then re-run"
         fi
@@ -567,6 +626,10 @@ if [ "$RESUME" = true ] && load_state && [ "$S_status" = "done" ]; then
 fi
 
 # ─── Preflight probe and environment ──────────────────────────
+if [ "$RESUME" = true ] && [ "$REC_iteration" -ge "$MAX" ]; then
+    error "The run already used $REC_iteration iteration(s) and --max is $MAX; pass --max N with N above $REC_iteration (the skill's ceiling is $CEILING)"
+    exit 1
+fi
 probe_git_writable
 export AGENT_BLUEPRINT_RUNNER=1
 export AGENT_BLUEPRINT_GIT_WRITABLE="$GIT_WRITABLE"
@@ -581,10 +644,17 @@ finish() {   # CODE LINE: the summary, then exit
     local code="$1" line="$2" secs
     secs=$(( $(date +%s) - STARTED ))
     echo ""
-    echo -e "  ${BOLD}$line${NC}"
+    printf '  %b%s%b\n' "$BOLD" "$line" "$NC"
     echo "    iterations: $ITER · transient retries: $RETRIES · timeouts: $TIMEOUTS · failed iterations: $FAILED · denials logged: $DENIALS · $((secs / 60))m$((secs % 60))s"
     echo "    logs: $LOG_DIR/"
-    [ "$code" -ne 0 ] && [ -f "$RECORD" ] && echo "    continue with: $0 --host $HOST --resume"
+    if [ "$code" -eq 4 ] && [ "$ITER" -ge "$CEILING" ]; then
+        echo "    the skill's ceiling of $CEILING iterations is reached; review the branch and start a new run for what is left"
+    elif [ "$code" -eq 4 ] && [ -f "$RECORD" ]; then
+        local more=$((ITER + 5)); [ "$more" -gt "$CEILING" ] && more=$CEILING
+        echo "    continue with: $0 --host $RUN_HOST --resume --max $more"
+    elif [ "$code" -ne 0 ] && [ -f "$RECORD" ]; then
+        echo "    continue with: $0 --host $RUN_HOST --resume"
+    fi
     exit "$code"
 }
 
@@ -595,15 +665,21 @@ while :; do
     N=$((ITER + 1))
     LOG="$LOG_DIR/iteration-$N.log"
     LASTMSG="$LOG_DIR/iteration-$N.last"
-    PROMPT="$(host_skill_ref "$HOST") $FEATURE --external$SKILL_FLAGS
+    PROMPT="$(host_skill_ref "$RUN_HOST") $FEATURE --external$SKILL_FLAGS
 
 Ship runner iteration $N of at most $MAX. Use the $AB_SKILL_NAME skill for the feature above. The run state file is $STATE_FILE: if it exists, read it first and continue from the stage it names; otherwise start at Stage 0. AGENT_BLUEPRINT_RUNNER=1 and AGENT_BLUEPRINT_GIT_WRITABLE=$GIT_WRITABLE are set in the environment. Leave publishing to the runner: when the work is finished, set status done in $STATE_FILE with the commits (or $COMMIT_MSG) and $PR_BODY in place, then stop. Never delete a file under $RUN_DIR."
 
     echo ""
-    transition "iteration $N: starting $HOST ($(date '+%H:%M:%S'))"
+    if LINK=$(tree_link); then
+        needs_human "$LINK is a symlink; the runner does not write through links" "replace it with a regular file or folder"
+    fi
+    transition "iteration $N: starting $RUN_HOST ($(date '+%H:%M:%S'))"
     {
-        echo "=== iteration $N · $(now_utc) · host $HOST · timeout ${TIMEOUT}s ==="
+        echo "=== iteration $N · $(now_utc) · host=$RUN_HOST · timeout ${TIMEOUT}s ==="
     } >> "$LOG"
+    # A transient retry appends to the same log; classify only what this attempt wrote.
+    OFFSET=$(wc -c < "$LOG" | tr -d ' ')
+    attempt_output() { tail -c +$((OFFSET + 1)) "$LOG"; }
     RC=0
     run_host "$TIMEOUT" "$LOG" "$PROMPT" "$LASTMSG" || RC=$?
 
@@ -611,24 +687,25 @@ Ship runner iteration $N of at most $MAX. Use the $AB_SKILL_NAME skill for the f
         TIMEOUTS=$((TIMEOUTS + 1))
         echo "=== killed after ${TIMEOUT}s (timeout) ===" >> "$LOG"
         transition "iteration $N: timeout after ${TIMEOUT}s; the process group was killed"
-    elif [ "$RC" -ne 0 ] && grep -Eiq "$HOST_TRANSIENT_ERE" "$LOG"; then
+    elif [ "$RC" -ne 0 ] && attempt_output | grep -Eiq "$HOST_TRANSIENT_ERE"; then
         TRANSIENT=$((TRANSIENT + 1))
         RETRIES=$((RETRIES + 1))
         if [ "$TRANSIENT" -gt "$MAX_TRANSIENT" ]; then
             finish 3 "status: needs-human — the host failed $TRANSIENT times in a row with a transient error (see $LOG)."
         fi
-        transition "iteration $N: transient host error (exit $RC: $(grep -Eio "$HOST_TRANSIENT_ERE" "$LOG" | head -1)); backing off ${BACKOFF}s, not counted"
+        transition "iteration $N: transient host error (exit $RC: $(attempt_output | grep -Eio "$HOST_TRANSIENT_ERE" | sed -n '1p')); backing off ${BACKOFF}s, not counted"
         sleep "$BACKOFF"
         continue
     fi
     TRANSIENT=0
-    if grep -Eiq "$HOST_DENIAL_ERE" "$LOG"; then
+    if attempt_output | grep -Eiq "$HOST_DENIAL_ERE"; then
         DENIALS=$((DENIALS + 1))
         transition "iteration $N: the host denied a command (logged in $LOG); continuing"
     fi
-    [ "$RC" -ne 0 ] && [ "$RC" -ne 124 ] && warn "iteration $N: $HOST exited $RC (checking the state file, not the exit code)"
-    LAST=$(host_final_message "$HOST" "$LOG" "$LASTMSG" 2>/dev/null | tr -d '\000-\010\013-\037' | head -c 160 | tr '\n' ' ')
-    [ -n "$LAST" ] && echo -e "    ${DIM}last message: ${LAST}${NC}"
+    [ "$RC" -ne 0 ] && [ "$RC" -ne 124 ] && warn "iteration $N: $RUN_HOST exited $RC (checking the state file, not the exit code)"
+    # `head` closes the pipe early on a long message; `|| true` keeps that from ending the runner.
+    LAST=$(host_final_message "$RUN_HOST" "$LOG" "$LASTMSG" 2>/dev/null | tr -d '\000-\010\013-\037\177' | head -c 160 | tr '\n' ' ' || true)
+    [ -n "$LAST" ] && printf '    %blast message: %s%b\n' "$DIM" "$LAST" "$NC"
 
     [ "$GIT_WRITABLE" = 0 ] && commit_for_skill "$N"
 

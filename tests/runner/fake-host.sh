@@ -28,6 +28,12 @@
 #   denied                 print a denied rm                   exit:N        exit with N after the other steps
 #   ledger:TASK            mark TASK done in .agent-blueprint/team/run1/ledger.md
 #   workflow | remote-url | prepush-hook | secret-commit | gh-unauth | stop-hook | review-diff
+#   attr-secret            a key in a path that .gitattributes marks -diff
+#   merge-secret           a key introduced by a merge commit's own resolution
+#   msg-secret             a key in a commit message
+#   symlink:PATH:TARGET    plant PATH as a symlink to TARGET
+#   block-commit           leave .git/index.lock behind, so the runner's own commit fails
+#   bigmsg                 end with one 100,000-character line (put it last)
 #
 # The probe prompt (it names agent-blueprint-probe) is answered without consuming a scenario line.
 
@@ -71,6 +77,7 @@ write_state() {   # STATUS STAGE DRIVER SESSION PROVENANCE_JSON [EXTRA_JSON]
 PROV="\"provenance\": {\"skill\": \"ab-ship-pipeline\", \"version\": \"$VERSION\"},"
 
 EXIT_CODE=0
+BIGMSG=0
 for step in $LINE; do
     arg="${step#*:}"
     case "$step" in
@@ -127,6 +134,32 @@ for step in $LINE; do
             printf 'aws_access_key_id = AKIA%s\n' "$(printf 'Q%.0s' {1..16})" > config.ini
             git add config.ini
             git commit -q -m "chore: add config" ;;
+        attr-secret)
+            printf 'hidden.txt -diff\n' > .gitattributes
+            printf 'key = AKIA%s\n' "$(printf 'Q%.0s' {1..16})" > hidden.txt
+            git add .gitattributes hidden.txt
+            git commit -q -m "chore: add hidden" ;;
+        merge-secret)
+            start=$(git symbolic-ref --short HEAD)
+            git switch -q -c fake-side
+            echo side >> side.txt; git add side.txt; git commit -q -m "feat(fake): side"
+            git switch -q "$start"
+            echo main >> mainline.txt; git add mainline.txt; git commit -q -m "feat(fake): mainline"
+            git merge -q --no-ff --no-commit fake-side
+            printf 'token = AKIA%s\n' "$(printf 'Z%.0s' {1..16})" > merged.txt
+            git add merged.txt
+            git commit -q -m "merge: fake-side" ;;
+        msg-secret)
+            echo "line from call $N" >> msg.txt
+            git add msg.txt
+            git commit -q -m "feat(fake): msg" -m "deploy token ghp_$(printf 'B%.0s' {1..36})" ;;
+        symlink:*)
+            link="${arg%%:*}"; target="${arg#*:}"
+            mkdir -p "$(dirname "$link")"
+            rm -rf "$link"
+            ln -s "$target" "$link" ;;
+        block-commit)    : > "$(git rev-parse --git-dir)/index.lock" ;;
+        bigmsg)          BIGMSG=1 ;;
         gh-unauth)       touch "${AGENT_BLUEPRINT_FAKE_GH_DIR:?}/unauth" ;;
         stop-hook)
             # An interactive-only Stop hook: with the runner's variable set it must stand down.
@@ -151,4 +184,5 @@ for step in $LINE; do
 done
 
 echo '{"result": "fake host finished call '"$N"'"}'
+if [ "$BIGMSG" = 1 ]; then head -c 100000 /dev/zero | tr '\0' 'x'; echo; fi
 exit "$EXIT_CODE"

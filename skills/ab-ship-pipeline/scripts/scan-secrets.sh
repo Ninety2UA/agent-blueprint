@@ -3,7 +3,9 @@
 #
 # Usage: scan-secrets.sh [--range BASE..HEAD] [--file PATH]...
 #   --range BASE..HEAD   Every line added by every commit in the range (git log -p), so a
-#                        key committed and removed again inside the range is still caught.
+#                        key committed and removed again inside the range is still caught;
+#                        merges are diffed against each parent, paths marked -diff or binary
+#                        are read as text, and the commit messages are scanned as well.
 #   --file PATH          Every line of a file, such as the PR body.
 #
 # Looks for key-shaped strings: cloud access keys, GitHub and GitLab tokens, private key
@@ -64,11 +66,7 @@ scan_text() {
     local where="$1" path="$2" n=0 line
     while IFS= read -r line || [ -n "$line" ]; do
         n=$((n + 1))
-        if printf '%s\n' "$line" | grep -qE "$STRICT_ERE" || printf '%s\n' "$line" | grep -qiE "$LOOSE_ERE"; then
-            HITS=$((HITS + 1))
-            echo "$where:$n: $(kind_of "$line")"
-            echo "    $(mask "$line")"
-        fi
+        if matches "$line"; then hit "$where:$n" "$line"; fi
     done < "$path"
 }
 
@@ -81,34 +79,53 @@ scan_file() {
     fi
 }
 
+PATCH_TMP=""
+trap '[ -n "$PATCH_TMP" ] && rm -f "$PATCH_TMP"' EXIT
+
+# hit WHERE LINE: count and report one matching line, masked.
+hit() {
+    HITS=$((HITS + 1))
+    echo "$1: $(kind_of "$2")"
+    echo "    $(mask "$2")"
+}
+matches() { printf '%s\n' "$1" | grep -qE "$STRICT_ERE" || printf '%s\n' "$1" | grep -qiE "$LOOSE_ERE"; }
+
 scan_range() {
-    local range="$1" patch commit="" file="" n=0 line
+    local range="$1" commit="" file="" line
     case "$range" in *..*) ;; *) echo "scan-secrets: --range wants BASE..HEAD, got $range" >&2; exit 2 ;; esac
-    patch=$(mktemp "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
-    if ! git log -p --no-color --no-ext-diff --format='commit %H' "$range" -- . > "$patch" 2>/dev/null; then
-        rm -f "$patch"
+    PATCH_TMP=$(mktemp "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
+    # --text: a path marked -diff or binary in .gitattributes still prints its lines.
+    # -m: a merge is diffed against each parent, so lines a merge itself introduces are seen.
+    if ! git log -p -m --text --no-color --no-ext-diff --format='commit %H' "$range" -- . > "$PATCH_TMP" 2>/dev/null; then
         echo "scan-secrets: git log failed for $range" >&2
         exit 2
     fi
-    if grep -qE "$STRICT_ERE" "$patch" || grep -qiE "$LOOSE_ERE" "$patch"; then
+    if grep -qaE "$STRICT_ERE" "$PATCH_TMP" || grep -qaiE "$LOOSE_ERE" "$PATCH_TMP"; then
         while IFS= read -r line || [ -n "$line" ]; do
-            n=$((n + 1))
             case "$line" in
-                "commit "*) commit="${line#commit }"; commit="${commit:0:12}"; continue ;;
+                "commit "*) commit="${line#commit }"; commit="${commit%% *}"; commit="${commit:0:12}"; continue ;;
                 "+++ b/"*)  file="${line#+++ b/}"; continue ;;
                 "+++ "*|"--- "*|"diff --git "*) continue ;;
                 "+"*) ;;
                 *) continue ;;
             esac
             line="${line#+}"
-            if printf '%s\n' "$line" | grep -qE "$STRICT_ERE" || printf '%s\n' "$line" | grep -qiE "$LOOSE_ERE"; then
-                HITS=$((HITS + 1))
-                echo "$commit:$file: $(kind_of "$line")"
-                echo "    $(mask "$line")"
-            fi
-        done < "$patch"
+            if matches "$line"; then hit "$commit:$file" "$line"; fi
+        done < "$PATCH_TMP"
     fi
-    rm -f "$patch"
+    # Commit messages are pushed too, and the runner commits the skill's commit-msg.md verbatim.
+    if ! git log --format='commit %H%n%B' "$range" > "$PATCH_TMP" 2>/dev/null; then
+        echo "scan-secrets: git log failed for $range" >&2
+        exit 2
+    fi
+    if grep -qaE "$STRICT_ERE" "$PATCH_TMP" || grep -qaiE "$LOOSE_ERE" "$PATCH_TMP"; then
+        commit=""
+        while IFS= read -r line || [ -n "$line" ]; do
+            if printf '%s\n' "$line" | grep -qE '^commit [0-9a-f]{40}$'; then commit="${line#commit }"; commit="${commit:0:12}"; continue; fi
+            if matches "$line"; then hit "$commit:commit message" "$line"; fi
+        done < "$PATCH_TMP"
+    fi
+    rm -f "$PATCH_TMP"; PATCH_TMP=""
 }
 
 [ $# -gt 0 ] || { usage; exit 2; }
