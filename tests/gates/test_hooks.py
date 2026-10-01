@@ -210,6 +210,35 @@ class HostGuard(unittest.TestCase):
         result = self.injection(CURSOR_PAYLOAD, env={"CURSOR_AGENT": "1"})
         self.assertEqual((result.returncode, result.stdout), (0, ""))
 
+    def test_claude_started_from_a_cursor_terminal_keeps_its_hooks(self):
+        # The transcript path is the host's own statement; an inherited Cursor variable is not.
+        result = self.injection(CLAUDE_PAYLOAD, env={"CURSOR_AGENT": "1"})
+        self.assertTrue(result.stdout.strip())
+        result = self.injection(CODEX_PAYLOAD, env={"GROK_AGENT": "1"})
+        self.assertTrue(result.stdout.strip())
+
+    def test_bash_twin_agrees_with_the_js_detector(self):
+        cases = [(CLAUDE_PAYLOAD, {}, "claude"), (CODEX_PAYLOAD, {}, "codex"), (CURSOR_PAYLOAD, {"CURSOR_AGENT": "1"}, "other"),
+                 (CLAUDE_PAYLOAD, {"CURSOR_AGENT": "1"}, "claude"), (CODEX_PAYLOAD, {"CLAUDECODE": "1"}, "codex"),
+                 ({"cwd": "/w"}, {"CLAUDECODE": "1"}, "claude"), ({"cwd": "/w"}, {}, "other"),
+                 ({"cwd": "/w", "model": "x"}, {"CURSOR_AGENT": "1"}, "other")]
+        js = "const {detectHost} = require(process.argv[1]); console.log(detectHost(JSON.parse(process.argv[2])));"
+        sh = '. "$1"; detect_host "$2"'
+        for payload, env, want in cases:
+            full = dict(CLEAN_ENV, **env)
+            got_js = subprocess.run(["node", "-e", js, os.path.join(HANDLERS, "host.js"), json.dumps(payload)],
+                                    capture_output=True, text=True, env=full, timeout=30).stdout.strip()
+            got_sh = subprocess.run(["bash", "-c", sh, "bash", os.path.join(HANDLERS, "host.sh"), json.dumps(payload)],
+                                    capture_output=True, text=True, env=full, timeout=30).stdout.strip()
+            self.assertEqual((got_js, got_sh), (want, want), (payload, env))
+
+    def test_fetch_cache_hooks_do_nothing_on_a_foreign_host(self):
+        payload = dict(CURSOR_PAYLOAD, tool_name="WebFetch", tool_input={"url": "https://example.com/doc"})
+        for name in ("sdd-cache-pre.sh", "sdd-cache-post.sh"):
+            result = run_hook(name, payload, self.dir, env={"CURSOR_AGENT": "1"})
+            self.assertEqual((result.returncode, result.stdout), (0, ""), name)
+        self.assertFalse(os.path.exists(os.path.join(self.dir, ".agent-blueprint")))
+
     def test_inherited_claude_variable_does_not_fool_codex_detection(self):
         # A Codex session launched from a Claude Code shell still carries CLAUDECODE=1.
         result = self.injection(CODEX_PAYLOAD, env={"CLAUDECODE": "1"})

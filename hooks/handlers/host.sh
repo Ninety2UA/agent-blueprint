@@ -14,14 +14,14 @@ require_host() {
 
 detect_host() {
   local input="$1" transcript=""
-  if [ -n "${CURSOR_AGENT:-}${CURSOR_CONVERSATION_ID:-}${GROK_SESSION_ID:-}" ] || [ "${GROK_AGENT:-}" = "1" ]; then
-    echo other; return
-  fi
   transcript=$(printf '%s' "$input" | sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
   case "$transcript" in
     */.claude/*) echo claude; return ;;
     */rollout-*.jsonl) echo codex; return ;;
   esac
+  if [ -n "${CURSOR_AGENT:-}${CURSOR_CONVERSATION_ID:-}${GROK_SESSION_ID:-}" ] || [ "${GROK_AGENT:-}" = "1" ]; then
+    echo other; return
+  fi
   if printf '%s' "$input" | grep -Eq '"(turn_id|model)"[[:space:]]*:[[:space:]]*"'; then echo codex; return; fi
   if [ -n "${CODEX_SANDBOX:-}${CODEX_SESSION_ID:-}${CODEX_THREAD_ID:-}${CODEX_CI:-}${CODEX_SANDBOX_NETWORK_DISABLED:-}" ]; then
     echo codex; return

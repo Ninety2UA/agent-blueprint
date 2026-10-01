@@ -11,16 +11,21 @@
  *   codex   a Codex rollout transcript (rollout-*.jsonl), or a payload with
  *           Codex's model/turn fields, or a CODEX_* session variable
  *   other   anything else, including Cursor and Grok Build environments
+ *
+ * Order: the transcript path, then Cursor's and Grok's variables, then the weaker
+ * payload fields (Cursor's payload has a model field too), then the other variables.
  */
 
 const CODEX_ENV = ['CODEX_SANDBOX', 'CODEX_SESSION_ID', 'CODEX_THREAD_ID', 'CODEX_CI', 'CODEX_SANDBOX_NETWORK_DISABLED'];
 
 function detectHost(input) {
   const env = process.env;
-  if (env.CURSOR_AGENT || env.CURSOR_CONVERSATION_ID || env.GROK_AGENT === '1' || env.GROK_SESSION_ID) return 'other';
+  // The transcript path is the host's own statement and wins over inherited variables: Claude Code
+  // started from a Cursor or Grok terminal still carries their variables.
   const transcript = input && typeof input.transcript_path === 'string' ? input.transcript_path : '';
   if (/[\\/]\.claude[\\/]/.test(transcript)) return 'claude';
   if (/[\\/]rollout-[^\\/]*\.jsonl$/.test(transcript)) return 'codex';
+  if (env.CURSOR_AGENT || env.CURSOR_CONVERSATION_ID || env.GROK_AGENT === '1' || env.GROK_SESSION_ID) return 'other';
   if (input && (typeof input.turn_id === 'string' || typeof input.model === 'string')) return 'codex';
   if (CODEX_ENV.some((k) => env[k])) return 'codex';
   if (env.CLAUDECODE === '1') return 'claude';
