@@ -18,6 +18,7 @@ Say at the start: "Checking this project for Agent Blueprint v3 traces."
 Run `scripts/detect-v3.sh <project directory>`. It reports one line per trace and changes nothing:
 
 - `remove` lines: the blueprint's own copies (v3 skill names from `references/v4-skill-names.tsv`, the v3 agent and hook file names, the blueprint's `scripts/ship.sh`, a `.claude-plugin/plugin.json` named `claude-code-blueprint`);
+- `unsure` lines: files with a v3 name in a project that shows no other sign of a blueprint install. Other skill packs use some of the same names, so the script leaves these alone; show them to the user and remove one only when they confirm it is the blueprint's;
 - `aside` lines: v3 run state files (`.claude/ship-*.local.md`, `team-active.local.md`) that move to `.agent-blueprint/run/v3/`;
 - a `rename` line when `CLAUDE.md` is a regular file and no `AGENTS.md` exists;
 - a `plugin` line when the v3 plugin is still installed in Claude Code.
@@ -36,7 +37,7 @@ Options: apply the list, apply it but keep `CLAUDE.md` as it is, or stop. Defaul
 
 If the project is a git repository with uncommitted changes, ask the user to commit or stash them first and stop; the backup below only protects committed work. Otherwise create the branch `blueprint-v3-backup` at the current commit when it does not exist yet, so every removed file stays one checkout away.
 
-Run `scripts/detect-v3.sh --apply <project directory>` (add nothing else: the script removes only what its report listed). When the user chose to keep `CLAUDE.md`, rename `AGENTS.md` back afterwards and restore `CLAUDE.md` from the backup branch.
+Run `scripts/detect-v3.sh --apply <project directory>`; the script removes only what its report listed. When the user chose to keep `CLAUDE.md`, add `--keep-instructions`, which leaves `CLAUDE.md` and any `AGENTS.md` exactly as they are.
 
 ## Step 4: Finish
 

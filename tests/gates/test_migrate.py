@@ -69,6 +69,55 @@ class LegacyRepo(unittest.TestCase):
         after = sorted(os.path.relpath(os.path.join(r, f), self.dir) for r, _d, fs in os.walk(self.dir) for f in fs if "/.git/" not in r + "/")
         self.assertEqual(before, after)
 
+    def test_existing_agents_md_is_never_replaced(self):
+        with open(os.path.join(self.dir, "AGENTS.md"), "w") as fh:
+            fh.write("# Ours already\n")
+        original = read(os.path.join(self.dir, "CLAUDE.md"))
+        code, out = run("--apply", cwd=self.dir)
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("rename", out)
+        self.assertEqual(read(os.path.join(self.dir, "AGENTS.md")), "# Ours already\n")
+        self.assertEqual(read(os.path.join(self.dir, "CLAUDE.md")), original)
+
+    def test_symlinked_claude_md_is_left_alone(self):
+        os.rename(os.path.join(self.dir, "CLAUDE.md"), os.path.join(self.dir, "INSTRUCTIONS.md"))
+        os.symlink("INSTRUCTIONS.md", os.path.join(self.dir, "CLAUDE.md"))
+        code, out = run("--apply", cwd=self.dir)
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("rename", out)
+        self.assertTrue(os.path.islink(os.path.join(self.dir, "CLAUDE.md")))
+        self.assertFalse(self.exists("AGENTS.md"))
+
+    def test_keep_instructions_skips_the_rename(self):
+        original = read(os.path.join(self.dir, "CLAUDE.md"))
+        code, out = run("--apply", "--keep-instructions", cwd=self.dir)
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("rename", out)
+        self.assertEqual(read(os.path.join(self.dir, "CLAUDE.md")), original)
+        self.assertFalse(self.exists("AGENTS.md"))
+        self.assertFalse(self.exists(".claude/skills/build-pipeline"))   # the rest of the migration still ran
+
+    def test_same_named_files_from_another_pack_are_left_alone(self):
+        # brainstorming and code-reviewer are names other skill packs ship too; with no sign of a
+        # blueprint install the script must not claim them.
+        other = tempfile.mkdtemp()
+        try:
+            for rel in (".claude/skills/brainstorming/SKILL.md", ".claude/agents/code-reviewer.md", ".claude/hooks/session-start.js"):
+                path = os.path.join(other, rel)
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, "w") as fh:
+                    fh.write("another pack's file\n")
+            with open(os.path.join(other, "AGENTS.md"), "w") as fh:
+                fh.write("# Ours\n")
+            code, out = run("--apply", cwd=other)
+            self.assertEqual(code, 3, out)
+            self.assertIn("unsure  .claude/skills/brainstorming", out)
+            self.assertNotIn("remove  ", out)
+            for rel in (".claude/skills/brainstorming/SKILL.md", ".claude/agents/code-reviewer.md", ".claude/hooks/session-start.js"):
+                self.assertTrue(os.path.exists(os.path.join(other, rel)), rel)
+        finally:
+            shutil.rmtree(other)
+
     def test_repo_without_traces_reports_nothing(self):
         clean = tempfile.mkdtemp()
         try:
