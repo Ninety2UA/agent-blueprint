@@ -152,8 +152,10 @@ run_command_timed() {
 # ── provenance ────────────────────────────────────────────────
 provenance_file() { echo "$1/.agent-blueprint/run/provenance/$2.json"; }
 
-# helper_summary WORK SKILL: helpers (at least one helper step), all-inline (steps, none as a
-# helper), no-steps (a record without steps) or missing (no record). A second line lists the paths.
+# helper_summary WORK SKILL: helpers (at least one helper step), all-inline (every step says
+# inline), unknown (steps that do not say how they ran), no-steps (a record without steps) or
+# missing (no record). A second line lists the paths. The contract is `path: helper | inline`
+# (run-state.md), but hosts have written the same fact as `mode: subagent`, so both are read.
 helper_summary() {
     local f
     f=$(provenance_file "$1" "$2")
@@ -163,15 +165,26 @@ import json, sys
 try:
     doc = json.load(open(sys.argv[1], encoding="utf-8"))
     steps = doc.get("helper_steps") or []
-    paths = [str(s.get("path", "?")) for s in steps if isinstance(s, dict)]
 except Exception:
     print("invalid"); sys.exit(0)
+HELPER = ("helper", "subagent", "sub-agent", "agent", "worktree", "teammate", "spawn")
+INLINE = ("inline", "self", "main", "session", "direct")
+def how(step):
+    raw = str(step.get("path") or step.get("mode") or step.get("ran") or step.get("how") or "").lower()
+    if any(word in raw for word in INLINE):
+        return "inline"
+    if any(word in raw for word in HELPER):
+        return "helper"
+    return "?"
+paths = [how(s) for s in steps if isinstance(s, dict)]
 if not paths:
     print("no-steps")
-elif any(p == "helper" for p in paths):
+elif "helper" in paths:
     print("helpers")
-else:
+elif all(p == "inline" for p in paths):
     print("all-inline")
+else:
+    print("unknown")
 print(",".join(paths))
 PY
 }
