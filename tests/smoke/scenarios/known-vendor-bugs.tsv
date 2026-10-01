@@ -1,0 +1,4 @@
+# Confirmed vendor bugs (AE6): a failing or timing-out cell listed here renders as
+# "degraded (vendor bug)" with the link instead of "fail". One row per host and cell; the cell
+# column takes a name or * for every cell. Tab-separated; lines starting with # are ignored.
+host	cell	url	note

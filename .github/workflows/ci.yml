@@ -111,6 +111,10 @@ jobs:
       - name: Run ShellCheck on skill scripts
         run: shellcheck skills/*/scripts/*.sh
 
+      # The smoke test itself never runs in CI (real hosts, real tokens); its scripts are linted.
+      - name: Run ShellCheck on the smoke test
+        run: shellcheck tests/smoke/*.sh tests/smoke/scenarios/*/*.sh
+
       - name: Run ShellCheck on check-drift.sh
         run: shellcheck scripts/check-drift.sh
 

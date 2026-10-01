@@ -1,0 +1,70 @@
+{
+  "hosts": {
+    "claude": {
+      "cells": {
+        "canary": {
+          "cost_usd": 0.6312,
+          "date": "2026-09-30T23:22:43Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-012239/claude/canary.log",
+          "reason": "final message names HARBOR-19",
+          "seconds": 4,
+          "session": "0345dd46-72fa-4edd-957d-26fb66b37359",
+          "state": "pass",
+          "tokens": 31548
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-09-30T23:22:43Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-012239/claude/hooks.log",
+          "reason": "handlers wrote the trace: session-start.js x1, ship-loop.sh x1 (from the canary run)",
+          "seconds": 0,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-09-30T23:23:12Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-012309/claude/upgrade.log",
+          "reason": "14 checks passed: both plugin ids listed, detect-v3.sh reported and removed the v3 traces, the session-start warning names the v3 plugin",
+          "seconds": 2,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        }
+      },
+      "version": "2.1.284 (Claude Code)"
+    }
+  },
+  "release": "4.0.0",
+  "runs": [
+    {
+      "cells": [
+        "canary",
+        "hooks",
+        "upgrade"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude --cell canary,hooks,upgrade --plugin-dir . --v3-dir /private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/u15-v3 --timeout 600",
+      "date": "2026-09-30 23:22 UTC",
+      "hosts": [
+        "claude"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "upgrade"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude --cell upgrade --plugin-dir . --v3-dir /private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/u15-v3",
+      "date": "2026-09-30 23:23 UTC",
+      "hosts": [
+        "claude"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    }
+  ],
+  "updated": "2026-09-30 23:23 UTC"
+}

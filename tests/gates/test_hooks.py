@@ -126,6 +126,21 @@ class SessionStart(unittest.TestCase):
         self.assertIn("active: false", result.stdout)
         self.assertEqual(read(marker), "active: false\n")
 
+    def test_hook_trace_records_the_handler_and_the_host(self):
+        # The smoke test (U15) proves a hook fired, or did not, from this file; both host.js and host.sh write it.
+        trace = os.path.join(self.home, "trace.tsv")
+        env = {"AGENT_BLUEPRINT_HOOK_TRACE": trace}
+        result = run_hook("session-start.js", CLAUDE_PAYLOAD, self.dir, env=env, home=self.home)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        result = run_hook("ship-loop.sh", CURSOR_PAYLOAD, self.dir, env=dict(env, CURSOR_AGENT="1"), home=self.home)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        lines = [line.split("\t") for line in read(trace).splitlines()]
+        self.assertEqual([(l[0], l[1]) for l in lines], [("session-start.js", "claude"), ("ship-loop.sh", "other")])
+        for line in lines:
+            self.assertRegex(line[2], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")
+        result = run_hook("session-start.js", CLAUDE_PAYLOAD, self.dir, home=self.home)   # unset: nothing appended
+        self.assertEqual(len(read(trace).splitlines()), 2)
+
 
 class StopHook(unittest.TestCase):
     def setUp(self):

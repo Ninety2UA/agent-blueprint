@@ -1,0 +1,1 @@
+Which skill runs the autonomous ship pipeline? Answer with its name only.

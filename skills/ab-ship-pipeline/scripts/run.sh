@@ -235,7 +235,7 @@ if [ "$DRY_RUN" = true ]; then
     DRY_REPO=$(pr_repo_from_url "$DRY_URL")
     info "Would record base $(git rev-parse --short HEAD), branch $BRANCH, push URL $(mask_url "$DRY_URL")${DRY_REPO:+, pull requests in $DRY_REPO}"
     info "Would run per iteration: $(host_bin "$RUN_HOST") with the skill prompt for: ${FEATURE:-<feature>}"
-    info "Skill reference on this host: $(host_skill_ref "$RUN_HOST")${SKILL_FLAGS:+ · flags:$SKILL_FLAGS}"
+    info "Skill reference on this host: $(host_skill_ref "$RUN_HOST" "$AB_SKILL_NAME" "$PLUGIN_DIR")${SKILL_FLAGS:+ · flags:$SKILL_FLAGS}"
     success "Dry run complete"
     exit 0
 fi
@@ -665,7 +665,7 @@ while :; do
     N=$((ITER + 1))
     LOG="$LOG_DIR/iteration-$N.log"
     LASTMSG="$LOG_DIR/iteration-$N.last"
-    PROMPT="$(host_skill_ref "$RUN_HOST") $FEATURE --external$SKILL_FLAGS
+    PROMPT="$(host_skill_ref "$RUN_HOST" "$AB_SKILL_NAME" "$PLUGIN_DIR") $FEATURE --external$SKILL_FLAGS
 
 Ship runner iteration $N of at most $MAX. Use the $AB_SKILL_NAME skill for the feature above. The run state file is $STATE_FILE: if it exists, read it first and continue from the stage it names; otherwise start at Stage 0. AGENT_BLUEPRINT_RUNNER=1 and AGENT_BLUEPRINT_GIT_WRITABLE=$GIT_WRITABLE are set in the environment. Leave publishing to the runner: when the work is finished, set status done in $STATE_FILE with the commits (or $COMMIT_MSG) and $PR_BODY in place, then stop. Never delete a file under $RUN_DIR."
 
