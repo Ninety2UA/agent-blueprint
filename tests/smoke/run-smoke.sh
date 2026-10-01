@@ -436,7 +436,7 @@ cell_ship() {
     PATH="$old_path"; export PATH
     # Token use: every iteration log the runner kept, summed where the host reports it.
     local f t c total_t=0 total_c="0" any=false
-    for f in "$WORK"/.agent-blueprint/run/logs/iteration-*.log; do
+    for f in "$WORK_ROOT"/state/agent-blueprint/*/logs/iteration-*.log; do
         [ -f "$f" ] || continue
         usage_fields "$HOST" "$f"
         [ "$TOKENS" != n/a ] && { total_t=$((total_t + TOKENS)); any=true; }

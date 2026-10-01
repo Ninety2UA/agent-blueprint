@@ -28,7 +28,7 @@ while [ $# -gt 0 ]; do
         *) echo "unknown option: $1" >&2; exit 2 ;;
     esac
 done
-[ -n "$V3_DIR" ] && [ -n "$V4_DIR" ] || { echo "FAIL: --v3-dir and --v4-dir are required"; exit 1; }
+if [ -z "$V3_DIR" ] || [ -z "$V4_DIR" ]; then echo "FAIL: --v3-dir and --v4-dir are required"; exit 1; fi
 V3_DIR="$(cd "$V3_DIR" && pwd)"; V4_DIR="$(cd "$V4_DIR" && pwd)"
 [ -f "$V3_DIR/plugins/claude-code-blueprint/.claude-plugin/plugin.json" ] || { echo "FAIL: $V3_DIR has no plugins/claude-code-blueprint/.claude-plugin/plugin.json (not a v3 checkout)"; exit 1; }
 [ -f "$V4_DIR/.claude-plugin/plugin.json" ] || { echo "FAIL: $V4_DIR has no .claude-plugin/plugin.json"; exit 1; }
@@ -102,7 +102,7 @@ fi
 
 # The session-start hook, run as Claude Code with the temporary config dir, warns about v3.
 PAYLOAD='{"session_id":"s1","transcript_path":"/home/u/.claude/projects/p/s1.jsonl","cwd":"'"$PROJECT"'","hook_event_name":"SessionStart"}'
-HOOK_OUT=$(cd "$PROJECT" && printf '%s' "$PAYLOAD" | CLAUDECODE=1 node "$V4_DIR/hooks/handlers/session-start.js" 2>>"$LOG" || true)
+HOOK_OUT=$(cd "$PROJECT"; printf '%s' "$PAYLOAD" | CLAUDECODE=1 node "$V4_DIR/hooks/handlers/session-start.js" 2>>"$LOG" || true)
 printf '%s\n' "$HOOK_OUT" >> "$LOG"
 if printf '%s' "$HOOK_OUT" | grep -q "claude-code-blueprint" && printf '%s' "$HOOK_OUT" | grep -q "ab-migrate"; then
     echo "PASS: the session-start warning names the v3 plugin and ab-migrate"

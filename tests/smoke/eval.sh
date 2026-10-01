@@ -199,7 +199,7 @@ run_ship() {
     fi
     PATH="$old_path"; export PATH
     # Tokens: v4 iteration logs are JSON results; v3's ship.sh logs are --verbose text, so n/a there.
-    for f in "$WORK"/.agent-blueprint/run/logs/iteration-*.log; do
+    for f in "$WORK_ROOT"/state/agent-blueprint/*/logs/iteration-*.log; do
         [ -f "$f" ] || continue
         usage_fields "$EVAL_HOST" "$f"
         [ "$TOKENS" != n/a ] && { total_t=$((total_t + TOKENS)); any=true; }
