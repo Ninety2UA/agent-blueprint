@@ -61,7 +61,7 @@ case "$PROMPT" in
         exit 0 ;;
 esac
 
-[ -n "$SCENARIO" ] && [ -f "$SCENARIO" ] || { echo "fake-host: no scenario file" >&2; exit 1; }
+if [ -z "$SCENARIO" ] || [ ! -f "$SCENARIO" ]; then echo "fake-host: no scenario file" >&2; exit 1; fi
 N=$(cat "$COUNTER" 2>/dev/null || echo 0)
 N=$((N + 1))
 echo "$N" > "$COUNTER"

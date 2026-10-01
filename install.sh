@@ -186,7 +186,8 @@ copy_skills() {
     # The copy replaces each skill folder, so a destination that is the source itself (the path,
     # or a symlink to it) would delete the checkout's skills before copying them.
     src_real=$(cd "$SOURCE_DIR/skills" && pwd -P)
-    copy_real=$(cd "$COPY_DIR" 2>/dev/null && pwd -P || true)
+    copy_real=""
+    if [ -d "$COPY_DIR" ]; then copy_real=$(cd "$COPY_DIR" && pwd -P); fi
     case "$copy_real/" in
         "$src_real"/*)
             error "--copy-dir points into this checkout's own skills folder ($src_real); choose another directory"
