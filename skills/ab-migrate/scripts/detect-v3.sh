@@ -51,14 +51,30 @@ v3_skill() { in_list "$1" "$V3_SKILLS"; }   # is $1 one of the v3 skill names?
 
 # Skills that only the blueprint ships; one of them in .claude/skills is evidence of a legacy copy.
 V3_ONLY_SKILLS="build-pipeline ship-pipeline quick-fix review-swarm knowledge-compounding project-start session-wrap"
-is_blueprint_ship() { [ -f scripts/ship.sh ] && grep -q -i 'blueprint\|ship-pipeline\|<promise>DONE</promise>' scripts/ship.sh; }
+# The v3 loop names the ship-pipeline skill or carries its completion sentinel; the word
+# "blueprint" alone is not enough to claim a project's own ship.sh.
+is_blueprint_ship() { [ -f scripts/ship.sh ] && grep -q 'ship-pipeline\|<promise>DONE</promise>' scripts/ship.sh; }
+# hooks/hooks.json is the blueprint's when every handler it names is one of the v3 handlers;
+# one with a handler of the project's own was edited and stays.
+is_blueprint_hooks_json() {
+    local name seen=0
+    [ -f hooks/hooks.json ] || return 1
+    while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        in_list "$name" "$V3_HANDLERS" || return 1
+        seen=1
+    done <<LIST
+$(grep -o 'handlers/[A-Za-z0-9._-]*' hooks/hooks.json | sed 's#handlers/##' | sort -u)
+LIST
+    [ "$seen" = 1 ]
+}
 is_blueprint_manifest() { [ -f .claude-plugin/plugin.json ] && grep -q '"claude-code-blueprint"' .claude-plugin/plugin.json; }
 blueprint_installed() {
     local n f
     is_blueprint_manifest && return 0
     is_blueprint_ship && return 0
     for f in .claude/ship-*.local.md .claude/team-active.local.md; do [ -f "$f" ] && return 0; done
-    [ -f hooks/hooks.json ] && grep -q 'ship-loop.sh' hooks/hooks.json && return 0
+    is_blueprint_hooks_json && return 0
     for n in $V3_ONLY_SKILLS; do [ -d ".claude/skills/$n" ] && return 0; done
     return 1
 }
@@ -106,7 +122,11 @@ for hookdir in .claude/hooks hooks/handlers; do
         if in_list "${f##*/}" "$V3_HANDLERS"; then plan_rm "$f"; fi
     done
 done
-if [ -f hooks/hooks.json ] && grep -q 'CLAUDE_PLUGIN_ROOT\|hooks/handlers' hooks/hooks.json; then plan_rm hooks/hooks.json; fi
+if is_blueprint_hooks_json; then
+    plan_rm hooks/hooks.json
+elif [ -f hooks/hooks.json ] && grep -q 'handlers/' hooks/hooks.json; then
+    unsure=$((unsure + 1)); echo "unsure  hooks/hooks.json  (it names handlers that are not the blueprint's; left alone)"
+fi
 if is_blueprint_ship; then plan_rm scripts/ship.sh; fi
 if is_blueprint_manifest; then plan_rm .claude-plugin/plugin.json; fi
 for f in .claude/ship-*.local.md .claude/team-active.local.md; do

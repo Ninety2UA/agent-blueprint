@@ -35,7 +35,7 @@ Options: apply the list, apply it but keep `CLAUDE.md` as it is, or stop. Defaul
 
 ## Step 3: Back up, then apply
 
-If the project is a git repository with uncommitted changes, ask the user to commit or stash them first and stop; the backup below only protects committed work. Otherwise create the branch `blueprint-v3-backup` at the current commit when it does not exist yet, so every removed file stays one checkout away.
+If the project is a git repository with uncommitted changes, ask the user to commit or stash them first and stop; the backup below only protects committed work. If it is not a git repository there is no backup at all: say so when you ask, and treat an unanswered question as stop. Otherwise create the branch `blueprint-v3-backup` at the current commit when it does not exist yet, so every removed file stays one checkout away.
 
 Run `scripts/detect-v3.sh --apply <project directory>`; the script removes only what its report listed. When the user chose to keep `CLAUDE.md`, add `--keep-instructions`, which leaves `CLAUDE.md` and any `AGENTS.md` exactly as they are.
 

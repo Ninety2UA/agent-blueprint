@@ -221,7 +221,9 @@ class HostGuard(unittest.TestCase):
         cases = [(CLAUDE_PAYLOAD, {}, "claude"), (CODEX_PAYLOAD, {}, "codex"), (CURSOR_PAYLOAD, {"CURSOR_AGENT": "1"}, "other"),
                  (CLAUDE_PAYLOAD, {"CURSOR_AGENT": "1"}, "claude"), (CODEX_PAYLOAD, {"CLAUDECODE": "1"}, "codex"),
                  ({"cwd": "/w"}, {"CLAUDECODE": "1"}, "claude"), ({"cwd": "/w"}, {}, "other"),
-                 ({"cwd": "/w", "model": "x"}, {"CURSOR_AGENT": "1"}, "other")]
+                 ({"cwd": "/w", "model": "x"}, {"CURSOR_AGENT": "1"}, "other"),
+                 # A custom config directory: the transcript is outside .claude and the payload carries a model.
+                 ({"transcript_path": "/data/cc/projects/p/s1.jsonl", "model": "claude-opus-5-5"}, {"CLAUDE_CONFIG_DIR": "/data/cc"}, "claude")]
         js = "const {detectHost} = require(process.argv[1]); console.log(detectHost(JSON.parse(process.argv[2])));"
         sh = '. "$1"; detect_host "$2"'
         for payload, env, want in cases:

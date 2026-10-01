@@ -19,6 +19,10 @@ detect_host() {
     */.claude/*) echo claude; return ;;
     */rollout-*.jsonl) echo codex; return ;;
   esac
+  # A custom CLAUDE_CONFIG_DIR puts the transcript outside any .claude folder.
+  if [ -n "${CLAUDE_CONFIG_DIR:-}" ] && [ -n "$transcript" ]; then
+    case "$transcript" in "${CLAUDE_CONFIG_DIR%/}"/*) echo claude; return ;; esac
+  fi
   if [ -n "${CURSOR_AGENT:-}${CURSOR_CONVERSATION_ID:-}${GROK_SESSION_ID:-}" ] || [ "${GROK_AGENT:-}" = "1" ]; then
     echo other; return
   fi

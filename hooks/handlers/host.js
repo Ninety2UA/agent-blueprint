@@ -24,6 +24,8 @@ function detectHost(input) {
   // started from a Cursor or Grok terminal still carries their variables.
   const transcript = input && typeof input.transcript_path === 'string' ? input.transcript_path : '';
   if (/[\\/]\.claude[\\/]/.test(transcript)) return 'claude';
+  // A custom CLAUDE_CONFIG_DIR puts the transcript outside any .claude folder.
+  if (env.CLAUDE_CONFIG_DIR && transcript.startsWith(env.CLAUDE_CONFIG_DIR.replace(/[\\/]+$/, '') + '/')) return 'claude';
   if (/[\\/]rollout-[^\\/]*\.jsonl$/.test(transcript)) return 'codex';
   if (env.CURSOR_AGENT || env.CURSOR_CONVERSATION_ID || env.GROK_AGENT === '1' || env.GROK_SESSION_ID) return 'other';
   if (input && (typeof input.turn_id === 'string' || typeof input.model === 'string')) return 'codex';
