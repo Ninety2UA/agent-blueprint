@@ -523,15 +523,15 @@
     "grok": {
       "cells": {
         "build": {
-          "cost_usd": 0.4261,
-          "date": "2026-10-01T20:05:43Z",
+          "cost_usd": null,
+          "date": "2026-10-03T19:07:55Z",
           "link": "",
-          "log": "tests/smoke/logs/20261001-220423/grok/build.log",
-          "reason": "acceptance test failed: tabulate is not declared in pyproject.toml or requirements.txt (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-build-iPTAPx",
-          "seconds": 79,
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/build.log",
+          "reason": "acceptance test failed: tabulate is not declared in pyproject.toml or requirements.txt (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-build-bkzyPM",
+          "seconds": 390,
           "session": "",
           "state": "fail",
-          "tokens": 443580
+          "tokens": 1067665
         },
         "canary": {
           "cost_usd": 0.1055,
@@ -545,15 +545,15 @@
           "tokens": 84794
         },
         "debug": {
-          "cost_usd": 0.0882,
-          "date": "2026-10-01T20:06:01Z",
+          "cost_usd": 0.0881,
+          "date": "2026-10-03T19:08:19Z",
           "link": "",
-          "log": "tests/smoke/logs/20261001-220423/grok/debug.log",
-          "reason": "no provenance record for ab-systematic-debugging; the test suite still fails (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-debug-MpwwDP",
-          "seconds": 13,
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/debug.log",
+          "reason": "no provenance record for ab-systematic-debugging; the test suite still fails (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-debug-1M76wa",
+          "seconds": 12,
           "session": "",
           "state": "fail",
-          "tokens": 44518
+          "tokens": 44483
         },
         "discovery": {
           "cost_usd": 0.0829,
@@ -612,21 +612,32 @@
         },
         "review": {
           "cost_usd": null,
-          "date": "2026-10-01T20:05:48Z",
+          "date": "2026-10-03T19:08:07Z",
           "link": "",
-          "log": "tests/smoke/logs/20261001-220423/grok/review.log",
-          "reason": "no provenance record for ab-requesting-code-review; the review output does not name: eval, cli.py (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-review-d6r7KU",
-          "seconds": 5,
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/review.log",
+          "reason": "no provenance record for ab-requesting-code-review; the host refused the run: usage or rate limit reached. the review output does not name: eval, cli.py (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-review-yszwlD",
+          "seconds": 12,
+          "session": "",
+          "state": "fail",
+          "tokens": null
+        },
+        "ship": {
+          "cost_usd": null,
+          "date": "2026-10-03T19:12:12Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/ship.log",
+          "reason": "runner exit 3:   status: needs-human \u2014 the host failed 6 times in a row with a transient error (see /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-ship-x3czvn/state the runner did not report a publish (see the log) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-ship-x3czvn",
+          "seconds": 233,
           "session": "",
           "state": "fail",
           "tokens": null
         },
         "team": {
           "cost_usd": null,
-          "date": "2026-10-01T20:06:07Z",
+          "date": "2026-10-03T19:12:18Z",
           "link": "",
-          "log": "tests/smoke/logs/20261001-220423/grok/team.log",
-          "reason": "no provenance record for ab-orchestrate; no .agent-blueprint/team/<run>/ledger.md (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-team-vbBrnn",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/team.log",
+          "reason": "no provenance record for ab-orchestrate; the host refused the run: usage or rate limit reached. no .agent-blueprint/team/<run>/ledger.md (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-team-0cM0rQ",
           "seconds": 6,
           "session": "",
           "state": "fail",
@@ -898,7 +909,22 @@
         "codex"
       ],
       "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "build",
+        "debug",
+        "review",
+        "ship",
+        "team"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host grok --cell build,review,debug,team,ship --plugin-dir .",
+      "date": "2026-10-03 19:12 UTC",
+      "hosts": [
+        "grok"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
     }
   ],
-  "updated": "2026-10-03 19:00 UTC"
+  "updated": "2026-10-03 19:12 UTC"
 }
