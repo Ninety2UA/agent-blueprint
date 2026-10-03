@@ -106,7 +106,9 @@ Prompt: `references/agents/deployment-verifier.md`. Inputs: Verify deployment re
 
 With `driver` `interactive` this session publishes, after the secret scan the runner would make. With `driver` `runner`, skip this section: the runner publishes.
 
+**Bundled scripts.** Paths such as `scripts/run.sh` are relative to this skill's own folder, the one holding its SKILL.md, not to the project. Run a script through its interpreter (`bash` for `.sh`; `python3`, or `python` if that is missing, for `.py`) instead of relying on its executable bit, and if the interpreter is missing, say so and stop that step.
+
 1. In no-commit mode nothing is committed, so nothing can be pushed: set `needs-human`, with a `reason` saying the working tree and `commit-msg.md` wait for a commit.
-2. Scan the outgoing range (the merge base with the default branch to HEAD) and `pr-body.md` for secrets: private keys, cloud and API tokens, passwords, `.env` files. On a hit, publish nothing and set `needs-human`, naming the file and line in `reason` but never the value, since the reason is printed and may be shared.
+2. Scan the outgoing range and `pr-body.md` for secrets with the runner's own scanner: `scripts/scan-secrets.sh --range <merge base>..HEAD --file .agent-blueprint/run/pr-body.md`, the merge base being the one with the default branch. It exits 1 on a hit and prints where and what kind, never the value. Also check that the range adds no `.env` file (`git diff --name-only <merge base>..HEAD`). On a hit, publish nothing and set `needs-human`, naming the file and line in `reason` but never the value, since the reason is printed and may be shared.
 3. Push the branch and open the PR through the ab-pr-workflow skill, with `pr-body.md` as the body. If the push or the PR fails (no auth, branch protection), set `needs-human` with the fix in `reason`.
 4. Set `status` to `done`.

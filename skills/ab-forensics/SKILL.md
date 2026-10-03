@@ -24,7 +24,7 @@ Not for live debugging of code bugs (the ab-systematic-debugging skill), active 
 
 The user usually gives one of:
 - A run id (for example `ship-2026-04-15-1430`)
-- A log path (for example `.agent-blueprint/run/logs/iteration-5.log`)
+- A log path (for example the ship runner's `logs/iteration-5.log`, located in Step 1)
 - A symptom ("the last ship run stopped at iteration 5")
 - Nothing: then locate the most recent run yourself
 
@@ -32,18 +32,19 @@ The user usually gives one of:
 
 ### Step 1: Locate the artifact
 
-If the user gave a path, use it. Otherwise list the newest logs:
+If the user gave a path, use it. Otherwise list the newest logs. The ship runner keeps them outside the working tree, in `${XDG_STATE_HOME:-$HOME/.local/state}/agent-blueprint/<hash>/logs/` as `iteration-<n>.log` (everything the session printed) and `iteration-<n>.last` (the host's last message), where `<hash>` is the first 16 characters of the SHA-256 of the repository root path; the `record` file beside `logs/` holds the base commit, branch and iteration count. Nothing writes under `.agent-blueprint/run/logs/`.
 
 ```bash
-ls -t .agent-blueprint/run/logs/*.log 2>/dev/null | head -3
+hash=$(git rev-parse --show-toplevel | tr -d '\n' | shasum -a 256 | cut -c1-16)
+ls -t "${XDG_STATE_HOME:-$HOME/.local/state}/agent-blueprint/$hash/logs/"iteration-*.log 2>/dev/null | head -3
 ```
 
 Also read `.agent-blueprint/run/state.json` if it exists: its `status`, `stage`, `iteration`, `reason` and `decisions` say where the run stopped and why it thought so. Treat them as claims to check against the logs and git, not as findings.
 
-If no logs exist, fall back to:
+If no logs exist (an interactive run has none: its record is state.json and git), fall back to:
 - Recent git activity (`git log --since='1 day ago' --oneline`)
 - Pending changes (`git status --short`)
-- Active session files (`ls .agent-blueprint/team/active.md .continue-here.md 2>/dev/null`) and team ledgers (`.agent-blueprint/team/*/ledger.md`)
+- Run files: `.agent-blueprint/run/commit-msg.md`, the team marker and ledgers (`.agent-blueprint/team/active.md`, `.agent-blueprint/team/*/ledger.md`), progress ledgers (`.agent-blueprint/plans/*.progress.md`) and debug notes (`.agent-blueprint/debug/*.md`)
 
 A run in no-commit mode (`AGENT_BLUEPRINT_GIT_WRITABLE` was `0`, or `.agent-blueprint/run/commit-msg.md` exists) leaves its work in the working tree instead of commits, so there "no commits" is expected, not a missing artifact.
 
@@ -66,8 +67,8 @@ For each, gather evidence before drawing conclusions.
 **3. Abandoned work in progress**
 - WIP commits without follow-up?
 - Branch with uncommitted changes that don't match the plan?
-- Continue-here markers from a paused run?
-- Evidence: `git stash list`, `.continue-here.md`, `git diff` against base branch.
+- A pause checkpoint (the Session Continuity section of `docs/context/STATUS.md`) or a team ledger with unfinished rows?
+- Evidence: `git stash list`, `git diff` against base branch, the progress and team ledgers from Step 1.
 
 **4. Crashes or sudden interruptions**
 - Log ends mid-line or mid-tool-call?
@@ -97,13 +98,9 @@ After writing the report, summarize it inline in 200 words or fewer and offer th
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-Options: 1. Open a GitHub issue with the redacted report as its body. 2. Re-run with the parameter the diagnosis points at changed (name it). 3. Resume from the continue-here marker (offer it only when abandoned work was the diagnosis). Default when nobody answers: do none of them and stop with the report, because filing, retrying and resuming are the user's decisions.
+Options: 1. Open a GitHub issue with the redacted report as its body. 2. Re-run with the parameter the diagnosis points at changed (name it). 3. Resume the abandoned work with the ab-resume-session skill (offer it only when abandoned work was the diagnosis). Default when nobody answers: do none of them and stop with the report, because filing, retrying and resuming are the user's decisions.
 
 ## Rules
 
-- **Read-only.** Apart from the report, change no source files, start no pipelines and retry nothing on your own, because a retry repeats the failure and buries its evidence before anyone knows the cause.
-- **Evidence first.** Every claim cites a log line, commit sha or file; a claim you cannot cite goes under Unverifiable.
-- **Redact before writing.** Reports may be shared in issues or pasted to teammates.
-- **One report per run.** Don't investigate the same run again from scratch; extend the existing report.
-- **UNKNOWN is valid.** If the logs are insufficient, say so. Padding the report with speculation is worse than admitting its limits.
+- **Read-only.** Apart from the report, change no source files, start no pipelines and retry nothing on your own, because a retry repeats the failure and buries its evidence before anyone knows the cause. A claim you cannot cite goes under Unverifiable.
 - **Don't fix.** If you spot the obvious fix, name it under Recommended Next Action but don't apply it. Diagnosis and remediation are separate steps; mixing them hides what actually went wrong.

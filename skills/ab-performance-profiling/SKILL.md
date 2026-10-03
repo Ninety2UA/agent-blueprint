@@ -137,10 +137,6 @@ Before trying an optimization, read the ledger: an entry for the same change end
 
 ## Common Mistakes
 
-**Optimizing without measuring** — The most common mistake. Your intuition about what's slow is usually wrong. Measure first.
-
 **Optimizing the wrong thing** — A function that takes 1ms but is called once doesn't matter. A function that takes 0.1ms but is called 10,000 times does. Profile to find the actual bottleneck.
-
-**Not re-measuring after optimization** — "I added caching so it's faster now." Is it? Measure. Sometimes caching makes things slower (cache miss overhead, stale data).
 
 **Micro-optimizing** — Saving 50 microseconds in a function that runs inside a 200ms database query is meaningless. Focus on the critical path.

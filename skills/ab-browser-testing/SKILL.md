@@ -1,6 +1,6 @@
 ---
 name: ab-browser-testing
-description: "Verifies UI changes in a real browser: starts the dev server, opens the affected pages with a browser automation tool (such as a Playwright MCP server), reads accessibility snapshots, runs the interaction flows including error states, checks mobile, tablet and desktop widths, and reports pass or fail per check; without a browser tool it lists the checks to run by hand. Use when a change touches UI components (.tsx, .jsx, .vue, .svelte), CSS or SCSS, or HTML templates, CSS-only changes included since they break layout and spacing in ways unit tests miss; when the user asks to test in the browser, check the UI, test a form or verify a layout; for interaction flows, responsive layouts or accessibility in a real browser; or when unit tests pass but the rendered experience still needs confirming."
+description: "Verifies UI changes in a real browser: starts the dev server, opens the affected pages with a browser automation tool (such as a Playwright MCP server), reads accessibility snapshots, runs the interaction flows including error states, checks mobile, tablet and desktop widths, and reports pass or fail per check; without a browser tool it lists the checks to run by hand. Use when a change touches UI components (.tsx, .jsx, .vue, .svelte), CSS, SCSS or HTML templates, CSS-only changes included; when the user asks for a browser, UI, form or layout check; or when unit tests pass but the rendered experience still needs confirming."
 ---
 
 # Browser Testing
@@ -120,7 +120,5 @@ Then fill in the Step 6 table with every row marked "Not run (manual)" rather th
 **Not waiting for page load** — Take a snapshot after navigation to confirm the page is ready before interacting.
 
 **Testing only the happy path** — Also test error states, empty states, and edge cases (very long text, special characters).
-
-**Not closing the browser** — Close the browser session when done to free resources.
 
 **Manual visual checks without snapshots** — When a browser tool is available, use accessibility snapshots for programmatic verification. Visual-only checks can't be reproduced or automated later.
