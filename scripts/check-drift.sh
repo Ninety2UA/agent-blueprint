@@ -66,8 +66,16 @@ fi
 
 # ── Derive ground truth from the filesystem ───────────────────
 SKILLS=$(find "$SKILLS_DIR" -type f -name 'SKILL.md' | wc -l | tr -d ' ')
-# Helper prompts: distinct file names, since a shared prompt has byte-identical copies.
-PROMPTS=$(find "$SKILLS_DIR" -path '*/references/agents/*.md' -type f | sed 's#.*/##' | sort -u | wc -l | tr -d ' ')
+# Helper prompts: distinct file names, since a shared prompt has byte-identical copies. A companion
+# note (<prompt>-<topic>.md beside <prompt>.md, loaded by the prompt at a point of use) is not a prompt.
+PROMPTS=$(find "$SKILLS_DIR" -path '*/references/agents/*.md' -type f | while IFS= read -r f; do
+    dir=${f%/*}; stem=${f##*/}; stem=${stem%.md}; prefix=$stem; companion=false
+    while [ "${prefix%-*}" != "$prefix" ]; do
+        prefix=${prefix%-*}
+        if [ -f "$dir/$prefix.md" ]; then companion=true; break; fi
+    done
+    if [ "$companion" = false ]; then printf '%s\n' "${f##*/}"; fi
+done | sort -u | wc -l | tr -d ' ')
 HOOKS=$(python3 - "$HOOKS_JSON" <<'PY'
 import json, sys
 try:

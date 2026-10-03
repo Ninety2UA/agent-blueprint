@@ -23,7 +23,7 @@ AGENTS.md                                # This file; CLAUDE.md is a symlink to 
 install.sh                               # Installer and scaffold helper
 ```
 
-Helpers get their instructions from prompt files in the dispatching skill's `references/agents/`. A shared prompt file has one owner and byte-identical copies, registered in `scripts/prompt-owners.json`. Skills carry no `model` or `effort`: the session's model and effort are the user's choice, and helpers inherit them.
+Helpers get their instructions from prompt files in the dispatching skill's `references/agents/`. A shared prompt file has one owner and byte-identical copies, registered in `scripts/prompt-owners.json`. Skills carry no `model` or `effort`: the session's model and effort are the user's choice, and helpers inherit them. A prompt may keep material it needs only in some runs (catalogs, long tables, worked examples) in a companion note named `<prompt>-<topic>.md` beside it, loaded at the point of use; the companion is a plain note, counted and checked as one by the gates, and a shared prompt's companion is registered with the same copies.
 
 ## Gates
 

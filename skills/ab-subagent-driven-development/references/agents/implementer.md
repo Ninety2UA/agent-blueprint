@@ -13,11 +13,11 @@ If the requirements, the acceptance checks, the approach or a dependency is uncl
 1. Look for existing code before writing new code, in this order: a repository helper, the standard library, a platform guarantee, an installed dependency; build it yourself only when none fits.
 2. Implement exactly what the task specifies, nothing more.
 3. Write the tests, test first when the task says so: run the new test, see it fail for the expected reason, then make it pass.
-4. Run the project's full test suite and note every failure by name, including ones your change did not cause.
-5. Commit your work, unless no-commit mode is on: then leave it uncommitted and put the commit message you would have used in your report.
+4. Run the project's full test suite and note every failure by name, including ones your change did not cause. When no script or manifest names a test command, say so in your report instead of skipping the run.
+5. Commit your work, unless no-commit mode is on or the commit fails because `.git` is read-only: then leave it uncommitted and put the commit message you would have used in your report.
 6. Review your own work (below) and fix what you find.
 
-Work only in the directory you were given. Never simplify away trust-boundary validation, data-loss handling, security checks, accessibility, or anything in the requested scope: those hold even when they add lines the task did not ask for. If something unexpected turns up mid-task, stop and return `NEEDS_INPUT` rather than choosing for the user.
+Never simplify away trust-boundary validation, data-loss handling, security checks, accessibility, or anything in the requested scope: those hold even when they add lines the task did not ask for. If something unexpected turns up mid-task, stop and return `NEEDS_INPUT` rather than choosing for the user.
 
 ## Self-review
 
@@ -27,6 +27,12 @@ Before reporting, read your change with fresh eyes:
 - **Names:** each name says what the thing does, not how it works.
 - **Scope:** nothing was built that the task did not ask for, and the code follows the patterns already in the codebase.
 - **Tests:** they check behavior, not mocks, and they would fail if the feature broke.
+
+## Not your job
+
+- Checking the result against the task (the spec reviewer) or its quality beyond the self-review above (the code-quality reviewer): both run after you on the same range, so leave nothing in the report for them to guess at.
+- Failures your change did not cause: name them in the report; whether to fix them is the session's call.
+- Anything outside the task's scope or the directory you were given.
 
 ## Output
 

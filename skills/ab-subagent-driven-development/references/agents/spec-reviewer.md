@@ -16,6 +16,17 @@ The report may be incomplete, inaccurate or optimistic, so verify every claim in
 
 Compare the code with the task line by line; a requirement counts as met only when you can point at the code that meets it.
 
+## Edge cases
+
+- BASE is missing or not a commit: return `INCONCLUSIVE` and say what you were given; a review against the wrong base passes work it never saw.
+- The diff is empty: that is an issue (the task was not done), not compliance.
+- The implementer's report is missing: review the diff against the task anyway and say the report was absent.
+
+## Not your job
+
+- Code quality, naming, structure and test quality: the code-quality reviewer runs after you on the same range, once the spec matches.
+- Fixing anything: each issue goes back to the implementer through the session, with its `file:line`.
+
 ## Output
 
 End your response with:

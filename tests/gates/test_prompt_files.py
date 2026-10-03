@@ -2,7 +2,9 @@
 
 Checks the real tree: no agents/ directory, prompt files without frontmatter that
 open with a role header and end with an Output section, no prompt that starts
-helpers of its own, and every prompt a skill names present in that skill.
+helpers of its own, and every prompt a skill names present in that skill. A file
+named <prompt>-<topic>.md beside <prompt>.md is a companion the prompt loads at a
+point of use; it is a plain note, not a prompt.
 """
 import glob
 import os
@@ -14,7 +16,18 @@ import unittest
 
 from gate_helpers import REPO, gate_module, read
 
-PROMPTS = sorted(glob.glob(os.path.join(REPO, "skills", "*", "references", "agents", "*.md")))
+AGENT_FILES = sorted(glob.glob(os.path.join(REPO, "skills", "*", "references", "agents", "*.md")))
+
+
+def is_companion(path):
+    """<prompt>-<topic>.md beside <prompt>.md: notes a prompt loads at a point of use, not a prompt itself."""
+    folder, name = os.path.split(path)
+    stem = name[:-3]
+    return any(os.path.isfile(os.path.join(folder, stem[:i] + ".md")) for i, ch in enumerate(stem) if ch == "-")
+
+
+PROMPTS = [p for p in AGENT_FILES if not is_companion(p)]
+COMPANIONS = [p for p in AGENT_FILES if is_companion(p)]
 # Imperative helper-starting wording, and one host's team or dispatch tools.
 STARTS_HELPERS = re.compile(
     r"\b(?:dispatch|spawn|launch|start)\s+(?:a|an|another|the|parallel|one|two|\d+|multiple|several)?\s*"
@@ -72,6 +85,23 @@ class PromptFiles(unittest.TestCase):
                 if m:
                     hits.append("%s:%d: %s" % (os.path.relpath(p, REPO), n, m.group(0)))
         self.assertEqual(hits, [], "only the main session dispatches (KTD2):\n" + "\n".join(hits))
+
+    def test_companions_are_plain_notes_their_prompt_names(self):
+        bad = []
+        for p in COMPANIONS:
+            folder, name = os.path.split(p)
+            stem = name[:-3]
+            prompt = next(os.path.join(folder, stem[:i] + ".md") for i, ch in enumerate(stem) if ch == "-"
+                          and os.path.isfile(os.path.join(folder, stem[:i] + ".md")))
+            text = read(p)
+            if text.startswith("---") or not text.startswith("# ") or name not in read(prompt):
+                bad.append(os.path.relpath(p, REPO))
+        self.assertEqual(bad, [], "a companion has no frontmatter, opens with '# Title' and is named in its prompt")
+
+    def test_no_prompt_carries_example_tags(self):
+        """Empty <example> blocks were a v3 template leftover in 22 prompts; a prompt shows examples in prose."""
+        bad = [os.path.relpath(p, REPO) for p in AGENT_FILES if "<example" in read(p)]
+        self.assertEqual(bad, [])
 
     def test_no_team_lead_prompt(self):
         self.assertEqual([p for p in PROMPTS if os.path.basename(p) == "team-lead.md"], [])
