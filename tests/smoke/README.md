@@ -64,7 +64,7 @@ Build, review, debug, ship and team pass only when the skill's provenance record
 | `fail` | The check failed, the provenance record is missing, the host exited early, or the host's preflight failed |
 | `timeout` | The host did not finish within the cell's timeout; its process group was killed |
 | `not-installed` | The host CLI is not on PATH; nothing ran |
-| `n/a` | The cell does not apply to the host; the reason says why |
+| `n/a` | The cell does not apply to the host, or its `check.sh` exited 3 because the host cannot show what the cell judges (a capped skill catalog, for one); the reason says why |
 
 ## Adding a host or a cell
 

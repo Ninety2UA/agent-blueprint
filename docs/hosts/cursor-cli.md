@@ -36,6 +36,7 @@ Check: `cursor-agent plugin marketplace list` for marketplaces and `/plugin` in 
 - Task tracking: the plan file's checkboxes; a Cursor todo tool is not verified.
 - `.git` writes: the sandbox protects `.git/hooks`; the runner's preflight probe decides whether `.git` is writable, and a read-only answer puts the skills in no-commit mode, with the runner committing.
 - Binary: Grok Build installs `~/.grok/bin/agent`, which can shadow Cursor's `agent` on the PATH; the blueprint and the runner always call `cursor-agent`.
+- Catalog cap: Cursor hands the model a list of about 210 skill names and tells it how many more were left out (128 of 339 on the build machine, which also holds `~/.claude/skills` and Cursor's own skills). On 2026-10-03 every `ab-` skill was among the omitted ones, so the model could not name or choose them from the catalog; whether naming the skill in the prompt still loads it is not verified. Keep the folders Cursor scans lean (`~/.agents/skills`, `~/.cursor/skills`, `~/.claude/skills`). The `manual-only` smoke cell reports `n/a` with the omitted count when this happens.
 - Instructions: the CLI reads both `AGENTS.md` and `CLAUDE.md` at the project root, which is why the scaffold's `CLAUDE.md` is the single line `@AGENTS.md` rather than a copy.
 
 ## Unattended runs

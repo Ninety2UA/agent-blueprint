@@ -222,6 +222,7 @@ verdict_scenario() {
             invalid) finish_cell fail "the provenance record for $skill is not valid JSON; $CHECK_REASON"; return 0 ;;
         esac
     fi
+    if [ "$CHECK_RC" -eq 3 ]; then na_cell "$CHECK_REASON"; return 0; fi   # the host cannot show what the cell judges
     if [ "$CHECK_RC" -ne 0 ]; then finish_cell fail "$CHECK_REASON"; return 0; fi
     if [ "$summary" = all-inline ]; then
         finish_cell "degraded-pass (inline)" "$CHECK_REASON · helper steps: $paths"

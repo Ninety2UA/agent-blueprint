@@ -1,1 +1,1 @@
-From your skill catalog only (do not search the file system and do not run commands): which skills can you invoke whose names start with ab-p? Answer with the names only, one per line.
+From your skill catalog only (do not search the file system and do not run commands): which skills can you invoke whose names start with ab-p? Answer with the names only, one per line. If the catalog you were given says that some skills were omitted from the list, end with one more line: omitted: <number>.
