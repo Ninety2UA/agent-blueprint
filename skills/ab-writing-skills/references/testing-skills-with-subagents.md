@@ -14,6 +14,8 @@ You run scenarios without the skill (RED - watch agent fail), write skill addres
 
 **Complete worked example:** See references/examples/CLAUDE_MD_TESTING.md (from this skill's directory) for a full test campaign testing CLAUDE.md documentation variants.
 
+A second one, end to end: `references/examples/systematic-debugging/` holds the creation log of the ab-systematic-debugging skill and the academic and pressure tests it was bulletproofed against; read them when you want to see what a full campaign looks like before writing your own.
+
 ## When to Use
 
 Test skills that:
