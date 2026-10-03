@@ -11,7 +11,7 @@ The outcome is one well-defined range of changes reviewed by the code-reviewer h
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. Before that, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. The Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## When to review
 
@@ -56,9 +56,3 @@ A worked example: `references/example.md` § Example.
 - Note Suggestions for later.
 - When the reviewer is wrong, push back with technical reasoning: show the code or tests that prove it works, or ask the reviewer to clarify. Valid technical feedback gets fixed, not argued with.
 - Skip no review because the change "is simple"; simple changes are where unchecked assumptions hide.
-
-## In workflows
-
-- **Subagent-driven development:** review after each task and fix before the next one, so issues do not compound.
-- **Executing plans:** review after each batch (3 tasks), apply the feedback, continue.
-- **Ad-hoc work:** review before merge, and when stuck.

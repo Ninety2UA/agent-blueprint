@@ -7,13 +7,6 @@ description: "Runs a go/no-go check before a deployment: a read-only helper veri
 
 A systematic go/no-go checklist for production deployments. The deployment-verifier helper checks eight critical areas and returns a verdict with evidence and a rollback plan specific to this deployment. The run is done when the verdict has been acted on and recorded.
 
-## When to Use
-
-- Before deploying to production
-- Before deploying to staging (abbreviated check)
-- After a hotfix, before emergency deployment
-- When someone says "ship it" or "deploy"
-
 ## The Iron Law
 
 No deployment without a green checklist. Any blocking issue makes the deployment a NO-GO until it is resolved, whatever the deadline, however small the change, and however much pressure there is to ship. A small change breaks production as easily as a large one, and a delayed release costs less than an outage.
@@ -72,23 +65,6 @@ After deployment (or after deciding not to deploy):
 - If blocked, add blocking issues to `BACKLOG.md` with P0 priority
 - If it went ahead on CONDITIONAL GO, add the warnings to `BACKLOG.md` so they are followed up
 
-## Quick Reference
-
-| Check Area | What's Verified |
-|------------|----------------|
-| Build | Compiles cleanly, no warnings |
-| Tests | All pass, coverage maintained |
-| Security | No vulns, no secrets, auth reviewed |
-| Migrations | Reversible, tested, backward-compatible |
-| Configuration | Correct env vars, no dev config in prod |
-| Dependencies | Lock file current, no floating versions |
-| Rollback | Plan exists and is tested |
-| Monitoring | Health checks, alerts, logging |
-
 ## Common Mistakes
 
-**Skipping for "small changes"** — Small changes cause production incidents too. Every deployment gets the full checklist.
-
 **Trusting CI alone** — CI checks are necessary but not sufficient. The deployment-verifier checks things CI doesn't (rollback plans, config correctness, monitoring).
-
-**Deploying with warnings** — Conditional GO means "go, but track the warnings." Don't let warnings accumulate across deployments.

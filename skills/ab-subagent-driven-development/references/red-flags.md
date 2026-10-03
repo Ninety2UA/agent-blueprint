@@ -23,13 +23,7 @@ Loaded on demand from SKILL.md when a helper asks questions, a reviewer finds is
 - Provide additional context if needed
 - Don't rush them into implementation
 
-**If a reviewer finds issues:**
-- Continue the same implementer, not a new one, since it already holds the task's context. Where your host lets you message a running helper, give it a unique name when you start it (in Claude Code, for example, `implementer-task-3`) and resume it by sending it a message addressed to that name
-- Batch same-shape findings into one message rather than sending them one at a time
-- If the host cannot resume it, or no reply arrives within your wait window, start a fresh implementer carrying the prior report and all findings
-- The reviewer re-reviews the cumulative range from the pre-task commit (BASE pinned), not just the latest fix
-- Five rounds per review phase (spec compliance, then quality); on the fifth, mark the task blocked in the progress file with `— BLOCKED: <reason>` and escalate to the user
-- Don't skip the re-review
+**If a reviewer finds issues:** follow the fix-rounds paragraph in SKILL.md step 3 (same implementer, findings batched, BASE pinned, five rounds then `— BLOCKED`). A fresh implementer replaces one the host cannot reach, and also one that sends no reply within your wait window.
 
 **If a helper fails its task:**
 - Start a fix helper with specific instructions

@@ -27,6 +27,12 @@ Options: approve and run Wave 1 first, checking each wave before the next; chang
 
 ## Step 4: Run each wave
 
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
+
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+
+In this mode helpers use file ownership, not worktrees, since creating a worktree writes to `.git` as well.
+
 ### 4a. Start the wave's helpers
 
 Start one implementer per task, all at once, in the ab-subagent-driven-development skill's implementer pattern. Give each its own worktree (an isolated copy of the repository) where the host offers one, so parallel tasks cannot overwrite each other's changes; otherwise each touches only the files its task owns.
@@ -61,12 +67,6 @@ Prompt: `references/agents/integration-verifier.md`. Inputs: the wave number, th
 - **PASS:** start the next wave.
 - **ISSUES FOUND:** fix each with a targeted helper as in 4a, the issue as its task packet, commit the fix, then check again.
 - **FAIL:** stop and report to the user with the wave's commits listed; the next wave would build on a broken one, and whether to reset to the wave's starting commit is the user's call.
-
-**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
-
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
-
-In this mode helpers use file ownership, not worktrees, since creating a worktree writes to `.git` as well.
 
 ## Step 5: Final verification
 

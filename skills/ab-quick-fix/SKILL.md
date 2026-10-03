@@ -1,6 +1,6 @@
 ---
 name: ab-quick-fix
-description: "Makes a small, well-understood change through a short test-first loop: checks that the change qualifies (under 3 files, obvious approach), writes a failing test, makes the minimal fix, runs the full test suite, build and lint, and commits on a branch. Use when the change is a bug fix whose cause is known, a typo, copy or config change, a rename, a changed default or minor refactor within one module, or a test for existing behavior, whether or not the user says 'quick'. Not for changes touching 4 or more files, new public APIs, endpoints or schemas, data-model changes, or an unclear approach (use ab-brainstorming, then ab-build-pipeline), nor for a bug whose cause is not yet known (use ab-systematic-debugging first)."
+description: "Makes a small, well-understood change through a short test-first loop: checks that the change qualifies (up to 3 files, obvious approach), writes a failing test, makes the minimal fix, runs the full test suite, build and lint, and commits on a branch. Use when the change is a bug fix whose cause is known, a typo, copy or config change, a rename, a changed default or minor refactor within one module, or a test for existing behavior, whatever the user calls it. Not for changes touching 4 or more files, new public APIs, endpoints or schemas, data-model changes, or an unclear approach (use ab-brainstorming, then ab-build-pipeline), nor for a bug whose cause is not yet known (use ab-systematic-debugging first)."
 argument-hint: "[describe the change]"
 metadata:
   version: "4.0.0"
@@ -12,33 +12,19 @@ A finished quick fix is one commit on a branch that holds the change and a test 
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. Before that, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
-
-## When Not to Use
-
-- **Touching 4+ files**: use the ab-build-pipeline skill (or ab-ship-pipeline for an autonomous run).
-- **New public API, endpoint or schema**: it needs design first, with the ab-brainstorming skill.
-- **Auth, payments or data-migration code**: always the full pipeline with review, never this skill, because a small-looking change there can do outsized harm.
-- **Approach unclear, or several options**: use the ab-discuss or ab-brainstorming skill.
-- **Bug with a non-obvious root cause**: use the ab-systematic-debugging skill first, and this skill once the cause is known and the fix is small.
+**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. The Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## Step 1: Qualification Check
 
-Before starting, confirm the change is quick.
+Before starting, confirm the change is quick: a bug fix with an obvious root cause, a typo, copy or config fix, a test for existing behavior, or a rename or minor refactor within one module, touching up to 3 files. Hand over instead for:
 
-**Qualifies:**
-- Bug fix with obvious root cause (< 3 files touched)
-- Typo, copy, or config fix
-- Adding a test for existing behavior
-- Renaming or minor refactor within a single module
+- **4+ files**: use the ab-build-pipeline skill (or ab-ship-pipeline for an autonomous run).
+- **A new public API, endpoint or schema, or a data-model change**: it needs design first, with the ab-brainstorming skill.
+- **Auth, payments or data-migration code**: always the full pipeline with review, never this skill, because a small-looking change there can do outsized harm.
+- **An unclear approach, or several options**: use the ab-discuss or ab-brainstorming skill.
+- **A bug with a non-obvious root cause**: use the ab-systematic-debugging skill first, and this skill once the cause is known and the fix is small.
 
-**Does not qualify (redirect to ab-brainstorming):**
-- Touching 4+ files
-- Adding new public API or endpoint
-- Changing data models or schemas
-- Anything where you're unsure of the approach
-
-If the change does not qualify, say: "This looks like it needs the full workflow. Let me switch to ab-brainstorming." Then use the ab-brainstorming skill instead. If it qualified but grows past these limits mid-fix, stop and switch to the ab-build-pipeline skill.
+If the change does not qualify, say so and switch to the skill named above. If it qualified but grows past these limits mid-fix, stop and switch to the ab-build-pipeline skill.
 
 ## Step 2: Write a Failing Test
 

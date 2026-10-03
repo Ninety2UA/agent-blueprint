@@ -1,13 +1,13 @@
 ---
 name: ab-swarm-orchestration
-description: "Starts several read-only specialist helpers at once on the same input, each on one dimension such as quality, security, performance or a research angle, then hands all their outputs to a synthesizer that merges them into one report. Use when a thorough review, research, analysis or audit needs several perspectives on one problem, or to compose a custom swarm such as a migration or architecture review. The standard review and research swarms run through ab-review-swarm and ab-deep-research, which carry their prompt files. Not for tasks that modify shared state (ab-wave-orchestration) or when one perspective is enough (start a single helper)."
+description: "Starts several read-only specialist helpers at once on the same input, each on one dimension such as quality, security, performance or a research angle, then hands all their outputs to a synthesizer that merges them into one report. Use when a thorough review, research, analysis or audit needs several perspectives on one problem, or to compose a custom swarm such as a migration or architecture review. Not for the standard review or research swarm (ab-review-swarm, ab-deep-research), sequential tasks (ab-autonomous-loop), tasks that modify shared state (ab-wave-orchestration), or when one perspective is enough (start a single helper)."
 ---
 
 # Swarm Orchestration
 
 A swarm is a group of specialist helpers started at the same time, each looking at the same input from its own angle, whose outputs a synthesizer merges into one report. Many focused passes catch more than one broad scan, because each specialist looks only for its own class of problem. The run is done when every member has returned and the synthesized report is with the user or the calling skill. Unlike the ab-wave-orchestration skill, which orders dependent tasks, a swarm's members do not depend on each other and change no files.
 
-Use it for review swarms (reviewers on different quality dimensions), research swarms (researchers on different aspects), analysis swarms (different risk areas) and audit swarms (different compliance areas). Not when members would modify shared state (use the ab-wave-orchestration skill), when the tasks are sequential (use the ab-autonomous-loop skill), or when one perspective is enough (start a single helper). The swarm's shape is drawn in `references/swarm-guide.md` § Swarm Architecture.
+The swarm's shape is drawn in `references/swarm-guide.md` § Swarm Architecture.
 
 ## Step 1: Select the members
 
@@ -15,7 +15,7 @@ Decide which perspectives the task needs and which specialists provide them, and
 
 ## Step 2: Prepare the shared context
 
-Every member gets the same base context: the code, diff or files to analyze; the project's conventions and standards; its own focus area; and one output format for all, so the synthesizer can merge the results.
+Every member gets the same base context: the code, diff or files to analyze; the project's conventions and standards; its own focus area; and one output format for all, so the synthesizer can merge the results. Then check the plan against `references/swarm-guide.md` § Common Mistakes.
 
 ## Step 3: Start every member at once
 
@@ -45,4 +45,4 @@ Present the synthesized report and offer the next step.
 
 Options: for review findings, fix them with the ab-resolve-in-parallel skill; for research findings, go on to the ab-writing-plans skill; or stop here. Default when nobody answers: stop and return the report for the calling skill or the user to act on.
 
-Common mistakes: `references/swarm-guide.md` § Common Mistakes. How swarms differ from team work in the ab-orchestrate skill: `references/swarm-guide.md` § Swarms vs Team Work.
+How swarms differ from team work in the ab-orchestrate skill: `references/swarm-guide.md` § Swarms vs Team Work.

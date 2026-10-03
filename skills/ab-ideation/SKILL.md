@@ -8,7 +8,7 @@ argument-hint: "[optional: focus area, constraint, or volume hint]"
 
 The outcome is a ranked ideation doc in `docs/research/`: 5-7 surviving ideas, each grounded in this codebase, and a rejection summary saying why the rest fell. It answers "What are the strongest ideas worth exploring?" and writes no requirements, plans or code. Quality comes from grounding and explicit rejection, not optimistic ranking, and the user picks which idea goes on to the ab-brainstorming skill.
 
-Not for: designing what the user already chose (the ab-brainstorming skill); researching one named topic (ab-deep-research); breaking a known feature into tasks (ab-writing-plans); choosing between two named options (ab-discuss), since ideation is for "I don't know what to do"; or ranking existing bug reports (ab-backlog-triage).
+Also not for: breaking a known feature into tasks (ab-writing-plans); choosing between two named options (ab-discuss), since ideation is for "I don't know what to do"; or ranking existing bug reports (ab-backlog-triage).
 
 ## Focus hint
 
@@ -45,7 +45,7 @@ Generate the full candidate list before critiquing any idea, because early criti
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Prompts: the three frames in `references/ideation-frames.md` (friction, inversion, leverage), one per helper; they have no prompt file. Inputs: the grounding summary, the focus hint and a volume of about 8-10 ideas. Start all three at once, since they are independent. A frame is a starting bias, not a constraint, and helpers return raw candidates only, with no critique.
+Prompts: the three frames in `references/ideation-frames.md` (friction, inversion, leverage), one per helper; each frame section is that helper's whole prompt. Inputs: the grounding summary, the focus hint and a volume of about 8-10 ideas. Start all three at once, since they are independent. A frame is a starting bias, not a constraint, and helpers return raw candidates only, with no critique.
 
 When all have returned:
 1. Merge and dedupe into one master list.
@@ -76,4 +76,4 @@ Options: (1) take a chosen idea forward: mark it `Explored` in the doc, then inv
 
 Commit message: `docs: ideation — <topic>`.
 
-The principles behind these phases, and why skipping one fails: `references/rationalizations.md`.
+When tempted to skip a phase, drop the rejection summary or choose for the user, read `references/rationalizations.md`.

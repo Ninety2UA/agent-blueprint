@@ -55,10 +55,10 @@ git log --oneline --no-merges <head>..HEAD
 
 Structure the orientation as status, pointers, traps.
 
-**Status**, the current state from Step 2:
+**Status**, from Step 2 and STATUS.md:
 - Branch: [branch name]
-- Build: [status]
-- Tests: [status]
+- Build: [as STATUS.md records it]
+- Tests: [as STATUS.md records it]
 - Uncommitted changes: [list or "clean"]
 - Freshness: [fresh / "HEAD moved since the handoff" with the commit list / stamp check skipped, and why]
 

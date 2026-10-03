@@ -1,25 +1,17 @@
 ---
 name: ab-migration-planning
-description: "Plans a migration so every step can be undone: a blast-radius analysis of data, services and dependents, atomic expand-contract steps each deployable on its own, a forward and a rollback for each step with irreversible steps marked and backed up first, verification checks, and a pre-, during- and post-migration checklist. Use when a change needs careful sequencing, data transformation or rollback, whether or not the user calls it a migration: schema changes (adding, renaming, changing or dropping tables and columns), backfills and format changes, API version transitions and deprecated endpoints, breaking changes, major framework, ORM or runtime upgrades, and any change where just deploying it could corrupt data or break downstream systems. Not for a simple dependency addition (ab-dependency-management)."
+description: "Plans a migration so every step can be undone: a blast-radius analysis of data, services and dependents, atomic expand-contract steps each deployable on its own, a forward and a rollback for each step with irreversible steps marked and backed up first, verification checks, and a pre-, during- and post-migration checklist. Use when a change needs careful sequencing, data transformation or rollback, whether or not the user calls it a migration: schema or data changes, API version transitions, breaking changes, major framework, ORM or runtime upgrades, or any change that could corrupt data or break downstream systems if just deployed. Not for a simple dependency addition (ab-dependency-management)."
 ---
 
 # Migration Planning
 
 ## Overview
 
-Create safe, reversible migration plans with explicit rollback procedures. Covers database schema changes, API version transitions, major dependency upgrades, and data transformations. The plan is done when every step has its forward, rollback and verification written down and the execution checklist is written for this migration.
-
-## When to Use
-
-- Adding, modifying, or removing database tables/columns
-- Transitioning between API versions
-- Upgrading major dependencies (framework, ORM, runtime)
-- Transforming existing data (backfills, format changes)
-- Any change where "just deploy it" could corrupt data or break downstream systems
+Create a safe, reversible migration plan with explicit rollback procedures, as a plan file in `docs/plans/` (`YYYY-MM-DD-<name>.md`, the ab-writing-plans skill's convention), or inside the plan that skill is building when called from it. The plan is done when every step has its forward, rollback and verification written down and the execution checklist is written for this migration.
 
 ## The Iron Law
 
-**Hard gate.** No migration without a rollback plan: every migration step has a documented reverse operation, and a step that cannot be reversed is marked irreversible and requires a data backup before it runs. A migration without a way back turns one bad step into lost or corrupted data in production, which no later fix can undo.
+**Hard gate.** No migration without a rollback plan: every migration step has a documented reverse operation, and a step that cannot be reversed is marked irreversible and requires a data backup taken right before it runs, not only at the start. A migration without a way back turns one bad step into lost or corrupted data in production, which no later fix can undo.
 
 ## Process
 
@@ -130,5 +122,3 @@ Define how to verify each step succeeded:
 **No rollback testing** — If you haven't tested the rollback, you don't have a rollback plan. You have a rollback hope.
 
 **Forgetting in-flight requests** — A migration that takes 30 seconds means 30 seconds of potentially inconsistent state. Plan for what happens to requests during that window.
-
-**Irreversible steps without backup** — If a step can't be undone (dropping a column, transforming data destructively), take a backup before that step, not just at the start.

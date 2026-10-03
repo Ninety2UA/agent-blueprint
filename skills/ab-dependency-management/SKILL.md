@@ -9,18 +9,7 @@ Every dependency is code you don't control, maintained by people you don't know,
 
 **Core principle:** Fewer dependencies, carefully chosen, regularly updated. Every addition is a long-term commitment.
 
-## When to Use
-
-- Adding a new dependency to the project
-- Upgrading existing dependencies (minor, major, or security patches)
-- Removing a dependency or replacing it with a lighter alternative
-- Auditing dependencies after a security advisory
-- Evaluating whether to build vs. install
-
-**Don't use when:**
-- Installing dev tooling that doesn't ship with the product (linters, formatters)
-- Pinning a version temporarily during debugging (just do it, create a BACKLOG item to revisit)
-- Updating the Agent Blueprint plugin itself
+A temporary pin during debugging needs none of this: pin it and add a BACKLOG item to revisit.
 
 ## Phase 1: Evaluate Before Adding
 
@@ -139,7 +128,7 @@ Removing a dependency is a win whenever the replacement is simpler.
 
 ## Common Mistakes
 
-Batch-updating everything, ignoring lockfiles, vendoring without a plan, choosing by stars, skipping changelogs: `references/common-mistakes.md`.
+Before a batch of upgrades, a vendored copy or a choice between packages, read `references/common-mistakes.md` (batch-updating everything, ignoring lockfiles, vendoring without a plan, choosing by stars, skipping changelogs).
 
 ## Integration with Other Skills
 
