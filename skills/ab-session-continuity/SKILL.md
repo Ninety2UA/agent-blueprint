@@ -95,7 +95,7 @@ When the ab-pause-checkpoint skill runs, or you need to save state:
 
 2. **Update STATE.md** with current progress, decisions and next steps, and stamp `last-updated:` and `head:` (the sha from `git rev-parse HEAD`) in its frontmatter, the stamp the ab-resume-session skill checks for freshness.
 
-3. **Refresh Session Continuity** in `docs/context/STATUS.md` with a one-line summary of where work stands, keeping the section's other lines (what was done, what's remaining, Start here) in place, because the ab-resume-session skill continues from Start here.
+3. **Refresh Session Continuity** in `docs/context/STATUS.md`: a one-line summary of where work stands, and the Start here line rewritten to the same next action STATE.md now lists first, because the ab-resume-session skill continues from Start here before it reads STATE.md, and a stale Start here repeats finished work. Keep the section's other lines (what was done, what's remaining) in place.
 
 4. **Confirm to the user:** "State saved. Resume with ab-resume-session in a new session."
 

@@ -59,6 +59,7 @@ Each of these means a claim is about to outrun its evidence:
 - Using "should", "probably", "seems to"
 - Expressing satisfaction before verification ("Great!", "Perfect!", "Done!", etc.)
 - About to commit, push or open a PR without verification
+- Moving to the next task of a plan before the finished one ran its verification
 - Trusting a helper's success report
 - Relying on partial verification
 - Thinking "just this once"

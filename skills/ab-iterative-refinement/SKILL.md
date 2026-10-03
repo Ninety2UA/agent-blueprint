@@ -7,7 +7,7 @@ metadata:
 
 # Iterative Refinement
 
-This skill takes an implemented change through review→fix→review cycles and ends with a final report: converged under the chosen mode, or stopped with the findings that remain. One pass catches most issues, a second catches those the fixes introduced, a third confirms convergence; past that, returns diminish. Skip it for a trivial change (under 3 files, simple logic), where one ab-review-swarm pass is enough, or before anything is implemented.
+This skill takes an implemented change through review→fix→review cycles and ends with a final report: converged under the chosen mode, or stopped with the findings that remain. One pass catches most issues, a second catches those the fixes introduced, a third confirms convergence; past that, returns diminish. Skip it for a trivial change (under three files, simple logic), where one ab-review-swarm pass is enough, or before anything is implemented.
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
