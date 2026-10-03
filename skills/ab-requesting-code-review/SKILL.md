@@ -41,7 +41,7 @@ Here that means: set `BASE_SHA=$(git merge-base origin/main HEAD)` and `HEAD_SHA
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Prompt: `references/agents/code-reviewer.md` (the helper's instructions). Inputs: the review request, which is `review-request.md` in this skill's folder with its placeholders filled in:
+Prompt: `references/agents/code-reviewer.md` (the helper's instructions). Inputs: the review request, which is `assets/review-request.md` with its placeholders filled in:
 
 - `{WHAT_WAS_IMPLEMENTED}`: what you just built
 - `{PLAN_OR_REQUIREMENTS}` and `{PLAN_REFERENCE}`: what it should do (the plan task or the requirements)
