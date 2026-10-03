@@ -63,4 +63,20 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-Pending: the v4.0.0 smoke table (docs/releases/v4.0.0-smoke.md) fills this section.
+From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version grok 1.0.34 (3736acbc8658) [stable], last cell 2026-10-01.
+
+| Cell | State | Time | Reason |
+|------|-------|------|--------|
+| `discovery` | pass | 6s | 53 ab- skills once each in 3 location(s); the answer names ab-ship-pipeline |
+| `canary` | pass | 10s | final message names HARBOR-19 |
+| `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
+| `manual-only` | pass | 10s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `build` | fail | 1m19s | acceptance test failed: tabulate is not declared in pyproject.toml or requirements.txt (host exited 1) |
+| `helpers-off` | n/a | 0s | no helper switch on grok |
+| `effort` | n/a | 0s | no per-dispatch effort metadata on grok |
+| `review` | fail | 5s | no provenance record for ab-requesting-code-review; the review output does not name: eval, cli.py (host exited 1) |
+| `debug` | fail | 13s | no provenance record for ab-systematic-debugging; the test suite still fails (host exited 1) |
+| `team` | fail | 6s | no provenance record for ab-orchestrate; no .agent-blueprint/team/<run>/ledger.md (host exited 1) |
+| `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |
+
+A `fail` cell blocks the release until it passes or is confirmed as a vendor bug (then it renders `degraded (vendor bug)` with the upstream link; see `docs/releases/v4.0.0-checklist.md`).

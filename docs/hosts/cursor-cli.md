@@ -61,4 +61,19 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-Pending: the v4.0.0 smoke table (docs/releases/v4.0.0-smoke.md) fills this section.
+From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 2026.10.01-14929f9, last cell 2026-10-03.
+
+| Cell | State | Time | Reason |
+|------|-------|------|--------|
+| `discovery` | pass | 16s | 53 ab- skills once each in 8 location(s); the answer names ab-ship-pipeline |
+| `canary` | pass | 16s | final message names HARBOR-19 |
+| `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
+| `manual-only` | pass | 31s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `build` | pass | 30m21s | acceptance test passes (deps: tabulate>=0.9.0,<0.10) · helper steps: helper,helper,helper,helper,inline |
+| `helpers-off` | n/a | 0s | no helper switch on cursor-agent |
+| `effort` | n/a | 0s | no per-dispatch effort metadata on cursor-agent |
+| `review` | pass | 9m02s | the review names eval and cli.py · helper steps: helper |
+| `debug` | pass | 7m49s | suite passes; store.py fixed; regression test present · helper steps: helper |
+| `ship` | pass | 22m32s | published; pr create recorded; acceptance test passes (deps: tabulate) on the pushed branch |
+| `team` | pass | 9m15s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |
+| `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |

@@ -75,4 +75,19 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-Pending: the v4.0.0 smoke table (docs/releases/v4.0.0-smoke.md) fills this section.
+From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version codex-cli 0.155.1, last cell 2026-10-03.
+
+| Cell | State | Time | Reason |
+|------|-------|------|--------|
+| `discovery` | pass | 22s | 53 ab- skills once each in 10 location(s); the answer names ab-ship-pipeline |
+| `canary` | pass | 13s | final message names HARBOR-19 |
+| `hooks` | n/a | 0s | plugin hooks run only after trust on codex; the review cell covers the untrusted path (AE1) |
+| `manual-only` | pass | 13s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `build` | pass | 16m36s | acceptance test passes (deps: tabulate>=0.9) · helper steps: helper,helper,helper,helper |
+| `helpers-off` | n/a | 0s | no helper switch on codex |
+| `effort` | n/a | 0s | no per-dispatch effort metadata on codex |
+| `review` | pass | 8m07s | the review names eval and cli.py · helper steps: helper |
+| `debug` | pass | 2m38s | suite passes; store.py fixed; regression test present · helper steps: helper,helper |
+| `ship` | pass | 26m19s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch |
+| `team` | pass | 9m21s | ledger done; no-commit mode (4 changed files in the tree, commit-msg.md written); tests pass · helper steps: helper,helper,helper,helper,helper |
+| `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |

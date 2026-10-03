@@ -72,6 +72,10 @@ A host is a row in `skills/ab-ship-pipeline/scripts/hosts.sh` (KTD15): add it to
 
 A cell is a folder under `scenarios/<cell>/`: `apply.sh WORK` seeds the fresh copy (optional; `commit-message` names the seed commit), `skill` names the skill (optional; it drives the prompt reference and the provenance rule), `prompt.txt` holds the prompt with `{{SKILL_REF}}`, and `check.sh WORK BASE FINAL LOG REMOTE` decides the outcome (prints the reason; exit 0 passes). Add the name to `ALL_CELLS` in `run-smoke.sh` and, when the cell needs a host fact, a `cell_<name>` function there (as `hooks`, `helpers-off`, `effort`, `discovery` and `upgrade` do). Teach `fake-host.sh` the new prompt and add the assertion to `selftest.sh`.
 
+## The support notes
+
+`python3 tests/smoke/host-notes.py` rewrites the `## Smoke status` section at the end of every note under `docs/hosts/` from the JSON, one row per recorded cell; a host with no cells keeps the pending line. Run it after the table changes.
+
 ## Checking the harness without a host
 
 ```bash

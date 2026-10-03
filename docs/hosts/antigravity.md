@@ -62,4 +62,14 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-Pending: the v4.0.0 smoke table (docs/releases/v4.0.0-smoke.md) fills this section.
+From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 1.2.14, last cell 2026-10-01.
+
+| Cell | State | Time | Reason |
+|------|-------|------|--------|
+| `discovery` | fail | 0s | preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace. |
+| `canary` | fail | 0s | preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace. |
+| `hooks` | fail | 0s | preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace. |
+| `manual-only` | fail | 0s | preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace. |
+| `upgrade` | fail | 0s | preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace. |
+
+A `fail` cell blocks the release until it passes or is confirmed as a vendor bug (then it renders `degraded (vendor bug)` with the upstream link; see `docs/releases/v4.0.0-checklist.md`).

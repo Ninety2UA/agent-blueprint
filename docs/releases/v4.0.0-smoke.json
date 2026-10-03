@@ -122,6 +122,17 @@
     },
     "claude": {
       "cells": {
+        "build": {
+          "cost_usd": 12.9067,
+          "date": "2026-10-03T18:16:56Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-claude/20261003-195713/claude/build.log",
+          "reason": "acceptance test passes (deps: tabulate>=0.9) (host exited 1) \u00b7 helper steps: helper,helper,helper,helper",
+          "seconds": 1183,
+          "session": "35a2243b-cb1e-4ce0-b5d6-df2397456b39",
+          "state": "pass",
+          "tokens": 1663677
+        },
         "canary": {
           "cost_usd": 0.4173,
           "date": "2026-10-01T19:41:08Z",
@@ -133,6 +144,17 @@
           "state": "pass",
           "tokens": 31544
         },
+        "debug": {
+          "cost_usd": 2.0701,
+          "date": "2026-10-01T20:59:45Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/claude/debug.log",
+          "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper",
+          "seconds": 367,
+          "session": "1836602b-68cd-4e2a-b399-720bbd21fb08",
+          "state": "pass",
+          "tokens": 270933
+        },
         "discovery": {
           "cost_usd": 0.4179,
           "date": "2026-10-01T20:03:25Z",
@@ -143,6 +165,28 @@
           "session": "4d822986-736e-44ee-af85-b398be921c79",
           "state": "pass",
           "tokens": 31568
+        },
+        "effort": {
+          "cost_usd": null,
+          "date": "2026-10-03T18:16:56Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-claude/20261003-195713/claude/effort.log",
+          "reason": "session effort xhigh; 4 helper transcript(s) at the same effort",
+          "seconds": 0,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "helpers-off": {
+          "cost_usd": 7.0758,
+          "date": "2026-10-01T20:50:03Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/claude/helpers-off.log",
+          "reason": "acceptance test passes (deps: tabulate>=0.9) \u00b7 helper steps: inline,inline,inline,inline",
+          "seconds": 884,
+          "session": "a23e1672-51f9-484c-9bf6-cc7a3df8e3cf",
+          "state": "degraded-pass (inline)",
+          "tokens": 5198271
         },
         "hooks": {
           "cost_usd": null,
@@ -166,6 +210,28 @@
           "state": "pass",
           "tokens": 32194
         },
+        "review": {
+          "cost_usd": 2.7893,
+          "date": "2026-10-01T20:53:38Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/claude/review.log",
+          "reason": "the review names eval and cli.py \u00b7 helper steps: helper",
+          "seconds": 215,
+          "session": "0bf7baa3-e9a6-480b-a2da-53bf9f556f5c",
+          "state": "pass",
+          "tokens": 342925
+        },
+        "team": {
+          "cost_usd": 5.8296,
+          "date": "2026-10-01T21:09:56Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/claude/team.log",
+          "reason": "ledger done; 3 commits; tests pass \u00b7 helper steps: helper,helper,helper,helper,helper",
+          "seconds": 611,
+          "session": "71e4bda7-1bc7-4783-80a3-04e1a06ce399",
+          "state": "pass",
+          "tokens": 1420476
+        },
         "upgrade": {
           "cost_usd": null,
           "date": "2026-10-01T19:42:39Z",
@@ -182,6 +248,17 @@
     },
     "codex": {
       "cells": {
+        "build": {
+          "cost_usd": null,
+          "date": "2026-10-03T18:13:49Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/build.log",
+          "reason": "acceptance test passes (deps: tabulate>=0.9) \u00b7 helper steps: helper,helper,helper,helper",
+          "seconds": 996,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
         "canary": {
           "cost_usd": null,
           "date": "2026-10-01T19:41:21Z",
@@ -189,6 +266,17 @@
           "log": "tests/smoke/logs/20261001-214053/codex/canary.log",
           "reason": "final message names HARBOR-19",
           "seconds": 13,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "debug": {
+          "cost_usd": null,
+          "date": "2026-10-03T18:24:34Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/debug.log",
+          "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper,helper",
+          "seconds": 158,
           "session": "",
           "state": "pass",
           "tokens": null
@@ -202,6 +290,28 @@
           "seconds": 22,
           "session": "",
           "state": "pass",
+          "tokens": null
+        },
+        "effort": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:50:52Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/codex/effort.log",
+          "reason": "no per-dispatch effort metadata on codex",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "helpers-off": {
+          "cost_usd": null,
+          "date": "2026-10-03T19:00:45Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex-na/20261003-210045/codex/helpers-off.log",
+          "reason": "no helper switch on codex",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
           "tokens": null
         },
         "hooks": {
@@ -226,6 +336,39 @@
           "state": "pass",
           "tokens": null
         },
+        "review": {
+          "cost_usd": null,
+          "date": "2026-10-03T18:21:56Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/review.log",
+          "reason": "the review names eval and cli.py \u00b7 helper steps: helper",
+          "seconds": 487,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "ship": {
+          "cost_usd": null,
+          "date": "2026-10-03T18:50:53Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/ship.log",
+          "reason": "published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch",
+          "seconds": 1579,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "team": {
+          "cost_usd": null,
+          "date": "2026-10-03T19:00:14Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/team.log",
+          "reason": "ledger done; no-commit mode (4 changed files in the tree, commit-msg.md written); tests pass \u00b7 helper steps: helper,helper,helper,helper,helper",
+          "seconds": 561,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
         "upgrade": {
           "cost_usd": null,
           "date": "2026-10-01T19:42:56Z",
@@ -242,6 +385,17 @@
     },
     "cursor-agent": {
       "cells": {
+        "build": {
+          "cost_usd": null,
+          "date": "2026-10-03T18:27:36Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-cursor/20261003-195713/cursor-agent/build.log",
+          "reason": "acceptance test passes (deps: tabulate>=0.9.0,<0.10) \u00b7 helper steps: helper,helper,helper,helper,inline",
+          "seconds": 1821,
+          "session": "52f29817-7533-4d3c-bc87-1c845dbc5c2a",
+          "state": "pass",
+          "tokens": null
+        },
         "canary": {
           "cost_usd": null,
           "date": "2026-10-01T19:41:13Z",
@@ -250,6 +404,17 @@
           "reason": "final message names HARBOR-19",
           "seconds": 16,
           "session": "cd0c9341-64f7-4fe4-9ca3-6e96c9ae53aa",
+          "state": "pass",
+          "tokens": null
+        },
+        "debug": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:52:11Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/cursor-agent/debug.log",
+          "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper",
+          "seconds": 469,
+          "session": "596ec466-7586-4cbe-81c9-ef9910d5895b",
           "state": "pass",
           "tokens": null
         },
@@ -262,6 +427,28 @@
           "seconds": 16,
           "session": "5505a6c3-c3dd-4507-8619-a335d3328ba2",
           "state": "pass",
+          "tokens": null
+        },
+        "effort": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:35:20Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/cursor-agent/effort.log",
+          "reason": "no per-dispatch effort metadata on cursor-agent",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "helpers-off": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:35:20Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/cursor-agent/helpers-off.log",
+          "reason": "no helper switch on cursor-agent",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
           "tokens": null
         },
         "hooks": {
@@ -286,6 +473,39 @@
           "state": "pass",
           "tokens": null
         },
+        "review": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:44:22Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/cursor-agent/review.log",
+          "reason": "the review names eval and cli.py \u00b7 helper steps: helper",
+          "seconds": 542,
+          "session": "bdc53933-0e22-4404-8998-b92dad9391fe",
+          "state": "pass",
+          "tokens": null
+        },
+        "ship": {
+          "cost_usd": null,
+          "date": "2026-10-03T18:50:08Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-cursor/20261003-195713/cursor-agent/ship.log",
+          "reason": "published; pr create recorded; acceptance test passes (deps: tabulate) on the pushed branch",
+          "seconds": 1352,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "team": {
+          "cost_usd": null,
+          "date": "2026-10-01T21:01:26Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/cursor-agent/team.log",
+          "reason": "ledger done; 3 commits; tests pass \u00b7 helper steps: helper,helper,helper,helper,helper",
+          "seconds": 555,
+          "session": "d354fea7-5d00-464a-b949-25714fc628e7",
+          "state": "pass",
+          "tokens": null
+        },
         "upgrade": {
           "cost_usd": null,
           "date": "2026-10-01T19:46:11Z",
@@ -298,10 +518,21 @@
           "tokens": null
         }
       },
-      "version": "2026.09.10-fd3934a"
+      "version": "2026.10.01-14929f9"
     },
     "grok": {
       "cells": {
+        "build": {
+          "cost_usd": 0.4261,
+          "date": "2026-10-01T20:05:43Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/grok/build.log",
+          "reason": "acceptance test failed: tabulate is not declared in pyproject.toml or requirements.txt (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-build-iPTAPx",
+          "seconds": 79,
+          "session": "",
+          "state": "fail",
+          "tokens": 443580
+        },
         "canary": {
           "cost_usd": 0.1055,
           "date": "2026-10-01T19:41:08Z",
@@ -313,6 +544,17 @@
           "state": "pass",
           "tokens": 84794
         },
+        "debug": {
+          "cost_usd": 0.0882,
+          "date": "2026-10-01T20:06:01Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/grok/debug.log",
+          "reason": "no provenance record for ab-systematic-debugging; the test suite still fails (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-debug-MpwwDP",
+          "seconds": 13,
+          "session": "",
+          "state": "fail",
+          "tokens": 44518
+        },
         "discovery": {
           "cost_usd": 0.0829,
           "date": "2026-10-01T20:03:28Z",
@@ -323,6 +565,28 @@
           "session": "",
           "state": "pass",
           "tokens": 42346
+        },
+        "effort": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:05:43Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/grok/effort.log",
+          "reason": "no per-dispatch effort metadata on grok",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "helpers-off": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:05:43Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/grok/helpers-off.log",
+          "reason": "no helper switch on grok",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
         },
         "hooks": {
           "cost_usd": null,
@@ -345,6 +609,28 @@
           "session": "",
           "state": "pass",
           "tokens": 42842
+        },
+        "review": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:05:48Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/grok/review.log",
+          "reason": "no provenance record for ab-requesting-code-review; the review output does not name: eval, cli.py (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-review-d6r7KU",
+          "seconds": 5,
+          "session": "",
+          "state": "fail",
+          "tokens": null
+        },
+        "team": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:06:07Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/grok/team.log",
+          "reason": "no provenance record for ab-orchestrate; no .agent-blueprint/team/<run>/ledger.md (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-team-vbBrnn",
+          "seconds": 6,
+          "session": "",
+          "state": "fail",
+          "tokens": null
         },
         "upgrade": {
           "cost_usd": null,
@@ -543,7 +829,76 @@
         "grok"
       ],
       "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "build",
+        "debug",
+        "effort",
+        "helpers-off",
+        "review",
+        "team"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude,codex,cursor-agent,grok --cell review,debug,build,helpers-off,effort,team --plugin-dir . --timeout 1800 --jobs 4",
+      "date": "2026-10-01 21:09 UTC",
+      "hosts": [
+        "claude",
+        "codex",
+        "cursor-agent",
+        "grok"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "build",
+        "debug",
+        "review",
+        "ship",
+        "team"
+      ],
+      "command": "",
+      "date": "2026-10-03 19:00 UTC",
+      "hosts": [
+        "codex"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "build",
+        "ship"
+      ],
+      "command": "",
+      "date": "2026-10-03 19:00 UTC",
+      "hosts": [
+        "cursor-agent"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "build",
+        "effort"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude --cell build,effort --plugin-dir .",
+      "date": "2026-10-03 19:00 UTC",
+      "hosts": [
+        "claude"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "helpers-off"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host codex --cell helpers-off --plugin-dir .",
+      "date": "2026-10-03 19:00 UTC",
+      "hosts": [
+        "codex"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
     }
   ],
-  "updated": "2026-10-01 20:04 UTC"
+  "updated": "2026-10-03 19:00 UTC"
 }
