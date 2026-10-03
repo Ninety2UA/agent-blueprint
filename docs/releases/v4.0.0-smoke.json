@@ -1,931 +1,953 @@
 {
- "hosts": {
-  "agy": {
-   "cells": {
-    "canary": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:54Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/agy/canary.log",
-     "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
-     "seconds": 0,
-     "session": "",
-     "state": "fail",
-     "tokens": null
+  "hosts": {
+    "agy": {
+      "cells": {
+        "canary": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:54Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/agy/canary.log",
+          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
+          "seconds": 0,
+          "session": "",
+          "state": "fail",
+          "tokens": null
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:54Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/agy/discovery.log",
+          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
+          "seconds": 0,
+          "session": "",
+          "state": "fail",
+          "tokens": null
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/agy/hooks.log",
+          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
+          "seconds": 0,
+          "session": "",
+          "state": "fail",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/agy/manual-only.log",
+          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
+          "seconds": 0,
+          "session": "",
+          "state": "fail",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/agy/upgrade.log",
+          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
+          "seconds": 0,
+          "session": "",
+          "state": "fail",
+          "tokens": null
+        }
+      },
+      "version": "1.2.14"
     },
-    "discovery": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:54Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/agy/discovery.log",
-     "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
-     "seconds": 0,
-     "session": "",
-     "state": "fail",
-     "tokens": null
+    "amp": {
+      "cells": {
+        "canary": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:57Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/amp/canary.log",
+          "reason": "amp not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:57Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/amp/discovery.log",
+          "reason": "amp not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:57Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/amp/hooks.log",
+          "reason": "amp not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:57Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/amp/manual-only.log",
+          "reason": "amp not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:57Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/amp/upgrade.log",
+          "reason": "amp not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        }
+      },
+      "version": "not installed"
     },
-    "hooks": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:55Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/agy/hooks.log",
-     "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
-     "seconds": 0,
-     "session": "",
-     "state": "fail",
-     "tokens": null
+    "claude": {
+      "cells": {
+        "build": {
+          "cost_usd": 12.9067,
+          "date": "2026-10-03T18:16:56Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-claude/20261003-195713/claude/build.log",
+          "reason": "acceptance test passes (deps: tabulate>=0.9) (host exited 1) \u00b7 helper steps: helper,helper,helper,helper",
+          "seconds": 1183,
+          "session": "35a2243b-cb1e-4ce0-b5d6-df2397456b39",
+          "state": "pass",
+          "tokens": 1663677
+        },
+        "canary": {
+          "cost_usd": 0.4173,
+          "date": "2026-10-01T19:41:08Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/claude/canary.log",
+          "reason": "final message names HARBOR-19",
+          "seconds": 7,
+          "session": "5bcdb576-f82c-4f58-9537-a4070449168a",
+          "state": "pass",
+          "tokens": 31544
+        },
+        "debug": {
+          "cost_usd": 2.0701,
+          "date": "2026-10-01T20:59:45Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/claude/debug.log",
+          "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper",
+          "seconds": 367,
+          "session": "1836602b-68cd-4e2a-b399-720bbd21fb08",
+          "state": "pass",
+          "tokens": 270933
+        },
+        "discovery": {
+          "cost_usd": 0.4179,
+          "date": "2026-10-01T20:03:25Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/claude/discovery.log",
+          "reason": "53 ab- skills once each in 7 location(s); the answer names ab-ship-pipeline",
+          "seconds": 4,
+          "session": "4d822986-736e-44ee-af85-b398be921c79",
+          "state": "pass",
+          "tokens": 31568
+        },
+        "effort": {
+          "cost_usd": null,
+          "date": "2026-10-03T18:16:56Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-claude/20261003-195713/claude/effort.log",
+          "reason": "session effort xhigh; 4 helper transcript(s) at the same effort",
+          "seconds": 0,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "helpers-off": {
+          "cost_usd": 7.0758,
+          "date": "2026-10-01T20:50:03Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/claude/helpers-off.log",
+          "reason": "acceptance test passes (deps: tabulate>=0.9) \u00b7 helper steps: inline,inline,inline,inline",
+          "seconds": 884,
+          "session": "a23e1672-51f9-484c-9bf6-cc7a3df8e3cf",
+          "state": "degraded-pass (inline)",
+          "tokens": 5198271
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:41:08Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/claude/hooks.log",
+          "reason": "handlers wrote the trace: session-start.js x1, ship-loop.sh x1 (from the canary run)",
+          "seconds": 0,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": 0.4483,
+          "date": "2026-10-01T20:03:34Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/claude/manual-only.log",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 9,
+          "session": "7289ddf0-e27f-476a-a0d2-d4b1d661147f",
+          "state": "pass",
+          "tokens": 32194
+        },
+        "review": {
+          "cost_usd": 2.7893,
+          "date": "2026-10-01T20:53:38Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/claude/review.log",
+          "reason": "the review names eval and cli.py \u00b7 helper steps: helper",
+          "seconds": 215,
+          "session": "0bf7baa3-e9a6-480b-a2da-53bf9f556f5c",
+          "state": "pass",
+          "tokens": 342925
+        },
+        "ship": {
+          "cost_usd": 40.8497,
+          "date": "2026-10-03T20:35:20Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-claude2/20261003-204548/claude/ship.log",
+          "reason": "published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch",
+          "seconds": 6571,
+          "session": "",
+          "state": "pass",
+          "tokens": 5113362
+        },
+        "team": {
+          "cost_usd": 5.8296,
+          "date": "2026-10-01T21:09:56Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/claude/team.log",
+          "reason": "ledger done; 3 commits; tests pass \u00b7 helper steps: helper,helper,helper,helper,helper",
+          "seconds": 611,
+          "session": "71e4bda7-1bc7-4783-80a3-04e1a06ce399",
+          "state": "pass",
+          "tokens": 1420476
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:42:39Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/claude/upgrade.log",
+          "reason": "14 checks passed: both plugin ids listed, detect-v3.sh reported and removed the v3 traces, the session-start warning names the v3 plugin",
+          "seconds": 3,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        }
+      },
+      "version": "2.1.284 (Claude Code)"
     },
-    "manual-only": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:55Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/agy/manual-only.log",
-     "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
-     "seconds": 0,
-     "session": "",
-     "state": "fail",
-     "tokens": null
+    "codex": {
+      "cells": {
+        "build": {
+          "cost_usd": null,
+          "date": "2026-10-03T18:13:49Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/build.log",
+          "reason": "acceptance test passes (deps: tabulate>=0.9) \u00b7 helper steps: helper,helper,helper,helper",
+          "seconds": 996,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "canary": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:41:21Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/codex/canary.log",
+          "reason": "final message names HARBOR-19",
+          "seconds": 13,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "debug": {
+          "cost_usd": null,
+          "date": "2026-10-03T18:24:34Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/debug.log",
+          "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper,helper",
+          "seconds": 158,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:03:42Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/codex/discovery.log",
+          "reason": "53 ab- skills once each in 10 location(s); the answer names ab-ship-pipeline",
+          "seconds": 22,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "effort": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:50:52Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/codex/effort.log",
+          "reason": "no per-dispatch effort metadata on codex",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "helpers-off": {
+          "cost_usd": null,
+          "date": "2026-10-03T19:00:45Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex-na/20261003-210045/codex/helpers-off.log",
+          "reason": "no helper switch on codex",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:41:21Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/codex/hooks.log",
+          "reason": "plugin hooks run only after trust on codex; the review cell covers the untrusted path (AE1)",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:03:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/codex/manual-only.log",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 13,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "review": {
+          "cost_usd": null,
+          "date": "2026-10-03T18:21:56Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/review.log",
+          "reason": "the review names eval and cli.py \u00b7 helper steps: helper",
+          "seconds": 487,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "ship": {
+          "cost_usd": null,
+          "date": "2026-10-03T18:50:53Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/ship.log",
+          "reason": "published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch",
+          "seconds": 1579,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "team": {
+          "cost_usd": null,
+          "date": "2026-10-03T19:00:14Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/team.log",
+          "reason": "ledger done; no-commit mode (4 changed files in the tree, commit-msg.md written); tests pass \u00b7 helper steps: helper,helper,helper,helper,helper",
+          "seconds": 561,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:42:56Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/codex/upgrade.log",
+          "reason": "the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4)",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        }
+      },
+      "version": "codex-cli 0.155.1"
     },
-    "upgrade": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:55Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/agy/upgrade.log",
-     "reason": "preflight: agy: allowNonWorkspaceAccess is not true in /Users/dbenger/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
-     "seconds": 0,
-     "session": "",
-     "state": "fail",
-     "tokens": null
+    "cursor-agent": {
+      "cells": {
+        "build": {
+          "cost_usd": null,
+          "date": "2026-10-03T18:27:36Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-cursor/20261003-195713/cursor-agent/build.log",
+          "reason": "acceptance test passes (deps: tabulate>=0.9.0,<0.10) \u00b7 helper steps: helper,helper,helper,helper,inline",
+          "seconds": 1821,
+          "session": "52f29817-7533-4d3c-bc87-1c845dbc5c2a",
+          "state": "pass",
+          "tokens": null
+        },
+        "canary": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:41:13Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/cursor-agent/canary.log",
+          "reason": "final message names HARBOR-19",
+          "seconds": 16,
+          "session": "cd0c9341-64f7-4fe4-9ca3-6e96c9ae53aa",
+          "state": "pass",
+          "tokens": null
+        },
+        "debug": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:52:11Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/cursor-agent/debug.log",
+          "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper",
+          "seconds": 469,
+          "session": "596ec466-7586-4cbe-81c9-ef9910d5895b",
+          "state": "pass",
+          "tokens": null
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:03:37Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/cursor-agent/discovery.log",
+          "reason": "53 ab- skills once each in 8 location(s); the answer names ab-ship-pipeline",
+          "seconds": 16,
+          "session": "5505a6c3-c3dd-4507-8619-a335d3328ba2",
+          "state": "pass",
+          "tokens": null
+        },
+        "effort": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:35:20Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/cursor-agent/effort.log",
+          "reason": "no per-dispatch effort metadata on cursor-agent",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "helpers-off": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:35:20Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/cursor-agent/helpers-off.log",
+          "reason": "no helper switch on cursor-agent",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:41:13Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/cursor-agent/hooks.log",
+          "reason": "no blueprint hook fired (from the canary run)",
+          "seconds": 0,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:04:08Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/cursor-agent/manual-only.log",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 31,
+          "session": "cc0acc49-862c-48d8-8850-5d1e624a6864",
+          "state": "pass",
+          "tokens": null
+        },
+        "review": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:44:22Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/cursor-agent/review.log",
+          "reason": "the review names eval and cli.py \u00b7 helper steps: helper",
+          "seconds": 542,
+          "session": "bdc53933-0e22-4404-8998-b92dad9391fe",
+          "state": "pass",
+          "tokens": null
+        },
+        "ship": {
+          "cost_usd": null,
+          "date": "2026-10-03T18:50:08Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-cursor/20261003-195713/cursor-agent/ship.log",
+          "reason": "published; pr create recorded; acceptance test passes (deps: tabulate) on the pushed branch",
+          "seconds": 1352,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "team": {
+          "cost_usd": null,
+          "date": "2026-10-01T21:01:26Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/cursor-agent/team.log",
+          "reason": "ledger done; 3 commits; tests pass \u00b7 helper steps: helper,helper,helper,helper,helper",
+          "seconds": 555,
+          "session": "d354fea7-5d00-464a-b949-25714fc628e7",
+          "state": "pass",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:46:11Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/cursor-agent/upgrade.log",
+          "reason": "the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4)",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        }
+      },
+      "version": "2026.10.01-14929f9"
+    },
+    "grok": {
+      "cells": {
+        "build": {
+          "cost_usd": null,
+          "date": "2026-10-03T19:07:55Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/build.log",
+          "reason": "the host refused the run: usage or rate limit reached (Grok free tier). acceptance test failed: tabulate is not declared in pyproject.toml or requirements.txt (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-build-bkzyPM",
+          "seconds": 390,
+          "session": "",
+          "state": "fail",
+          "tokens": 1067665
+        },
+        "canary": {
+          "cost_usd": 0.1055,
+          "date": "2026-10-01T19:41:08Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/grok/canary.log",
+          "reason": "final message names HARBOR-19",
+          "seconds": 10,
+          "session": "",
+          "state": "pass",
+          "tokens": 84794
+        },
+        "debug": {
+          "cost_usd": 0.0881,
+          "date": "2026-10-03T19:08:19Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/debug.log",
+          "reason": "the host refused the run: usage or rate limit reached (Grok free tier). no provenance record for ab-systematic-debugging; the test suite still fails (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-debug-1M76wa",
+          "seconds": 12,
+          "session": "",
+          "state": "fail",
+          "tokens": 44483
+        },
+        "discovery": {
+          "cost_usd": 0.0829,
+          "date": "2026-10-01T20:03:28Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/grok/discovery.log",
+          "reason": "53 ab- skills once each in 3 location(s); the answer names ab-ship-pipeline",
+          "seconds": 6,
+          "session": "",
+          "state": "pass",
+          "tokens": 42346
+        },
+        "effort": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:05:43Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/grok/effort.log",
+          "reason": "no per-dispatch effort metadata on grok",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "helpers-off": {
+          "cost_usd": null,
+          "date": "2026-10-01T20:05:43Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220423/grok/helpers-off.log",
+          "reason": "no helper switch on grok",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:41:09Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/grok/hooks.log",
+          "reason": "no blueprint hook fired (from the canary run)",
+          "seconds": 0,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": 0.0865,
+          "date": "2026-10-01T20:03:38Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-220320/grok/manual-only.log",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 10,
+          "session": "",
+          "state": "pass",
+          "tokens": 42842
+        },
+        "review": {
+          "cost_usd": null,
+          "date": "2026-10-03T19:08:07Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/review.log",
+          "reason": "the host refused the run: usage or rate limit reached (Grok free tier). no provenance record for ab-requesting-code-review; the host refused the run: usage or rate limit reached. the review output does not name: eval, cli.py (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-review-yszwlD",
+          "seconds": 12,
+          "session": "",
+          "state": "fail",
+          "tokens": null
+        },
+        "ship": {
+          "cost_usd": null,
+          "date": "2026-10-03T19:12:12Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/ship.log",
+          "reason": "the host refused the run: usage or rate limit reached (Grok free tier). runner exit 3:   status: needs-human \u2014 the host failed 6 times in a row with a transient error (see /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-ship-x3czvn/state the runner did not report a publish (see the log) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-ship-x3czvn",
+          "seconds": 233,
+          "session": "",
+          "state": "fail",
+          "tokens": null
+        },
+        "team": {
+          "cost_usd": null,
+          "date": "2026-10-03T19:12:18Z",
+          "link": "",
+          "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/team.log",
+          "reason": "the host refused the run: usage or rate limit reached (Grok free tier). no provenance record for ab-orchestrate; the host refused the run: usage or rate limit reached. no .agent-blueprint/team/<run>/ledger.md (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-team-0cM0rQ",
+          "seconds": 6,
+          "session": "",
+          "state": "fail",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:42:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/grok/upgrade.log",
+          "reason": "the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4)",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        }
+      },
+      "version": "grok 1.0.34 (3736acbc8658) [stable]"
+    },
+    "hermes": {
+      "cells": {
+        "canary": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:56Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/hermes/canary.log",
+          "reason": "hermes not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:56Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/hermes/discovery.log",
+          "reason": "hermes not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:56Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/hermes/hooks.log",
+          "reason": "hermes not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:56Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/hermes/manual-only.log",
+          "reason": "hermes not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:57Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/hermes/upgrade.log",
+          "reason": "hermes not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        }
+      },
+      "version": "not installed"
+    },
+    "pi": {
+      "cells": {
+        "canary": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/pi/canary.log",
+          "reason": "pi not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/pi/discovery.log",
+          "reason": "pi not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/pi/hooks.log",
+          "reason": "pi not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/pi/manual-only.log",
+          "reason": "pi not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-10-01T19:40:55Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261001-214053/pi/upgrade.log",
+          "reason": "pi not on PATH",
+          "seconds": 0,
+          "session": "",
+          "state": "not-installed",
+          "tokens": null
+        }
+      },
+      "version": "not installed"
     }
-   },
-   "version": "1.2.14"
   },
-  "amp": {
-   "cells": {
-    "canary": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:57Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/amp/canary.log",
-     "reason": "amp not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
+  "invocations": [],
+  "release": "4.0.0",
+  "runs": [
+    {
+      "cells": [
+        "canary",
+        "hooks",
+        "upgrade"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude --cell canary,hooks,upgrade --plugin-dir . --v3-dir /private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/u15-v3 --timeout 600",
+      "date": "2026-09-30 23:22 UTC",
+      "hosts": [
+        "claude"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
     },
-    "discovery": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:57Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/amp/discovery.log",
-     "reason": "amp not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
+    {
+      "cells": [
+        "upgrade"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude --cell upgrade --plugin-dir . --v3-dir /private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/u15-v3",
+      "date": "2026-09-30 23:23 UTC",
+      "hosts": [
+        "claude"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
     },
-    "hooks": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:57Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/amp/hooks.log",
-     "reason": "amp not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
+    {
+      "cells": [
+        "canary",
+        "discovery",
+        "hooks",
+        "manual-only",
+        "upgrade"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude,codex,cursor-agent,agy,grok,pi,hermes,amp --cell discovery,canary,hooks,manual-only,upgrade --plugin-dir . --v3-dir /private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/u15-v3 --timeout 600 --jobs 5",
+      "date": "2026-10-01 19:46 UTC",
+      "hosts": [
+        "agy",
+        "amp",
+        "claude",
+        "codex",
+        "cursor-agent",
+        "grok",
+        "hermes",
+        "pi"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
     },
-    "manual-only": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:57Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/amp/manual-only.log",
-     "reason": "amp not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
+    {
+      "cells": [
+        "discovery",
+        "manual-only"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude,codex,cursor-agent,grok --cell discovery,manual-only --plugin-dir . --timeout 600 --jobs 4",
+      "date": "2026-10-01 20:04 UTC",
+      "hosts": [
+        "claude",
+        "codex",
+        "cursor-agent",
+        "grok"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
     },
-    "upgrade": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:57Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/amp/upgrade.log",
-     "reason": "amp not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
+    {
+      "cells": [
+        "build",
+        "debug",
+        "effort",
+        "helpers-off",
+        "review",
+        "team"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude,codex,cursor-agent,grok --cell review,debug,build,helpers-off,effort,team --plugin-dir . --timeout 1800 --jobs 4",
+      "date": "2026-10-01 21:09 UTC",
+      "hosts": [
+        "claude",
+        "codex",
+        "cursor-agent",
+        "grok"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "build",
+        "debug",
+        "review",
+        "ship",
+        "team"
+      ],
+      "command": "",
+      "date": "2026-10-03 19:00 UTC",
+      "hosts": [
+        "codex"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "build",
+        "ship"
+      ],
+      "command": "",
+      "date": "2026-10-03 19:00 UTC",
+      "hosts": [
+        "cursor-agent"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "build",
+        "effort"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude --cell build,effort --plugin-dir .",
+      "date": "2026-10-03 19:00 UTC",
+      "hosts": [
+        "claude"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "helpers-off"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host codex --cell helpers-off --plugin-dir .",
+      "date": "2026-10-03 19:00 UTC",
+      "hosts": [
+        "codex"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "build",
+        "debug",
+        "review",
+        "ship",
+        "team"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host grok --cell build,review,debug,team,ship --plugin-dir .",
+      "date": "2026-10-03 19:12 UTC",
+      "hosts": [
+        "grok"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "ship"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude --cell ship --plugin-dir .",
+      "date": "2026-10-03 20:40 UTC",
+      "hosts": [
+        "claude"
+      ],
+      "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
     }
-   },
-   "version": "not installed"
-  },
-  "claude": {
-   "cells": {
-    "build": {
-     "cost_usd": 12.9067,
-     "date": "2026-10-03T18:16:56Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-claude/20261003-195713/claude/build.log",
-     "reason": "acceptance test passes (deps: tabulate>=0.9) (host exited 1) \u00b7 helper steps: helper,helper,helper,helper",
-     "seconds": 1183,
-     "session": "35a2243b-cb1e-4ce0-b5d6-df2397456b39",
-     "state": "pass",
-     "tokens": 1663677
-    },
-    "canary": {
-     "cost_usd": 0.4173,
-     "date": "2026-10-01T19:41:08Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/claude/canary.log",
-     "reason": "final message names HARBOR-19",
-     "seconds": 7,
-     "session": "5bcdb576-f82c-4f58-9537-a4070449168a",
-     "state": "pass",
-     "tokens": 31544
-    },
-    "debug": {
-     "cost_usd": 2.0701,
-     "date": "2026-10-01T20:59:45Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220423/claude/debug.log",
-     "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper",
-     "seconds": 367,
-     "session": "1836602b-68cd-4e2a-b399-720bbd21fb08",
-     "state": "pass",
-     "tokens": 270933
-    },
-    "discovery": {
-     "cost_usd": 0.4179,
-     "date": "2026-10-01T20:03:25Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220320/claude/discovery.log",
-     "reason": "53 ab- skills once each in 7 location(s); the answer names ab-ship-pipeline",
-     "seconds": 4,
-     "session": "4d822986-736e-44ee-af85-b398be921c79",
-     "state": "pass",
-     "tokens": 31568
-    },
-    "effort": {
-     "cost_usd": null,
-     "date": "2026-10-03T18:16:56Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-claude/20261003-195713/claude/effort.log",
-     "reason": "session effort xhigh; 4 helper transcript(s) at the same effort",
-     "seconds": 0,
-     "session": "",
-     "state": "pass",
-     "tokens": null
-    },
-    "helpers-off": {
-     "cost_usd": 7.0758,
-     "date": "2026-10-01T20:50:03Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220423/claude/helpers-off.log",
-     "reason": "acceptance test passes (deps: tabulate>=0.9) \u00b7 helper steps: inline,inline,inline,inline",
-     "seconds": 884,
-     "session": "a23e1672-51f9-484c-9bf6-cc7a3df8e3cf",
-     "state": "degraded-pass (inline)",
-     "tokens": 5198271
-    },
-    "hooks": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:41:08Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/claude/hooks.log",
-     "reason": "handlers wrote the trace: session-start.js x1, ship-loop.sh x1 (from the canary run)",
-     "seconds": 0,
-     "session": "",
-     "state": "pass",
-     "tokens": null
-    },
-    "manual-only": {
-     "cost_usd": 0.4483,
-     "date": "2026-10-01T20:03:34Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220320/claude/manual-only.log",
-     "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
-     "seconds": 9,
-     "session": "7289ddf0-e27f-476a-a0d2-d4b1d661147f",
-     "state": "pass",
-     "tokens": 32194
-    },
-    "review": {
-     "cost_usd": 2.7893,
-     "date": "2026-10-01T20:53:38Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220423/claude/review.log",
-     "reason": "the review names eval and cli.py \u00b7 helper steps: helper",
-     "seconds": 215,
-     "session": "0bf7baa3-e9a6-480b-a2da-53bf9f556f5c",
-     "state": "pass",
-     "tokens": 342925
-    },
-    "team": {
-     "cost_usd": 5.8296,
-     "date": "2026-10-01T21:09:56Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220423/claude/team.log",
-     "reason": "ledger done; 3 commits; tests pass \u00b7 helper steps: helper,helper,helper,helper,helper",
-     "seconds": 611,
-     "session": "71e4bda7-1bc7-4783-80a3-04e1a06ce399",
-     "state": "pass",
-     "tokens": 1420476
-    },
-    "upgrade": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:42:39Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/claude/upgrade.log",
-     "reason": "14 checks passed: both plugin ids listed, detect-v3.sh reported and removed the v3 traces, the session-start warning names the v3 plugin",
-     "seconds": 3,
-     "session": "",
-     "state": "pass",
-     "tokens": null
-    }
-   },
-   "version": "2.1.284 (Claude Code)"
-  },
-  "codex": {
-   "cells": {
-    "build": {
-     "cost_usd": null,
-     "date": "2026-10-03T18:13:49Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/build.log",
-     "reason": "acceptance test passes (deps: tabulate>=0.9) \u00b7 helper steps: helper,helper,helper,helper",
-     "seconds": 996,
-     "session": "",
-     "state": "pass",
-     "tokens": null
-    },
-    "canary": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:41:21Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/codex/canary.log",
-     "reason": "final message names HARBOR-19",
-     "seconds": 13,
-     "session": "",
-     "state": "pass",
-     "tokens": null
-    },
-    "debug": {
-     "cost_usd": null,
-     "date": "2026-10-03T18:24:34Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/debug.log",
-     "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper,helper",
-     "seconds": 158,
-     "session": "",
-     "state": "pass",
-     "tokens": null
-    },
-    "discovery": {
-     "cost_usd": null,
-     "date": "2026-10-01T20:03:42Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220320/codex/discovery.log",
-     "reason": "53 ab- skills once each in 10 location(s); the answer names ab-ship-pipeline",
-     "seconds": 22,
-     "session": "",
-     "state": "pass",
-     "tokens": null
-    },
-    "effort": {
-     "cost_usd": null,
-     "date": "2026-10-01T20:50:52Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220423/codex/effort.log",
-     "reason": "no per-dispatch effort metadata on codex",
-     "seconds": 0,
-     "session": "",
-     "state": "n/a",
-     "tokens": null
-    },
-    "helpers-off": {
-     "cost_usd": null,
-     "date": "2026-10-03T19:00:45Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex-na/20261003-210045/codex/helpers-off.log",
-     "reason": "no helper switch on codex",
-     "seconds": 0,
-     "session": "",
-     "state": "n/a",
-     "tokens": null
-    },
-    "hooks": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:41:21Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/codex/hooks.log",
-     "reason": "plugin hooks run only after trust on codex; the review cell covers the untrusted path (AE1)",
-     "seconds": 0,
-     "session": "",
-     "state": "n/a",
-     "tokens": null
-    },
-    "manual-only": {
-     "cost_usd": null,
-     "date": "2026-10-01T20:03:55Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220320/codex/manual-only.log",
-     "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
-     "seconds": 13,
-     "session": "",
-     "state": "pass",
-     "tokens": null
-    },
-    "review": {
-     "cost_usd": null,
-     "date": "2026-10-03T18:21:56Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/review.log",
-     "reason": "the review names eval and cli.py \u00b7 helper steps: helper",
-     "seconds": 487,
-     "session": "",
-     "state": "pass",
-     "tokens": null
-    },
-    "ship": {
-     "cost_usd": null,
-     "date": "2026-10-03T18:50:53Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/ship.log",
-     "reason": "published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch",
-     "seconds": 1579,
-     "session": "",
-     "state": "pass",
-     "tokens": null
-    },
-    "team": {
-     "cost_usd": null,
-     "date": "2026-10-03T19:00:14Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-codex/20261003-195713/codex/team.log",
-     "reason": "ledger done; no-commit mode (4 changed files in the tree, commit-msg.md written); tests pass \u00b7 helper steps: helper,helper,helper,helper,helper",
-     "seconds": 561,
-     "session": "",
-     "state": "pass",
-     "tokens": null
-    },
-    "upgrade": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:42:56Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/codex/upgrade.log",
-     "reason": "the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4)",
-     "seconds": 0,
-     "session": "",
-     "state": "n/a",
-     "tokens": null
-    }
-   },
-   "version": "codex-cli 0.155.1"
-  },
-  "cursor-agent": {
-   "cells": {
-    "build": {
-     "cost_usd": null,
-     "date": "2026-10-03T18:27:36Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-cursor/20261003-195713/cursor-agent/build.log",
-     "reason": "acceptance test passes (deps: tabulate>=0.9.0,<0.10) \u00b7 helper steps: helper,helper,helper,helper,inline",
-     "seconds": 1821,
-     "session": "52f29817-7533-4d3c-bc87-1c845dbc5c2a",
-     "state": "pass",
-     "tokens": null
-    },
-    "canary": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:41:13Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/cursor-agent/canary.log",
-     "reason": "final message names HARBOR-19",
-     "seconds": 16,
-     "session": "cd0c9341-64f7-4fe4-9ca3-6e96c9ae53aa",
-     "state": "pass",
-     "tokens": null
-    },
-    "debug": {
-     "cost_usd": null,
-     "date": "2026-10-01T20:52:11Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220423/cursor-agent/debug.log",
-     "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper",
-     "seconds": 469,
-     "session": "596ec466-7586-4cbe-81c9-ef9910d5895b",
-     "state": "pass",
-     "tokens": null
-    },
-    "discovery": {
-     "cost_usd": null,
-     "date": "2026-10-01T20:03:37Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220320/cursor-agent/discovery.log",
-     "reason": "53 ab- skills once each in 8 location(s); the answer names ab-ship-pipeline",
-     "seconds": 16,
-     "session": "5505a6c3-c3dd-4507-8619-a335d3328ba2",
-     "state": "pass",
-     "tokens": null
-    },
-    "effort": {
-     "cost_usd": null,
-     "date": "2026-10-01T20:35:20Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220423/cursor-agent/effort.log",
-     "reason": "no per-dispatch effort metadata on cursor-agent",
-     "seconds": 0,
-     "session": "",
-     "state": "n/a",
-     "tokens": null
-    },
-    "helpers-off": {
-     "cost_usd": null,
-     "date": "2026-10-01T20:35:20Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220423/cursor-agent/helpers-off.log",
-     "reason": "no helper switch on cursor-agent",
-     "seconds": 0,
-     "session": "",
-     "state": "n/a",
-     "tokens": null
-    },
-    "hooks": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:41:13Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/cursor-agent/hooks.log",
-     "reason": "no blueprint hook fired (from the canary run)",
-     "seconds": 0,
-     "session": "",
-     "state": "pass",
-     "tokens": null
-    },
-    "manual-only": {
-     "cost_usd": null,
-     "date": "2026-10-01T20:04:08Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220320/cursor-agent/manual-only.log",
-     "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
-     "seconds": 31,
-     "session": "cc0acc49-862c-48d8-8850-5d1e624a6864",
-     "state": "pass",
-     "tokens": null
-    },
-    "review": {
-     "cost_usd": null,
-     "date": "2026-10-01T20:44:22Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220423/cursor-agent/review.log",
-     "reason": "the review names eval and cli.py \u00b7 helper steps: helper",
-     "seconds": 542,
-     "session": "bdc53933-0e22-4404-8998-b92dad9391fe",
-     "state": "pass",
-     "tokens": null
-    },
-    "ship": {
-     "cost_usd": null,
-     "date": "2026-10-03T18:50:08Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-cursor/20261003-195713/cursor-agent/ship.log",
-     "reason": "published; pr create recorded; acceptance test passes (deps: tabulate) on the pushed branch",
-     "seconds": 1352,
-     "session": "",
-     "state": "pass",
-     "tokens": null
-    },
-    "team": {
-     "cost_usd": null,
-     "date": "2026-10-01T21:01:26Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220423/cursor-agent/team.log",
-     "reason": "ledger done; 3 commits; tests pass \u00b7 helper steps: helper,helper,helper,helper,helper",
-     "seconds": 555,
-     "session": "d354fea7-5d00-464a-b949-25714fc628e7",
-     "state": "pass",
-     "tokens": null
-    },
-    "upgrade": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:46:11Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/cursor-agent/upgrade.log",
-     "reason": "the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4)",
-     "seconds": 0,
-     "session": "",
-     "state": "n/a",
-     "tokens": null
-    }
-   },
-   "version": "2026.10.01-14929f9"
-  },
-  "grok": {
-   "cells": {
-    "build": {
-     "cost_usd": null,
-     "date": "2026-10-03T19:07:55Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/build.log",
-     "reason": "the host refused the run: usage or rate limit reached (Grok free tier). acceptance test failed: tabulate is not declared in pyproject.toml or requirements.txt (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-build-bkzyPM",
-     "seconds": 390,
-     "session": "",
-     "state": "fail",
-     "tokens": 1067665
-    },
-    "canary": {
-     "cost_usd": 0.1055,
-     "date": "2026-10-01T19:41:08Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/grok/canary.log",
-     "reason": "final message names HARBOR-19",
-     "seconds": 10,
-     "session": "",
-     "state": "pass",
-     "tokens": 84794
-    },
-    "debug": {
-     "cost_usd": 0.0881,
-     "date": "2026-10-03T19:08:19Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/debug.log",
-     "reason": "the host refused the run: usage or rate limit reached (Grok free tier). no provenance record for ab-systematic-debugging; the test suite still fails (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-debug-1M76wa",
-     "seconds": 12,
-     "session": "",
-     "state": "fail",
-     "tokens": 44483
-    },
-    "discovery": {
-     "cost_usd": 0.0829,
-     "date": "2026-10-01T20:03:28Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220320/grok/discovery.log",
-     "reason": "53 ab- skills once each in 3 location(s); the answer names ab-ship-pipeline",
-     "seconds": 6,
-     "session": "",
-     "state": "pass",
-     "tokens": 42346
-    },
-    "effort": {
-     "cost_usd": null,
-     "date": "2026-10-01T20:05:43Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220423/grok/effort.log",
-     "reason": "no per-dispatch effort metadata on grok",
-     "seconds": 0,
-     "session": "",
-     "state": "n/a",
-     "tokens": null
-    },
-    "helpers-off": {
-     "cost_usd": null,
-     "date": "2026-10-01T20:05:43Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220423/grok/helpers-off.log",
-     "reason": "no helper switch on grok",
-     "seconds": 0,
-     "session": "",
-     "state": "n/a",
-     "tokens": null
-    },
-    "hooks": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:41:09Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/grok/hooks.log",
-     "reason": "no blueprint hook fired (from the canary run)",
-     "seconds": 0,
-     "session": "",
-     "state": "pass",
-     "tokens": null
-    },
-    "manual-only": {
-     "cost_usd": 0.0865,
-     "date": "2026-10-01T20:03:38Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-220320/grok/manual-only.log",
-     "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
-     "seconds": 10,
-     "session": "",
-     "state": "pass",
-     "tokens": 42842
-    },
-    "review": {
-     "cost_usd": null,
-     "date": "2026-10-03T19:08:07Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/review.log",
-     "reason": "the host refused the run: usage or rate limit reached (Grok free tier). no provenance record for ab-requesting-code-review; the host refused the run: usage or rate limit reached. the review output does not name: eval, cli.py (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-review-yszwlD",
-     "seconds": 12,
-     "session": "",
-     "state": "fail",
-     "tokens": null
-    },
-    "ship": {
-     "cost_usd": null,
-     "date": "2026-10-03T19:12:12Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/ship.log",
-     "reason": "the host refused the run: usage or rate limit reached (Grok free tier). runner exit 3:   status: needs-human \u2014 the host failed 6 times in a row with a transient error (see /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-ship-x3czvn/state the runner did not report a publish (see the log) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-ship-x3czvn",
-     "seconds": 233,
-     "session": "",
-     "state": "fail",
-     "tokens": null
-    },
-    "team": {
-     "cost_usd": null,
-     "date": "2026-10-03T19:12:18Z",
-     "link": "",
-     "log": "/private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/smoke-out/logs-grok3/20261003-210124/grok/team.log",
-     "reason": "the host refused the run: usage or rate limit reached (Grok free tier). no provenance record for ab-orchestrate; the host refused the run: usage or rate limit reached. no .agent-blueprint/team/<run>/ledger.md (host exited 1) \u00b7 work: /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T/ab-smoke-team-0cM0rQ",
-     "seconds": 6,
-     "session": "",
-     "state": "fail",
-     "tokens": null
-    },
-    "upgrade": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:42:55Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/grok/upgrade.log",
-     "reason": "the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4)",
-     "seconds": 0,
-     "session": "",
-     "state": "n/a",
-     "tokens": null
-    }
-   },
-   "version": "grok 1.0.34 (3736acbc8658) [stable]"
-  },
-  "hermes": {
-   "cells": {
-    "canary": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:56Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/hermes/canary.log",
-     "reason": "hermes not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
-    },
-    "discovery": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:56Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/hermes/discovery.log",
-     "reason": "hermes not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
-    },
-    "hooks": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:56Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/hermes/hooks.log",
-     "reason": "hermes not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
-    },
-    "manual-only": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:56Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/hermes/manual-only.log",
-     "reason": "hermes not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
-    },
-    "upgrade": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:57Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/hermes/upgrade.log",
-     "reason": "hermes not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
-    }
-   },
-   "version": "not installed"
-  },
-  "pi": {
-   "cells": {
-    "canary": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:55Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/pi/canary.log",
-     "reason": "pi not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
-    },
-    "discovery": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:55Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/pi/discovery.log",
-     "reason": "pi not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
-    },
-    "hooks": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:55Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/pi/hooks.log",
-     "reason": "pi not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
-    },
-    "manual-only": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:55Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/pi/manual-only.log",
-     "reason": "pi not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
-    },
-    "upgrade": {
-     "cost_usd": null,
-     "date": "2026-10-01T19:40:55Z",
-     "link": "",
-     "log": "tests/smoke/logs/20261001-214053/pi/upgrade.log",
-     "reason": "pi not on PATH",
-     "seconds": 0,
-     "session": "",
-     "state": "not-installed",
-     "tokens": null
-    }
-   },
-   "version": "not installed"
-  }
- },
- "release": "4.0.0",
- "runs": [
-  {
-   "cells": [
-    "canary",
-    "hooks",
-    "upgrade"
-   ],
-   "command": "bash tests/smoke/run-smoke.sh --host claude --cell canary,hooks,upgrade --plugin-dir . --v3-dir /private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/u15-v3 --timeout 600",
-   "date": "2026-09-30 23:22 UTC",
-   "hosts": [
-    "claude"
-   ],
-   "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
-  },
-  {
-   "cells": [
-    "upgrade"
-   ],
-   "command": "bash tests/smoke/run-smoke.sh --host claude --cell upgrade --plugin-dir . --v3-dir /private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/u15-v3",
-   "date": "2026-09-30 23:23 UTC",
-   "hosts": [
-    "claude"
-   ],
-   "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
-  },
-  {
-   "cells": [
-    "canary",
-    "discovery",
-    "hooks",
-    "manual-only",
-    "upgrade"
-   ],
-   "command": "bash tests/smoke/run-smoke.sh --host claude,codex,cursor-agent,agy,grok,pi,hermes,amp --cell discovery,canary,hooks,manual-only,upgrade --plugin-dir . --v3-dir /private/tmp/claude-501/-Users-dbenger-projects-claude-eng/17a448e3-31d6-4642-9137-19fa2b06e0cf/scratchpad/u15-v3 --timeout 600 --jobs 5",
-   "date": "2026-10-01 19:46 UTC",
-   "hosts": [
-    "agy",
-    "amp",
-    "claude",
-    "codex",
-    "cursor-agent",
-    "grok",
-    "hermes",
-    "pi"
-   ],
-   "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
-  },
-  {
-   "cells": [
-    "discovery",
-    "manual-only"
-   ],
-   "command": "bash tests/smoke/run-smoke.sh --host claude,codex,cursor-agent,grok --cell discovery,manual-only --plugin-dir . --timeout 600 --jobs 4",
-   "date": "2026-10-01 20:04 UTC",
-   "hosts": [
-    "claude",
-    "codex",
-    "cursor-agent",
-    "grok"
-   ],
-   "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
-  },
-  {
-   "cells": [
-    "build",
-    "debug",
-    "effort",
-    "helpers-off",
-    "review",
-    "team"
-   ],
-   "command": "bash tests/smoke/run-smoke.sh --host claude,codex,cursor-agent,grok --cell review,debug,build,helpers-off,effort,team --plugin-dir . --timeout 1800 --jobs 4",
-   "date": "2026-10-01 21:09 UTC",
-   "hosts": [
-    "claude",
-    "codex",
-    "cursor-agent",
-    "grok"
-   ],
-   "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
-  },
-  {
-   "cells": [
-    "build",
-    "debug",
-    "review",
-    "ship",
-    "team"
-   ],
-   "command": "",
-   "date": "2026-10-03 19:00 UTC",
-   "hosts": [
-    "codex"
-   ],
-   "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
-  },
-  {
-   "cells": [
-    "build",
-    "ship"
-   ],
-   "command": "",
-   "date": "2026-10-03 19:00 UTC",
-   "hosts": [
-    "cursor-agent"
-   ],
-   "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
-  },
-  {
-   "cells": [
-    "build",
-    "effort"
-   ],
-   "command": "bash tests/smoke/run-smoke.sh --host claude --cell build,effort --plugin-dir .",
-   "date": "2026-10-03 19:00 UTC",
-   "hosts": [
-    "claude"
-   ],
-   "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
-  },
-  {
-   "cells": [
-    "helpers-off"
-   ],
-   "command": "bash tests/smoke/run-smoke.sh --host codex --cell helpers-off --plugin-dir .",
-   "date": "2026-10-03 19:00 UTC",
-   "hosts": [
-    "codex"
-   ],
-   "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
-  },
-  {
-   "cells": [
-    "build",
-    "debug",
-    "review",
-    "ship",
-    "team"
-   ],
-   "command": "bash tests/smoke/run-smoke.sh --host grok --cell build,review,debug,team,ship --plugin-dir .",
-   "date": "2026-10-03 19:12 UTC",
-   "hosts": [
-    "grok"
-   ],
-   "plugin_dir": "/Users/dbenger/projects/claude-eng/project-template/project-template-phase4"
-  }
- ],
- "updated": "2026-10-03 19:12 UTC",
- "invocations": []
+  ],
+  "updated": "2026-10-03 20:40 UTC"
 }

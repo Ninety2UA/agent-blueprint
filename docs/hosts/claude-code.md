@@ -81,5 +81,6 @@ From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-
 | `effort` | pass | 0s | session effort xhigh; 4 helper transcript(s) at the same effort |
 | `review` | pass | 3m35s | the review names eval and cli.py · helper steps: helper |
 | `debug` | pass | 6m07s | suite passes; store.py fixed; regression test present · helper steps: helper |
+| `ship` | pass | 109m31s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch |
 | `team` | pass | 10m11s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |
 | `upgrade` | pass | 3s | 14 checks passed: both plugin ids listed, detect-v3.sh reported and removed the v3 traces, the session-start warning names the v3 plugin |
