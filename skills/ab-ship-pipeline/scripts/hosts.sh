@@ -155,12 +155,12 @@ host_version() {
 }
 
 # The flags that disable helpers (subagents) for one run, one per line; nothing when the host has
-# no switch, and the smoke test renders n/a. Codex: `codex features list` (0.155.1) lists
-# multi_agent as a stable flag, so -c features.multi_agent=false turns it off for the run.
+# no switch, and the smoke test renders n/a. Codex has none that can be checked: with
+# `-c features.multi_agent=false` (0.155.1) the agent still reported helper runs, and `codex exec`
+# prints no tool calls that would settle it, so the smoke test does not claim a Codex switch.
 host_helpers_off_args() {
     case "$1" in
         claude) printf '%s\n' --disallowedTools Agent Task ;;
-        codex)  printf '%s\n' -c features.multi_agent=false ;;
         fake)   [ -n "${AGENT_BLUEPRINT_FAKE_HELPERS_OFF:-}" ] && printf '%s\n' "$AGENT_BLUEPRINT_FAKE_HELPERS_OFF" ;;
         *) ;;
     esac
