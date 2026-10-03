@@ -63,7 +63,7 @@ Options: approve, revise (say what), or return to step 4. Default when nobody an
 
 ### 6. Write and commit the design doc
 
-Write the approved design to `docs/plans/YYYY-MM-DD-<topic>-design.md` with the assumptions and defaults you took, using a clear-writing skill such as elements-of-style:writing-clearly-and-concisely if one is available. Commit it.
+Write the approved design to `docs/plans/YYYY-MM-DD-<topic>-design.md`, in the section order presented, in plain prose with the assumptions and defaults you took marked as such. Commit it.
 
 **No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
 

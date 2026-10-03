@@ -9,7 +9,7 @@ Investigating unrelated problems one after another wastes time when none needs t
 
 ## When to use
 
-Use it when three or more test files fail with different root causes, when several subsystems are broken independently, and in general when each problem can be understood without the others and the investigations share no state. A decision graph: `references/dispatch-examples.md` § Decision graph.
+Use it when two or more test files fail with different root causes, when several subsystems are broken independently, and in general when each problem can be understood without the others and the investigations share no state. A decision graph: `references/dispatch-examples.md` § Decision graph.
 
 Not when the failures are related (fixing one might fix the others, so investigate them together first), when understanding them needs the whole system's state, when the debugging is exploratory and you do not yet know what is broken, or when helpers would interfere by editing the same files or using the same resources.
 

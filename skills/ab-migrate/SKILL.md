@@ -23,7 +23,7 @@ Run `scripts/detect-v3.sh <project directory>`. It reports one line per trace an
 - a `rename` line when `CLAUDE.md` is a regular file and no `AGENTS.md` exists;
 - a `plugin` line when the v3 plugin is still installed in Claude Code.
 
-If it prints `nothing to migrate`, say so and stop: there is nothing to do.
+If it prints `nothing to migrate` (its exit code is then 3, not an error), say so and stop: there is nothing to do.
 
 ## Step 2: Show the list and ask once
 

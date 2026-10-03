@@ -30,8 +30,6 @@ Options: continue with the stage's recommendation, request changes to this stage
 
 ## Pipeline Stages
 
-Run the stages in order; each one builds on the one before.
-
 ### Stage 1: Discuss (Decision Capture)
 
 Invoke the ab-discuss skill to capture the user's decisions before planning; if the requirements are already clear, summarize them as locked decisions. Score them with the gate in `references/ambiguity-gate.md`: below 0.8, the checkpoint first asks about the weakest dimension.
@@ -46,7 +44,7 @@ Checkpoint: the user picks a design. Default when nobody answers: the design you
 
 ### Stage 3: Plan (Implementation Steps)
 
-First start the research helpers as `references/research.md` says. Then invoke the ab-writing-plans skill to turn the design and the findings into steps, and check the plan.
+First start the research helpers (`references/agents/learnings-researcher.md`, `references/agents/framework-docs-researcher.md`, `references/agents/codebase-context-mapper.md`) as `references/research.md` says. Then invoke the ab-writing-plans skill to turn the design and the findings into steps, and check the plan.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 

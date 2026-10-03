@@ -7,7 +7,7 @@ metadata:
 
 # Finishing a Development Branch
 
-Bring finished work to a clean end: verify tests → audit the plan → present options → execute the choice → clean up.
+Bring finished work to a clean end: verify tests → audit the plan → present options → execute the choice → clean up. Done when the chosen option has run, or the gate blocked it, and the report names the branch and the worktree's state.
 
 **Announce at start:** "I'm using the ab-finishing-a-development-branch skill to complete this work."
 
@@ -70,7 +70,7 @@ A merge is a commit, so in this mode Option 1 cannot run: say so and keep the br
 
 #### Option 1: Merge Locally
 
-From the main checkout, merge `<feature-branch>` into an updated `<base-branch>` and rerun the tests on the result. Only if they pass, remove the worktree and then delete the branch (`git branch -d`), as `references/merge-locally.md` § Merge sequence lists. If `git worktree remove` refuses, keep the worktree and the branch and report the dirty state (Option 3 behaviour).
+From the main checkout, merge `<feature-branch>` into an updated `<base-branch>` and rerun the tests on the result. Only if they pass, remove the worktree and then delete the branch (`git branch -d`), as `references/merge-locally.md` § Merge sequence lists; a refused removal follows Step 6.
 
 #### Option 2: Push and Create PR
 

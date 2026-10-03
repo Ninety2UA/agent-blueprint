@@ -8,14 +8,7 @@ argument-hint: "[optional: version number or tag range]"
 
 ## Overview
 
-Generate structured release notes from git history. Collects commits since the last release, categorizes them, enriches with context, and formats following the Keep a Changelog standard.
-
-## When to Use
-
-- Preparing a new release
-- Generating release notes for a version tag
-- Summarizing changes for stakeholders
-- Updating CHANGELOG.md
+Generate structured release notes from git history. Collects commits since the last release, categorizes them, enriches with context, and formats following the Keep a Changelog standard. Done when the new entry sits at the top of `CHANGELOG.md` in the format below and the user has seen it.
 
 ## Process
 
@@ -56,7 +49,7 @@ Sort each commit into Keep a Changelog categories based on the commit message an
 | **Fixed** | Bug fixes |
 | **Security** | Vulnerability fixes or security improvements |
 
-If commits follow conventional commit format (`feat:`, `fix:`, etc.), use the prefix. Otherwise, read the diff to categorize.
+Conventional commit prefixes map directly: `feat:` Added, `fix:` Fixed, `refactor:`, `perf:` and `docs:` Changed, `security:` Security, `BREAKING CHANGE:` Breaking Changes, and `chore:` omitted unless significant. Otherwise, read the diff to categorize.
 
 ### Step 4: Enrich
 
@@ -89,24 +82,13 @@ Follow the [Keep a Changelog](https://keepachangelog.com/) format:
 - Description of breaking change and migration path
 ```
 
+Without a version from the user or a tag that names one, put the entries under `## [Unreleased]` and say so, rather than inventing a number.
+
 ### Step 6: Save
 
 - Update `CHANGELOG.md` at the project root (create if it doesn't exist)
 - New entries go at the top, below the `# Changelog` header
 - Keep an `## [Unreleased]` section at the top for ongoing work
-
-## Quick Reference
-
-| Commit Prefix | Category |
-|--------------|----------|
-| `feat:` | Added |
-| `fix:` | Fixed |
-| `refactor:` | Changed |
-| `perf:` | Changed |
-| `docs:` | Changed |
-| `chore:` | (usually omit unless significant) |
-| `BREAKING CHANGE:` | Breaking Changes |
-| `security:` | Security |
 
 ## Common Mistakes
 
