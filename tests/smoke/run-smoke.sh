@@ -202,7 +202,7 @@ run_scenario() {
     if [ "$RUN_RC" -ne 0 ] && [ "$RUN_RC" -ne 124 ]; then
         CHECK_REASON="$CHECK_REASON (host exited $RUN_RC)"
         # A quota or rate limit is the host refusing the run, not the blueprint failing it: say so.
-        if grep -Eiq 'usage limit|rate[ _-]?limit|quota|too many requests' "$LOG"; then
+        if grep -Eiq 'usage limit|rate[ _-]?limit|quota|too many requests|requests too quickly|resource has been exhausted|please slow down' "$LOG"; then
             CHECK_REASON="the host refused the run: usage or rate limit reached. $CHECK_REASON"
         fi
     fi
