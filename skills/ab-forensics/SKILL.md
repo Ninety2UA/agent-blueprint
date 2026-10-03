@@ -32,19 +32,23 @@ The user usually gives one of:
 
 ### Step 1: Locate the artifact
 
-If the user gave a path, use it. Otherwise list the newest logs. The ship runner keeps them outside the working tree, in `${XDG_STATE_HOME:-$HOME/.local/state}/agent-blueprint/<hash>/logs/` as `iteration-<n>.log` (everything the session printed) and `iteration-<n>.last` (the host's last message), where `<hash>` is the first 16 characters of the SHA-256 of the repository root path; the `record` file beside `logs/` holds the base commit, branch and iteration count. Nothing writes under `.agent-blueprint/run/logs/`.
+If the user gave a path, use it. Otherwise list the newest logs. The ship runner keeps them outside the working tree, in `${XDG_STATE_HOME:-$HOME/.local/state}/agent-blueprint/<hash>/logs/` as `iteration-<n>.log` (everything the session printed) and `iteration-<n>.last` (the host's last message), where `<hash>` is computed below; the `record` file beside `logs/` holds the base commit, branch and iteration count. Nothing writes under `.agent-blueprint/run/logs/`.
 
 ```bash
-hash=$(git rev-parse --show-toplevel | tr -d '\n' | shasum -a 256 | cut -c1-16)
-ls -t "${XDG_STATE_HOME:-$HOME/.local/state}/agent-blueprint/$hash/logs/"iteration-*.log 2>/dev/null | head -3
+repo=$(git rev-parse --show-toplevel)
+if command -v sha256sum >/dev/null; then hash=$(printf '%s' "$repo" | sha256sum | cut -c1-16)
+elif command -v shasum >/dev/null; then hash=$(printf '%s' "$repo" | shasum -a 256 | cut -c1-16)
+elif command -v openssl >/dev/null; then hash=$(printf '%s' "$repo" | openssl dgst -sha256 | sed 's/.*= *//' | cut -c1-16)
+else echo "no SHA-256 tool (sha256sum, shasum or openssl); ask for the log path" >&2; fi
+if [ -n "$hash" ]; then ls -t "${XDG_STATE_HOME:-$HOME/.local/state}/agent-blueprint/$hash/logs/"iteration-*.log 2>/dev/null | head -3; fi
 ```
 
 Also read `.agent-blueprint/run/state.json` if it exists: its `status`, `stage`, `iteration`, `reason` and `decisions` say where the run stopped and why it thought so. Treat them as claims to check against the logs and git, not as findings.
 
-If no logs exist (an interactive run has none: its record is state.json and git), fall back to:
+If the block found no SHA-256 tool, the logs may still exist: ask the user for the path. If no logs exist (an interactive run has none: its record is state.json and git), fall back to:
 - Recent git activity (`git log --since='1 day ago' --oneline`)
 - Pending changes (`git status --short`)
-- Run files: `.agent-blueprint/run/commit-msg.md`, the team marker and ledgers (`.agent-blueprint/team/active.md`, `.agent-blueprint/team/*/ledger.md`), progress ledgers (`.agent-blueprint/plans/*.progress.md`) and debug notes (`.agent-blueprint/debug/*.md`)
+- Run files under `.agent-blueprint/`: `run/commit-msg.md`, the team marker and ledgers (`team/active.md`, `team/*/ledger.md`), progress ledgers (`plans/*.progress.md`) and debug notes (`debug/*.md`)
 
 A run in no-commit mode (`AGENT_BLUEPRINT_GIT_WRITABLE` was `0`, or `.agent-blueprint/run/commit-msg.md` exists) leaves its work in the working tree instead of commits, so there "no commits" is expected, not a missing artifact.
 

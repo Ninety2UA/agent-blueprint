@@ -536,6 +536,17 @@ t36_every_scan_pattern_is_caught_and_masked() {
     done
 }
 
+t38_a_removed_env_file_still_fails_the_range_scan() {
+    new_repo t38
+    echo "APP_MODE=placeholder" > .env && git add .env && git commit -q -m "add env"
+    git rm -q .env && git commit -q -m "drop env"
+    out=$(bash "$REPO/skills/ab-ship-pipeline/scripts/scan-secrets.sh" --range main..HEAD 2>&1) && fail "the scan passed a range that adds .env and deletes it again"
+    printf '%s\n' "$out" | grep -Fq ":.env: .env file" || fail "no hit naming .env ($out)"
+    ! printf '%s\n' "$out" | grep -Fq "placeholder" || fail "the scan printed the .env file's content"
+    echo "APP_MODE=example" > .env.example && git add .env.example && git commit -q -m "add template"
+    bash "$REPO/skills/ab-ship-pipeline/scripts/scan-secrets.sh" --range HEAD~1..HEAD > /dev/null 2>&1 || fail ".env.example alone is not clean"
+}
+
 t22_resume_takes_the_host_from_the_command_line() {
     new_repo t22
     scenario "state:running:plan commit:a.txt" "state:done:ship commit:b.txt pr-body"
@@ -610,7 +621,8 @@ t28_transient_errors_end_as_needs_human_after_the_cap t29_a_retry_that_fails_dif
 t30_a_long_final_message_does_not_end_the_runner t31_scan_reads_hidden_paths_merges_and_commit_messages
 t32_a_failed_runner_commit_is_needs_human t33_planted_symlinks_are_never_written_through
 t34_resume_at_the_cap_says_how_to_continue t35_dry_run_masks_credentials_and_names_the_pr_repository
-t36_every_scan_pattern_is_caught_and_masked t37_a_blank_commit_message_falls_back_to_the_default"
+t36_every_scan_pattern_is_caught_and_masked t37_a_blank_commit_message_falls_back_to_the_default
+t38_a_removed_env_file_still_fails_the_range_scan"
 
 SELECTED="${*:-$ALL}"
 PASSED=0 FAILED=0

@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Bisection script to find which test creates unwanted files/state
-# Usage: ./find-polluter.sh <file_or_dir_to_check> <test_pattern>
-# Example: ./find-polluter.sh '.git' 'src/**/*.test.ts'
+# Run from the project root; the pattern is relative to it.
+# Usage: bash scripts/find-polluter.sh <file_or_dir_to_check> <test_pattern>
+# Example: bash scripts/find-polluter.sh '.git' 'src/**/*.test.ts'
 
 set -e
 
 if [ $# -ne 2 ]; then
-  echo "Usage: $0 <file_to_check> <test_pattern>"
-  echo "Example: $0 '.git' 'src/**/*.test.ts'"
+  echo "Usage: bash scripts/find-polluter.sh <file_to_check> <test_pattern>"
+  echo "Example: bash scripts/find-polluter.sh '.git' 'src/**/*.test.ts'"
   exit 1
 fi
 
@@ -18,8 +19,13 @@ echo "🔍 Searching for test that creates: $POLLUTION_CHECK"
 echo "Test pattern: $TEST_PATTERN"
 echo ""
 
-# Get list of test files
-TEST_FILES=$(find . -path "$TEST_PATTERN" | sort)
+# Get list of test files. find prints paths with a leading ./, so the
+# pattern must carry it too or nothing matches.
+TEST_FILES=$(find . -path "./${TEST_PATTERN#./}" | sort)
+if [ -z "$TEST_FILES" ]; then
+  echo "No test files match $TEST_PATTERN" >&2
+  exit 2
+fi
 TOTAL=$(echo "$TEST_FILES" | wc -l | tr -d ' ')
 
 echo "Found $TOTAL test files"

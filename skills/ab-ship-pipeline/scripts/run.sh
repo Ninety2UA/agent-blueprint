@@ -566,7 +566,7 @@ publish() {
     info "Scanning $(git rev-parse --short "$REC_base")..$(git rev-parse --short HEAD) and the PR body for secrets"
     if ! out=$(bash "$SCAN" --range "$REC_base..HEAD" --file "$body_copy" 2>&1); then
         printf '%s\n' "$out" | sed 's/^/      /'
-        needs_human "the secret scan found key-shaped values (masked above); nothing was pushed" "remove them from the commits and the PR body, then re-run"
+        needs_human "the secret scan found key-shaped values or a .env file (listed above, values masked); nothing was pushed" "remove them from the commits and the PR body, then re-run"
     fi
     success "No secrets found"
 

@@ -1,6 +1,6 @@
 ---
 name: ab-quick-fix
-description: "Makes a small, well-understood change through a short test-first loop: checks that the change qualifies (up to 3 files, obvious approach), writes a failing test, makes the minimal fix, runs the full test suite, build and lint, and commits on a branch. Use when the change is a bug fix whose cause is known, a typo, copy or config change, a rename, a changed default or minor refactor within one module, or a test for existing behavior, whatever the user calls it. Not for changes touching 4 or more files, new public APIs, endpoints or schemas, data-model changes, or an unclear approach (use ab-brainstorming, then ab-build-pipeline), nor for a bug whose cause is not yet known (use ab-systematic-debugging first)."
+description: "Makes a small, well-understood change through a short test-first loop: checks that the change qualifies (under three files, obvious approach), writes a failing test, makes the minimal fix, runs the full test suite, build and lint, and commits on a branch. Use when the change is a bug fix whose cause is known, a typo, copy or config change, a rename, a changed default or minor refactor within one module, or a test for existing behavior, whatever the user calls it. Not for changes touching three or more files, new public APIs, endpoints or schemas, data-model changes, or an unclear approach (use ab-brainstorming, then ab-build-pipeline), nor for a bug whose cause is not yet known (use ab-systematic-debugging first)."
 argument-hint: "[describe the change]"
 metadata:
   version: "4.0.0"
@@ -16,9 +16,9 @@ A finished quick fix is one commit on a branch that holds the change and a test 
 
 ## Step 1: Qualification Check
 
-Before starting, confirm the change is quick: a bug fix with an obvious root cause, a typo, copy or config fix, a test for existing behavior, or a rename or minor refactor within one module, touching up to 3 files. Hand over instead for:
+Before starting, confirm the change is quick: a bug fix with an obvious root cause, a typo, copy or config fix, a test for existing behavior, or a rename or minor refactor within one module, touching under three files. Hand over instead for:
 
-- **4+ files**: use the ab-build-pipeline skill (or ab-ship-pipeline for an autonomous run).
+- **Three or more files**: use the ab-build-pipeline skill (or ab-ship-pipeline for an autonomous run).
 - **A new public API, endpoint or schema, or a data-model change**: it needs design first, with the ab-brainstorming skill.
 - **Auth, payments or data-migration code**: always the full pipeline with review, never this skill, because a small-looking change there can do outsized harm.
 - **An unclear approach, or several options**: use the ab-discuss or ab-brainstorming skill.
@@ -64,7 +64,7 @@ git commit -m "[type](scope): [description]"
 | Rationalization | Reality |
 |---|---|
 | "It's quick, I'll skip the failing test" | Quick-fix without a test is a guess. The test is what makes the fix verifiable; skipping it means you can't tell if you fixed anything. |
-| "The qualification check feels like overhead" | Misqualifying a complex change as ab-quick-fix is how 3-file fixes balloon into 12-file regressions. The check is the cheapest insurance. |
-| "Three files now, but I'm sure it'll stay small" | If you're sure, prove it: scope it, do it, commit. If scope creeps mid-fix, stop and switch to `ab-build-pipeline`. Don't backfill design after the fact. |
+| "The qualification check feels like overhead" | Misqualifying a complex change as ab-quick-fix is how two-file fixes balloon into 12-file regressions. The check is the cheapest insurance. |
+| "Two files now, but I'm sure it'll stay small" | If you're sure, prove it: scope it, do it, commit. If scope creeps mid-fix, stop and switch to `ab-build-pipeline`. Don't backfill design after the fact. |
 | "I'll skip lint — it's just style" | Lint catches structural issues alongside style. Quick-fix is short; lint is fast; run it. |
 | "Trivial fix, I'll commit straight to main" | Quick-fix is fast, not unreviewed. Commit to a branch unless explicitly told otherwise. |

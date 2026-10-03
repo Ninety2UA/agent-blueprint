@@ -6,6 +6,9 @@
 #                        key committed and removed again inside the range is still caught;
 #                        merges are diffed against each parent, paths marked -diff or binary
 #                        are read as text, and the commit messages are scanned as well.
+#                        A .env file (or .env.*, except .env.example, .env.sample,
+#                        .env.template and .env.dist) added by any commit in the range is a
+#                        hit by its name alone, even when a later commit deletes it again.
 #   --file PATH          Every line of a file, such as the PR body.
 #
 # Looks for key-shaped strings: cloud access keys, GitHub and GitLab tokens, private key
@@ -13,12 +16,13 @@
 # api_key= / secret= / password= / token= assignments with a long value.
 #
 # Output on a hit: "<where>:<line>: <kind>" followed by the line with every matched
-# value replaced by ****. The value itself is never printed.
+# value replaced by ****, or "<commit>:<path>: .env file" for a path. No value and no
+# file content is ever printed.
 # Exit: 0 = clean · 1 = at least one hit · 2 = usage or git error
 
 set -euo pipefail
 
-usage() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; }
 
 # Case-sensitive, key-shaped tokens, one per line as PATTERN<tab>LABEL (the \t below become
 # tabs). Written so that no literal in this file looks like a key.
@@ -90,8 +94,22 @@ hit() {
 }
 matches() { printf '%s\n' "$1" | grep -qE "$STRICT_ERE" || printf '%s\n' "$1" | grep -qiE "$LOOSE_ERE"; }
 
+# is_env_path PATH: a file named .env or .env.*, except the placeholders committed on purpose.
+is_env_path() {
+    case "${1##*/}" in
+        .env.example|.env.sample|.env.template|.env.dist) return 1 ;;
+        .env|.env.*) return 0 ;;
+    esac
+    return 1
+}
+# hit_path WHERE: count and report one path that is a secret by its name; nothing of it is read.
+hit_path() {
+    HITS=$((HITS + 1))
+    echo "$1: .env file"
+}
+
 scan_range() {
-    local range="$1" commit="" file="" line
+    local range="$1" commit="" file="" line seen=""
     case "$range" in *..*) ;; *) echo "scan-secrets: --range wants BASE..HEAD, got $range" >&2; exit 2 ;; esac
     PATCH_TMP=$(mktemp "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
     # --text: a path marked -diff or binary in .gitattributes still prints its lines.
@@ -125,6 +143,24 @@ scan_range() {
             if matches "$line"; then hit "$commit:commit message" "$line"; fi
         done < "$PATCH_TMP"
     fi
+    # A .env file is a secret by its name alone, and one a later commit deletes again is still in
+    # the pushed history, so the paths added by every commit are listed, oldest first, and each
+    # is reported once at the commit that first adds it. --no-renames: a rename to .env counts.
+    if ! git log --reverse --diff-filter=A --name-only --no-renames -m --format='commit %H' "$range" -- . > "$PATCH_TMP" 2>/dev/null; then
+        echo "scan-secrets: git log failed for $range" >&2
+        exit 2
+    fi
+    commit=""
+    while IFS= read -r line || [ -n "$line" ]; do
+        case "$line" in
+            "commit "*) commit="${line#commit }"; commit="${commit:0:12}"; continue ;;
+            "") continue ;;
+        esac
+        if is_env_path "$line" && ! printf '%s\n' "$seen" | grep -Fxq -- "$line"; then
+            seen="$seen$line"$'\n'
+            hit_path "$commit:$line"
+        fi
+    done < "$PATCH_TMP"
     rm -f "$PATCH_TMP"; PATCH_TMP=""
 }
 
@@ -141,7 +177,7 @@ while [ $# -gt 0 ]; do
 done
 
 if [ "$HITS" -gt 0 ]; then
-    echo "scan-secrets: $HITS key-shaped value(s) found; nothing is published until they are removed."
+    echo "scan-secrets: $HITS hit(s) (key-shaped values or .env files); nothing is published until they are removed."
     exit 1
 fi
 exit 0
