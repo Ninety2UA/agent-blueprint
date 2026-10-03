@@ -1,6 +1,6 @@
 # ab-autonomous-loop — loop details
 
-Loaded on demand from SKILL.md when a step points here: when not to use the skill, the pre-flight danger scan, the loop diagram, task classes, circuit-breaker and risk-score mechanics, limits, integration with other skills, and common mistakes.
+Loaded on demand from SKILL.md when a step points here: when not to use the skill, the pre-flight danger scan, the loop diagram, task classes, circuit-breaker and risk-score mechanics, limits, and integration with other skills.
 
 ## When Not to Use
 
@@ -152,17 +152,3 @@ wtf_score = 0%
 | Task requires a plan change | Stop loop, use ab-writing-plans to revise |
 | All tasks done, ready to merge | Use ab-finishing-a-development-branch |
 | Loop complete, end of session | Use ab-session-wrap to document |
-
-## Common Mistakes
-
-**Retrying the same approach** — the reflection before each retry (SKILL.md Step 2) exists to prevent this. If you cannot say what is different about the next attempt, you have not reflected enough, and the attempt will likely fail the same way.
-
-**Skipping verification between tasks** — "I'll verify at the end" means five tasks of compounding bugs. Verify after every task.
-
-**Not updating the plan** — a task completed but not marked `[x]` gets attempted again, so tick the checkbox as part of finishing the task.
-
-**Continuing past fatal errors** — transient errors get retried. Fatal errors (missing dependency, wrong architecture) need human input; retrying what cannot succeed only burns the run.
-
-**Giant tasks in the loop** — each task should take minutes, not hours. If a task is too large, break it into subtasks before entering the loop.
-
-**Not committing between tasks** — commit after each successful task (in no-commit mode, record its message instead). If a later task breaks something, you can return to the last good state without losing earlier work.

@@ -14,7 +14,7 @@ Research helpers run in parallel to enrich an existing plan with deeper context,
 
 If the request names a plan file, read it. Otherwise, find the most recent plan in `docs/plans/` (sort by date prefix, pick latest).
 
-If no plan file is found, report "No plan file found. Write a plan first with the ab-brainstorming skill or specify a path." and stop.
+If no plan file is found, report "No plan file found. Write a plan first with the ab-writing-plans skill or specify a path." and stop.
 
 Read the full plan file. Identify:
 - Each section/task in the plan
@@ -59,7 +59,7 @@ After enrichment, run the plan-checker on the updated plan to verify the researc
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Prompt: `references/agents/plan-checker.md`. Inputs: Verify the enriched plan at [plan file path]. Check for conflicts between research notes and the plan's approach. Report BLOCKING issues only.
+Prompt: `references/agents/plan-checker.md`. Inputs: the enriched plan at [plan file path], to check for conflicts between the research notes and the plan's approach. Act on its BLOCKING issues only; its warnings and suggestions stay in the report.
 
 If the plan-checker finds new issues introduced by research (for example, a best practice contradicts the plan's approach), flag the conflict clearly in the plan and leave the approach as it is: that choice belongs to the implementer or the calling workflow.
 

@@ -146,8 +146,8 @@ What works perfectly for Opus might need more detail for Haiku. If you plan to u
 <Note>
   **YAML Frontmatter**: The SKILL.md frontmatter supports two portable fields (Claude Code additionally honors optional `allowed-tools`/`disallowed-tools` — see SKILL.md):
 
-  * `name` - Human-readable name of the Skill (64 characters maximum)
-  * `description` - One-line description of what the Skill does and when to use it (1024 characters maximum)
+* `name` - Human-readable name of the Skill (64 characters maximum)
+* `description` - One-line description of what the Skill does and when to use it (1024 characters maximum)
 
   For complete Skill structure details, see the [Skills overview](/en/docs/agents-and-tools/agent-skills/overview#skill-structure).
 </Note>
@@ -189,9 +189,9 @@ The `description` field enables Skill discovery and should include both what the
 <Warning>
   **Always write in third person**. The description is injected into the system prompt, and inconsistent point-of-view can cause discovery problems.
 
-  * **Good:** "Processes Excel files and generates reports"
-  * **Avoid:** "I can help you process Excel files"
-  * **Avoid:** "You can use this to process Excel files"
+* **Good:** "Processes Excel files and generates reports"
+* **Avoid:** "I can help you process Excel files"
+* **Avoid:** "You can use this to process Excel files"
 </Warning>
 
 **Be specific and include key terms**. Include both what the Skill does and specific triggers/contexts for when to use it.

@@ -9,10 +9,10 @@ The outcome is a revised plan holding only the must-haves, every cut item tracke
 
 ## When to use
 
-- A feature estimate exceeds the available time, or a plan has grown beyond one focused session
-- You are 60% through a plan and it is bigger than expected, or a spike revealed more complexity than anticipated
-- The user says "this is taking too long" or "can we simplify?"
-- You are adding "while I'm here" improvements during implementation
+- A feature estimate exceeds the available time by more than about 30%, or a plan has more than 8-10 tasks for one session
+- You are 60% through a plan and it is bigger than expected, keep discovering new tasks, a spike revealed more complexity than anticipated, or dependencies between tasks chain more than 4 deep
+- The user says "this is taking too long", "can we simplify?" or "how much longer?"
+- You are adding "while I'm here" improvements during implementation, or are tempted to skip tests "just this once" to fit everything in
 
 Not when the feature is already minimal (cutting more would make it useless), when the complexity is in the core rather than the periphery (you need a different approach, not less scope), or before anyone has estimated (estimate first, then cut if needed).
 
@@ -74,15 +74,6 @@ Walking skeleton, feature flag, hardcode and manual cuts, with what each one loo
 - **Cutting the wrong things.** Cutting the core to save the periphery leaves nothing worth shipping; error handling, input validation and basic security are part of the core.
 - **Cutting too late.** At 90% complete you have already paid for most of the work, so cut when you first suspect the scope is too large.
 - **Negotiating with yourself.** Once the cut is made, hold it: squeezing in "one more thing" is scope creep in reverse, and it reopens the time problem the cut solved.
-
-## Signs you need to cut
-
-- The plan has more than 8-10 tasks for one session
-- You keep discovering new tasks during implementation
-- The estimate exceeds the available time by more than 30%
-- Dependencies between tasks form a deep chain (more than 4 levels)
-- You are tempted to skip tests "just this once" to fit everything in
-- The user is asking "how much longer?"
 
 ## Related skills
 

@@ -44,10 +44,7 @@ Options: 1. All critical and high gaps. 2. Specific gaps, named by their numbers
 
 ## Step 3: Generate Tests
 
-For each approved gap, invoke the ab-test-driven-development skill and use it to write behavioral tests:
-- Follow existing test conventions exactly
-- Use Arrange-Act-Assert pattern
-- Include both positive and negative cases
+For each approved gap, write its test with the ab-test-driven-development skill, starting from the helper's draft and following the existing test conventions. Delete any draft the helper left on disk for a gap the user did not pick, so Step 5 commits only approved tests.
 
 ## Step 4: Verify
 

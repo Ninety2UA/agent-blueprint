@@ -63,7 +63,7 @@ After generating tests, run them and triage the outcome of each gap:
 
 | Outcome | Meaning | Next Action |
 |---------|---------|-------------|
-| **FILLED** | Generated test passes — requirement is now genuinely verified | Commit the test, mark gap closed |
+| **FILLED** | Generated test passes — requirement is now genuinely verified | Keep the test and mark the gap closed; the caller commits |
 | **ESCALATED** | Generated test fails because the *implementation* is wrong (not the test) | **Do NOT modify the implementation.** Report the bug to the caller. Implementation files are read-only for this agent. |
 | **SKIP** | Gap cannot be tested at this layer (requires browser, external service, manual UAT) | Justify the skip in writing — name the layer where it should be tested instead |
 
