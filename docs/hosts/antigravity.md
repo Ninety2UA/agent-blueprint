@@ -74,7 +74,7 @@ From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-
 | `build` | fail | 1m55s | no provenance record for ab-build-pipeline; acceptance test passes (deps: tabulate); 1 commit(s) after the base |
 | `helpers-off` | n/a | 0s | no helper switch on agy |
 | `effort` | n/a | 0s | no per-dispatch effort metadata on agy |
-| `review` | fail | 1m08s | no provenance record for ab-requesting-code-review; the review rates the eval in cli.py a security risk |
+| `review` | fail | 1m08s | no provenance record for ab-requesting-code-review; the review rates the eval in cli.py a security risk (re-checked 2026-10-04) |
 | `debug` | degraded-pass (inline) | 1m11s | suite passes; store.py fixed; regression test present · helper steps: inline |
 | `ship` | pass | 2m31s | published; pr create recorded; acceptance test passes (deps: tabulate) on the pushed branch |
 | `team` | pass | 4m21s | ledger done; 3 commits; tests pass |

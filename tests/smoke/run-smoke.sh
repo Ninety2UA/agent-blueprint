@@ -526,7 +526,9 @@ run_host_all() {
     # An installed copy of another version, or of this version with other skill content (every
     # commit of a release carries its version), would put another tree in this version's table.
     # The host reads every copy it finds, so each one must match the plugin under test. A copy with
-    # no manifest or install record beside it (version unknown) is judged by its content alone.
+    # no manifest or install record beside it (version unknown) is judged by its content alone. A
+    # copy inside a plugin install also brings that install's hook handlers and manifests, which
+    # the host runs instead of the checkout's, so they must match too.
     while IFS= read -r copy; do
         [ -n "$copy" ] || continue
         if [ "$copy" = "$HOST_INSTALLED" ]; then
@@ -540,6 +542,10 @@ run_host_all() {
         diff=$(skills_content_diff "$copy" "$PLUGIN_DIR/skills") || diff="the skill folders could not be compared"
         if [ -n "$diff" ]; then
             mismatch="the installed copy at $copy differs from $PLUGIN_DIR/skills: $diff"; break
+        fi
+        diff=$(plugin_parts_diff "$copy" "$PLUGIN_DIR") || diff="its hooks and manifests could not be compared"
+        if [ -n "$diff" ]; then
+            mismatch="the installed plugin at $(dirname "$copy") differs from $PLUGIN_DIR: $diff"; break
         fi
     done <<LIST
 $copies

@@ -86,7 +86,7 @@ From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-
 | `build` | pass | 16m36s | acceptance test passes (deps: tabulate>=0.9) · helper steps: helper,helper,helper,helper |
 | `helpers-off` | n/a | 0s | no helper switch on codex |
 | `effort` | n/a | 0s | no per-dispatch effort metadata on codex |
-| `review` | fail | 8m07s | re-checked on 2026-10-04 with the tightened review check: the recorded review names eval in cli.py but rates it no security risk (three P2s on scoping, validation and tests); rerun on the final commit · helper steps: hel |
+| `review` | fail | 8m07s | re-checked 2026-10-04 with the tightened review check: the recorded review names eval in cli.py but rates no security risk; rerun on the final commit · helper steps: helper |
 | `debug` | pass | 2m38s | suite passes; store.py fixed; regression test present · helper steps: helper,helper |
 | `ship` | pass | 26m19s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch |
 | `team` | pass | 9m21s | ledger done; no-commit mode (4 changed files in the tree, commit-msg.md written); tests pass · helper steps: helper,helper,helper,helper,helper |

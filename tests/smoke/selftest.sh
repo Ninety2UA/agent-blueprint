@@ -5,7 +5,8 @@
 # Usage: bash tests/smoke/selftest.sh
 # Exit: 0 when every assertion holds. Needs git, python3, network for one `pip install tabulate` per
 # build cell (the acceptance venv), and a checkout of main for the eval mechanics (optional:
-# SMOKE_SELFTEST_V3_DIR; without it the eval check is skipped).
+# SMOKE_SELFTEST_V3_DIR; without it the eval check is skipped). SMOKE_SELFTEST_NO_LINT=1 skips the
+# markdownlint check (npx), as CI does.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -105,6 +106,40 @@ AGENT_BLUEPRINT_FAKE_CATALOG="$copy" \
 check "fake · canary fails on an installed copy whose skills differ from the checkout" [ "$(state_of "$J" fake canary)" = fail ]
 check "the differing skill folder is named" grep -q "differ.*ab-ship-pipeline" <<<"$(reason_of "$J" fake canary)"
 
+echo "== an installed plugin of this version with other hooks or manifests: every cell fails and the row names it"
+plug="$WORK/plug"
+mkdir -p "$plug/.claude-plugin"
+cp -R "$REPO/skills" "$REPO/hooks" "$plug/"
+cp "$REPO/.claude-plugin/plugin.json" "$plug/.claude-plugin/plugin.json"
+AGENT_BLUEPRINT_FAKE_CATALOG="$plug/skills" \
+    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --cell canary > "$WORK/plug.log" 2>&1 || true
+check "fake · canary runs against an installed plugin that matches the checkout" [ "$(state_of "$J" fake canary)" = pass ]
+echo "// edited after the install" >> "$plug/hooks/handlers/session-start.js"
+AGENT_BLUEPRINT_FAKE_CATALOG="$plug/skills" \
+    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --cell canary > "$WORK/plug-hooks.log" 2>&1 || true
+check "fake · canary fails on an installed plugin whose hooks differ from the checkout" [ "$(state_of "$J" fake canary)" = fail ]
+check "the differing hook file is named" grep -q "hooks.*session-start.js" <<<"$(reason_of "$J" fake canary)"
+cp "$REPO/hooks/handlers/session-start.js" "$plug/hooks/handlers/session-start.js"
+python3 -c 'import json,sys; m=json.load(open(sys.argv[1])); m["description"]="an older description"; json.dump(m, open(sys.argv[1], "w"))' "$plug/.claude-plugin/plugin.json"
+AGENT_BLUEPRINT_FAKE_CATALOG="$plug/skills" \
+    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --cell canary > "$WORK/plug-manifest.log" 2>&1 || true
+check "fake · canary fails on an installed plugin whose manifest differs from the checkout" [ "$(state_of "$J" fake canary)" = fail ]
+check "the differing manifest is named" grep -q "\.claude-plugin/plugin.json" <<<"$(reason_of "$J" fake canary)"
+
+echo "== the skill-folder comparison names a folder the copy lacks and one the checkout lacks"
+content_diff_out() {   # INSTALLED CHECKOUT: lib.sh's skills_content_diff, in a subshell as installed_out does
+    # shellcheck source=lib.sh disable=SC1091
+    ( . "$HERE/lib.sh" && skills_content_diff "$1" "$2" )
+}
+cmp_root="$WORK/content-diff"
+for d in checkout/ab-a checkout/ab-b older/ab-a newer/ab-a newer/ab-b newer/ab-c; do
+    mkdir -p "$cmp_root/$d"
+    printf 'same\n' > "$cmp_root/$d/SKILL.md"
+done
+check "an identical copy shows no difference" [ -z "$(content_diff_out "$cmp_root/checkout" "$cmp_root/checkout")" ]
+check "a copy from before a skill was added names the missing folder" [ "$(content_diff_out "$cmp_root/older" "$cmp_root/checkout")" = "1 missing (ab-b)" ]
+check "a copy with a folder the checkout lacks names the extra folder" [ "$(content_diff_out "$cmp_root/newer" "$cmp_root/checkout")" = "1 not in the checkout (ab-c)" ]
+
 echo "== a host without a plugin directory (Codex) reads the shared copy, so the installed-copy check covers it"
 installed_out() {   # HOST HOME: lib.sh's host_installed_copies under another HOME, in a subshell as effort_out does
     # shellcheck source=lib.sh disable=SC1091
@@ -160,6 +195,39 @@ check "a finding below the swarm's confidence gate fails" fails review_check "##
 - **eval() in src/notes/cli.py runs arbitrary code** — P1 at confidence 25, gate requires 50"
 check "a reviewer's JSON finding on eval in cli.py passes" review_check "Review done; the findings are in the run folder." \
     '{"reviewer": "security-sentinel", "findings": [{"title": "Code injection through --filter", "severity": "P1", "file": "src/notes/cli.py", "line": 45, "why_it_matters": "eval() runs any Python the caller passes", "confidence": 100, "tier": "gated_auto", "evidence": ["src/notes/cli.py:45 -- eval(args.filter, {}, {\"note\": note})"], "pre_existing": false, "requires_verification": true}], "residual_risks": [], "testing_gaps": []}'
+raw_p1='{"reviewer": "security-sentinel", "findings": [{"title": "Code injection through --filter", "severity": "P1", "file": "src/notes/cli.py", "line": 45, "why_it_matters": "eval() runs any Python the caller passes", "confidence": 100, "tier": "gated_auto"}], "residual_risks": [], "testing_gaps": []}'
+check "a reviewer's raw P1 does not outvote a final verdict with no findings" fails review_check "No findings survived validation." "$raw_p1"
+check "a reviewer's raw P1 does not stand in for a final message that names eval in cli.py without a finding" fails review_check "The eval in src/notes/cli.py was reviewed; the reviewers' notes are in the run folder." "$raw_p1"
+check "a JSON finding under a discarded list fails" fails review_check "Review done; the findings are in the run folder." \
+    '{"reviewer": "security-sentinel", "findings": [], "discarded": [{"title": "Code injection through --filter", "severity": "P1", "file": "src/notes/cli.py", "line": 45, "why_it_matters": "eval() runs any Python the caller passes", "confidence": 100}]}'
+check "a JSON finding the validator rejected fails" fails review_check "Review done; the findings are in the run folder." \
+    '{"reviewer": "security-sentinel", "findings": [{"title": "Code injection through --filter", "severity": "P1", "file": "src/notes/cli.py", "line": 45, "why_it_matters": "eval() runs any Python the caller passes", "confidence": 100, "validation_status": "rejected"}]}'
+check "a JSON finding below its confidence gate fails" fails review_check "Review done; the findings are in the run folder." \
+    '{"reviewer": "security-sentinel", "findings": [{"title": "Code injection through --filter", "severity": "P1", "file": "src/notes/cli.py", "line": 45, "why_it_matters": "eval() runs any Python the caller passes", "confidence": 25}]}'
+check "a block that says it is not a security issue fails" fails review_check "- P2 cli.py: --filter goes through eval. This isn't a security issue, since only the local user supplies the value; validate the expression anyway."
+check "a block that says it poses no security risk fails" fails review_check "- P2 cli.py: --filter is passed to eval. It doesn’t pose a security risk for a local CLI; add tests."
+check "a block that rates the security impact low fails" fails review_check "- P2 cli.py: eval on --filter has low security impact here; scope it."
+check "a sentence that calls the security risk low fails" fails review_check "The security risk of the eval in src/notes/cli.py is low."
+check "a block that says eval is not a P1 fails" fails review_check "The eval in src/notes/cli.py is not a P1: only the operator types the filter."
+check "a negation in another clause does not cancel the finding" review_check "- P2 cli.py:45: --filter is not validated, so eval runs arbitrary code from any caller."
+check "a scope line beside a verdict of no findings fails" fails review_check "Security review of src/notes/cli.py and its eval call is complete.
+
+No findings."
+check "a scope line naming injection beside no issues found fails" fails review_check "I reviewed the --filter path in src/notes/cli.py (it calls eval) for injection risks.
+
+No issues found."
+check "a scope line beside a Findings section that says None fails" fails review_check "## Summary
+Reviewed src/notes/cli.py, including the eval used by --filter, with the security-sentinel lens.
+
+## Findings
+None."
+check "a rated finding passes beside another reviewer's verdict of no issues" review_check "### Code reviewer
+No issues found.
+
+### Security sentinel
+1. **P1** eval in src/notes/cli.py: --filter runs arbitrary code."
+check "a rated finding that also hedges passes" review_check "**P1** eval() in cli.py: --filter text runs as Python (arbitrary code execution). This looks fine otherwise."
+check "an unrated finding that calls itself acceptable fails" fails review_check "\`--filter\` in src/notes/cli.py reaches eval(), which can run arbitrary code, but that is acceptable for a local tool."
 
 echo "== the upgrade scenario deletes only the folder it made inside --work"
 up="$WORK/upgrade-work"

@@ -370,61 +370,91 @@ LIST
 # folders with the same files and bytes (bytecode caches and .DS_Store aside); otherwise one line
 # naming the folders that differ. Every commit of a release carries the same version, so only the
 # content tells an installed copy of an older commit from this one.
-skills_content_diff() {
-    python3 - "$1" "$2" <<'PY'
-import hashlib, os, sys
+skills_content_diff() { _content_diff skills "$1" "$2"; }
 
-def digests(root):
+# plugin_parts_diff CATALOG_DIR CHECKOUT_ROOT: the same for the rest of a plugin install. When the
+# catalog's parent holds hooks/ and a manifest (a plugin cache such as Claude Code's), nothing when
+# its hooks/ and every manifest it carries (plugin.json, .<host>-plugin/plugin.json) match the
+# checkout's byte for byte, else one line naming what differs: the host runs those hooks, not the
+# checkout's. A copy-route catalog (install.sh into ~/.agents/skills) has no hooks: nothing.
+plugin_parts_diff() { _content_diff plugin "$(dirname "$1")" "$2"; }
+
+_content_diff() {   # MODE INSTALLED CHECKOUT: the comparison behind the two functions above
+    python3 - "$@" <<'PY'
+import glob, hashlib, os, sys
+
+def files(top):
+    """{path relative to top: sha256} for every file under top, bytecode caches and .DS_Store aside."""
     out = {}
-    try:
-        names = sorted(os.listdir(root))
-    except OSError:
+    if not os.path.isdir(top):
         return out
-    for name in names:
-        top = os.path.join(root, name)
-        if not name.startswith("ab-") or not os.path.isdir(top):
-            continue
-        h = hashlib.sha256()
-        # Symlinked folders are followed, but never into a folder already on the current path, so a
-        # link back up the tree cannot loop.
-        ancestors = {top: {os.path.realpath(top)}}
-        for d, subdirs, files in os.walk(top, followlinks=True):
-            above = ancestors.pop(d, set())
-            kept = []
-            for s in sorted(subdirs):
-                real = os.path.realpath(os.path.join(d, s))
-                if s == "__pycache__" or real in above:
-                    continue
-                kept.append(s)
-                ancestors[os.path.join(d, s)] = above | {real}
-            subdirs[:] = kept
-            for f in sorted(files):
-                if f == ".DS_Store" or f.endswith(".pyc"):
-                    continue
-                p = os.path.join(d, f)
-                h.update(os.path.relpath(p, top).encode("utf-8", "surrogateescape") + b"\0")
-                try:
-                    with open(p, "rb") as fh:
-                        h.update(hashlib.sha256(fh.read()).digest())
-                except OSError:
-                    h.update(b"<unreadable>")
-        out[name] = h.hexdigest()
+    # Symlinked folders are followed, but never into a folder already on the current path, so a
+    # link back up the tree cannot loop.
+    ancestors = {top: {os.path.realpath(top)}}
+    for d, subdirs, names in os.walk(top, followlinks=True):
+        above = ancestors.pop(d, set())
+        kept = []
+        for s in sorted(subdirs):
+            real = os.path.realpath(os.path.join(d, s))
+            if s == "__pycache__" or real in above:
+                continue
+            kept.append(s)
+            ancestors[os.path.join(d, s)] = above | {real}
+        subdirs[:] = kept
+        for f in names:
+            if f == ".DS_Store" or f.endswith(".pyc"):
+                continue
+            p = os.path.join(d, f)
+            try:
+                with open(p, "rb") as fh:
+                    out[os.path.relpath(p, top)] = hashlib.sha256(fh.read()).hexdigest()
+            except OSError:
+                out[os.path.relpath(p, top)] = "<unreadable>"
     return out
+
+def skills(root):
+    try:
+        names = os.listdir(root)
+    except OSError:
+        return {}
+    return {n: hashlib.sha256(repr(sorted(files(os.path.join(root, n)).items())).encode()).hexdigest()
+            for n in names if n.startswith("ab-") and os.path.isdir(os.path.join(root, n))}
+
+def digest(path):
+    try:
+        with open(path, "rb") as fh:
+            return hashlib.sha256(fh.read()).hexdigest()
+    except OSError:
+        return "<absent>"
 
 def named(names):
     return ", ".join(names[:5]) + (", ..." if len(names) > 5 else "")
 
-installed, checkout = digests(sys.argv[1]), digests(sys.argv[2])
-changed = sorted(n for n in installed.keys() & checkout.keys() if installed[n] != checkout[n])
-missing = sorted(checkout.keys() - installed.keys())
-extra = sorted(installed.keys() - checkout.keys())
+def compare(installed, checkout, what):
+    changed = sorted(n for n in installed.keys() & checkout.keys() if installed[n] != checkout[n])
+    missing = sorted(checkout.keys() - installed.keys())
+    extra = sorted(installed.keys() - checkout.keys())
+    parts = []
+    if changed:
+        parts.append("%d %s differ (%s)" % (len(changed), what, named(changed)))
+    if missing:
+        parts.append("%d missing (%s)" % (len(missing), named(missing)))
+    if extra:
+        parts.append("%d not in the checkout (%s)" % (len(extra), named(extra)))
+    return parts
+
+mode, installed, checkout = sys.argv[1:4]
 parts = []
-if changed:
-    parts.append("%d skill folder(s) differ (%s)" % (len(changed), named(changed)))
-if missing:
-    parts.append("%d missing (%s)" % (len(missing), named(missing)))
-if extra:
-    parts.append("%d not in the checkout (%s)" % (len(extra), named(extra)))
+if mode == "skills":
+    parts = compare(skills(installed), skills(checkout), "skill folder(s)")
+else:
+    manifests = sorted(os.path.relpath(p, installed) for p in
+                       glob.glob(os.path.join(installed, ".*-plugin", "plugin.json")) + glob.glob(os.path.join(installed, "plugin.json")))
+    if os.path.isdir(os.path.join(installed, "hooks")) and manifests:
+        hooks = compare(files(os.path.join(installed, "hooks")), files(os.path.join(checkout, "hooks")), "file(s)")
+        parts = ["hooks: " + ", ".join(hooks)] if hooks else []
+        parts += compare({m: digest(os.path.join(installed, m)) for m in manifests},
+                         {m: digest(os.path.join(checkout, m)) for m in manifests}, "manifest(s)")
 print("; ".join(parts))
 PY
 }
