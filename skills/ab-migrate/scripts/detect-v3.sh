@@ -8,10 +8,13 @@
 #   --keep-instructions   leave CLAUDE.md and AGENTS.md exactly as they are (no rename)
 #
 # Other skill packs use some of the same names (brainstorming, writing-plans, code-reviewer),
-# so a name alone proves nothing. Files matched by name are removed only when the project also
-# shows the blueprint installed them: its plugin manifest, its ship.sh, its ship state files, a
-# hooks.json wired to its handlers, or one of the skills only the blueprint ships. Without that
-# evidence the matches are listed as `unsure` and left alone.
+# so a name alone proves nothing. A file matched by name is removed only when the project shows
+# the blueprint installed (its plugin manifest, its ship.sh, its ship state files, a hooks.json
+# wired to its handlers, or one of the skills only the blueprint ships) and the file itself (a
+# skill folder's SKILL.md) is one the blueprint shipped: its checksum, line endings aside, is in
+# references/v3-file-sums.txt. Anything else is listed as `unsure` and left alone, which covers
+# another pack's file of the same name and a blueprint copy someone edited. A file byte for byte
+# identical to one the blueprint shipped counts as its copy, whoever put it there.
 #
 # What counts as a v3 trace (only files the blueprint itself installed):
 #   .claude/skills/<v3 skill name>/        the 55 v3 skill names in references/v4-skill-names.tsv
@@ -28,6 +31,7 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NAME_MAP="$HERE/../references/v4-skill-names.tsv"
+SUMS="$HERE/../references/v3-file-sums.txt"
 APPLY=false
 KEEP_INSTRUCTIONS=false
 PROJECT="."
@@ -68,6 +72,14 @@ $(grep -o 'handlers/[A-Za-z0-9._-]*' hooks/hooks.json | sed 's#handlers/##' | so
 LIST
     [ "$seen" = 1 ]
 }
+# shipped FILE: is FILE, line endings aside, one the blueprint shipped (its cksum is in SUMS)?
+shipped() {
+    local crc size
+    [ -f "$1" ] || return 1
+    [ -f "$SUMS" ] || return 1
+    read -r crc size _ < <(LC_ALL=C tr -d '\r' < "$1" | cksum) || return 1
+    grep -qxF "$crc $size" "$SUMS"
+}
 is_blueprint_manifest() { [ -f .claude-plugin/plugin.json ] && grep -q '"claude-code-blueprint"' .claude-plugin/plugin.json; }
 blueprint_installed() {
     local n f
@@ -85,12 +97,18 @@ found=0
 unsure=0
 remove_paths=()
 note() { found=$((found + 1)); echo "$1"; }
-# A name match is removed only in a project the blueprint demonstrably installed into.
-plan_rm() {
-    if [ "$OWNED" = true ]; then
-        remove_paths+=("$1"); note "remove  $1"
-    else
+plan_rm() { remove_paths+=("$1"); note "remove  $1"; }
+# plan_copy PATH: a file or skill folder found by its v3 name goes only in a project the blueprint
+# demonstrably installed into, and only when it (a folder's SKILL.md) is one the blueprint shipped.
+plan_copy() {
+    local file="$1"
+    if [ -d "$1" ]; then file="$1/SKILL.md"; fi
+    if [ "$OWNED" != true ]; then
         unsure=$((unsure + 1)); echo "unsure  $1  (a v3 blueprint name, but nothing else here shows the blueprint installed it; left alone)"
+    elif ! shipped "$file"; then
+        unsure=$((unsure + 1)); echo "unsure  $1  (a v3 blueprint name, but not a file the blueprint shipped: another pack's, or edited; left alone)"
+    else
+        plan_rm "$1"
     fi
 }
 
@@ -98,28 +116,28 @@ if [ -d .claude/skills ]; then
     for d in .claude/skills/*/; do
         [ -d "$d" ] || continue
         n=${d%/}; n=${n##*/}
-        if v3_skill "$n"; then plan_rm "${d%/}"; fi
+        if v3_skill "$n"; then plan_copy "${d%/}"; fi
     done
 fi
 if [ -d .claude/commands ]; then
     for f in .claude/commands/*.md; do
         [ -f "$f" ] || continue
         n=${f##*/}; n=${n%.md}
-        if v3_skill "$n"; then plan_rm "$f"; fi
+        if v3_skill "$n"; then plan_copy "$f"; fi
     done
 fi
 if [ -d .claude/agents ]; then
     for f in .claude/agents/*.md; do
         [ -f "$f" ] || continue
         n=${f##*/}; n=${n%.md}
-        if in_list "$n" "$V3_AGENTS"; then plan_rm "$f"; fi
+        if in_list "$n" "$V3_AGENTS"; then plan_copy "$f"; fi
     done
 fi
 for hookdir in .claude/hooks hooks/handlers; do
     [ -d "$hookdir" ] || continue
     for f in "$hookdir"/*; do
         [ -f "$f" ] || continue
-        if in_list "${f##*/}" "$V3_HANDLERS"; then plan_rm "$f"; fi
+        if in_list "${f##*/}" "$V3_HANDLERS"; then plan_copy "$f"; fi
     done
 done
 if is_blueprint_hooks_json; then

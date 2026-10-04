@@ -22,6 +22,13 @@ def run(*args, cwd):
 
 
 class LegacyRepo(unittest.TestCase):
+    # The fixture's blueprint copies are files a v2 or v3 release shipped, byte for byte. Its
+    # placeholder copies match no shipped version, as a copy someone edited would not.
+    SHIPPED = (".claude/skills/pause-checkpoint", ".claude/commands/orchestrate.md",
+               ".claude/agents/learnings-researcher.md", ".claude/hooks/task-completed.js")
+    EDITED = (".claude/skills/build-pipeline", ".claude/commands/quick-fix.md",
+              ".claude/agents/code-reviewer.md", ".claude/hooks/session-start.js")
+
     def setUp(self):
         self.dir = tempfile.mkdtemp()
         copy_fixture_skill(os.path.join(FIXTURES, "v3-legacy-repo"), self.dir)
@@ -36,21 +43,22 @@ class LegacyRepo(unittest.TestCase):
     def test_report_lists_the_traces_and_changes_nothing(self):
         code, out = run(cwd=self.dir)
         self.assertEqual(code, 0, out)
-        for line in ("remove  .claude/skills/build-pipeline", "remove  .claude/commands/quick-fix.md", "remove  .claude/agents/code-reviewer.md",
-                     "remove  .claude/hooks/session-start.js", "remove  scripts/ship.sh", "remove  .claude-plugin/plugin.json",
-                     "aside   .claude/ship-loop.local.md", "rename  CLAUDE.md -> AGENTS.md"):
+        for line in ["remove  %s\n" % rel for rel in self.SHIPPED] + [
+                "remove  scripts/ship.sh", "remove  .claude-plugin/plugin.json",
+                "aside   .claude/ship-loop.local.md", "rename  CLAUDE.md -> AGENTS.md"]:
             self.assertIn(line, out)
-        self.assertTrue(self.exists(".claude/skills/build-pipeline/SKILL.md"))
+        for rel in self.EDITED:
+            self.assertIn("unsure  %s  (a v3 blueprint name, but not a file the blueprint shipped" % rel, out)
+        self.assertTrue(self.exists(".claude/skills/pause-checkpoint/SKILL.md"))
         self.assertTrue(self.exists("CLAUDE.md") and not self.exists("AGENTS.md"))
 
     def test_apply_removes_the_copies_and_leaves_user_files_alone(self):
         code, out = run("--apply", cwd=self.dir)
         self.assertEqual(code, 0, out)
-        for gone in (".claude/skills/build-pipeline", ".claude/commands/quick-fix.md", ".claude/agents/code-reviewer.md",
-                     ".claude/hooks/session-start.js", "scripts/ship.sh", ".claude-plugin", ".claude/ship-loop.local.md"):
+        for gone in self.SHIPPED + ("scripts/ship.sh", ".claude-plugin", ".claude/ship-loop.local.md"):
             self.assertFalse(self.exists(gone), gone)
-        for kept in (".claude/skills/my-own-skill/SKILL.md", ".claude/commands/deploy.md", ".claude/agents/my-agent.md",
-                     ".claude/hooks/my-hook.js", "scripts/deploy.sh", "src/app.py"):
+        for kept in self.EDITED + (".claude/skills/my-own-skill/SKILL.md", ".claude/commands/deploy.md", ".claude/agents/my-agent.md",
+                                   ".claude/hooks/my-hook.js", "scripts/deploy.sh", "src/app.py"):
             self.assertTrue(self.exists(kept), kept)
         self.assertTrue(self.exists(".agent-blueprint/run/v3/ship-loop.local.md"))
 
@@ -95,7 +103,7 @@ class LegacyRepo(unittest.TestCase):
         self.assertNotIn("rename", out)
         self.assertEqual(read(os.path.join(self.dir, "CLAUDE.md")), original)
         self.assertFalse(self.exists("AGENTS.md"))
-        self.assertFalse(self.exists(".claude/skills/build-pipeline"))   # the rest of the migration still ran
+        self.assertFalse(self.exists(".claude/skills/pause-checkpoint"))   # the rest of the migration still ran
 
     def test_same_named_files_from_another_pack_are_left_alone(self):
         # brainstorming and code-reviewer are names other skill packs ship too; with no sign of a
@@ -117,6 +125,38 @@ class LegacyRepo(unittest.TestCase):
                 self.assertTrue(os.path.exists(os.path.join(other, rel)), rel)
         finally:
             shutil.rmtree(other)
+
+    def test_another_packs_files_in_a_blueprint_project_are_left_alone(self):
+        # The fixture shows the blueprint installed (manifest, ship.sh, run state), and another pack
+        # has added files under names the blueprint also used. A blueprint name in a blueprint
+        # project is not enough: each file must be one the blueprint shipped.
+        foreign = (".claude/skills/brainstorming", ".claude/agents/security-sentinel.md",
+                   ".claude/commands/deep-research.md", ".claude/hooks/context-monitor.js")
+        copy_fixture_skill(os.path.join(FIXTURES, "v3-foreign-pack"), self.dir)
+        code, out = run(cwd=self.dir)
+        self.assertEqual(code, 0, out)
+        for rel in foreign:
+            self.assertIn("unsure  %s  " % rel, out)
+            self.assertNotIn("remove  %s\n" % rel, out)
+        for rel in self.SHIPPED:
+            self.assertIn("remove  %s\n" % rel, out)
+        code, out = run("--apply", cwd=self.dir)
+        self.assertEqual(code, 0, out)
+        for rel in foreign:
+            self.assertTrue(self.exists(rel), rel)
+        for rel in self.SHIPPED:
+            self.assertFalse(self.exists(rel), rel)
+
+    def test_a_shipped_copy_with_crlf_line_endings_still_counts(self):
+        # A Windows clone with core.autocrlf copied the blueprint's files with CRLF endings.
+        path = os.path.join(self.dir, ".claude", "agents", "learnings-researcher.md")
+        with open(path, "rb") as fh:
+            data = fh.read()
+        with open(path, "wb") as fh:
+            fh.write(data.replace(b"\n", b"\r\n"))
+        code, out = run(cwd=self.dir)
+        self.assertEqual(code, 0, out)
+        self.assertIn("remove  .claude/agents/learnings-researcher.md\n", out)
 
     def test_repo_without_traces_reports_nothing(self):
         clean = tempfile.mkdtemp()
