@@ -576,14 +576,14 @@
         },
         "manual-only": {
           "cost_usd": null,
-          "date": "2026-10-03T21:09:34Z",
+          "date": "2026-10-04T14:45:49Z",
           "link": "",
           "log": "$TMPDIR/.../manual-only.log",
-          "plugin_dir": null,
-          "reason": "the catalog shown to the model omitted 128 skills and names no ab-p skill (the host caps its catalog), so whether ab-plugin-update is hidden on purpose cannot be judged here",
-          "seconds": 16,
-          "session": "92b49295-1632-4201-8474-6581fa0c1311",
-          "state": "n/a",
+          "plugin_dir": "$TMPDIR/.../skills",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 11,
+          "session": "dd9aab84-0db6-4f23-912b-cd1ddf85f23d",
+          "state": "pass",
           "tokens": null
         },
         "review": {
@@ -1141,7 +1141,18 @@
         "agy"
       ],
       "plugin_dir": "~/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "manual-only"
+      ],
+      "command": "HOME=<clean profile> bash tests/smoke/run-smoke.sh --host cursor-agent --cell manual-only --plugin-dir . (only the blueprint installed)",
+      "date": "2026-10-04 14:46 UTC",
+      "hosts": [
+        "cursor-agent"
+      ],
+      "plugin_dir": "~/projects/claude-eng/project-template/project-template-phase4"
     }
   ],
-  "updated": "2026-10-04 14:14 UTC"
+  "updated": "2026-10-04 14:46 UTC"
 }

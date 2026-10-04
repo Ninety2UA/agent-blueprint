@@ -66,6 +66,19 @@ Build, review, debug, ship and team pass only when the skill's provenance record
 | `not-installed` | The host CLI is not on PATH; nothing ran |
 | `n/a` | The cell does not apply to the host, or its `check.sh` exited 3 because the host cannot show what the cell judges (a capped skill catalog, for one); the reason says why |
 
+## A clean profile for a capped catalog
+
+Cursor's CLI shows the model only about the first 210 skill names, and it also reads other tools' skill folders, so on a machine with many skills the manual-only cell renders n/a. Run that cell in a profile that holds only the blueprint, reusing the existing sign-in (the CLI keeps it in the macOS keychain, which a bare `HOME` change hides):
+
+```bash
+P=/private/tmp/cursor-blueprint-profile
+mkdir -p "$P/Library" && ln -sfn "$HOME/Library/Keychains" "$P/Library/Keychains"   # macOS only
+HOME="$P" bash install.sh --only cursor-agent
+HOME="$P" bash tests/smoke/run-smoke.sh --host cursor-agent --cell manual-only --plugin-dir .
+```
+
+The profile changes nothing in the real home directory; delete it afterwards. Do not run `cursor-agent login` inside it: the login would overwrite the keychain entry of the account already signed in.
+
 ## Adding a host or a cell
 
 A host is a row in `skills/ab-ship-pipeline/scripts/hosts.sh` (KTD15): add it to `AB_HOSTS` and to every `host_*` function, including the smoke rows `host_version`, `host_helpers_off_args`, `host_hooks`, `host_manual_only`, `host_catalog_dirs` and `host_usage`. The smoke test reads nothing about a host from anywhere else.
