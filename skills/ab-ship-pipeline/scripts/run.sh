@@ -535,8 +535,32 @@ done_check() {
     return 0
 }
 
+# outgoing_commits: prints, oldest first, every commit the push would publish: those reachable from
+# HEAD that no branch of the recorded remote has. That is more than the run's own commits when the
+# branch carried unpushed commits before the run started, and the whole branch when the remote does
+# not have it yet. A branch tip this clone lacks is fetched first (its objects only, no ref or
+# FETCH_HEAD is written), so commits a remote branch gained since the last fetch count as already
+# published. Returns 1 when the remote cannot be read.
+outgoing_commits() {
+    local heads tips missing
+    heads=$(git ls-remote --heads "$REC_push_url" 2>/dev/null) || return 1
+    tips=$(printf '%s\n' "$heads" | cut -f1 | grep -E '^[0-9a-f]{40,64}$' || true)
+    if [ -n "$tips" ]; then
+        missing=$(printf '%s\n' "$tips" | git cat-file --batch-check='%(objectname) %(objecttype)' | sed -n 's/ missing$//p')
+        if [ -n "$missing" ]; then
+            printf '%s\n' "$missing" | git -c core.hooksPath=/dev/null fetch --quiet --no-tags --no-recurse-submodules --no-write-fetch-head --stdin "$REC_push_url" >/dev/null 2>&1 || return 1
+        fi
+    fi
+    {
+        echo HEAD
+        if [ -n "$tips" ]; then
+            printf '%s\n' "$tips" | git cat-file --batch-check='%(objectname) %(objecttype)' | sed -n 's/^\([0-9a-f]*\) commit$/^\1/p'
+        fi
+    } | git rev-list --reverse --stdin
+}
+
 publish() {
-    local body_copy hook_now url_now cfg_now ci_files out number title
+    local body_copy hook_now url_now cfg_now ci_files out number title outgoing count
     echo ""
     info "Publishing $BRANCH"
     gh auth status >/dev/null 2>&1 || needs_human "gh is not authenticated, so the pull request cannot be opened" "gh auth login"
@@ -550,7 +574,16 @@ publish() {
     [ "$(git symbolic-ref --short -q HEAD)" = "$REC_branch" ] || needs_human "HEAD is no longer on $REC_branch" "git switch $REC_branch"
     git merge-base --is-ancestor "$REC_base" HEAD 2>/dev/null || needs_human "the branch moved away from the recorded base $(git rev-parse --short "$REC_base")" "rebase onto it or start a new run"
 
-    ci_files=$(git diff --name-only "$REC_base" HEAD -- .github/workflows .github/actions 2>/dev/null || true)
+    # The CI check and the secret scan cover the commits the push would publish, not only the run's
+    # own (REC_base..HEAD): the branch may have carried unpushed commits when the run started.
+    outgoing=$(outgoing_commits) || needs_human "could not read the branches of $(mask_url "$REC_push_url") to tell which commits the push would publish; nothing was pushed" "check the network and the git credential, then re-run"
+    count=$(printf '%s' "$outgoing" | grep -c . || true)
+
+    ci_files=""
+    if [ -n "$outgoing" ]; then
+        ci_files=$(printf '%s\n' "$outgoing" | git log --no-walk=unsorted --stdin --format= --name-only --no-renames -m -- .github/workflows .github/actions | sed '/^$/d' | LC_ALL=C sort -u) \
+            || needs_human "could not list the files the commits to publish change" "check the repository with git log, then re-run"
+    fi
     if [ -n "$ci_files" ] && [ "$ALLOW_CI" != true ]; then
         needs_human "the range touches CI configuration: $(printf '%s' "$ci_files" | tr '\n' ' ')" "review it, then re-run with --allow-ci-changes"
     fi
@@ -564,8 +597,8 @@ publish() {
     body_copy="$STATE_ROOT/pr-body.md"
     cat "$PR_BODY" > "$body_copy"
 
-    info "Scanning $(git rev-parse --short "$REC_base")..$(git rev-parse --short HEAD) and the PR body for secrets"
-    if ! out=$(bash "$SCAN" --range "$REC_base..HEAD" --file "$body_copy" 2>&1); then
+    info "Scanning the $count commit(s) the push would publish and the PR body for secrets"
+    if ! out=$(printf '%s\n' "$outgoing" | bash "$SCAN" --commits - --file "$body_copy" 2>&1); then
         printf '%s\n' "$out" | sed 's/^/      /'
         needs_human "the secret scan found key-shaped values or a .env file (listed above, values masked); nothing was pushed" "remove them from the commits and the PR body, then re-run"
     fi

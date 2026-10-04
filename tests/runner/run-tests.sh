@@ -555,13 +555,93 @@ t39_an_env_file_under_a_quoted_directory_fails_the_range_scan() {
     out=$(bash "$REPO/skills/ab-ship-pipeline/scripts/scan-secrets.sh" --range main..HEAD 2>&1) && fail "the scan passed a range that adds café/.env and deletes it again"
     printf '%s\n' "$out" | grep -Fq ":café/.env: .env file" || fail "no hit naming café/.env ($out)"
     ! printf '%s\n' "$out" | grep -Fq "placeholder" || fail "the scan printed the .env file's content"
-    # A double quote in a directory name is always quoted by git, with the quote escaped inside;
+    # A double quote in a directory name makes git quote the path unless it prints it with -z;
     # the sub-case is skipped on a filesystem that refuses the name.
     if mkdir -p 'qu"ote' 2>/dev/null; then
         echo "APP_MODE=placeholder" > 'qu"ote/.env' && git add 'qu"ote' && git commit -q -m "add quoted env"
         out=$(bash "$REPO/skills/ab-ship-pipeline/scripts/scan-secrets.sh" --range HEAD~1..HEAD 2>&1) && fail "the scan passed a range that adds .env under a directory named with a double quote"
-        printf '%s\n' "$out" | grep -Fq ':qu\"ote/.env: .env file' || fail "no hit naming qu\"ote/.env ($out)"
+        printf '%s\n' "$out" | grep -Fq ':qu"ote/.env: .env file' || fail "no hit naming qu\"ote/.env ($out)"
     fi
+}
+
+t40_commits_from_before_the_run_are_scanned_and_checked() {
+    # The push publishes every commit the remote lacks, not only the run's own: a key, a .env file
+    # or a workflow in a commit the branch carried before the run started stops it the same way.
+    new_repo t40a
+    printf 'aws_access_key_id = AKIA%s\n' "$(printf 'Q%.0s' {1..16})" > config.ini
+    git add config.ini && git commit -q -m "chore: add config"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "secret scan" && assert_out "cloud access key" && assert_not_out "AKIAQQQQ"
+    ! remote_has_branch feat/x || fail "pushed a key committed before the run started"
+    new_repo t40b
+    echo pushed > pushed.txt && git add pushed.txt && git commit -q -m "feat: pushed before the run"
+    git push -q origin feat/x
+    local before
+    before=$(git --git-dir="$REMOTE" rev-parse feat/x)
+    echo "APP_MODE=placeholder" > .env && git add .env && git commit -q -m "chore: local env"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "secret scan" && assert_out ".env: .env file" && assert_not_out "placeholder"
+    assert_eq "$(git --git-dir="$REMOTE" rev-parse feat/x)" "$before" "the remote branch after a refused publish"
+    new_repo t40c
+    mkdir -p .github/workflows && printf 'name: local\non: push\njobs: {}\n' > .github/workflows/local.yml
+    git add .github && git commit -q -m "ci: local workflow"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "CI configuration" && assert_out "local.yml"
+    ! remote_has_branch feat/x || fail "pushed a workflow committed before the run started"
+    # A commit the remote already has is not scanned again, even when the remote's branch moved on
+    # to a commit this clone never fetched.
+    new_repo t40d
+    printf 'fixture = AKIA%s\n' "$(printf 'P%.0s' {1..16})" > fixture.txt
+    git add fixture.txt && git commit -q -m "test: published fixture"
+    git push -q origin feat/x:main
+    git clone -q "$REMOTE" "$D/other"
+    (cd "$D/other" && echo more >> README.md && git commit -q -am "docs: more" && git push -q origin main)
+    git cat-file -e "$(git --git-dir="$REMOTE" rev-parse main)" 2>/dev/null && fail "the clone already has the remote's main; the case needs a tip it never fetched"
+    local refs
+    refs=$(git for-each-ref --format='%(refname) %(objectname)' | grep -v '^refs/heads/' || true)
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 0 && assert_out "Opened pull request" && assert_not_out "secret scan found"
+    assert_eq "$(remote_commits_ahead feat/x)" 1 "commits pushed past the remote's main"
+    # The refresh fetched objects only: no FETCH_HEAD, and no ref outside refs/heads/ was written.
+    assert_no_file .git/FETCH_HEAD
+    assert_eq "$(git for-each-ref --format='%(refname) %(objectname)' | grep -v '^refs/heads/' || true)" "$refs" "refs outside refs/heads/ after the run"
+}
+
+t41_an_env_path_named_like_a_commit_header_fails_the_range_scan() {
+    new_repo t41
+    mkdir -p "commit secrets" && echo "APP_MODE=placeholder" > "commit secrets/.env"
+    git add "commit secrets" && git commit -q -m "add env"
+    out=$(bash "$REPO/skills/ab-ship-pipeline/scripts/scan-secrets.sh" --range main..HEAD 2>&1) && fail "the scan passed a range that adds 'commit secrets/.env'"
+    printf '%s\n' "$out" | grep -Fq ":commit secrets/.env: .env file" || fail "no hit naming 'commit secrets/.env' ($out)"
+    # A newline in a directory name stays inside the one line that reports it; skipped on a
+    # filesystem that refuses the name.
+    if mkdir -p "$(printf 'two\nlines')" 2>/dev/null; then
+        echo "APP_MODE=placeholder" > "$(printf 'two\nlines')/.env" && git add -A && git commit -q -m "add env under a newline"
+        out=$(bash "$REPO/skills/ab-ship-pipeline/scripts/scan-secrets.sh" --range HEAD~1..HEAD 2>&1) && fail "the scan passed a range that adds .env under a directory named with a newline"
+        printf '%s\n' "$out" | grep -Fq ":two?lines/.env: .env file" || fail "no one-line hit naming two?lines/.env ($out)"
+    fi
+}
+
+t42_the_scanner_reads_a_list_of_commits() {
+    new_repo t42
+    local scan="$REPO/skills/ab-ship-pipeline/scripts/scan-secrets.sh"
+    echo clean > clean.txt && git add clean.txt && git commit -q -m "clean"
+    printf 'key = AKIA%s\n' "$(printf 'Q%.0s' {1..16})" > k.txt && git add k.txt && git commit -q -m "add key"
+    out=$(git rev-list --reverse main..HEAD | bash "$scan" --commits - 2>&1) && fail "the scan passed a list holding the commit that adds a key"
+    printf '%s\n' "$out" | grep -Fq ":k.txt: cloud access key" || fail "no hit naming k.txt ($out)"
+    git rev-parse HEAD~1 > "$D/clean.list"
+    bash "$scan" --commits "$D/clean.list" > "$OUT" 2>&1 || fail "a list of one clean commit is not clean ($OUT)"
+    # An empty list scans nothing; it never falls back to HEAD, which adds the key.
+    RC=0; printf '' | bash "$scan" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 0
+    RC=0; printf 'HEAD\n' | bash "$scan" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 2 && assert_out "not a full commit hash"
+    RC=0; printf -- '--all\n' | bash "$scan" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 2
 }
 
 t22_resume_takes_the_host_from_the_command_line() {
@@ -639,7 +719,9 @@ t30_a_long_final_message_does_not_end_the_runner t31_scan_reads_hidden_paths_mer
 t32_a_failed_runner_commit_is_needs_human t33_planted_symlinks_are_never_written_through
 t34_resume_at_the_cap_says_how_to_continue t35_dry_run_masks_credentials_and_names_the_pr_repository
 t36_every_scan_pattern_is_caught_and_masked t37_a_blank_commit_message_falls_back_to_the_default
-t38_a_removed_env_file_still_fails_the_range_scan t39_an_env_file_under_a_quoted_directory_fails_the_range_scan"
+t38_a_removed_env_file_still_fails_the_range_scan t39_an_env_file_under_a_quoted_directory_fails_the_range_scan
+t40_commits_from_before_the_run_are_scanned_and_checked t41_an_env_path_named_like_a_commit_header_fails_the_range_scan
+t42_the_scanner_reads_a_list_of_commits"
 
 SELECTED="${*:-$ALL}"
 PASSED=0 FAILED=0

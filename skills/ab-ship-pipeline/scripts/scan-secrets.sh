@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scan-secrets.sh — stdlib secret scan for the ship runner (KTD7): bash, git, grep and sed only.
 #
-# Usage: scan-secrets.sh [--range BASE..HEAD] [--file PATH]...
+# Usage: scan-secrets.sh [--range BASE..HEAD] [--commits FILE] [--file PATH]...
 #   --range BASE..HEAD   Every line added by every commit in the range (git log -p), so a
 #                        key committed and removed again inside the range is still caught;
 #                        merges are diffed against each parent, paths marked -diff or binary
@@ -9,6 +9,9 @@
 #                        A .env file (or .env.*, except .env.example, .env.sample,
 #                        .env.template and .env.dist) added by any commit in the range is a
 #                        hit by its name alone, even when a later commit deletes it again.
+#   --commits FILE       The same scan over exactly the commits listed in FILE (- for standard
+#                        input): one full commit hash per line, oldest first, as
+#                        `git rev-list --reverse` prints them. An empty list scans nothing.
 #   --file PATH          Every line of a file, such as the PR body.
 #
 # Looks for key-shaped strings: cloud access keys, GitHub and GitLab tokens, private key
@@ -22,7 +25,7 @@
 
 set -euo pipefail
 
-usage() { sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; }
 
 # Case-sensitive, key-shaped tokens, one per line as PATTERN<tab>LABEL (the \t below become
 # tabs). Written so that no literal in this file looks like a key.
@@ -83,8 +86,8 @@ scan_file() {
     fi
 }
 
-PATCH_TMP=""
-trap '[ -n "$PATCH_TMP" ] && rm -f "$PATCH_TMP"' EXIT
+PATCH_TMP="" REVS_TMP=""
+trap 'rm -f ${PATCH_TMP:+"$PATCH_TMP"} ${REVS_TMP:+"$REVS_TMP"}' EXIT
 
 # hit WHERE LINE: count and report one matching line, masked.
 hit() {
@@ -103,19 +106,51 @@ is_env_path() {
     return 1
 }
 # hit_path WHERE: count and report one path that is a secret by its name; nothing of it is read.
+# A control character in the path (a newline, say) is printed as ?, so one hit stays on one line.
 hit_path() {
     HITS=$((HITS + 1))
-    echo "$1: .env file"
+    echo "$(printf '%s' "$1" | LC_ALL=C tr '\001-\037\177' '?'): .env file"
 }
 
+# scan_range BASE..HEAD: every commit in the range.
 scan_range() {
-    local range="$1" commit="" file="" line seen=""
-    case "$range" in *..*) ;; *) echo "scan-secrets: --range wants BASE..HEAD, got $range" >&2; exit 2 ;; esac
+    case "$1" in *..*) ;; *) echo "scan-secrets: --range wants BASE..HEAD, got $1" >&2; exit 2 ;; esac
+    REVS_TMP=$(mktemp "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
+    printf '%s\n' "$1" > "$REVS_TMP"
+    scan_commits "" "$1"
+    rm -f "$REVS_TMP"; REVS_TMP=""
+}
+
+# scan_list FILE: exactly the commits FILE lists (- for standard input), read once and checked:
+# a line that is not a full commit hash, such as a revision name or an option, is refused.
+scan_list() {
+    local src="$1" bad
+    [ "$src" = - ] && src=/dev/stdin
+    [ -r "$src" ] || { echo "scan-secrets: cannot read the commit list: $1" >&2; exit 2; }
+    REVS_TMP=$(mktemp "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
+    grep -v '^$' "$src" > "$REVS_TMP" || [ $? -eq 1 ] || { echo "scan-secrets: cannot read the commit list: $1" >&2; exit 2; }
+    bad=$(grep -Ev '^([0-9a-f]{40}|[0-9a-f]{64})$' "$REVS_TMP" | head -1 || true)
+    if [ -n "$bad" ]; then
+        echo "scan-secrets: --commits wants one full commit hash per line; not a full commit hash: $(printf '%s' "$bad" | cut -c1-80)" >&2
+        exit 2
+    fi
+    # git log reads an empty list as HEAD; an empty list has nothing to scan.
+    if [ -s "$REVS_TMP" ]; then scan_commits --no-walk=unsorted "the listed commits"; fi
+    rm -f "$REVS_TMP"; REVS_TMP=""
+}
+
+# scan_commits WALK WHAT: the three passes over the revisions in $REVS_TMP, which git log reads
+# with --stdin. WALK is --no-walk=unsorted for a list (each listed commit, in its order) and empty
+# for a range; WHAT names them in an error.
+scan_commits() {
+    local walk="$1" what="$2" order="--reverse" commit="" file="" line seen="" want_path=0
+    # A list is already oldest first.
+    [ -n "$walk" ] && order="$walk"
     PATCH_TMP=$(mktemp "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
     # --text: a path marked -diff or binary in .gitattributes still prints its lines.
     # -m: a merge is diffed against each parent, so lines a merge itself introduces are seen.
-    if ! git log -p -m --text --no-color --no-ext-diff --format='commit %H' "$range" -- . > "$PATCH_TMP" 2>/dev/null; then
-        echo "scan-secrets: git log failed for $range" >&2
+    if ! git log -p -m --text --no-color --no-ext-diff --format='commit %H' ${walk:+"$walk"} --stdin -- . < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null; then
+        echo "scan-secrets: git log failed for $what" >&2
         exit 2
     fi
     if grep -qaE "$STRICT_ERE" "$PATCH_TMP" || grep -qaiE "$LOOSE_ERE" "$PATCH_TMP"; then
@@ -132,8 +167,8 @@ scan_range() {
         done < "$PATCH_TMP"
     fi
     # Commit messages are pushed too, and the runner commits the skill's commit-msg.md verbatim.
-    if ! git log --format='commit %H%n%B' "$range" > "$PATCH_TMP" 2>/dev/null; then
-        echo "scan-secrets: git log failed for $range" >&2
+    if ! git log --format='commit %H%n%B' ${walk:+"$walk"} --stdin < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null; then
+        echo "scan-secrets: git log failed for $what" >&2
         exit 2
     fi
     if grep -qaE "$STRICT_ERE" "$PATCH_TMP" || grep -qaiE "$LOOSE_ERE" "$PATCH_TMP"; then
@@ -146,25 +181,29 @@ scan_range() {
     # A .env file is a secret by its name alone, and one a later commit deletes again is still in
     # the pushed history, so the paths added by every commit are listed, oldest first, and each
     # is reported once at the commit that first adds it. --no-renames: a rename to .env counts.
-    # core.quotePath=false: a path with a non-ASCII byte is printed as is, not as "caf\303\251/.env"
-    # with quotes the basename test would see. Git still quotes a path holding " or \, so those
-    # quotes are stripped below; the escapes it leaves inside the path do not reach the basename,
-    # which is ASCII for every .env name.
-    if ! git -c core.quotePath=false log --reverse --diff-filter=A --name-only --no-renames -m --format='commit %H' "$range" -- . > "$PATCH_TMP" 2>/dev/null; then
-        echo "scan-secrets: git log failed for $range" >&2
+    # -z prints every path unquoted and NUL-terminated, whatever bytes it holds. --name-status
+    # puts a status record (A) before each path, so the parse below knows a path by its position
+    # and never by its text: a path named like the commit line ("commit secrets/.env") is a path.
+    # The record after each commit hash starts with the newline git puts before the file list.
+    if ! git log "$order" --diff-filter=A --name-status --no-renames -m -z --format=%H --stdin -- . < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null; then
+        echo "scan-secrets: git log failed for $what" >&2
         exit 2
     fi
     commit=""
-    while IFS= read -r line || [ -n "$line" ]; do
-        case "$line" in
-            "commit "*) commit="${line#commit }"; commit="${commit:0:12}"; continue ;;
-            "") continue ;;
-            \"*) line="${line#\"}"; line="${line%\"}" ;;
-        esac
-        if is_env_path "$line" && ! printf '%s\n' "$seen" | grep -Fxq -- "$line"; then
-            seen="$seen$line"$'\n'
-            hit_path "$commit:$line"
+    while IFS= read -r -d '' line || [ -n "$line" ]; do
+        if [ "$want_path" = 1 ]; then
+            want_path=0
+            if is_env_path "$line" && ! printf '%s\n' "$seen" | grep -Fxq -- "$line"; then
+                seen="$seen$line"$'\n'
+                hit_path "$commit:$line"
+            fi
+            continue
         fi
+        line="${line#$'\n'}"
+        case "$line" in
+            [A-Z]) want_path=1 ;;
+            *)     commit="${line:0:12}" ;;
+        esac
     done < "$PATCH_TMP"
     rm -f "$PATCH_TMP"; PATCH_TMP=""
 }
@@ -174,6 +213,8 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --range)   [ $# -ge 2 ] || { usage; exit 2; }; scan_range "$2"; shift 2 ;;
         --range=*) scan_range "${1#--range=}"; shift ;;
+        --commits) [ $# -ge 2 ] || { usage; exit 2; }; scan_list "$2"; shift 2 ;;
+        --commits=*) scan_list "${1#--commits=}"; shift ;;
         --file)    [ $# -ge 2 ] || { usage; exit 2; }; scan_file "$2"; shift 2 ;;
         --file=*)  scan_file "${1#--file=}"; shift ;;
         -h|--help) usage; exit 0 ;;
