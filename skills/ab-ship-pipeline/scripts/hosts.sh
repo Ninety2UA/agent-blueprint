@@ -404,15 +404,12 @@ host_preflight() {
             else
                 warn "agy: no credentials found; run agy once and sign in"
             fi
+            # Antigravity 1.2.16 reads and writes outside the workspace and runs commands in a headless
+            # run with --dangerously-skip-permissions alone (verified 2026-10-04); 1.2.12 stalled on a read
+            # outside the workspace without allowNonWorkspaceAccess, so an unset key is a warning only.
             case $(_json_bool "$settings" allowNonWorkspaceAccess) in
                 true) info "agy: allowNonWorkspaceAccess is on" ;;
-                *)
-                    error "agy: allowNonWorkspaceAccess is not true in $settings; headless runs stall when the skill reads plugin files outside the workspace."
-                    echo "    Fix: python3 - <<'PY'" >&2
-                    echo "import json,os; p=os.path.expanduser('$settings'); d=json.load(open(p)) if os.path.exists(p) else {}" >&2
-                    echo "d.update({'allowNonWorkspaceAccess': True, 'toolPermission': 'always-proceed', 'artifactReviewPolicy': 'always-proceed'}); json.dump(d, open(p, 'w'), indent=2)" >&2
-                    echo "PY" >&2
-                    return 1 ;;
+                *) warn "agy: allowNonWorkspaceAccess is not set in $settings; not needed on 1.2.16 and later, but set it if a run stalls reading a file outside the workspace" ;;
             esac
             if grep -Fq "\"$repo\"" "$settings" 2>/dev/null; then
                 info "agy: workspace is trusted"

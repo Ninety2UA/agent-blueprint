@@ -13,7 +13,7 @@ agy plugin install ./agent-blueprint
 
 The docs document the directory form. A git URL (`agy plugin install https://github.com/Ninety2UA/agent-blueprint`) worked for another plugin on 1.0.10 per a third-party report and is not verified on 1.2.12; it is checked after the repository rename. `bash install.sh` runs `agy plugin install <checkout>` for Antigravity, because a copy in `~/.agents/skills` would not reach it: Antigravity does not scan that folder. The installed copy lives at `~/.gemini/config/plugins/agent-blueprint` on 1.2.12; `agy plugin list` shows it.
 
-Trust step: none for the install. For headless runs, `allowNonWorkspaceAccess` must be `true` in `~/.gemini/antigravity-cli/settings.json`, or a run stalls the first time a skill reads a prompt file inside the installed plugin, outside the workspace. The runner's preflight checks the key and prints the fix, which also sets `toolPermission` and `artifactReviewPolicy` to `always-proceed`.
+Trust step: none. On 1.2.16 a headless run with `--dangerously-skip-permissions` reads the installed plugin's files outside the workspace, writes files and runs commands without any settings change (verified 2026-10-04). Version 1.2.12 stalled the first time a skill read a file outside the workspace unless `allowNonWorkspaceAccess` was `true` in `~/.gemini/antigravity-cli/settings.json`; if an older version stalls that way, set the key. The runner's preflight warns when it is unset and does not stop.
 
 What covers what: no other host's install covers Antigravity, and an Antigravity install covers no other host. Antigravity does read a project's `.agents/skills/`, so an `amp skill add` into a project shows its skills here too; keep one route.
 

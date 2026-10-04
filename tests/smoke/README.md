@@ -25,7 +25,7 @@ bash tests/smoke/run-smoke.sh --keep --timeout 900  # keep every working copy; 1
 | `--timeout S` | Seconds per cell instead of the host's row in `hosts.sh` (3600; Antigravity 2400); ship cells get twice that |
 | `--keep` | Keep every cell's working copy. A cell that did not pass keeps its copy anyway and names it in its reason |
 
-Before a run: the host must be installed and logged in, and the plugin installed by the host's canonical route from the local checkout (KTD19; the support notes in `docs/hosts/` name the route). `hosts.sh`'s preflight checks auth and trust per host and prints the fix; a hard failure renders `fail` for every cell of that host. Antigravity needs `allowNonWorkspaceAccess` in its settings, Cursor needs `cursor-agent login`, Codex `codex login`.
+Before a run: the host must be installed and logged in, and the plugin installed by the host's canonical route from the local checkout (KTD19; the support notes in `docs/hosts/` name the route). `hosts.sh`'s preflight checks auth and trust per host and prints the fix; a hard failure renders `fail` for every cell of that host. Antigravity needs no settings change on 1.2.16 (older versions need `allowNonWorkspaceAccess`), Cursor needs `cursor-agent login`, Codex `codex login`.
 
 Output:
 
