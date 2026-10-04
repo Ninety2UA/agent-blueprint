@@ -47,16 +47,16 @@
   <!-- Tags -->
   <g transform="translate(80, 225)">
     <rect width="95" height="30" rx="15" fill="none" stroke="#D4A574" stroke-width="1.5" opacity="0.6"/>
-    <text x="47" y="20" font-family="system-ui, sans-serif" font-size="13" fill="#D4A574" text-anchor="middle">53 Skills</text>
+    <text x="47.5" y="20" font-family="system-ui, sans-serif" font-size="13" fill="#D4A574" text-anchor="middle">53 skills</text>
 
-    <rect x="110" width="130" height="30" rx="15" fill="none" stroke="#D4A574" stroke-width="1.5" opacity="0.6"/>
-    <text x="175" y="20" font-family="system-ui, sans-serif" font-size="13" fill="#D4A574" text-anchor="middle">8 Coding CLIs</text>
+    <rect x="110" width="125" height="30" rx="15" fill="none" stroke="#D4A574" stroke-width="1.5" opacity="0.6"/>
+    <text x="172.5" y="20" font-family="system-ui, sans-serif" font-size="13" fill="#D4A574" text-anchor="middle">8 coding CLIs</text>
 
-    <rect x="255" width="100" height="30" rx="15" fill="none" stroke="#D4A574" stroke-width="1.5" opacity="0.6"/>
-    <text x="305" y="20" font-family="system-ui, sans-serif" font-size="13" fill="#D4A574" text-anchor="middle">30 Helpers</text>
+    <rect x="250" width="150" height="30" rx="15" fill="none" stroke="#D4A574" stroke-width="1.5" opacity="0.6"/>
+    <text x="325" y="20" font-family="system-ui, sans-serif" font-size="13" fill="#D4A574" text-anchor="middle">30 helper prompts</text>
 
-    <rect x="370" width="90" height="30" rx="15" fill="none" stroke="#6366f1" stroke-width="1.5" opacity="0.8"/>
-    <text x="415" y="20" font-family="system-ui, sans-serif" font-size="13" fill="#8b5cf6" text-anchor="middle">Plugin</text>
+    <rect x="415" width="90" height="30" rx="15" fill="none" stroke="#6366f1" stroke-width="1.5" opacity="0.8"/>
+    <text x="460" y="20" font-family="system-ui, sans-serif" font-size="13" fill="#8b5cf6" text-anchor="middle">10 hooks</text>
   </g>
 
   <!-- Host list -->
