@@ -76,7 +76,7 @@ From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-
 | `effort` | n/a | 0s | no per-dispatch effort metadata on grok |
 | `review` | fail | 12s | the host refused the run: usage or rate limit reached (Grok free tier). no provenance record for ab-requesting-code-review; the host refused the run: usage or rate limit reached. the review output does not name: eval, cl |
 | `debug` | fail | 12s | the host refused the run: usage or rate limit reached (Grok free tier). no provenance record for ab-systematic-debugging; the test suite still fails (host exited 1) |
-| `ship` | fail | 3m53s | the host refused the run: usage or rate limit reached (Grok free tier). runner exit 3:   status: needs-human — the host failed 6 times in a row with a transient error (see /var/folders/h_/65shk8nj7_791wv94ds_g55c0000gn/T |
+| `ship` | fail | 3m53s | the host refused the run: usage or rate limit reached (Grok free tier). runner exit 3:   status: needs-human — the host failed 6 times in a row with a transient error (see $TMPDIR/.../state the runner did not report a pu |
 | `team` | fail | 6s | the host refused the run: usage or rate limit reached (Grok free tier). no provenance record for ab-orchestrate; the host refused the run: usage or rate limit reached. no .agent-blueprint/team/<run>/ledger.md (host exite |
 | `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |
 

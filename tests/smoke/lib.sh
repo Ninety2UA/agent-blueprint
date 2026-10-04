@@ -173,6 +173,59 @@ print(",".join(paths))
 PY
 }
 
+# ── the effort check (AE2) ────────────────────────────────────
+# effort_check SESSION CONFIG_DIR: pass|fail|n/a, a tab, the reason. pass only when every helper
+# transcript of the session carries an effort field and all match the session's; a helper
+# transcript without one is named and the result is n/a, since a field that is not there is not
+# a match.
+effort_check() {
+    python3 - "$1" "$2" <<'PY'
+import collections, glob, json, os, sys
+session, cfg = sys.argv[1], sys.argv[2]
+projects = os.path.join(cfg, "projects")
+mains = glob.glob(os.path.join(projects, "*", session + ".jsonl"))
+if not mains:
+    print("n/a\tno transcript for session %s under %s" % (session, projects)); sys.exit(0)
+def efforts(path):
+    c = collections.Counter()
+    for line in open(path, encoding="utf-8", errors="replace"):
+        try:
+            d = json.loads(line)
+        except Exception:
+            continue
+        if d.get("type") == "assistant":
+            e = d.get("effort") or d.get("perTurnEffort")
+            if isinstance(e, str):
+                c[e] += 1
+    return c
+sess = efforts(mains[0])
+if not sess:
+    print("n/a\tthe session transcript carries no effort field"); sys.exit(0)
+session_effort = sess.most_common(1)[0][0]
+subs = sorted(glob.glob(os.path.join(os.path.dirname(mains[0]), session, "subagents", "*.jsonl")))
+if not subs:
+    print("n/a\tsession effort %s; no helper transcripts under %s" % (session_effort, os.path.join(os.path.dirname(mains[0]), session, "subagents"))); sys.exit(0)
+seen = []
+bad = []
+blind = []
+for s in subs:
+    c = efforts(s)
+    if not c:
+        blind.append(os.path.basename(s))
+        continue
+    e = c.most_common(1)[0][0]
+    seen.append(e)
+    if e != session_effort:
+        bad.append("%s=%s" % (os.path.basename(s), e))
+if bad:
+    print("fail\tsession effort %s; helpers below it: %s" % (session_effort, ", ".join(bad)))
+elif blind:
+    print("n/a\tsession effort %s; %d helper transcript(s) carry no effort field, so inheritance is unproven: %s" % (session_effort, len(blind), ", ".join(blind)))
+else:
+    print("pass\tsession effort %s; %d helper transcript(s) at the same effort" % (session_effort, len(seen)))
+PY
+}
+
 # ── the hidden acceptance test ────────────────────────────────
 # _declared_deps WORK: the project's declared dependencies, one per line (bash 3.2 cannot parse a
 # heredoc inside a command substitution, hence a function).

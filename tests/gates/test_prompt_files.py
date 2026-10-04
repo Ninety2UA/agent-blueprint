@@ -4,7 +4,9 @@ Checks the real tree: no agents/ directory, prompt files without frontmatter tha
 open with a role header and end with an Output section, no prompt that starts
 helpers of its own, and every prompt a skill names present in that skill. A file
 named <prompt>-<topic>.md beside <prompt>.md is a companion the prompt loads at a
-point of use; it is a plain note, not a prompt.
+point of use; it is a plain note, not a prompt. scripts/check-drift.sh carries a
+bash copy of that rule for its prompt count; CompanionRuleCrossCheck runs the
+copy over the same paths and fails when the two disagree.
 """
 import glob
 import os
@@ -17,16 +19,43 @@ import unittest
 from gate_helpers import REPO, gate_module, read
 
 AGENT_FILES = sorted(glob.glob(os.path.join(REPO, "skills", "*", "references", "agents", "*.md")))
+CHECK_DRIFT = os.path.join(REPO, "scripts", "check-drift.sh")
 
 
 def is_companion(path):
     """<prompt>-<topic>.md beside <prompt>.md: notes a prompt loads at a point of use, not a prompt itself.
 
-    scripts/check-drift.sh counts prompts by the same rule; change both together.
+    scripts/check-drift.sh counts prompts by the same rule; change both together
+    (CompanionRuleCrossCheck fails when they disagree).
     """
     folder, name = os.path.split(path)
     stem = name[:-3]
     return any(os.path.isfile(os.path.join(folder, stem[:i] + ".md")) for i, ch in enumerate(stem) if ch == "-")
+
+
+def drift_companion_loop():
+    """The body of check-drift.sh's prompt-counting loop: given a path in $f it sets $companion and prints a prompt's file name."""
+    m = re.search(r"(?s)while IFS= read -r f; do\n(.*?)\ndone \| sort -u", read(CHECK_DRIFT))
+    if m is None:
+        raise AssertionError("scripts/check-drift.sh no longer carries the prompt-counting loop this test extracts")
+    return m.group(1)
+
+
+def drift_verdicts(paths):
+    """Run check-drift.sh's own loop over paths: {path: is a companion} and the prompt names it printed."""
+    script = "while IFS= read -r f; do\n" + drift_companion_loop() + "\nprintf '%s\\t%s\\n' \"$companion\" \"$f\"\ndone\n"
+    result = subprocess.run(["bash", "-c", script], input="".join(p + "\n" for p in paths),
+                            capture_output=True, text=True, timeout=60)
+    if result.returncode != 0 or result.stderr:
+        raise AssertionError("check-drift.sh's companion loop failed: " + result.stderr)
+    verdicts, names = {}, []
+    for line in result.stdout.splitlines():
+        flag, _, path = line.partition("\t")
+        if path:
+            verdicts[path] = flag == "true"
+        else:
+            names.append(line)
+    return verdicts, names
 
 
 PROMPTS = [p for p in AGENT_FILES if not is_companion(p)]
@@ -125,6 +154,35 @@ class PromptFiles(unittest.TestCase):
         self.assertTrue(STARTS_HELPERS.search("Use the Task tool to fan out."))
         self.assertFalse(STARTS_HELPERS.search("Start no helpers of your own."))
         self.assertFalse(STARTS_HELPERS.search("When the dispatching step names an output contract"))
+
+
+class CompanionRuleCrossCheck(unittest.TestCase):
+    """check-drift.sh's bash copy of the companion rule and is_companion() give the same verdict on the same paths."""
+
+    def test_drift_gate_agrees_with_is_companion_on_every_agent_file(self):
+        verdicts, names = drift_verdicts(AGENT_FILES)
+        self.assertEqual(verdicts, {p: is_companion(p) for p in AGENT_FILES})
+        self.assertEqual(names, [os.path.basename(p) for p in PROMPTS], "the drift gate counts exactly the prompts")
+
+    def test_drift_gate_agrees_with_is_companion_on_synthetic_cases(self):
+        """Meaningful even when the tree holds no companion: a note beside its prompt, a nested topic, and a lone hyphenated prompt."""
+        root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
+        beside, alone = os.path.join(root, "beside"), os.path.join(root, "alone")
+        for folder in (beside, alone):
+            os.makedirs(folder)
+        expected = {os.path.join(beside, "foo.md"): False,
+                    os.path.join(beside, "foo-bar.md"): True,
+                    os.path.join(beside, "foo-bar-baz.md"): True,
+                    os.path.join(alone, "foo-bar.md"): False}
+        for path in expected:
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write("# note\n")
+        paths = sorted(expected)
+        self.assertEqual({p: is_companion(p) for p in paths}, expected)
+        verdicts, names = drift_verdicts(paths)
+        self.assertEqual(verdicts, expected)
+        self.assertEqual(names, [os.path.basename(p) for p in paths if not expected[p]])
 
 
 class DriftGateAgentCount(unittest.TestCase):

@@ -8,7 +8,8 @@
 
 Standard library only. The smoke JSON keeps one entry per host and cell, so several partial runs
 (--host, --cell) build one table; a later run replaces the same host+cell. The eval JSON keeps every
-run, so a second invocation adds to the sample.
+run, so a second invocation adds to the sample. Both JSONs are committed, so every string they keep
+has local paths masked (see mask); the per-run results.jsonl holds the real ones.
 """
 import argparse
 import datetime
@@ -27,6 +28,42 @@ STATES = [
     ("not-installed", "the host CLI is not on PATH; nothing ran"),
     ("n/a", "the cell does not apply to this host (the reason says why)"),
 ]
+
+
+HOME = os.path.expanduser("~")
+HOME_RE = re.compile(re.escape(HOME) + r"(?![\w.-])") if HOME not in ("", "/", "~") else None
+# Temp roots (longest first, so $TMPDIR wins over /var/folders): a path under one of them is unreachable
+# for any reader and can carry the account name (a session scratch dir under /private/tmp does).
+TMP_ROOTS = sorted({p.rstrip("/") for p in (os.environ.get("TMPDIR", ""), "/private/var/folders", "/var/folders",
+                                            "/private/tmp", "/tmp") if p.rstrip("/")}, key=len, reverse=True)
+TMP_RE = re.compile(r"(?<![\w./-])(?:%s)(?P<rest>/[^\s\"'()|;,]*[^\s\"'()|;,.:])"
+                    % "|".join(re.escape(p) for p in TMP_ROOTS))
+
+
+def mask(value):
+    """Local paths in a string bound for the committed JSON: $HOME becomes ~, and a path under a temp
+    root keeps only its last component, as $TMPDIR/name or $TMPDIR/.../name. Non-strings pass through."""
+    if not isinstance(value, str):
+        return value
+    if HOME_RE:
+        value = HOME_RE.sub("~", value)
+
+    def short(m):
+        parts = m.group("rest").strip("/").split("/")
+        return "$TMPDIR/" + (".../" if len(parts) > 1 else "") + parts[-1]
+    return TMP_RE.sub(short, value)
+
+
+def mask_doc(node):
+    """mask() every string in a JSON document, in place, so a run also cleans rows already on disk."""
+    if isinstance(node, dict):
+        for k in node:
+            node[k] = mask_doc(node[k])
+        return node
+    if isinstance(node, list):
+        node[:] = [mask_doc(v) for v in node]
+        return node
+    return mask(node)
 
 
 def now():
@@ -109,11 +146,12 @@ def smoke(args):
         host = doc["hosts"].setdefault(r["host"], {"version": "", "cells": {}})
         if r["host"] in versions:
             host["version"] = versions[r["host"]]
-        cell = {k: r.get(k) for k in ("state", "seconds", "tokens", "cost_usd", "log", "reason", "date", "link", "session")}
+        cell = {k: r.get(k) for k in ("state", "seconds", "tokens", "cost_usd", "log", "reason", "date", "link", "session", "plugin_dir")}
         host["cells"][r["cell"]] = cell
     doc["runs"].append({"date": now(), "command": args.command, "plugin_dir": args.plugin_dir,
                         "hosts": touched_hosts, "cells": sorted({r["cell"] for r in rows})})
     doc["updated"] = now()
+    mask_doc(doc)
     save_json(args.json, doc)
 
     hosts = [h for h in args.hosts.split() if h in doc["hosts"]] + sorted(h for h in doc["hosts"] if h not in args.hosts.split())
@@ -197,6 +235,7 @@ def eval_report(args):
     doc.setdefault("invocations", []).append({"date": now(), "command": args.command, "v3_dir": args.v3_dir,
                                              "v4_dir": args.v4_dir, "runs_per_task": args.runs})
     doc["updated"] = now()
+    mask_doc(doc)
     save_json(args.json, doc)
 
     tasks = args.tasks.split()

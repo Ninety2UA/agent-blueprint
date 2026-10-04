@@ -57,16 +57,53 @@ for c in canary build ship; do check "pi · $c is not-installed" [ "$(state_of "
 check "the discovery cell from the pass run survived the partial run (merge)" [ "$(state_of "$J" fake discovery)" = pass ]
 check "the table shows both hosts" grep -q '^| pi |' "$M"
 
-echo "== hang mode: timeout; a duplicated catalog fails discovery; foreign hooks that fire fail"
+echo "== hang mode: timeout; a duplicated catalog fails discovery; an unfinished canary proves nothing to hooks"
 ln -sfn "$REPO/skills" "$WORK/second-catalog"   # the same skills reachable through a second catalog location
 AGENT_BLUEPRINT_FAKE_CATALOG="$REPO/skills:$WORK/second-catalog" AGENT_BLUEPRINT_SMOKE_FAKE_MODE=hang AGENT_BLUEPRINT_FAKE_HOOKS=foreign \
-    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 3 --cell discovery,canary > "$WORK/hang.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/hang.log"; exit 1; }
+    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 3 --cell discovery,canary,hooks > "$WORK/hang.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/hang.log"; exit 1; }
 check "fake · canary is timeout" [ "$(state_of "$J" fake canary)" = timeout ]
 check "fake · discovery fails on a name counted twice" grep -q "counted twice" <<<"$(reason_of "$J" fake discovery)"
 check "no fake host survived the timeout" [ -z "$(pgrep -f "$AGENT_BLUEPRINT_FAKE_HOST" || true)" ]
+check "fake · hooks fails when the reused canary did not complete" [ "$(state_of "$J" fake hooks)" = fail ]
+check "the unfinished canary is named" grep -q "did not complete" <<<"$(reason_of "$J" fake hooks)"
+check "the installed copy that won over --plugin-dir is named" grep -q "wins over --plugin-dir" "$WORK/hang.log"
+
+echo "== foreign hooks: a handler that acts fails the cell; one that stands down passes it"
 AGENT_BLUEPRINT_SMOKE_FAKE_MODE=fail AGENT_BLUEPRINT_FAKE_HOOKS=foreign \
     bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --cell hooks > "$WORK/hooks.log" 2>&1 || true
 check "fake · hooks fails when a foreign host's hook fires" [ "$(state_of "$J" fake hooks)" = fail ]
+check "the misfiring handler and its host are named" grep -q "session-start.js as claude" <<<"$(reason_of "$J" fake hooks)"
+AGENT_BLUEPRINT_SMOKE_FAKE_MODE=stand-down AGENT_BLUEPRINT_FAKE_HOOKS=foreign \
+    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --cell hooks > "$WORK/stand-down.log" 2>&1 || true
+check "fake · hooks passes when a foreign host's handlers run and stand down" [ "$(state_of "$J" fake hooks)" = pass ]
+check "the stand-down is named" grep -q "stood down" <<<"$(reason_of "$J" fake hooks)"
+
+echo "== an installed copy of another version wins over --plugin-dir: every cell fails and the row names it"
+stale="$WORK/stale"
+mkdir -p "$stale/skills/ab-ship-pipeline" "$stale/.claude-plugin"
+: > "$stale/skills/ab-ship-pipeline/SKILL.md"
+printf '{"name": "agent-blueprint", "version": "0.0.1"}\n' > "$stale/.claude-plugin/plugin.json"
+AGENT_BLUEPRINT_FAKE_CATALOG="$stale/skills" \
+    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --cell canary > "$WORK/stale.log" 2>&1 || true
+check "fake · canary fails on an installed copy of another version" [ "$(state_of "$J" fake canary)" = fail ]
+check "the version mismatch is named" grep -q "version 0.0.1, not" <<<"$(reason_of "$J" fake canary)"
+check "the result row carries the installed copy as plugin_dir" grep -qF "\"plugin_dir\": \"$stale/skills\"" "$WORK"/logs/*/fake/results.jsonl
+
+echo "== the effort check (AE2) on synthetic transcripts: a helper without an effort field is not a match"
+effort_out() {   # SESSION CONFIG_DIR: lib.sh's effort_check, in a subshell so lib.sh's globals (WORK) stay out of this script
+    # shellcheck source=lib.sh disable=SC1091
+    ( . "$HERE/lib.sh" && effort_check "$1" "$2" )
+}
+cfg="$WORK/cfg"; subs="$cfg/projects/p/s1/subagents"
+mkdir -p "$subs"
+printf '{"type":"assistant","effort":"high"}\n' > "$cfg/projects/p/s1.jsonl"
+printf '{"type":"assistant"}\n' > "$subs/a.jsonl"
+check "effort is n/a when a helper transcript carries no effort field" [ "$(effort_out s1 "$cfg" | cut -f1)" = n/a ]
+check "the blind helper transcript is named" grep -q "a.jsonl" <<<"$(effort_out s1 "$cfg")"
+printf '{"type":"assistant","effort":"high"}\n' > "$subs/a.jsonl"
+check "effort passes when every helper carries the session's effort" [ "$(effort_out s1 "$cfg" | cut -f1)" = pass ]
+printf '{"type":"assistant","effort":"low"}\n' > "$subs/b.jsonl"
+check "effort fails when a helper runs at another effort" [ "$(effort_out s1 "$cfg" | cut -f1)" = fail ]
 
 if command -v npx >/dev/null 2>&1 && [ -z "${SMOKE_SELFTEST_NO_LINT:-}" ]; then
     echo "== the rendered table passes markdownlint"

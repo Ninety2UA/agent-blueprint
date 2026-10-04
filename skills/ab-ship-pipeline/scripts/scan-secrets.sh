@@ -146,7 +146,11 @@ scan_range() {
     # A .env file is a secret by its name alone, and one a later commit deletes again is still in
     # the pushed history, so the paths added by every commit are listed, oldest first, and each
     # is reported once at the commit that first adds it. --no-renames: a rename to .env counts.
-    if ! git log --reverse --diff-filter=A --name-only --no-renames -m --format='commit %H' "$range" -- . > "$PATCH_TMP" 2>/dev/null; then
+    # core.quotePath=false: a path with a non-ASCII byte is printed as is, not as "caf\303\251/.env"
+    # with quotes the basename test would see. Git still quotes a path holding " or \, so those
+    # quotes are stripped below; the escapes it leaves inside the path do not reach the basename,
+    # which is ASCII for every .env name.
+    if ! git -c core.quotePath=false log --reverse --diff-filter=A --name-only --no-renames -m --format='commit %H' "$range" -- . > "$PATCH_TMP" 2>/dev/null; then
         echo "scan-secrets: git log failed for $range" >&2
         exit 2
     fi
@@ -155,6 +159,7 @@ scan_range() {
         case "$line" in
             "commit "*) commit="${line#commit }"; commit="${commit:0:12}"; continue ;;
             "") continue ;;
+            \"*) line="${line#\"}"; line="${line%\"}" ;;
         esac
         if is_env_path "$line" && ! printf '%s\n' "$seen" | grep -Fxq -- "$line"; then
             seen="$seen$line"$'\n'

@@ -6,8 +6,11 @@
 #
 # Environment:
 #   AGENT_BLUEPRINT_SMOKE_FAKE_MODE   pass (default) · fail (does nothing useful; the manual-only
-#                                     skill runs; a hook "fires") · hang (sleeps 300 s)
-#   AGENT_BLUEPRINT_HOOK_TRACE        in fail mode a line is appended here, as a firing hook would
+#                                     skill runs; a hook "fires") · hang (sleeps 300 s) · stand-down
+#                                     (pass, after the trace line of a handler that ran and stood down)
+#   AGENT_BLUEPRINT_HOOK_TRACE        a trace line (handler, host, timestamp) is appended here: in
+#                                     fail mode one naming claude, as a handler that acted on a
+#                                     foreign host would; in stand-down mode one naming other
 #   AGENT_BLUEPRINT_RUNNER            set by the ship runner; the fake then leaves publishing to it
 # Extra flags after the prompt (host_run passes them): --no-helpers makes every helper step inline.
 #
@@ -38,11 +41,16 @@ provenance() {   # SKILL STEP...
         "$skill" "$(version_of "$skill")" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$steps" > "$RUN_DIR/provenance/$skill.json"
 }
 commit_all() { git add -A && git -c user.name="Fake Host" -c user.email="fake@example.invalid" -c commit.gpgsign=false commit -q -m "$1"; }
+trace_line() {   # HOST: the line a handler writes before deciding whether to act (hooks/handlers/host.sh)
+    [ -n "${AGENT_BLUEPRINT_HOOK_TRACE:-}" ] || return 0
+    printf 'session-start.js\t%s\t%s\n' "$1" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$AGENT_BLUEPRINT_HOOK_TRACE"
+}
 
 case "$MODE" in
     hang) sleep 300; exit 0 ;;
+    stand-down) trace_line other ;;
     fail)
-        [ -n "${AGENT_BLUEPRINT_HOOK_TRACE:-}" ] && printf 'session-start.js\tother\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$AGENT_BLUEPRINT_HOOK_TRACE"
+        trace_line claude
         case "$PROMPT" in
             *"names start with ab-p"*)
                 reply "ab-pause-checkpoint ab-plugin-update ab-pr-workflow ab-project-start" ;;

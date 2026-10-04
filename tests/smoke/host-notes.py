@@ -11,7 +11,7 @@ import json
 import os
 import re
 
-from report import fmt_secs   # the same directory; report.py owns the table formatting
+from report import fmt_secs, mask   # the same directory; report.py owns the table formatting
 
 NOTES = {"claude": "claude-code.md", "codex": "codex.md", "agy": "antigravity.md", "grok": "grok-build.md",
          "pi": "pi.md", "cursor-agent": "cursor-cli.md", "hermes": "hermes.md", "amp": "amp.md"}
@@ -33,7 +33,7 @@ def section(host, doc):
         c = cells.get(cell)
         if not c:
             continue
-        reason = (c.get("reason") or "").replace("|", "\\|")
+        reason = mask(c.get("reason") or "").replace("|", "\\|")   # a JSON written before masking still has local paths
         reason = re.sub(r" · work: \S+", "", reason)
         if c.get("link"):
             reason += " ([upstream issue](%s))" % c["link"]

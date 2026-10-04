@@ -547,6 +547,23 @@ t38_a_removed_env_file_still_fails_the_range_scan() {
     bash "$REPO/skills/ab-ship-pipeline/scripts/scan-secrets.sh" --range HEAD~1..HEAD > /dev/null 2>&1 || fail ".env.example alone is not clean"
 }
 
+t39_an_env_file_under_a_quoted_directory_fails_the_range_scan() {
+    new_repo t39
+    # git prints a path with a non-ASCII byte as "caf\303\251/.env" unless told not to quote it.
+    mkdir -p café && echo "APP_MODE=placeholder" > café/.env && git add café && git commit -q -m "add env"
+    git rm -q café/.env && git commit -q -m "drop env"
+    out=$(bash "$REPO/skills/ab-ship-pipeline/scripts/scan-secrets.sh" --range main..HEAD 2>&1) && fail "the scan passed a range that adds café/.env and deletes it again"
+    printf '%s\n' "$out" | grep -Fq ":café/.env: .env file" || fail "no hit naming café/.env ($out)"
+    ! printf '%s\n' "$out" | grep -Fq "placeholder" || fail "the scan printed the .env file's content"
+    # A double quote in a directory name is always quoted by git, with the quote escaped inside;
+    # the sub-case is skipped on a filesystem that refuses the name.
+    if mkdir -p 'qu"ote' 2>/dev/null; then
+        echo "APP_MODE=placeholder" > 'qu"ote/.env' && git add 'qu"ote' && git commit -q -m "add quoted env"
+        out=$(bash "$REPO/skills/ab-ship-pipeline/scripts/scan-secrets.sh" --range HEAD~1..HEAD 2>&1) && fail "the scan passed a range that adds .env under a directory named with a double quote"
+        printf '%s\n' "$out" | grep -Fq ':qu\"ote/.env: .env file' || fail "no hit naming qu\"ote/.env ($out)"
+    fi
+}
+
 t22_resume_takes_the_host_from_the_command_line() {
     new_repo t22
     scenario "state:running:plan commit:a.txt" "state:done:ship commit:b.txt pr-body"
@@ -622,7 +639,7 @@ t30_a_long_final_message_does_not_end_the_runner t31_scan_reads_hidden_paths_mer
 t32_a_failed_runner_commit_is_needs_human t33_planted_symlinks_are_never_written_through
 t34_resume_at_the_cap_says_how_to_continue t35_dry_run_masks_credentials_and_names_the_pr_repository
 t36_every_scan_pattern_is_caught_and_masked t37_a_blank_commit_message_falls_back_to_the_default
-t38_a_removed_env_file_still_fails_the_range_scan"
+t38_a_removed_env_file_still_fails_the_range_scan t39_an_env_file_under_a_quoted_directory_fails_the_range_scan"
 
 SELECTED="${*:-$ALL}"
 PASSED=0 FAILED=0

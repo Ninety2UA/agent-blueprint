@@ -108,8 +108,10 @@ trap on_signal INT TERM
 # ─── Per-cell bookkeeping ─────────────────────────────────────
 HOST="" CELL="" CELL_START=0 LOG="" LASTMSG="" FINAL="" RESULTS="" HOST_LOG_DIR="" HOST_PLUGIN_DIR=""
 SESSION="" LINK="" CHECK_RC=0 CHECK_REASON="" RUN_RC=0
-# What one host's cells remember for a later cell: the canary's trace file and the build's session.
-CANARY_TRACE="" BUILD_SESSION="" BUILD_CHECKED=false SMOKE_TRACE_FILE=""
+# What one host's cells remember for a later cell: the canary's trace file and outcome (0 when the
+# run completed and passed its check; CHECK_RC, or the host's non-zero exit, otherwise), the build's
+# session, and the installed copy that won over --plugin-dir (KTD18), or nothing.
+CANARY_TRACE="" CANARY_RC=0 CANARY_REASON="" BUILD_SESSION="" BUILD_CHECKED=false SMOKE_TRACE_FILE="" HOST_INSTALLED=""
 
 cell_timeout() {   # SECONDS for the current host; ship cells get twice the host's row
     local t
@@ -158,7 +160,7 @@ finish_cell() {
             rm -rf "$WORK_ROOT"
         fi
     fi
-    record_result "$RESULTS" "$HOST" "$CELL" "$state" "$secs" "$TOKENS" "$COST" "$(rel_log "$LOG")" "$reason" "link=$LINK" "session=$SESSION"
+    record_result "$RESULTS" "$HOST" "$CELL" "$state" "$secs" "$TOKENS" "$COST" "$(rel_log "$LOG")" "$reason" "link=$LINK" "session=$SESSION" "plugin_dir=${HOST_PLUGIN_DIR:-$HOST_INSTALLED}"
     echo -e "  ${color}${state}${NC} ${DIM}${secs}s · tokens $TOKENS · cost $COST${NC}"
     [ -n "$reason" ] && echo -e "    ${DIM}$reason${NC}"
     return 0
@@ -246,11 +248,15 @@ cell_canary() {
     SMOKE_TRACE_FILE="$CANARY_TRACE"
     run_scenario canary
     SMOKE_TRACE_FILE=""
+    # The hooks cell reuses this run, so it must know whether the run completed: an empty trace
+    # from a run that timed out, was refused or exited early proves nothing.
+    CANARY_RC="$CHECK_RC" CANARY_REASON="$CHECK_REASON"
+    if [ "$RUN_RC" -ne 0 ] && [ "$RUN_RC" -ne 124 ] && [ "$CANARY_RC" -eq 0 ]; then CANARY_RC="$RUN_RC"; fi
     verdict_scenario canary
 }
 
 cell_hooks() {
-    local kind trace lines
+    local kind trace lines misfires incomplete=""
     kind=$(host_hooks "$HOST")
     case "$kind" in
         none) na_cell "no hook path on this host"; return 0 ;;
@@ -261,6 +267,7 @@ cell_hooks() {
     if [ -n "$CANARY_TRACE" ]; then
         trace="$CANARY_TRACE"
         CHECK_REASON="from the canary run"
+        [ "$CANARY_RC" -ne 0 ] && incomplete="$CANARY_REASON"
     else
         trace="$HOST_LOG_DIR/hooks.trace"
         rm -f "$trace"
@@ -268,19 +275,27 @@ cell_hooks() {
         run_scenario canary
         SMOKE_TRACE_FILE=""
         [ "$CHECK_RC" -eq 124 ] && { finish_cell timeout "$CHECK_REASON"; return 0; }
+        if [ "$CHECK_RC" -ne 0 ] || [ "$RUN_RC" -ne 0 ]; then incomplete="$CHECK_REASON"; fi
         CHECK_REASON="canary prompt run with the trace exported"
     fi
+    # A trace line is handler, host, timestamp (host.sh, host.js), written before the handler decides
+    # whether to act. On a foreign host a line naming `other` is a handler that ran and stood down;
+    # a line naming claude or codex is a handler that would have acted there: a misfire.
     if [ -f "$trace" ] && [ -s "$trace" ]; then
         lines=$(cut -f1 "$trace" | sort | uniq -c | awk '{printf "%s%s x%s", (NR>1?", ":""), $2, $1}')
+        misfires=$(awk -F'\t' '$2 != "other" && !seen[$1 FS $2]++ { printf "%s%s as %s", (n++ ? ", " : ""), $1, $2 }' "$trace")
     else
-        lines=""
+        lines="" misfires=""
+    fi
+    if [ -z "$lines" ] && [ -n "$incomplete" ]; then
+        finish_cell fail "the canary run did not complete ($incomplete), so an empty trace proves nothing"; return 0
     fi
     if [ "$kind" = native ]; then
         if [ -n "$lines" ]; then finish_cell pass "handlers wrote the trace: $lines ($CHECK_REASON)"
         else finish_cell fail "no handler wrote the trace file ($CHECK_REASON)"; fi
-    else
-        if [ -z "$lines" ]; then finish_cell pass "no blueprint hook fired ($CHECK_REASON)"
-        else finish_cell fail "blueprint hooks fired on $HOST: $lines ($CHECK_REASON)"; fi
+    elif [ -n "$misfires" ]; then finish_cell fail "blueprint hooks fired on $HOST: $misfires ($CHECK_REASON)"
+    elif [ -n "$lines" ]; then finish_cell pass "handlers ran and stood down: $lines ($CHECK_REASON)"
+    else finish_cell pass "no blueprint hook fired ($CHECK_REASON)"
     fi
 }
 
@@ -374,52 +389,7 @@ EOF
     esac
 }
 
-# effort_check SESSION CONFIG_DIR: pass|fail|n/a, a tab, the reason (AE2).
-effort_check() {
-    python3 - "$1" "$2" <<'PY'
-import collections, glob, json, os, sys
-session, cfg = sys.argv[1], sys.argv[2]
-projects = os.path.join(cfg, "projects")
-mains = glob.glob(os.path.join(projects, "*", session + ".jsonl"))
-if not mains:
-    print("n/a\tno transcript for session %s under %s" % (session, projects)); sys.exit(0)
-def efforts(path):
-    c = collections.Counter()
-    for line in open(path, encoding="utf-8", errors="replace"):
-        try:
-            d = json.loads(line)
-        except Exception:
-            continue
-        if d.get("type") == "assistant":
-            e = d.get("effort") or d.get("perTurnEffort")
-            if isinstance(e, str):
-                c[e] += 1
-    return c
-sess = efforts(mains[0])
-if not sess:
-    print("n/a\tthe session transcript carries no effort field"); sys.exit(0)
-session_effort = sess.most_common(1)[0][0]
-subs = sorted(glob.glob(os.path.join(os.path.dirname(mains[0]), session, "subagents", "*.jsonl")))
-if not subs:
-    print("n/a\tsession effort %s; no helper transcripts under %s" % (session_effort, os.path.join(os.path.dirname(mains[0]), session, "subagents"))); sys.exit(0)
-seen = []
-bad = []
-for s in subs:
-    c = efforts(s)
-    if not c:
-        continue
-    e = c.most_common(1)[0][0]
-    seen.append(e)
-    if e != session_effort:
-        bad.append("%s=%s" % (os.path.basename(s), e))
-if bad:
-    print("fail\tsession effort %s; helpers below it: %s" % (session_effort, ", ".join(bad)))
-else:
-    print("pass\tsession effort %s; %d helper transcript(s) at the same effort" % (session_effort, len(seen)))
-PY
-}
-
-cell_effort() {
+cell_effort() {   # effort_check lives in lib.sh so the selftest can run it on synthetic transcripts (AE2)
     if [ "$HOST" != claude ]; then na_cell "no per-dispatch effort metadata on $HOST"; return 0; fi
     if [ "$BUILD_CHECKED" != true ]; then na_cell "reads the build cell's transcripts: run it with the build cell"; return 0; fi
     if [ -z "$BUILD_SESSION" ]; then na_cell "the build run reported no session id"; return 0; fi
@@ -493,18 +463,36 @@ run_cell() {
     esac
 }
 
-# host_plugin_dir HOST: the checkout, for a host that takes a plugin directory and has no installed
-# copy of the blueprint; empty otherwise. A host with the installed copy and the plugin directory
-# would list every skill twice (KTD18), so the installed copy wins.
-host_plugin_dir() {
+# host_installed_copy HOST: the catalog location that already holds the blueprint (an
+# ab-ship-pipeline/SKILL.md), for a host that takes a plugin directory; empty otherwise.
+host_installed_copy() {
     local d
-    case "$1" in claude|cursor-agent|agy|fake) ;; *) echo ""; return 0 ;; esac
+    case "$1" in claude|cursor-agent|agy|fake) ;; *) return 0 ;; esac
     while IFS= read -r d; do
-        [ -n "$d" ] && [ -f "$d/ab-ship-pipeline/SKILL.md" ] && { echo ""; return 0; }
+        if [ -n "$d" ] && [ -f "$d/ab-ship-pipeline/SKILL.md" ]; then echo "$d"; return 0; fi
     done <<LIST
 $(host_catalog_dirs "$1" "")
 LIST
-    echo "$PLUGIN_DIR"
+    return 0
+}
+
+# host_plugin_dir HOST INSTALLED: the checkout, for a host that takes a plugin directory and has no
+# installed copy; empty otherwise. A host with the installed copy and the plugin directory would
+# list every skill twice (KTD18), so the installed copy wins, and run_host_all says so.
+host_plugin_dir() {
+    case "$1" in claude|cursor-agent|agy|fake) [ -n "$2" ] || echo "$PLUGIN_DIR" ;; esac
+    return 0
+}
+
+# installed_copy_version CATALOG_DIR: the version in the plugin manifest beside the catalog
+# (<root>/.claude-plugin/plugin.json or <root>/plugin.json), or "unknown".
+installed_copy_version() {
+    local root f
+    root=$(dirname "$1")
+    for f in "$root/.claude-plugin/plugin.json" "$root/plugin.json"; do
+        if [ -f "$f" ] && plugin_version "$f" 2>/dev/null; then return 0; fi
+    done
+    echo unknown
 }
 
 # ─── One host, every selected cell ────────────────────────────
@@ -514,14 +502,19 @@ run_host_all() {
     mkdir -p "$HOST_LOG_DIR"
     RESULTS="$HOST_LOG_DIR/results.jsonl"
     : > "$RESULTS"
-    CANARY_TRACE="" BUILD_SESSION="" BUILD_CHECKED=false
-    HOST_PLUGIN_DIR=$(host_plugin_dir "$HOST")
-    local bin version out rc=0 c
+    CANARY_TRACE="" CANARY_RC=0 CANARY_REASON="" BUILD_SESSION="" BUILD_CHECKED=false
+    HOST_INSTALLED=$(host_installed_copy "$HOST")
+    HOST_PLUGIN_DIR=$(host_plugin_dir "$HOST" "$HOST_INSTALLED")
+    local bin version out rc=0 c installed_version=""
     bin=$(host_bin "$HOST")
     version=$(host_version "$HOST")
     printf '%s\t%s\n' "$HOST" "$version" >> "$LOG_ROOT/versions.tsv"
     echo ""
     echo -e "  ${BOLD}══ $HOST${NC} ${DIM}$version · $(host_posture "$HOST")${NC}"
+    if [ -n "$HOST_INSTALLED" ]; then
+        installed_version=$(installed_copy_version "$HOST_INSTALLED")
+        warn "$HOST: the installed copy at $HOST_INSTALLED wins over --plugin-dir (version $installed_version)"
+    fi
     if [ "$HOST" != fake ] && ! command -v "$bin" >/dev/null 2>&1; then
         warn "$bin is not on PATH: every cell renders not-installed"
         for c in $CELLS; do
@@ -536,6 +529,14 @@ run_host_all() {
         error "preflight failed for $HOST; every cell renders fail"
         for c in $CELLS; do
             begin_cell "$c"; finish_cell fail "preflight: $(printf '%s' "$out" | strip_ansi | grep -E '^[[:space:]]*(x|✗)' | tail -1 | sed 's/^[[:space:]]*[x✗][[:space:]]*//' | cut -c1-300)"
+        done
+        return 0
+    fi
+    # An installed copy of another version would put that version's tree in this version's table.
+    if [ -n "$HOST_INSTALLED" ] && [ "$installed_version" != "$VERSION" ]; then
+        error "the installed copy on $HOST is version $installed_version, not $VERSION; every cell renders fail"
+        for c in $CELLS; do
+            begin_cell "$c"; finish_cell fail "the installed copy at $HOST_INSTALLED is version $installed_version, not $VERSION; reinstall it from this checkout (KTD19)"
         done
         return 0
     fi
