@@ -342,20 +342,21 @@ else
 fi
 
 # ─── Running the host under a timeout ─────────────────────────
-# run_host SECS LOG PROMPT LASTMSG: the host in its own process group; 124 on timeout.
+# run_host SECS LOG PROMPT LASTMSG: the host in its own process group; 124 on timeout. The
+# deadline is read from the clock ($SECONDS), not counted in sleeps: a counted loop stretches
+# with every sleep's start-up cost, by an hour in six under load.
 run_host() {
-    local secs="$1" log="$2" prompt="$3" lastmsg="$4" ticks=0 rc=0
+    local secs="$1" log="$2" prompt="$3" lastmsg="$4" started=$SECONDS rc=0
     set -m
     ( host_run "$RUN_HOST" "$prompt" "$PLUGIN_DIR" "$lastmsg" ) >> "$log" 2>&1 </dev/null &
     CHILD=$!
     set +m
     while kill -0 "$CHILD" 2>/dev/null; do
-        if [ "$ticks" -ge $((secs * 4)) ]; then
+        if [ $((SECONDS - started)) -ge "$secs" ]; then
             kill_child
             return 124
         fi
         sleep 0.25
-        ticks=$((ticks + 1))
     done
     if wait "$CHILD"; then rc=0; else rc=$?; fi
     CHILD=""

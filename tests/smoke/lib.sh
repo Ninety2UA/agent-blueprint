@@ -99,20 +99,20 @@ $SMOKE_HEADLESS"
 # process group inside WORK, killed with the group after SECS (returns 124). Sets SMOKE_CHILD for a trap.
 SMOKE_CHILD=""
 run_command_timed() {
-    local secs="$1" log="$2" ticks=0 rc=0
+    local secs="$1" log="$2" started=$SECONDS rc=0
     shift 2
     set -m
     ( cd "$WORK" && "$@" ) >> "$log" 2>&1 </dev/null &
     SMOKE_CHILD=$!
     set +m
+    # The deadline comes from the clock ($SECONDS), not from counting sleeps, which drift under load.
     while kill -0 "$SMOKE_CHILD" 2>/dev/null; do
-        if [ "$ticks" -ge $((secs * 4)) ]; then
+        if [ $((SECONDS - started)) -ge "$secs" ]; then
             kill_smoke_child
             echo "=== killed after ${secs}s (timeout) ===" >> "$log"
             return 124
         fi
         sleep 0.25
-        ticks=$((ticks + 1))
     done
     if wait "$SMOKE_CHILD"; then rc=0; else rc=$?; fi
     SMOKE_CHILD=""
