@@ -185,31 +185,56 @@ class CompanionRuleCrossCheck(unittest.TestCase):
         self.assertEqual(names, [os.path.basename(p) for p in paths if not expected[p]])
 
 
+def run_drift_with(rel_path, extra):
+    """Runs the drift gate on a copy of the repository with `extra` appended to one file."""
+    root = tempfile.mkdtemp()
+    try:
+        copy = os.path.join(root, "repo")
+        shutil.copytree(REPO, copy, symlinks=True, ignore=shutil.ignore_patterns(".git", "node_modules"))
+        with open(os.path.join(copy, rel_path), "a", encoding="utf-8") as fh:
+            fh.write(extra)
+        result = subprocess.run(["bash", os.path.join(copy, "scripts", "check-drift.sh"), copy],
+                                capture_output=True, text=True, timeout=120)
+        return result.returncode, result.stdout + result.stderr
+    finally:
+        shutil.rmtree(root)
+
+
+def last_appended_line(rel_path, extra):
+    """The line number of the last line of `extra` once run_drift_with appends it to rel_path."""
+    return len((read(os.path.join(REPO, rel_path)) + extra).splitlines())
+
+
 class DriftGateAgentCount(unittest.TestCase):
     """The drift gate fails a current-state surface that still counts agents (v4 has helper prompts)."""
 
-    def run_drift_with(self, rel_path, extra):
-        root = tempfile.mkdtemp()
-        try:
-            copy = os.path.join(root, "repo")
-            shutil.copytree(REPO, copy, symlinks=True, ignore=shutil.ignore_patterns(".git", "node_modules"))
-            with open(os.path.join(copy, rel_path), "a", encoding="utf-8") as fh:
-                fh.write(extra)
-            result = subprocess.run(["bash", os.path.join(copy, "scripts", "check-drift.sh"), copy],
-                                    capture_output=True, text=True, timeout=120)
-            return result.returncode, result.stdout + result.stderr
-        finally:
-            shutil.rmtree(root)
-
     def test_agent_count_in_the_instructions_fails(self):
-        code, out = self.run_drift_with("AGENTS.md", "\nThe plugin ships 29 specialized subagents.\n")
+        code, out = run_drift_with("AGENTS.md", "\nThe plugin ships 29 specialized subagents.\n")
         self.assertNotEqual(code, 0, out)
         self.assertIn("still claims an agent count", out)
 
     def test_agent_count_in_the_readme_tree_fails(self):
-        code, out = self.run_drift_with("README.md", "\n```\n\u2514\u2500\u2500 29 agents\n```\n")
+        code, out = run_drift_with("README.md", "\n```\n\u2514\u2500\u2500 29 agents\n```\n")
         self.assertNotEqual(code, 0, out)
         self.assertIn("still lists an agent count", out)
+
+
+class DriftGateAdoption(unittest.TestCase):
+    """The drift gate fails README.md or index.html when it describes what was taken from other projects."""
+
+    def test_adoption_claim_in_the_readme_fails(self):
+        extra = "\n## What we took from other repos\n"
+        code, out = run_drift_with("README.md", extra)
+        self.assertNotEqual(code, 0, out)
+        self.assertIn("README.md:%d: adoption or ecosystem claim 'What we took'"
+                      % last_appended_line("README.md", extra), out)
+
+    def test_project_name_on_the_site_fails(self):
+        extra = "\n<p>Patterns from the gstack project.</p>\n"
+        code, out = run_drift_with("index.html", extra)
+        self.assertNotEqual(code, 0, out)
+        self.assertIn("index.html:%d: adoption or ecosystem claim 'gstack'"
+                      % last_appended_line("index.html", extra), out)
 
 
 if __name__ == "__main__":

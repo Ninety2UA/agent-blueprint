@@ -7,6 +7,8 @@
 # then compared against every hardcoded claim in the manifests, docs, installer,
 # and website. Any mismatch prints "LOCATION: expected X, found Y" and the script
 # exits non-zero. This replaces manual count sweeps, which drifted three times.
+# It also fails README.md and index.html when they bring back adoption or
+# ecosystem wording (the ADOPTION denylist at the end).
 #
 # Usage: check-drift.sh [repo-root]
 #   repo-root defaults to the parent of this script's directory, so CI
@@ -262,36 +264,8 @@ if idx_html is not None:
                 failures.append("index.html %s #%d: count badge says %d but %d items render under it"
                                 % (kind, (k + 1) // 2, declared, got))
 
-# Ecosystem repo count: the README table is ground truth; intro prose, the site
-# widget, and site prose must match it exactly (the "15+"/"16+" fossils understated
-# a growing table).
 readme = rd("README.md")
 if readme is not None:
-    m = re.search(r'\| Repo / Tool \| Stars \|[^\n]*\n\|[-| ]*\n((?:\|[^\n]*\n)+)', readme)
-    if not m:
-        failures.append("README.md ecosystem table: 'Repo / Tool | Stars' header not found "
-                        "— anchor changed, re-point the gate")
-    else:
-        repos = len(m.group(1).strip().splitlines())
-        claims = []
-        rm = re.search(r'analyzed \*\*(\d+) repos', readme)
-        if rm:
-            claims.append(("README.md intro 'analyzed **N repos'", int(rm.group(1))))
-        else:
-            failures.append("README.md: 'analyzed **N repos' intro claim not found "
-                            "— anchor changed, re-point the gate")
-        if idx_html is not None:
-            for wm in re.finditer(r'__number">(\d+)\+?</span>(?:(?!__number">).)*?>Repos Analyzed<',
-                                  prefix, re.DOTALL):
-                claims.append(("index.html 'Repos Analyzed' widget", int(wm.group(1))))
-            for pm2 in re.finditer(r'(\d+)\+? repos analyzed', prefix):
-                claims.append(("index.html 'repos analyzed' prose", int(pm2.group(1))))
-        if len(claims) < 3:
-            failures.append("ecosystem repo-count: expected >=3 claims (README intro + site widget "
-                            "+ site prose), found %d — anchor changed, re-point the gate" % len(claims))
-        for label, val in claims:
-            if val != repos:
-                failures.append("%s: claims %d repos, ecosystem table has %d rows" % (label, val, repos))
     # README Helper Prompts Reference table must enumerate every helper prompt — the old
     # agents table sat at 26 rows for three releases while 29 agents shipped.
     am = re.search(r'\| Helper \| Domain \| When it runs \|\n\|[-| ]*\n((?:\|[^\n]*\n)+)', readme)
@@ -383,21 +357,21 @@ else:
             pass  # count check already reported any shape problem
 
 # README navigation anchor: the nav's "What's New" link must point at the slug of
-# the FIRST "### What's New in v…" heading (the v3.2.1 sweep found this exact
+# the FIRST "## What's new in v…" heading (the v3.2.1 sweep found this exact
 # anchor stuck on an old version). Slug rule mirrors GitHub's: lowercase; drop
 # every character that is not a letter, digit, space, or hyphen; spaces become
-# hyphens (so "v3.5.2 — X" -> "v352--x", the double hyphen is kept). Older
-# What's-New headings are frozen history and stay ungated.
+# hyphens (so "v3.5.2 — X" -> "v352--x", the double hyphen is kept). Only the
+# first heading is gated; any later one is history.
 def gh_slug(heading):
     kept = "".join(c for c in heading.strip().lower() if c.isalnum() or c in " -")
     return kept.replace(" ", "-")
 
 readme = rd("README.md")
 if readme is not None:
-    hm = re.search(r"^### (What's New in v[^\n]*)$", readme, re.MULTILINE)
+    hm = re.search(r"^#{2,3} (What's new in v[^\n]*)$", readme, re.MULTILINE | re.IGNORECASE)
     nm = re.search(r'href="(#whats-new[^"]*)"', readme)
     if not hm:
-        failures.append("README.md: first '### What's New in v…' heading not found "
+        failures.append("README.md: first '## What's new in v…' heading not found "
                         "— anchor changed, re-point the gate")
     if not nm:
         failures.append("README.md nav: href=\"#whats-new…\" What's-New link not found "
@@ -407,6 +381,24 @@ if readme is not None:
         if nm.group(1) != expected:
             failures.append("README nav What's-New anchor: expected %s, found %s"
                             % (expected, nm.group(1)))
+
+# ── PUBLIC-SURFACE WORDING (README.md, index.html) ──
+# No adoption or ecosystem claims on the public surfaces: the README and the site say what
+# the blueprint does, not where its ideas came from. The phrases and project names below
+# belonged to the removed comparison and import sections; any of them coming back fails.
+ADOPTION = re.compile(r"\b(?:patterns? absorbed|what we took|repos analyzed|ecosystem[- ]wide analysis|"
+                      r"ecosystem table|ecosystem guide|import nothing|imported from|adopted from|how does this compare|"
+                      r"gstack|superpowers|get-shit-done|gsd-core|gsd-2|oh-my-claudecode|claude-mem|claude-squad|"
+                      r"everything-claude-code|compound[- ]engineering|ralphy?)\b", re.IGNORECASE)
+for rel in ("README.md", "index.html"):
+    text = rd(rel)
+    if text is None:
+        continue
+    for lineno, line in enumerate(text.splitlines(), 1):
+        hit = ADOPTION.search(line)
+        if hit:
+            failures.append("%s:%d: adoption or ecosystem claim '%s'; the public docs describe the blueprint itself"
+                            % (rel, lineno, hit.group(0)))
 
 # ── Report ──
 if failures:
