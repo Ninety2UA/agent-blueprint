@@ -24,10 +24,10 @@ def run(*args, cwd):
 class LegacyRepo(unittest.TestCase):
     # The fixture's blueprint copies are files a v2 or v3 release shipped, byte for byte. Its
     # placeholder copies match no shipped version, as a copy someone edited would not.
-    SHIPPED = (".claude/skills/pause-checkpoint", ".claude/commands/orchestrate.md",
-               ".claude/agents/learnings-researcher.md", ".claude/hooks/task-completed.js")
+    SHIPPED = (".claude/skills/pause-checkpoint", ".claude/skills/requesting-code-review", ".claude/commands/orchestrate.md",
+               ".claude/agents/learnings-researcher.md", ".claude/hooks/task-completed.js", "hooks/handlers/task-completed.js")
     EDITED = (".claude/skills/build-pipeline", ".claude/commands/quick-fix.md",
-              ".claude/agents/code-reviewer.md", ".claude/hooks/session-start.js")
+              ".claude/agents/code-reviewer.md", ".claude/hooks/session-start.js", "hooks/handlers/teammate-idle.js")
 
     def setUp(self):
         self.dir = tempfile.mkdtemp()
@@ -44,23 +44,65 @@ class LegacyRepo(unittest.TestCase):
         code, out = run(cwd=self.dir)
         self.assertEqual(code, 0, out)
         for line in ["remove  %s\n" % rel for rel in self.SHIPPED] + [
-                "remove  scripts/ship.sh", "remove  .claude-plugin/plugin.json",
+                "remove  hooks/hooks.json", "remove  scripts/ship.sh", "remove  .claude-plugin/plugin.json",
                 "aside   .claude/ship-loop.local.md", "rename  CLAUDE.md -> AGENTS.md"]:
             self.assertIn(line, out)
         for rel in self.EDITED:
-            self.assertIn("unsure  %s  (a v3 blueprint name, but not a file the blueprint shipped" % rel, out)
+            what = "%s/SKILL.md is not a file" % rel if rel.startswith(".claude/skills/") else "not a file"
+            self.assertIn("unsure  %s  (a v3 blueprint name, but %s the blueprint shipped" % (rel, what), out)
         self.assertTrue(self.exists(".claude/skills/pause-checkpoint/SKILL.md"))
         self.assertTrue(self.exists("CLAUDE.md") and not self.exists("AGENTS.md"))
 
     def test_apply_removes_the_copies_and_leaves_user_files_alone(self):
         code, out = run("--apply", cwd=self.dir)
         self.assertEqual(code, 0, out)
-        for gone in self.SHIPPED + ("scripts/ship.sh", ".claude-plugin", ".claude/ship-loop.local.md"):
+        for gone in self.SHIPPED + ("hooks/hooks.json", "scripts/ship.sh", ".claude-plugin", ".claude/ship-loop.local.md"):
             self.assertFalse(self.exists(gone), gone)
         for kept in self.EDITED + (".claude/skills/my-own-skill/SKILL.md", ".claude/commands/deploy.md", ".claude/agents/my-agent.md",
                                    ".claude/hooks/my-hook.js", "scripts/deploy.sh", "src/app.py"):
             self.assertTrue(self.exists(kept), kept)
         self.assertTrue(self.exists(".agent-blueprint/run/v3/ship-loop.local.md"))
+
+    def unsure_folder(self, folder, culprit):
+        """The report leaves FOLDER alone, naming CULPRIT, and --apply keeps every file in it."""
+        kept = sorted(os.path.relpath(os.path.join(r, f), self.dir) for r, ds, fs in os.walk(os.path.join(self.dir, folder)) for f in fs + ds)
+        code, out = run(cwd=self.dir)
+        self.assertEqual(code, 0, out)
+        self.assertIn("unsure  %s  (a v3 blueprint name, but %s" % (folder, culprit), out)
+        self.assertNotIn("remove  %s\n" % folder, out)
+        code, out = run("--apply", cwd=self.dir)
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("removed %s\n" % folder, out)
+        for rel in kept:
+            self.assertTrue(self.exists(rel), rel)
+
+    def test_a_users_file_in_a_shipped_skill_folder_keeps_the_folder(self):
+        # pause-checkpoint/SKILL.md is the blueprint's, byte for byte; the notes next to it are not.
+        notes = os.path.join(self.dir, ".claude", "skills", "pause-checkpoint", "notes", "my-notes.md")
+        os.makedirs(os.path.dirname(notes))
+        with open(notes, "w") as fh:
+            fh.write("my own notes\n")
+        self.unsure_folder(".claude/skills/pause-checkpoint", ".claude/skills/pause-checkpoint/notes/my-notes.md is not a file the blueprint shipped")
+
+    def test_an_edited_reference_file_keeps_the_folder(self):
+        # Both files in requesting-code-review shipped; someone then edited the reference file.
+        path = os.path.join(self.dir, ".claude", "skills", "requesting-code-review", "code-reviewer.md")
+        with open(path, "a") as fh:
+            fh.write("\nOur own review rule.\n")
+        self.unsure_folder(".claude/skills/requesting-code-review", ".claude/skills/requesting-code-review/code-reviewer.md is not a file the blueprint shipped")
+
+    def test_a_symlink_in_a_shipped_skill_folder_keeps_the_folder(self):
+        # The blueprint never shipped a link; one in its folder points somewhere the user chose.
+        os.symlink(os.path.join("..", "..", "..", "src"), os.path.join(self.dir, ".claude", "skills", "pause-checkpoint", "src"))
+        self.unsure_folder(".claude/skills/pause-checkpoint", ".claude/skills/pause-checkpoint/src is a symlink")
+        self.assertTrue(self.exists("src/app.py"))
+
+    def test_a_fully_shipped_multi_file_folder_is_removed(self):
+        code, out = run(cwd=self.dir)
+        self.assertEqual(code, 0, out)
+        self.assertIn("remove  .claude/skills/requesting-code-review\n", out)
+        run("--apply", cwd=self.dir)
+        self.assertFalse(self.exists(".claude/skills/requesting-code-review"))
 
     def test_claude_md_becomes_agents_md_with_a_pointer(self):
         original = read(os.path.join(self.dir, "CLAUDE.md"))
@@ -72,8 +114,9 @@ class LegacyRepo(unittest.TestCase):
         run("--apply", cwd=self.dir)
         before = sorted(os.path.relpath(os.path.join(r, f), self.dir) for r, _d, fs in os.walk(self.dir) for f in fs if "/.git/" not in r + "/")
         code, out = run("--apply", cwd=self.dir)
-        self.assertEqual(code, 3, out)
-        self.assertIn("nothing to migrate", out)
+        self.assertEqual(code, 4, out)   # the edited copies are still there, each an unsure line
+        self.assertIn("nothing to remove automatically: %d unsure items above need your decision\n" % len(self.EDITED), out)
+        self.assertNotIn("--- applying", out)
         after = sorted(os.path.relpath(os.path.join(r, f), self.dir) for r, _d, fs in os.walk(self.dir) for f in fs if "/.git/" not in r + "/")
         self.assertEqual(before, after)
 
@@ -118,7 +161,7 @@ class LegacyRepo(unittest.TestCase):
             with open(os.path.join(other, "AGENTS.md"), "w") as fh:
                 fh.write("# Ours\n")
             code, out = run("--apply", cwd=other)
-            self.assertEqual(code, 3, out)
+            self.assertEqual(code, 4, out)
             self.assertIn("unsure  .claude/skills/brainstorming", out)
             self.assertNotIn("remove  ", out)
             for rel in (".claude/skills/brainstorming/SKILL.md", ".claude/agents/code-reviewer.md", ".claude/hooks/session-start.js"):
@@ -158,6 +201,24 @@ class LegacyRepo(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertIn("remove  .claude/agents/learnings-researcher.md\n", out)
 
+    def test_a_report_of_only_unsure_lines_asks_instead_of_saying_nothing(self):
+        # Nothing qualifies for removal, but the user still has to see the files and decide.
+        other = tempfile.mkdtemp()
+        try:
+            path = os.path.join(other, ".claude", "agents", "code-reviewer.md")
+            os.makedirs(os.path.dirname(path))
+            with open(path, "w") as fh:
+                fh.write("another pack's file\n")
+            with open(os.path.join(other, "AGENTS.md"), "w") as fh:
+                fh.write("# Ours\n")
+            code, out = run(cwd=other)
+            self.assertEqual(code, 4, out)
+            self.assertIn("unsure  .claude/agents/code-reviewer.md  ", out)
+            self.assertNotIn("nothing to migrate", out)
+            self.assertTrue(out.endswith("nothing to remove automatically: 1 unsure item above needs your decision\n"), out)
+        finally:
+            shutil.rmtree(other)
+
     def test_repo_without_traces_reports_nothing(self):
         clean = tempfile.mkdtemp()
         try:
@@ -181,6 +242,13 @@ class MigrateSkill(unittest.TestCase):
         self.assertIn("**Asking the user.**", text)
         self.assertIn("needs-human", text)
         self.assertIn("Default when nobody answers", text)
+
+    def test_skill_knows_both_terminal_lines(self):
+        # The skill stops on the first and asks about the unsure items on the second.
+        text, script = read(os.path.join(SKILL, "SKILL.md")), read(SCRIPT)
+        for phrase in ("nothing to migrate", "nothing to remove automatically"):
+            self.assertIn("`%s`" % phrase, text)
+            self.assertIn('echo "%s' % phrase, script)
 
     def test_no_other_skill_names_it(self):
         skills = sorted(d for d in os.listdir(os.path.join(REPO, "skills")) if os.path.isfile(os.path.join(REPO, "skills", d, "SKILL.md")))

@@ -2,7 +2,8 @@
 # detect-v3.sh — find and, on request, remove what Agent Blueprint v3 (and v2) left in a project.
 #
 # Usage: bash detect-v3.sh [--apply] [--keep-instructions] [PROJECT_DIR]
-#   default   report every v3 trace, one line each, and exit 0 (exit 3 when there is none)
+#   default   report every v3 trace, one line each, and exit 0 (exit 3 when there is none, exit 4
+#             when every trace is an `unsure` one, so nothing would be removed without the user)
 #   --apply   remove the blueprint's own copies, rename CLAUDE.md to AGENTS.md with a pointer
 #             CLAUDE.md, move ship state files aside; user files are never touched
 #   --keep-instructions   leave CLAUDE.md and AGENTS.md exactly as they are (no rename)
@@ -10,11 +11,12 @@
 # Other skill packs use some of the same names (brainstorming, writing-plans, code-reviewer),
 # so a name alone proves nothing. A file matched by name is removed only when the project shows
 # the blueprint installed (its plugin manifest, its ship.sh, its ship state files, a hooks.json
-# wired to its handlers, or one of the skills only the blueprint ships) and the file itself (a
-# skill folder's SKILL.md) is one the blueprint shipped: its checksum, line endings aside, is in
-# references/v3-file-sums.txt. Anything else is listed as `unsure` and left alone, which covers
-# another pack's file of the same name and a blueprint copy someone edited. A file byte for byte
-# identical to one the blueprint shipped counts as its copy, whoever put it there.
+# wired to its handlers, or one of the skills only the blueprint ships) and the file itself (for a
+# skill folder, every file in it) is one the blueprint shipped: its checksum, line endings aside, is
+# in references/v3-file-sums.txt. Anything else is listed as `unsure` and left alone, which covers
+# another pack's file of the same name, a blueprint copy someone edited, and a skill folder holding
+# a file someone added or a symlink (the blueprint shipped none). A file byte for byte identical to
+# one the blueprint shipped counts as its copy, whoever put it there.
 #
 # What counts as a v3 trace (only files the blueprint itself installed):
 #   .claude/skills/<v3 skill name>/        the 55 v3 skill names in references/v4-skill-names.tsv
@@ -80,6 +82,22 @@ shipped() {
     read -r crc size _ < <(LC_ALL=C tr -d '\r' < "$1" | cksum) || return 1
     grep -qxF "$crc $size" "$SUMS"
 }
+# first_unshipped PATH: print the first path at or under PATH, hidden ones included, that keeps it
+# from being the blueprint's copy (a symlink, or a file it did not ship); fail when there is none.
+first_unshipped() {
+    local entry
+    if [ -L "$1" ] || { [ ! -d "$1" ] && ! shipped "$1"; }; then
+        echo "$1"
+        return 0
+    fi
+    [ -d "$1" ] || return 1
+    for entry in "$1"/* "$1"/.[!.]* "$1"/..?*; do
+        if [ -e "$entry" ] || [ -L "$entry" ]; then
+            first_unshipped "$entry" && return 0
+        fi
+    done
+    return 1
+}
 is_blueprint_manifest() { [ -f .claude-plugin/plugin.json ] && grep -q '"claude-code-blueprint"' .claude-plugin/plugin.json; }
 blueprint_installed() {
     local n f
@@ -94,18 +112,28 @@ OWNED=false
 blueprint_installed && OWNED=true
 
 found=0
+unsure=0
 remove_paths=()
 note() { found=$((found + 1)); echo "$1"; }
+doubt() { unsure=$((unsure + 1)); echo "unsure  $1"; }
 plan_rm() { remove_paths+=("$1"); note "remove  $1"; }
 # plan_copy PATH: a file or skill folder found by its v3 name goes only in a project the blueprint
-# demonstrably installed into, and only when it (a folder's SKILL.md) is one the blueprint shipped.
+# demonstrably installed into, and only when it (every file in a folder) is one the blueprint shipped.
+# A folder holding anything else stays whole: half a skill folder would not load anyway.
 plan_copy() {
-    local file="$1"
-    if [ -d "$1" ]; then file="$1/SKILL.md"; fi
+    local bad
     if [ "$OWNED" != true ]; then
-        echo "unsure  $1  (a v3 blueprint name, but nothing else here shows the blueprint installed it; left alone)"
-    elif ! shipped "$file"; then
-        echo "unsure  $1  (a v3 blueprint name, but not a file the blueprint shipped: another pack's, or edited; left alone)"
+        doubt "$1  (a v3 blueprint name, but nothing else here shows the blueprint installed it; left alone)"
+    elif [ -d "$1" ]; then
+        if ! bad=$(first_unshipped "$1"); then
+            plan_rm "$1"
+        elif [ -L "$bad" ]; then
+            doubt "$1  (a v3 blueprint name, but $bad is a symlink, which the blueprint never shipped; left alone)"
+        else
+            doubt "$1  (a v3 blueprint name, but $bad is not a file the blueprint shipped: another pack's, added or edited; left alone)"
+        fi
+    elif ! shipped "$1"; then
+        doubt "$1  (a v3 blueprint name, but not a file the blueprint shipped: another pack's, or edited; left alone)"
     else
         plan_rm "$1"
     fi
@@ -142,7 +170,7 @@ done
 if is_blueprint_hooks_json; then
     plan_rm hooks/hooks.json
 elif [ -f hooks/hooks.json ] && grep -q 'handlers/' hooks/hooks.json; then
-    echo "unsure  hooks/hooks.json  (it names handlers that are not the blueprint's; left alone)"
+    doubt "hooks/hooks.json  (it names handlers that are not the blueprint's; left alone)"
 fi
 if is_blueprint_ship; then plan_rm scripts/ship.sh; fi
 if is_blueprint_manifest; then plan_rm .claude-plugin/plugin.json; fi
@@ -158,6 +186,15 @@ if command -v claude >/dev/null 2>&1 && claude plugin list 2>/dev/null | grep -q
     note "plugin  claude-code-blueprint is still installed in Claude Code: run  claude plugin uninstall claude-code-blueprint@claude-code-blueprint"
 fi
 
+if [ "$found" -eq 0 ] && [ "$unsure" -gt 0 ]; then
+    # Nothing qualifies for removal, but the unsure files are still the user's to look at.
+    if [ "$unsure" -eq 1 ]; then
+        echo "nothing to remove automatically: 1 unsure item above needs your decision"
+    else
+        echo "nothing to remove automatically: $unsure unsure items above need your decision"
+    fi
+    exit 4
+fi
 if [ "$found" -eq 0 ]; then
     echo "nothing to migrate: no v3 traces found"
     exit 3
