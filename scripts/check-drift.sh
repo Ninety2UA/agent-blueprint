@@ -68,6 +68,7 @@ fi
 SKILLS=$(find "$SKILLS_DIR" -type f -name 'SKILL.md' | wc -l | tr -d ' ')
 # Helper prompts: distinct file names, since a shared prompt has byte-identical copies. A companion
 # note (<prompt>-<topic>.md beside <prompt>.md, loaded by the prompt at a point of use) is not a prompt.
+# The same rule is is_companion() in tests/gates/test_prompt_files.py; change both together.
 PROMPTS=$(find "$SKILLS_DIR" -path '*/references/agents/*.md' -type f | while IFS= read -r f; do
     dir=${f%/*}; stem=${f##*/}; stem=${stem%.md}; prefix=$stem; companion=false
     while [ "${prefix%-*}" != "$prefix" ]; do

@@ -11,18 +11,12 @@ import json
 import os
 import re
 
+from report import fmt_secs   # the same directory; report.py owns the table formatting
+
 NOTES = {"claude": "claude-code.md", "codex": "codex.md", "agy": "antigravity.md", "grok": "grok-build.md",
          "pi": "pi.md", "cursor-agent": "cursor-cli.md", "hermes": "hermes.md", "amp": "amp.md"}
 CELLS = ["discovery", "canary", "hooks", "manual-only", "build", "helpers-off", "effort", "review", "debug", "ship", "team", "upgrade"]
 PENDING = "Pending: the v4.0.0 smoke table (docs/releases/v4.0.0-smoke.md) fills this section.\n"
-
-
-def fmt_secs(s):
-    try:
-        s = int(s)
-    except (TypeError, ValueError):
-        return ""
-    return "%dm%02ds" % (s // 60, s % 60) if s >= 60 else "%ds" % s
 
 
 def section(host, doc):
@@ -64,8 +58,9 @@ def main():
         head, sep, _ = text.partition("## Smoke status\n")
         if not sep:
             raise SystemExit("%s has no '## Smoke status' section" % path)
-        open(path, "w", encoding="utf-8").write(head + sep + "\n" + section(host, doc))
-        print("%-12s %s" % (host, "pending" if section(host, doc) == PENDING else "written"))
+        text = section(host, doc)
+        open(path, "w", encoding="utf-8").write(head + sep + "\n" + text)
+        print("%-12s %s" % (host, "pending" if text == PENDING else "written"))
 
 
 if __name__ == "__main__":

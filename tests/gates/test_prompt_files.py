@@ -20,7 +20,10 @@ AGENT_FILES = sorted(glob.glob(os.path.join(REPO, "skills", "*", "references", "
 
 
 def is_companion(path):
-    """<prompt>-<topic>.md beside <prompt>.md: notes a prompt loads at a point of use, not a prompt itself."""
+    """<prompt>-<topic>.md beside <prompt>.md: notes a prompt loads at a point of use, not a prompt itself.
+
+    scripts/check-drift.sh counts prompts by the same rule; change both together.
+    """
     folder, name = os.path.split(path)
     stem = name[:-3]
     return any(os.path.isfile(os.path.join(folder, stem[:i] + ".md")) for i, ch in enumerate(stem) if ch == "-")

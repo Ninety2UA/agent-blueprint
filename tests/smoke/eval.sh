@@ -73,8 +73,8 @@ V3_PLUGIN="$V3_DIR/plugins/claude-code-blueprint"
 case "$RUNS" in ''|*[!0-9]*) error "--runs wants a number"; exit 1 ;; esac
 for t in $TASKS; do case " $ALL_TASKS " in *" $t "*) ;; *) error "Unknown task: $t (one of: $ALL_TASKS)"; exit 1 ;; esac; done
 mkdir -p "$OUT"; OUT="$(cd "$OUT" && pwd)"
-VERSION=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$V4_DIR/.claude-plugin/plugin.json")
-V3_VERSION=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$V3_PLUGIN/.claude-plugin/plugin.json")
+VERSION=$(plugin_version "$V4_DIR/.claude-plugin/plugin.json")
+V3_VERSION=$(plugin_version "$V3_PLUGIN/.claude-plugin/plugin.json")
 NAME_MAP="$V4_DIR/docs/upgrade/v4-skill-names.tsv"
 [ -f "$NAME_MAP" ] || { error "missing $NAME_MAP"; exit 1; }
 host_known "$EVAL_HOST" || { error "unknown host $EVAL_HOST"; exit 1; }
@@ -185,7 +185,7 @@ run_task() {
 
 # run_ship VERSION LOG SECS: v3's ship.sh or v4's runner, then the pushed-branch check.
 run_ship() {
-    local version="$1" log="$2" secs="$3" rc=0 old_path="$PATH" feature branch reason f any=false total_t=0 total_c="0"
+    local version="$1" log="$2" secs="$3" rc=0 old_path="$PATH" feature branch reason
     feature=$(head -1 "$SMOKE_SCENARIOS/ship/feature.txt")
     branch=$(git -C "$WORK" symbolic-ref --short -q HEAD)
     setup_gh_shim "$WORK_ROOT"
@@ -199,13 +199,7 @@ run_ship() {
     fi
     PATH="$old_path"; export PATH
     # Tokens: v4 iteration logs are JSON results; v3's ship.sh logs are --verbose text, so n/a there.
-    for f in "$WORK_ROOT"/state/agent-blueprint/*/logs/iteration-*.log; do
-        [ -f "$f" ] || continue
-        usage_fields "$EVAL_HOST" "$f"
-        [ "$TOKENS" != n/a ] && { total_t=$((total_t + TOKENS)); any=true; }
-        [ "$COST" != n/a ] && total_c=$(python3 -c 'import sys; print("%.4f" % (float(sys.argv[1]) + float(sys.argv[2])))' "$total_c" "$COST")
-    done
-    if [ "$any" = true ]; then TOKENS="$total_t"; COST="$total_c"; else TOKENS="n/a"; COST="n/a"; fi
+    sum_usage "$EVAL_HOST" "$WORK_ROOT"
     if [ "$rc" -eq 124 ]; then verdict timeout "no publish after ${secs}s"; return 0; fi
     if ! grep -q "^gh pr create" "$GH_SHIM_LOG"; then verdict fail "no pull request was opened (exit $rc)"; return 0; fi
     if ! git --git-dir="$REMOTE" show-ref --verify -q "refs/heads/$branch"; then verdict fail "the bare remote has no branch $branch (exit $rc)"; return 0; fi

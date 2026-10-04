@@ -95,39 +95,9 @@ $SMOKE_HEADLESS"
     printf '%s' "$text"
 }
 
-# run_host_timed HOST SECS LOG PROMPT LASTMSG PLUGIN_DIR [FLAG...]: the host in its own process
-# group inside WORK, killed with the group after SECS (returns 124). Sets SMOKE_CHILD for a trap.
+# run_command_timed SECS LOG CMD...: CMD (a host, the ship runner, the upgrade script) in its own
+# process group inside WORK, killed with the group after SECS (returns 124). Sets SMOKE_CHILD for a trap.
 SMOKE_CHILD=""
-run_host_timed() {
-    local host="$1" secs="$2" log="$3" prompt="$4" lastmsg="$5" plugin_dir="$6" ticks=0 rc=0
-    shift 6
-    set -m
-    ( cd "$WORK" && host_run "$host" "$prompt" "$plugin_dir" "$lastmsg" "$@" ) >> "$log" 2>&1 </dev/null &
-    SMOKE_CHILD=$!
-    set +m
-    while kill -0 "$SMOKE_CHILD" 2>/dev/null; do
-        if [ "$ticks" -ge $((secs * 4)) ]; then
-            kill_smoke_child
-            echo "=== killed after ${secs}s (timeout) ===" >> "$log"
-            return 124
-        fi
-        sleep 0.25
-        ticks=$((ticks + 1))
-    done
-    if wait "$SMOKE_CHILD"; then rc=0; else rc=$?; fi
-    SMOKE_CHILD=""
-    return "$rc"
-}
-kill_smoke_child() {
-    [ -n "$SMOKE_CHILD" ] || return 0
-    kill -TERM -- "-$SMOKE_CHILD" 2>/dev/null || kill -TERM "$SMOKE_CHILD" 2>/dev/null || true
-    sleep 1
-    kill -KILL -- "-$SMOKE_CHILD" 2>/dev/null || kill -KILL "$SMOKE_CHILD" 2>/dev/null || true
-    wait "$SMOKE_CHILD" 2>/dev/null || true
-    SMOKE_CHILD=""
-}
-
-# run_command_timed SECS LOG CMD...: any command (the ship runner, the upgrade script) the same way.
 run_command_timed() {
     local secs="$1" log="$2" ticks=0 rc=0
     shift 2
@@ -147,6 +117,20 @@ run_command_timed() {
     if wait "$SMOKE_CHILD"; then rc=0; else rc=$?; fi
     SMOKE_CHILD=""
     return "$rc"
+}
+# run_host_timed HOST SECS LOG PROMPT LASTMSG PLUGIN_DIR [FLAG...]: the host through host_run, the same way.
+run_host_timed() {
+    local host="$1" secs="$2" log="$3" prompt="$4" lastmsg="$5" plugin_dir="$6"
+    shift 6
+    run_command_timed "$secs" "$log" host_run "$host" "$prompt" "$plugin_dir" "$lastmsg" "$@"
+}
+kill_smoke_child() {
+    [ -n "$SMOKE_CHILD" ] || return 0
+    kill -TERM -- "-$SMOKE_CHILD" 2>/dev/null || kill -TERM "$SMOKE_CHILD" 2>/dev/null || true
+    sleep 1
+    kill -KILL -- "-$SMOKE_CHILD" 2>/dev/null || kill -KILL "$SMOKE_CHILD" 2>/dev/null || true
+    wait "$SMOKE_CHILD" 2>/dev/null || true
+    SMOKE_CHILD=""
 }
 
 # ── provenance ────────────────────────────────────────────────
@@ -291,6 +275,22 @@ usage_fields() {
     [ -n "$TOKENS" ] || TOKENS="n/a"
     [ -n "$COST" ] || COST="n/a"
 }
+
+# sum_usage HOST WORK_ROOT: TOKENS and COST summed over every iteration log the runner kept under
+# WORK_ROOT/state; "n/a" when no log reported them.
+sum_usage() {
+    local host="$1" root="$2" f total_t=0 total_c="0" any=false
+    for f in "$root"/state/agent-blueprint/*/logs/iteration-*.log; do
+        [ -f "$f" ] || continue
+        usage_fields "$host" "$f"
+        if [ "$TOKENS" != n/a ]; then total_t=$((total_t + TOKENS)); any=true; fi
+        if [ "$COST" != n/a ]; then total_c=$(python3 -c 'import sys; print("%.4f" % (float(sys.argv[1]) + float(sys.argv[2])))' "$total_c" "$COST"); fi
+    done
+    if [ "$any" = true ]; then TOKENS="$total_t"; COST="$total_c"; else TOKENS="n/a"; COST="n/a"; fi
+}
+
+# plugin_version PLUGIN_JSON: the version field of a plugin manifest.
+plugin_version() { python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$1"; }
 
 # strip_ansi: a filter that removes color codes (BSD sed has no \x1b, so the ESC is spelled out).
 strip_ansi() { sed "s/$(printf '\033')\[[0-9;]*m//g"; }

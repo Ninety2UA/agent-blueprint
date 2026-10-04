@@ -68,9 +68,11 @@ def prose(text):
 
 
 def fmt_secs(s):
-    if s is None:
+    """Seconds as 7s or 2m05s; empty when the value is missing or not a number."""
+    try:
+        s = int(s)
+    except (TypeError, ValueError):
         return ""
-    s = int(s)
     if s < 60:
         return "%ds" % s
     return "%dm%02ds" % (s // 60, s % 60)
@@ -213,9 +215,12 @@ def eval_report(args):
                % (args.version, args.version, args.version, args.version))
     out.append("|------|---------------|------------|----------------|-----------------|------------------|-------------------|----------------|-----------------|------------|")
     increases = []
+    by_task = {}
+    for r in doc["runs"]:
+        by_task.setdefault(r["task"], {"v3": [], "v4": []}).setdefault(r["version"], []).append(r)
     for t in tasks:
-        v3 = [r for r in doc["runs"] if r["task"] == t and r["version"] == "v3"]
-        v4 = [r for r in doc["runs"] if r["task"] == t and r["version"] == "v4"]
+        v3 = by_task.get(t, {}).get("v3", [])
+        v4 = by_task.get(t, {}).get("v4", [])
         if not v3 and not v4:
             continue
         p3 = sum(1 for r in v3 if r["state"] == "pass")

@@ -73,7 +73,7 @@ PLUGIN_DIR="$(cd "$PLUGIN_DIR" 2>/dev/null && pwd)" || { error "--plugin-dir is 
 if [ -n "$V3_DIR" ]; then V3_DIR="$(cd "$V3_DIR" 2>/dev/null && pwd)" || { error "--v3-dir is not a directory"; exit 1; }; fi
 mkdir -p "$OUT"
 OUT="$(cd "$OUT" && pwd)"
-VERSION=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$SMOKE_REPO/.claude-plugin/plugin.json")
+VERSION=$(plugin_version "$SMOKE_REPO/.claude-plugin/plugin.json")
 
 # Cells run in the canonical order whatever --cell said (build before helpers-off and effort; canary before hooks).
 ordered=""
@@ -211,12 +211,13 @@ run_scenario() {
 
 # The standard verdict for a scenario cell: the check, then the provenance rule for pipeline skills.
 verdict_scenario() {
-    local name="$1" skill="" summary="" paths=""
+    local name="$1" skill="" summary="" paths="" helpers=""
     [ -f "$SMOKE_SCENARIOS/$name/skill" ] && skill=$(head -1 "$SMOKE_SCENARIOS/$name/skill")
     if [ "$CHECK_RC" -eq 124 ]; then finish_cell timeout "$CHECK_REASON"; return 0; fi
     if [ -n "$skill" ]; then
-        summary=$(helper_summary "$WORK" "$skill" | head -1)
-        paths=$(helper_summary "$WORK" "$skill" | sed -n 2p)
+        helpers=$(helper_summary "$WORK" "$skill")
+        summary=$(printf '%s\n' "$helpers" | sed -n 1p)
+        paths=$(printf '%s\n' "$helpers" | sed -n 2p)
         case "$summary" in
             missing) finish_cell fail "no provenance record for $skill; $CHECK_REASON"; return 0 ;;
             invalid) finish_cell fail "the provenance record for $skill is not valid JSON; $CHECK_REASON"; return 0 ;;
@@ -358,8 +359,9 @@ EOF
     info "helpers disabled with: ${args[*]}"
     run_scenario build "${args[@]}"
     [ "$CHECK_RC" -eq 124 ] && { finish_cell timeout "$CHECK_REASON"; return 0; }
-    summary=$(helper_summary "$WORK" ab-build-pipeline | head -1)
-    paths=$(helper_summary "$WORK" ab-build-pipeline | sed -n 2p)
+    helpers=$(helper_summary "$WORK" ab-build-pipeline)
+    summary=$(printf '%s\n' "$helpers" | sed -n 1p)
+    paths=$(printf '%s\n' "$helpers" | sed -n 2p)
     case "$summary" in
         missing) finish_cell fail "no provenance record for ab-build-pipeline; $CHECK_REASON"; return 0 ;;
         invalid) finish_cell fail "the provenance record is not valid JSON; $CHECK_REASON"; return 0 ;;
@@ -443,14 +445,8 @@ cell_ship() {
     run_command_timed "$secs" "$LOG" env XDG_STATE_HOME="$WORK_ROOT/state" bash "$runner" "${args[@]}" || rc=$?
     PATH="$old_path"; export PATH
     # Token use: every iteration log the runner kept, summed where the host reports it.
-    local f t c total_t=0 total_c="0" any=false
-    for f in "$WORK_ROOT"/state/agent-blueprint/*/logs/iteration-*.log; do
-        [ -f "$f" ] || continue
-        usage_fields "$HOST" "$f"
-        [ "$TOKENS" != n/a ] && { total_t=$((total_t + TOKENS)); any=true; }
-        [ "$COST" != n/a ] && total_c=$(python3 -c 'import sys; print("%.4f" % (float(sys.argv[1]) + float(sys.argv[2])))' "$total_c" "$COST")
-    done
-    if [ "$any" = true ]; then TOKENS="$total_t"; COST="$total_c"; else TOKENS="n/a"; COST="n/a"; fi
+    local t c
+    sum_usage "$HOST" "$WORK_ROOT"
     t="$TOKENS"; c="$COST"
     if [ "$rc" -eq 124 ]; then finish_cell timeout "the runner did not finish within ${secs}s"; return 0; fi
     CHECK_RC=0

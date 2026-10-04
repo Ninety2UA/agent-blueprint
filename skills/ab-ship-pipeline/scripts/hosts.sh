@@ -290,20 +290,10 @@ host_usage() {
         codex|pi|hermes|amp) echo "tokens=n/a cost=n/a"; return 0 ;;
     esac
     command -v python3 >/dev/null 2>&1 || { echo "tokens=n/a cost=n/a"; return 0; }
-    python3 - "$log" <<'PY'
+    host_last_json "$log" | python3 -c '
 import json, sys
-text = open(sys.argv[1], encoding="utf-8", errors="replace").read()
-doc = None
-try:
-    doc = json.loads(text[text.index("{"):]) if "{" in text else None
-except Exception:
-    for line in reversed(text.splitlines()):
-        line = line.strip()
-        if line.startswith("{"):
-            try:
-                doc = json.loads(line); break
-            except Exception:
-                continue
+raw = sys.stdin.read().strip()
+doc = json.loads(raw) if raw else None
 tokens = cost = "n/a"
 if isinstance(doc, dict):
     usage = doc.get("usage")
@@ -318,8 +308,30 @@ if isinstance(doc, dict):
         if isinstance(doc.get(k), (int, float)):
             cost = "%.4f" % doc[k]; break
 print("tokens=%s cost=%s" % (tokens, cost))
-PY
+'
     return 0
+}
+
+# host_last_json LOG: the last JSON object a host wrote to LOG (a JSON result after the prompt
+# header, or the last line that is one), compact, or nothing. Needs python3.
+host_last_json() {
+    python3 - "$1" <<'PY'
+import json, sys
+text = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+doc = None
+try:
+    doc = json.loads(text[text.index("{"):]) if "{" in text else None
+except Exception:
+    for line in reversed(text.splitlines()):
+        line = line.strip()
+        if line.startswith("{"):
+            try:
+                doc = json.loads(line); break
+            except Exception:
+                continue
+if isinstance(doc, dict):
+    print(json.dumps(doc))
+PY
 }
 
 # The probe: one shell command that touches a marker inside .git, nothing else. The runner
@@ -498,26 +510,16 @@ host_final_message() {
         claude|cursor-agent|grok|agy|fake)
             # claude and cursor-agent: .result; grok: .text; agy: unverified, tries the same names.
             if command -v python3 >/dev/null 2>&1; then
-                python3 - "$log" <<'PY'
+                host_last_json "$log" | python3 -c '
 import json, sys
-text = open(sys.argv[1], encoding="utf-8", errors="replace").read()
-doc = None
-try:
-    doc = json.loads(text[text.index("{"):]) if "{" in text else None
-except Exception:
-    for line in reversed(text.splitlines()):
-        line = line.strip()
-        if line.startswith("{"):
-            try:
-                doc = json.loads(line); break
-            except Exception:
-                continue
+raw = sys.stdin.read().strip()
+doc = json.loads(raw) if raw else None
 if isinstance(doc, dict):
     for key in ("result", "text", "response", "content", "message"):
         v = doc.get(key)
         if isinstance(v, str):
             print(v); break
-PY
+'
             else
                 tail -n 20 "$log"
             fi ;;
