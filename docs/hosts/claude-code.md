@@ -68,18 +68,19 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 2.1.284 (Claude Code), last cell 2026-10-03.
+From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 2.1.288 (Claude Code), last cell 2026-10-03.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | pass | 4s | 53 ab- skills once each in 7 location(s); the answer names ab-ship-pipeline |
+| `discovery` | pass | 6s | 53 ab- skills once each in 7 location(s); the answer names ab-ship-pipeline |
 | `canary` | pass | 7s | final message names HARBOR-19 |
 | `hooks` | pass | 0s | handlers wrote the trace: session-start.js x1, ship-loop.sh x1 (from the canary run) |
-| `manual-only` | pass | 9s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `manual-only` | pass | 13s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
 | `build` | pass | 19m43s | acceptance test passes (deps: tabulate>=0.9) (host exited 1) · helper steps: helper,helper,helper,helper |
 | `helpers-off` | degraded-pass (inline) | 14m44s | acceptance test passes (deps: tabulate>=0.9) · helper steps: inline,inline,inline,inline |
 | `effort` | pass | 0s | session effort xhigh; 4 helper transcript(s) at the same effort |
 | `review` | pass | 3m35s | the review names eval and cli.py · helper steps: helper |
 | `debug` | pass | 6m07s | suite passes; store.py fixed; regression test present · helper steps: helper |
+| `ship` | pass | 109m31s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch |
 | `team` | pass | 10m11s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |
 | `upgrade` | pass | 3s | 14 checks passed: both plugin ids listed, detect-v3.sh reported and removed the v3 traces, the session-start warning names the v3 plugin |

@@ -79,10 +79,10 @@ From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | pass | 22s | 53 ab- skills once each in 10 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 13s | final message names HARBOR-19 |
+| `discovery` | pass | 13s | 53 ab- skills once each in 10 location(s); the answer names ab-ship-pipeline |
+| `canary` | pass | 10s | final message names HARBOR-19 |
 | `hooks` | n/a | 0s | plugin hooks run only after trust on codex; the review cell covers the untrusted path (AE1) |
-| `manual-only` | pass | 13s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `manual-only` | pass | 14s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
 | `build` | pass | 16m36s | acceptance test passes (deps: tabulate>=0.9) · helper steps: helper,helper,helper,helper |
 | `helpers-off` | n/a | 0s | no helper switch on codex |
 | `effort` | n/a | 0s | no per-dispatch effort metadata on codex |

@@ -67,9 +67,9 @@ From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
 | `discovery` | pass | 16s | 53 ab- skills once each in 8 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 16s | final message names HARBOR-19 |
+| `canary` | pass | 10s | final message names HARBOR-19 |
 | `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
-| `manual-only` | pass | 31s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `manual-only` | n/a | 16s | the catalog shown to the model omitted 128 skills and names no ab-p skill (the host caps its catalog), so whether ab-plugin-update is hidden on purpose cannot be judged here |
 | `build` | pass | 30m21s | acceptance test passes (deps: tabulate>=0.9.0,<0.10) · helper steps: helper,helper,helper,helper,inline |
 | `helpers-off` | n/a | 0s | no helper switch on cursor-agent |
 | `effort` | n/a | 0s | no per-dispatch effort metadata on cursor-agent |
