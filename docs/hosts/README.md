@@ -5,7 +5,7 @@ Agent Blueprint runs its 53 `ab-` skills in eight coding CLIs. Each note below c
 | Host | Binary | Install route | Hooks | Helpers | Manual-only enforced | Headless posture |
 |---|---|---|---|---|---|---|
 | [Claude Code](claude-code.md) | `claude` | `claude plugin marketplace add`, then `claude plugin install` | yes (10 handlers) | yes | yes | `-p --permission-mode auto` |
-| [Codex](codex.md) | `codex` | `bash install.sh` (the `~/.agents/skills` copy); the plugin route instead on a Codex-only machine | with the plugin route (5 handlers) | yes | yes | `exec -s workspace-write`, network on, `.git` read-only |
+| [Codex](codex.md) | `codex` | `bash install.sh` (the `~/.agents/skills` copy); the plugin route instead where no other tool uses the shared copy | with the plugin route (5 handlers) | yes | yes | `exec -s workspace-write`, network on, `.git` read-only |
 | [Antigravity](antigravity.md) | `agy` | `agy plugin install <checkout>` | no | yes | not verified | `-p --dangerously-skip-permissions` (unguarded) |
 | [Grok Build](grok-build.md) | `grok` | one copy in `~/.agents/skills` (`install.sh`) | no | yes | yes | `-p --always-approve --sandbox workspace` |
 | [Pi](pi.md) | `pi` | one copy in `~/.agents/skills` (`install.sh`) | no | with `pi-subagents` | yes | `-p --approve` (unguarded) |

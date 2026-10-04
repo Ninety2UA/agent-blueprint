@@ -2313,7 +2313,7 @@
               </thead>
               <tbody>
                 <tr><td>Claude Code</td><td><code>claude</code></td><td><code>claude plugin marketplace add Ninety2UA/agent-blueprint</code>, then <code>claude plugin install agent-blueprint@agent-blueprint</code></td><td><a href="https://github.com/Ninety2UA/agent-blueprint/blob/main/docs/hosts/claude-code.md" target="_blank" rel="noopener">claude-code.md</a></td></tr>
-                <tr><td>Codex</td><td><code>codex</code></td><td><code>bash install.sh --only codex</code> (the shared copy). On a machine with only Codex, <code>codex plugin marketplace add &lt;checkout&gt;</code> then <code>codex plugin add agent-blueprint@agent-blueprint</code> instead; never both</td><td><a href="https://github.com/Ninety2UA/agent-blueprint/blob/main/docs/hosts/codex.md" target="_blank" rel="noopener">codex.md</a></td></tr>
+                <tr><td>Codex</td><td><code>codex</code></td><td><code>bash install.sh --only codex</code> (the shared copy). On a machine where no other tool uses the shared copy, <code>codex plugin marketplace add &lt;checkout&gt;</code> then <code>codex plugin add agent-blueprint@agent-blueprint</code> instead; never both</td><td><a href="https://github.com/Ninety2UA/agent-blueprint/blob/main/docs/hosts/codex.md" target="_blank" rel="noopener">codex.md</a></td></tr>
                 <tr><td>Antigravity</td><td><code>agy</code></td><td><code>agy plugin install &lt;checkout&gt;</code>, or <code>bash install.sh --only agy</code></td><td><a href="https://github.com/Ninety2UA/agent-blueprint/blob/main/docs/hosts/antigravity.md" target="_blank" rel="noopener">antigravity.md</a></td></tr>
                 <tr><td>Grok Build</td><td><code>grok</code></td><td><code>bash install.sh --only grok</code> (the shared copy)</td><td><a href="https://github.com/Ninety2UA/agent-blueprint/blob/main/docs/hosts/grok-build.md" target="_blank" rel="noopener">grok-build.md</a></td></tr>
                 <tr><td>Pi</td><td><code>pi</code></td><td><code>bash install.sh --only pi</code> (the shared copy)</td><td><a href="https://github.com/Ninety2UA/agent-blueprint/blob/main/docs/hosts/pi.md" target="_blank" rel="noopener">pi.md</a></td></tr>
@@ -2458,7 +2458,7 @@
         <h3 class="guide__title reveal">Start a run</h3>
         <div class="guide__step reveal">
           <h3><span class="install__step-num">1</span>Create a feature branch and make sure the working tree is clean</h3>
-          <p>The runner refuses to run on the default branch.</p>
+          <p>The runner refuses to run on the default branch, and needs git 2.29 or newer to work out what a push would publish.</p>
           <div class="code-block">
             <div class="code-block__header">
               <div class="code-block__dots">
@@ -3547,7 +3547,7 @@
               </thead>
               <tbody>
                 <tr><td>Claude Code</td><td>2.1.288</td><td>Every check passes; with helpers switched off, the pipelines run inline as designed</td></tr>
-                <tr><td>Codex</td><td>0.155.1</td><td>Every check that applies passes (hooks, effort and upgrade do not apply to Codex)</td></tr>
+                <tr><td>Codex</td><td>0.155.1</td><td>Every check that applies passes except review: its recorded review named the eval in cli.py without rating it a security risk, which the review check, tightened after the run, counts as a fail; it reruns on the final commit (hooks, effort and upgrade do not apply to Codex)</td></tr>
                 <tr><td>Cursor CLI</td><td>2026.10.01</td><td>Every check that applies passes; the manual-only check ran in a profile with only the blueprint installed</td></tr>
                 <tr><td>Antigravity</td><td>1.2.16</td><td>Discovery, <code>AGENTS.md</code>, hooks, manual-only, ship and team pass, and debug passes inline. Build and review finish their work, but Gemini does not always write the provenance record those two checks require</td></tr>
                 <tr><td>Grok Build</td><td>1.0.34</td><td>Discovery, <code>AGENTS.md</code>, hooks and manual-only pass; the pipeline checks stopped on the free tier's usage limit</td></tr>

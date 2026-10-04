@@ -79,7 +79,7 @@ Or install one tool at a time with the route in this table (`<checkout>` is the 
 | Tool | Command | Install route | Support note |
 |---|---|---|---|
 | Claude Code | `claude` | `claude plugin marketplace add Ninety2UA/agent-blueprint`, then `claude plugin install agent-blueprint@agent-blueprint` | [claude-code.md](docs/hosts/claude-code.md) |
-| Codex | `codex` | `bash install.sh --only codex` (the shared copy). On a machine with only Codex, `codex plugin marketplace add <checkout>` then `codex plugin add agent-blueprint@agent-blueprint` instead; never both | [codex.md](docs/hosts/codex.md) |
+| Codex | `codex` | `bash install.sh --only codex` (the shared copy). On a machine where no other tool uses the shared copy, `codex plugin marketplace add <checkout>` then `codex plugin add agent-blueprint@agent-blueprint` instead; never both | [codex.md](docs/hosts/codex.md) |
 | Antigravity | `agy` | `agy plugin install <checkout>`, or `bash install.sh --only agy` | [antigravity.md](docs/hosts/antigravity.md) |
 | Grok Build | `grok` | `bash install.sh --only grok` (the shared copy) | [grok-build.md](docs/hosts/grok-build.md) |
 | Pi | `pi` | `bash install.sh --only pi` (the shared copy) | [pi.md](docs/hosts/pi.md) |
@@ -154,7 +154,7 @@ For a well-defined feature you want built hands-off, the ship runner drives `ab-
 
 ### Start a run
 
-1. Create a feature branch and make sure the working tree is clean. The runner refuses to run on the default branch.
+1. Create a feature branch and make sure the working tree is clean. The runner refuses to run on the default branch, and needs git 2.29 or newer to work out what a push would publish.
 
    ```bash
    git switch -c feat/jwt-refresh
@@ -727,7 +727,7 @@ Before the release, a local smoke test (`tests/smoke/`) ran a sample project thr
 | Tool | Version tested | Result |
 |---|---|---|
 | Claude Code | 2.1.288 | Every check passes; with helpers switched off, the pipelines run inline as designed |
-| Codex | 0.155.1 | Every check that applies passes (hooks, effort and upgrade do not apply to Codex) |
+| Codex | 0.155.1 | Every check that applies passes except review: its recorded review named the eval in cli.py without rating it a security risk, which the review check, tightened after the run, counts as a fail; it reruns on the final commit (hooks, effort and upgrade do not apply to Codex) |
 | Cursor CLI | 2026.10.01 | Every check that applies passes; the manual-only check ran in a profile with only the blueprint installed |
 | Antigravity | 1.2.16 | Discovery, `AGENTS.md`, hooks, manual-only, ship and team pass, and debug passes inline. Build and review finish their work, but Gemini does not always write the provenance record those two checks require |
 | Grok Build | 1.0.34 | Discovery, `AGENTS.md`, hooks and manual-only pass; the pipeline checks stopped on the free tier's usage limit |
