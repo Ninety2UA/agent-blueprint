@@ -18,12 +18,12 @@
 # Prints one PASS: or FAIL: line per check and stops at the first failure (exit 1). No model runs.
 set -euo pipefail
 
-V3_DIR="" V4_DIR="" WORK="" KEEP=false
+V3_DIR="" V4_DIR="" PARENT="" KEEP=false
 while [ $# -gt 0 ]; do
     case "$1" in
         --v3-dir) V3_DIR="$2"; shift 2 ;;
         --v4-dir) V4_DIR="$2"; shift 2 ;;
-        --work)   WORK="$2"; shift 2 ;;
+        --work)   PARENT="$2"; shift 2 ;;
         --keep)   KEEP=true; shift ;;
         -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "unknown option: $1" >&2; exit 2 ;;
@@ -36,7 +36,7 @@ V3_DIR="$(cd "$V3_DIR" && pwd)"; V4_DIR="$(cd "$V4_DIR" && pwd)"
 command -v claude >/dev/null 2>&1 || { echo "FAIL: claude is not on PATH"; exit 1; }
 command -v node >/dev/null 2>&1 || { echo "FAIL: node is not on PATH (the session-start hook needs it)"; exit 1; }
 # The cleanup deletes only the folder made here, never the caller's --work folder or what is in it.
-PARENT="${WORK:-${TMPDIR:-/tmp}}"
+PARENT="${PARENT:-${TMPDIR:-/tmp}}"
 mkdir -p "$PARENT"
 WORK=$(mktemp -d "${PARENT%/}/ab-smoke-upgrade-XXXXXX")
 cleanup() { [ "$KEEP" = true ] || rm -rf "$WORK"; }
@@ -87,7 +87,7 @@ git -C "$PROJECT" init -q
 DETECT="$V4_DIR/skills/ab-migrate/scripts/detect-v3.sh"
 REPORT=$(bash "$DETECT" "$PROJECT" 2>&1 || true)
 printf '%s\n' "$REPORT" >> "$LOG"
-for line in "remove  .claude/skills/build-pipeline" "remove  scripts/ship.sh" "rename  CLAUDE.md -> AGENTS.md" "plugin  claude-code-blueprint is still installed"; do
+for line in "remove  .claude/skills/pause-checkpoint" "remove  scripts/ship.sh" "rename  CLAUDE.md -> AGENTS.md" "plugin  claude-code-blueprint is still installed"; do
     if printf '%s' "$REPORT" | grep -Fq "$line"; then
         echo "PASS: detect-v3.sh reports '$line'"
     else
@@ -95,7 +95,7 @@ for line in "remove  .claude/skills/build-pipeline" "remove  scripts/ship.sh" "r
     fi
 done
 step "detect-v3.sh --apply" bash "$DETECT" --apply "$PROJECT"
-if [ -f "$PROJECT/AGENTS.md" ] && [ "$(cat "$PROJECT/CLAUDE.md")" = "@AGENTS.md" ] && [ ! -e "$PROJECT/.claude/skills/build-pipeline" ]; then
+if [ -f "$PROJECT/AGENTS.md" ] && [ "$(cat "$PROJECT/CLAUDE.md")" = "@AGENTS.md" ] && [ ! -e "$PROJECT/.claude/skills/pause-checkpoint" ]; then
     echo "PASS: AGENTS.md exists, CLAUDE.md imports it, the v3 skill copy is gone"
 else
     echo "FAIL: the project is not in the v4 layout after --apply"; exit 1
