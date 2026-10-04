@@ -484,10 +484,15 @@ host_plugin_dir() {
     return 0
 }
 
-# installed_copy_version CATALOG_DIR: the version in the plugin manifest beside the catalog
-# (<root>/.claude-plugin/plugin.json or <root>/plugin.json), or "unknown".
+# installed_copy_version CATALOG_DIR: the version in the copy route's install record inside the
+# catalog, else in the plugin manifest beside it (<root>/.claude-plugin/plugin.json or
+# <root>/plugin.json), or "unknown".
 installed_copy_version() {
     local root f
+    # The copy route (install.sh into ~/.agents/skills) keeps its version in the install record
+    # inside the catalog folder; a plugin install keeps it in the manifest beside the folder.
+    f="$1/.agent-blueprint-install.json"
+    if [ -f "$f" ] && plugin_version "$f" 2>/dev/null; then return 0; fi
     root=$(dirname "$1")
     for f in "$root/.claude-plugin/plugin.json" "$root/plugin.json"; do
         if [ -f "$f" ] && plugin_version "$f" 2>/dev/null; then return 0; fi

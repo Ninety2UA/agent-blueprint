@@ -89,6 +89,15 @@ check "fake · canary fails on an installed copy of another version" [ "$(state_
 check "the version mismatch is named" grep -q "version 0.0.1, not" <<<"$(reason_of "$J" fake canary)"
 check "the result row carries the installed copy as plugin_dir" grep -qF "\"plugin_dir\": \"$stale/skills\"" "$WORK"/logs/*/fake/results.jsonl
 
+echo "== a copy-route install (install record, no manifest) of this version runs its cells"
+copy="$WORK/copy/skills"
+mkdir -p "$copy/ab-ship-pipeline"
+: > "$copy/ab-ship-pipeline/SKILL.md"
+printf '{"plugin": "agent-blueprint", "version": "%s"}\n' "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$REPO/.claude-plugin/plugin.json")" > "$copy/.agent-blueprint-install.json"
+AGENT_BLUEPRINT_FAKE_CATALOG="$copy" \
+    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --cell canary > "$WORK/copy.log" 2>&1 || true
+check "fake · canary runs against a copy-route install of this version" [ "$(state_of "$J" fake canary)" = pass ]
+
 echo "== the effort check (AE2) on synthetic transcripts: a helper without an effort field is not a match"
 effort_out() {   # SESSION CONFIG_DIR: lib.sh's effort_check, in a subshell so lib.sh's globals (WORK) stay out of this script
     # shellcheck source=lib.sh disable=SC1091
