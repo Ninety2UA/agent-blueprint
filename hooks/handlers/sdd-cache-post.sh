@@ -9,7 +9,7 @@
 # key) so a future cache hit can show what question produced the cached
 # reading. Entries without ETag or Last-Modified are not cached.
 #
-# Adapted from addyosmani/agent-skills (MIT) for agent-blueprint.
+# License notice: THIRD_PARTY_NOTICES.md.
 # Dependencies: jq, curl, shasum (or sha256sum).
 
 set -euo pipefail

@@ -15,11 +15,11 @@ tags: [gate-decision, supersede, ship-sh, wave-orchestration, injection-scanner,
 Gate 1 evaluated four supersede candidates (R2). Candidate a (`ship-loop.sh` → `/goal`) is
 recorded separately in [the goal-vs-ship-loop record](2026-07-17-goal-vs-ship-loop-rebuild.md). The
 other three are recorded here. All three resolved to **keep** — the native feature does not supersede the custom machinery.
-Recorded per R16 so future cycles and the `/cli-watch` + `/repo-watch` watchers do not re-litigate them.
+Recorded per R16 so future cycles and the `/cli-watch` watcher do not re-litigate them.
 
 ## R2b — `scripts/ship.sh` outer loop vs native `/loop` + ScheduleWakeup → **KEEP ship.sh**
 
-`ship.sh` exists to give each iteration a **fresh 200K context via process respawn** (Ralph-style).
+`ship.sh` exists to give each iteration a **fresh 200K context via process respawn**.
 The candidate natives do not do this:
 
 - **`/loop`** is session-scoped and **never resets context** — it re-runs a prompt on an interval

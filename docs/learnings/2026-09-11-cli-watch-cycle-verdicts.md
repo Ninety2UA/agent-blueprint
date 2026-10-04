@@ -5,7 +5,7 @@ category: gate-decision
 cycle: cli-watch-2026-09-11
 requirement: R19, KTD7, KTD8, KTD9
 applies_when:
-  - A future /cli-watch or /repo-watch cycle re-flags ship-loop.sh, ship.sh, wave orchestration, the injection scanners, or plugin-update as duplicating a native feature
+  - A future /cli-watch cycle re-flags ship-loop.sh, ship.sh, wave orchestration, the injection scanners, or plugin-update as duplicating a native feature
   - Deciding whether a native primitive should replace custom blueprint machinery
   - Re-running the standing capability probes against a newer CLI (start from the 2.1.268 facts recorded here)
 tags: [gate-decision, supersede, cli-watch, ship-loop, ship-sh, goal, wave-orchestration, workflow-tool, injection-scanner, plugin-update, platform-currency]

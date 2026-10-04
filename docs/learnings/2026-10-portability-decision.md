@@ -6,7 +6,7 @@ cycle: v4.0-portability
 requirement: R24, R25, R26, R28, R29, R30
 applies_when:
   - Someone proposes Claude-only machinery (an agents/ directory, a slash command, a hook a pipeline depends on, a fixed effort tier) and needs the reason it was retired
-  - A watcher cycle or an import analysis flags multi-harness work as out of scope, citing the July or September 2026 records
+  - A watcher cycle flags multi-harness work as out of scope, citing the v3 scope of July or September 2026
   - A ninth host is proposed, or a converter or build step that generates per-host copies
   - Reviewing why a v3 instruction rule is gone, kept as a principle, or enforced by a gate
   - A host fails the smoke test and the release question is whether to block or mark it degraded
@@ -19,11 +19,7 @@ tags: [scope-decision, supersede, portability, agent-blueprint, v4, hosts, agent
 
 ## Context: the decision being reversed
 
-The single-harness scope was set in the July 2026 import records and restated in September:
-
-- `docs/learnings/2026-07-17-superpowers-delta.md` rejects multi-harness portability outright: "Blueprint is a Claude-Code-native plugin template by identity; supporting 8 foreign harnesses is a different product. Out of scope, against 'internal over external.'"
-- `docs/learnings/2026-07-17-gsd-core-analysis.md` judges every candidate against "a single-runtime Claude Code plugin" and rejects multi-runtime capability descriptors as "N/A to a single-runtime, zero-dependency plugin".
-- `docs/learnings/2026-09-11-ecosystem-import-verdicts.md` lists "multi-harness, cross-model, and runtime-platform work (Codex/Cursor/Grok adapters, ...)" as "outside the single-harness, zero-dependency scope", and the v3 README repeated it.
+The single-harness scope was set in July 2026 and restated in September. The v3 records called support for other coding CLIs "a different product", judged every change against "a single-runtime Claude Code plugin", and listed Codex, Cursor and Grok adapters as outside "the single-harness, zero-dependency scope". The v3 README repeated it.
 
 The design showed the same scope everywhere: the plugin lived under `plugins/claude-code-blueprint/`, the 29 agents were Claude Code agent files with a fixed `effort:` tier, working state sat in `.claude/`, the ten hooks in `hooks/hooks.json` were Claude Code hooks, `scripts/ship.sh` called `claude --print` and needed a Stop hook, and the project name carried the vendor.
 
@@ -56,7 +52,7 @@ All sixteen are session-settled (user-directed or user-approved) in the plan's P
 | Name | Agent Blueprint | Shipwright, Plumbline, Keel, Groundwork; plain "Blueprint" | Says what it is without naming a vendor |
 | Skill prefix | `ab-` on every skill | `bp-` (the recommendation); `bp-` with one short exception; plain names | Shared skill folders in most hosts would otherwise collide with other packs using names like `brainstorming` |
 | Model and effort | The user chooses in the host; the blueprint never prescribes | Recommending a fixed level such as `/effort high`; fixed agent effort tiers | A prescribed level caps or overrides the user's own choice |
-| Per-host packaging | A committed native manifest per host, no converter; an installer copies the shared skills where a host has no plugin system | A build step that generates per-host copies | compound-engineering dropped its converter because every host format change broke it |
+| Per-host packaging | A committed native manifest per host, no converter; an installer copies the shared skills where a host has no plugin system | A build step that generates per-host copies | A converter has to change every time a host changes its format, and breaks when it does not |
 | Proof | A local scripted smoke test before every release | A manual checklist; running the eight tools in CI on every PR | Most tools need paid accounts and secrets |
 | The record | The README and this record state the reversal and why | Silent change | Later cycles would otherwise re-open the question from the July records |
 | Vendor bugs | A host broken by its vendor's bug ships marked degraded, not release-blocking | Always block the release; block only v4.0 | One vendor's bug should never hold back the other seven |
@@ -140,11 +136,11 @@ Still the same product identity. The new gates are stdlib Python, the runner and
 
 ### A converter or build step that generates per-host copies → **REJECTED**
 
-compound-engineering dropped theirs because every host format change broke it. One shared tree with committed manifests moves the cost to a gate that runs in CI instead of a generator that runs at release.
+A converter has to follow every host's format changes and breaks when it falls behind. One shared tree with committed manifests moves the cost to a gate that runs in CI instead of a generator that runs at release.
 
-### "Import ideas, not code" → **KEPT**
+### Host facts from the docs and from probes → **KEPT**
 
-Every host's behaviour was researched from its docs and probed on this machine; the manifests and installer were written from those facts, not copied from another plugin.
+Every host's behaviour was researched from its docs and probed on this machine, and the manifests and installer were written from those facts.
 
 ### A vendor's bug blocking the release → **REJECTED**
 

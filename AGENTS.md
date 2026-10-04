@@ -78,4 +78,4 @@ Format: `type(scope): brief description`, with a body that says why. Types: `fea
 
 ## Learnings
 
-`docs/learnings/` holds one record per import or analysis cycle, with the verdicts and their reasons. Read the latest before repeating an analysis.
+`docs/learnings/` holds the decision records: what was decided, what was rejected, and why. Read the relevant one before reopening a decision.

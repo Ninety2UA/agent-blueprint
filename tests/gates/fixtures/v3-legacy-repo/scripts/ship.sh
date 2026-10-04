@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-# ship.sh — Ralph-style loop for /ship-pipeline (blueprint)
+# ship.sh — external loop for /ship-pipeline (blueprint)

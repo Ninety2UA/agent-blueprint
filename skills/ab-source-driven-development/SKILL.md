@@ -5,8 +5,6 @@ description: "Writes framework- and library-specific code from the official docs
 
 # Source-Driven Development
 
-> Adapted from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) (MIT).
-
 A finished change traces every framework-specific decision to the official documentation for the installed version, with a URL the user can check, and marks anything it could not verify `UNVERIFIED:`. Training data goes stale and APIs change, so code written from memory can look right and still fail against the installed version.
 
 Use it whenever you are about to write framework-specific code (React hooks, Next.js routes, Django views, Prisma queries, Tailwind config) from memory. **Not for:** changes whose correctness does not depend on a version (renames, typos, moving files), pure logic (loops, conditionals, data structures), internal utilities with no framework surface, or a user who wants speed over verification.

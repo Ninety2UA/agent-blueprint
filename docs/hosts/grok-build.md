@@ -34,7 +34,7 @@ Check: not verified for a copy install (Grok's listing commands, `grok plugin li
 - Hooks: none. The five hook effects are absent: the session-start pointer to `docs/context/STATUS.md`, the injection scanner on writes, the commit-message check, the ship-pipeline Stop guard and the Agent Teams gates. Nothing else depends on them. Grok loads a `hooks/hooks.json` from any plugin, which is why the blueprint's hook files carry other names; it also reads `.claude/settings.json` and `.cursor/hooks.json` hooks, none of which the blueprint writes.
 - Helpers: built-in subagents (`general-purpose`, `explore`, `plan`); a helper can request worktree isolation (`~/.grok/worktrees/`). No documented cap (8 is a third-party claim).
 - Team work: no cap in `host-limits.tsv`; worktree isolation. Helpers report only to the parent; the ledger under `.agent-blueprint/team/` carries everything else.
-- Questions: `ask_user_question`, a blocking question tool (per the compound-engineering tests); a headless run takes the documented default.
+- Questions: `ask_user_question`, a blocking question tool (not in the vendor docs; not verified); a headless run takes the documented default.
 - Task tracking: the plan file's checkboxes; a Grok todo tool is not verified.
 - Manifest: Grok 1.0.34 reads the root `plugin.json` first and does not merge, so `.grok-plugin/plugin.json` in this repository is inert on that version and stays for versions that read it.
 - Binary collision: Grok installs `~/.grok/bin/agent`, which can shadow Cursor's `agent`; the blueprint always calls Cursor as `cursor-agent`.

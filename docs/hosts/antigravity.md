@@ -27,7 +27,7 @@ Check: `agy plugin list` shows `agent-blueprint` with its components; `agy plugi
 
 ## Model and effort
 
-`/model` persists the choice in the session. Per a third-party report the flags are `--model <slug>` and `--effort low|medium|high`, and `agy models` lists the models; neither is verified here. Helpers: `invoke_subagent` documents no per-dispatch model or effort, only a `model` tier (`inherit|flash|pro`) in an agent definition, which the blueprint does not ship; whether an ad hoc helper inherits the session's setting is not verified, so a step marked safe at lower effort runs at the session's level. Docs: <https://antigravity.google/docs/subagents>.
+`/model` persists the choice in the session. `agy --model <model>` and `agy --effort low|medium|high|xhigh|max` set them for one session, and `agy models` lists the models (all three in `agy --help` on 1.2.16, checked 2026-10-04). Helpers: `invoke_subagent` documents no per-dispatch model or effort, only a `model` tier (`inherit|flash|pro`) in an agent definition, which the blueprint does not ship; whether an ad hoc helper inherits the session's setting is not verified, so a step marked safe at lower effort runs at the session's level. Docs: <https://antigravity.google/docs/subagents>.
 
 ## What is missing or different
 
@@ -35,7 +35,7 @@ Check: `agy plugin list` shows `agent-blueprint` with its components; `agy plugi
 - Helpers: `invoke_subagent`, asynchronous and parallel, started fresh without the parent's history; a helper's workspace can be a git worktree (`branch` mode). No documented cap.
 - Team work: no cap in `host-limits.tsv`; worktree isolation. Antigravity's Teamwork mode (`/teamwork-preview`) is paid, in preview and opens with a user interview, so no skill drives it.
 - Provenance records: Gemini 3.1 Pro does the pipeline's work but does not always write `.agent-blueprint/run/provenance/<skill>.json`. In the smoke runs on 2026-10-04 the build and review pipelines completed correctly every time, yet two runs wrote the timestamp as a shell expression (invalid JSON; the snippet now asks for a literal value) and two skipped the record; debug wrote it. Nothing in a pipeline's outcome depends on the record, and the ship runner keeps its own; the smoke test's build and review cells require it and render `fail` until Gemini writes it reliably.
-- Questions: `ask_question`, a blocking question tool (per the compound-engineering spec, not the docs); a headless run takes the documented default.
+- Questions: `ask_question`, a blocking question tool (not in the vendor docs; not verified); a headless run takes the documented default.
 - Task tracking: the plan file's checkboxes; `/tasks` is a user command, and a model-callable todo tool is not verified.
 - Instructions: Antigravity reads `GEMINI.md` and `AGENTS.md` at the workspace root; per a third-party report `GEMINI.md` wins on conflict and `CLAUDE.md` is not read.
 - Paths inside a skill: per a third-party report a relative path written in a SKILL.md does not resolve on its own, which is why every skill locates its scripts from its own folder; a spike on 1.2.12 confirmed a skill reads its own `references/` file headlessly.
