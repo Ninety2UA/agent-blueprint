@@ -4,61 +4,90 @@
       "cells": {
         "canary": {
           "cost_usd": null,
-          "date": "2026-10-01T19:40:54Z",
+          "date": "2026-10-04T13:42:25Z",
           "link": "",
-          "log": "tests/smoke/logs/20261001-214053/agy/canary.log",
-          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in ~/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
-          "seconds": 0,
+          "log": "$TMPDIR/.../canary.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "final message names HARBOR-19",
+          "seconds": 11,
           "session": "",
-          "state": "fail",
-          "tokens": null
+          "state": "pass",
+          "tokens": 21513
         },
         "discovery": {
           "cost_usd": null,
-          "date": "2026-10-01T19:40:54Z",
+          "date": "2026-10-04T13:42:14Z",
           "link": "",
-          "log": "tests/smoke/logs/20261001-214053/agy/discovery.log",
-          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in ~/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
+          "log": "$TMPDIR/.../discovery.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "53 ab- skills once each in 13 location(s); the answer names ab-ship-pipeline",
+          "seconds": 12,
+          "session": "",
+          "state": "pass",
+          "tokens": 29770
+        },
+        "effort": {
+          "cost_usd": null,
+          "date": "2026-10-04T13:43:10Z",
+          "link": "",
+          "log": "$TMPDIR/.../effort.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "no per-dispatch effort metadata on agy",
           "seconds": 0,
           "session": "",
-          "state": "fail",
+          "state": "n/a",
+          "tokens": null
+        },
+        "helpers-off": {
+          "cost_usd": null,
+          "date": "2026-10-04T13:43:10Z",
+          "link": "",
+          "log": "$TMPDIR/.../helpers-off.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "no helper switch on agy",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
           "tokens": null
         },
         "hooks": {
           "cost_usd": null,
-          "date": "2026-10-01T19:40:55Z",
+          "date": "2026-10-04T13:42:25Z",
           "link": "",
-          "log": "tests/smoke/logs/20261001-214053/agy/hooks.log",
-          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in ~/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
+          "log": "$TMPDIR/.../hooks.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "no blueprint hook fired (from the canary run)",
           "seconds": 0,
           "session": "",
-          "state": "fail",
+          "state": "pass",
           "tokens": null
         },
         "manual-only": {
           "cost_usd": null,
-          "date": "2026-10-01T19:40:55Z",
+          "date": "2026-10-04T13:43:01Z",
           "link": "",
-          "log": "tests/smoke/logs/20261001-214053/agy/manual-only.log",
-          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in ~/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
-          "seconds": 0,
+          "log": "$TMPDIR/.../manual-only.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 36,
           "session": "",
-          "state": "fail",
-          "tokens": null
+          "state": "pass",
+          "tokens": 25872
         },
         "upgrade": {
           "cost_usd": null,
-          "date": "2026-10-01T19:40:55Z",
+          "date": "2026-10-04T13:46:39Z",
           "link": "",
-          "log": "tests/smoke/logs/20261001-214053/agy/upgrade.log",
-          "reason": "preflight: agy: allowNonWorkspaceAccess is not true in ~/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace.",
+          "log": "$TMPDIR/.../upgrade.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4)",
           "seconds": 0,
           "session": "",
-          "state": "fail",
+          "state": "n/a",
           "tokens": null
         }
       },
-      "version": "1.2.14"
+      "version": "1.2.16"
     },
     "amp": {
       "cells": {
@@ -1020,7 +1049,24 @@
         "cursor-agent"
       ],
       "plugin_dir": "~/projects/claude-eng/project-template/project-template-skills"
+    },
+    {
+      "cells": [
+        "canary",
+        "discovery",
+        "effort",
+        "helpers-off",
+        "hooks",
+        "manual-only",
+        "upgrade"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host agy --plugin-dir . (Antigravity 1.2.16, Gemini 3.1 Pro High)",
+      "date": "2026-10-04 13:47 UTC",
+      "hosts": [
+        "agy"
+      ],
+      "plugin_dir": "~/projects/claude-eng/project-template/project-template-phase4"
     }
   ],
-  "updated": "2026-10-04 12:40 UTC"
+  "updated": "2026-10-04 13:47 UTC"
 }

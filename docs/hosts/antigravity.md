@@ -62,14 +62,14 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 1.2.14, last cell 2026-10-01.
+From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 1.2.16, last cell 2026-10-04.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | fail | 0s | preflight: agy: allowNonWorkspaceAccess is not true in ~/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace. |
-| `canary` | fail | 0s | preflight: agy: allowNonWorkspaceAccess is not true in ~/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace. |
-| `hooks` | fail | 0s | preflight: agy: allowNonWorkspaceAccess is not true in ~/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace. |
-| `manual-only` | fail | 0s | preflight: agy: allowNonWorkspaceAccess is not true in ~/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace. |
-| `upgrade` | fail | 0s | preflight: agy: allowNonWorkspaceAccess is not true in ~/.gemini/antigravity-cli/settings.json; headless runs stall when the skill reads plugin files outside the workspace. |
-
-A `fail` cell blocks the release until it passes or is confirmed as a vendor bug (then it renders `degraded (vendor bug)` with the upstream link; see `docs/releases/v4.0.0-checklist.md`).
+| `discovery` | pass | 12s | 53 ab- skills once each in 13 location(s); the answer names ab-ship-pipeline |
+| `canary` | pass | 11s | final message names HARBOR-19 |
+| `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
+| `manual-only` | pass | 36s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `helpers-off` | n/a | 0s | no helper switch on agy |
+| `effort` | n/a | 0s | no per-dispatch effort metadata on agy |
+| `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |
