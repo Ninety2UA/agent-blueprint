@@ -386,19 +386,34 @@ if readme is not None:
 # No adoption or ecosystem claims on the public surfaces: the README and the site say what
 # the blueprint does, not where its ideas came from. The phrases and project names below
 # belonged to the removed comparison and import sections; any of them coming back fails.
-ADOPTION = re.compile(r"\b(?:patterns? absorbed|what we took|repos analyzed|ecosystem[- ]wide analysis|"
-                      r"ecosystem table|ecosystem guide|import nothing|imported from|adopted from|how does this compare|"
-                      r"gstack|superpowers|get-shit-done|gsd-core|gsd-2|oh-my-claudecode|claude-mem|claude-squad|"
-                      r"everything-claude-code|compound[- ]engineering|ralphy?)\b", re.IGNORECASE)
+# A space in a phrase matches any run of whitespace (line breaks included), &nbsp;, inline
+# tags and Markdown emphasis, so a soft wrap, <em>imported</em> from or what&nbsp;we took
+# still fails. A lone _ counts as a word edge (Markdown emphasis); a class like x__y does not.
+# The whole file is searched; a hit is reported at the line where it starts, once per line.
+ADOPTION_GAP = r"(?:\s|&(?:nbsp|#160|#x0*a0);|</?[a-z][^<>]*>|[*_`])+"
+ADOPTION_PHRASES = (
+    r"(?:patterns?|concepts?|ideas?) (?:absorbed|adopted|borrowed|grafted|imported|taken)",
+    r"(?:absorbed|adopted|borrowed|grafted|imported|incorporated) (?:[a-z0-9-]+ )?(?:patterns?|concepts?|ideas?)",
+    r"what we took", r"import nothing", r"(?:imported|adopted) from", r"how does this compare",
+    r"(?:repos|repositories) (?:were )?analy[sz]ed", r"analy[sz]ed \d+ (?:repos|repositories|projects|frameworks)",
+    r"watched (?:repos|repositories)",
+    r"ecosystem(?:-| )(?:wide|analysis|imports?|delta sweep|data|refresh|table|guide|repos?)",
+    r"gstack|superpowers|get-shit-done|gsd-core|gsd-2|oh-my-claudecode|claude-mem|claude-squad",
+    r"everything-claude-code|compound(?:-| )engineering|ralphy?",
+)
+ADOPTION = re.compile(r"(?<![a-z0-9])(?<!\w_)(?:%s)(?![a-z0-9])(?!_\w)"
+                      % "|".join(p.replace(" ", ADOPTION_GAP) for p in ADOPTION_PHRASES), re.IGNORECASE)
 for rel in ("README.md", "index.html"):
     text = rd(rel)
     if text is None:
         continue
-    for lineno, line in enumerate(text.splitlines(), 1):
-        hit = ADOPTION.search(line)
-        if hit:
+    reported = set()
+    for hit in ADOPTION.finditer(text):
+        lineno = text.count("\n", 0, hit.start()) + 1
+        if lineno not in reported:
+            reported.add(lineno)
             failures.append("%s:%d: adoption or ecosystem claim '%s'; the public docs describe the blueprint itself"
-                            % (rel, lineno, hit.group(0)))
+                            % (rel, lineno, " ".join(hit.group(0).split())))
 
 # ── Report ──
 if failures:

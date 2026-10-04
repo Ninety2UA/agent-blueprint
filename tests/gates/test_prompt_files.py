@@ -200,9 +200,9 @@ def run_drift_with(rel_path, extra):
         shutil.rmtree(root)
 
 
-def last_appended_line(rel_path, extra):
-    """The line number of the last line of `extra` once run_drift_with appends it to rel_path."""
-    return len((read(os.path.join(REPO, rel_path)) + extra).splitlines())
+def appended_line(rel_path, extra, marker):
+    """The line number where `marker` starts once run_drift_with appends `extra` to rel_path."""
+    return (read(os.path.join(REPO, rel_path)) + extra[:extra.index(marker)]).count("\n") + 1
 
 
 class DriftGateAgentCount(unittest.TestCase):
@@ -219,22 +219,58 @@ class DriftGateAgentCount(unittest.TestCase):
         self.assertIn("still lists an agent count", out)
 
 
+# Lines the v4 rewrite removed from README.md and index.html, verbatim.
+REMOVED_ADOPTION_LINES = (
+    ("README.md", "Before committing to any tool, it helps to understand the landscape. We've analyzed "
+                  "**19 repos and frameworks** across the coding-agent ecosystem — over 1.15M combined GitHub "
+                  "stars — through direct source code inspection, not marketing claims."),
+    ("README.md", "### What's New in v3.7.0 — Ecosystem Imports"),
+    ("README.md", "### What's New in v3.5.0 — Ecosystem Delta Sweep"),
+    ("index.html", "        <h2>Ecosystem Analysis</h2>"),
+    ("index.html", '            <tr><td>Compound Eng.</td><td>25.0K</td><td><span class="eco-verdict '
+                   'eco-verdict--adopted">Patterns adopted</span></td></tr>'),
+    ("index.html", "        <p>Ecosystem imports &mdash; twenty-one ideas from seven watched repositories grafted "
+                   "onto existing skills and agents; no new components, every idea re-implemented in the "
+                   "blueprint's own words, provenance recorded</p>"),
+)
+
+
 class DriftGateAdoption(unittest.TestCase):
     """The drift gate fails README.md or index.html when it describes what was taken from other projects."""
 
-    def test_adoption_claim_in_the_readme_fails(self):
-        extra = "\n## What we took from other repos\n"
-        code, out = run_drift_with("README.md", extra)
+    def assert_claim(self, rel_path, extra, marker, match=""):
+        code, out = run_drift_with(rel_path, extra)
         self.assertNotEqual(code, 0, out)
-        self.assertIn("README.md:%d: adoption or ecosystem claim 'What we took'"
-                      % last_appended_line("README.md", extra), out)
+        self.assertIn("%s:%d: adoption or ecosystem claim '%s"
+                      % (rel_path, appended_line(rel_path, extra, marker), match), out)
+        return out
+
+    def test_adoption_claim_in_the_readme_fails(self):
+        self.assert_claim("README.md", "\n## What we took from other repos\n", "## What", "What we took'")
 
     def test_project_name_on_the_site_fails(self):
-        extra = "\n<p>Patterns from the gstack project.</p>\n"
-        code, out = run_drift_with("index.html", extra)
-        self.assertNotEqual(code, 0, out)
-        self.assertIn("index.html:%d: adoption or ecosystem claim 'gstack'"
-                      % last_appended_line("index.html", extra), out)
+        self.assert_claim("index.html", "\n<p>Patterns from the gstack project.</p>\n", "<p>", "gstack'")
+
+    def test_lines_removed_in_the_v4_rewrite_fail(self):
+        for rel_path, line in REMOVED_ADOPTION_LINES:
+            with self.subTest(rel_path=rel_path, line=line.strip()[:50]):
+                self.assert_claim(rel_path, "\n%s\n" % line, line)
+
+    def test_a_phrase_split_by_a_wrap_a_tag_or_an_entity_fails_at_its_first_line(self):
+        cases = (("README.md", "\nThe review stage keeps what we\ntook from another plugin.\n", "The review",
+                  "what we took'"),
+                 ("index.html", "\n<p>The review stage was <em>imported</em> from another plugin.</p>\n", "<p>",
+                  "imported</em> from'"),
+                 ("README.md", "\nThe review stage is what&nbsp;we took from another plugin.\n", "The review",
+                  "what&nbsp;we took'"))
+        for rel_path, extra, marker, match in cases:
+            with self.subTest(rel_path=rel_path, match=match):
+                self.assert_claim(rel_path, extra, marker, match)
+
+    def test_two_claims_on_one_line_fail_once(self):
+        extra = "\n<p>Patterns adopted from the gstack project.</p>\n"
+        out = self.assert_claim("index.html", extra, "<p>", "Patterns adopted'")
+        self.assertEqual(out.count("index.html:%d:" % appended_line("index.html", extra, "<p>")), 1, out)
 
 
 if __name__ == "__main__":

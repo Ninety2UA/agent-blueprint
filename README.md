@@ -175,7 +175,9 @@ For a well-defined feature you want built hands-off, the ship runner drives `ab-
 
 ### When a run stops early
 
-The run ends as `blocked` or `needs-human` with a `reason` in `state.json`, or as `blocked` when the stage, the commits and the team ledger stay unchanged for two iterations. Fix the cause and continue with `--resume`. When the reason isn't enough, the `ab-forensics` skill reads the run's logs, state and git history.
+When the skill stops the run, it sets `blocked` or `needs-human` in `.agent-blueprint/run/state.json` and writes its `reason` there. When the runner stops it on one of its own checks (preflight, the stall rule, repeated tool errors, a publish check or the `--max` iteration limit), the runner prints the reason in the terminal and sets its exit code, and `state.json` may still say `running` or `done`. The stall rule ends a run as `blocked` when the stage, the commits and the team ledger stay unchanged for two iterations. The exit codes are 0 published, 1 usage or preflight, 2 blocked, 3 needs-human, 4 iteration limit and 130 interrupted.
+
+For an unattended run, keep the runner's output, for example by redirecting it to a file. The runner logs what the tool printed in each iteration under `${XDG_STATE_HOME:-~/.local/state}/agent-blueprint/<repo hash>/logs/`, outside the working tree, but its own stop messages go only to the terminal. Fix the reported cause and continue with `--resume`. When that is not enough, the `ab-forensics` skill reads the run's logs, state and git history.
 
 ### How much each tool is allowed to do
 
@@ -199,7 +201,7 @@ Each tool runs with the least privilege that still finishes a run: Claude Code `
 
 | Install route | How to update |
 |---|---|
-| Claude Code plugin | `claude plugin update agent-blueprint@agent-blueprint`, then `/reload-plugins` |
+| Claude Code plugin | `claude plugin marketplace update agent-blueprint`, then `claude plugin update agent-blueprint@agent-blueprint`, then `/reload-plugins` |
 | Codex plugin | `codex plugin` from the marketplace you added; the `ab-plugin-update` skill finds the right subcommand, or falls back to the shared copy |
 | Antigravity | `git pull` in the checkout, then `agy plugin install <checkout>` again |
 | The shared copy (Codex, Grok Build, Pi, Cursor CLI, Hermes, Amp) | `git pull` in the checkout, then `bash install.sh` again |
@@ -308,7 +310,7 @@ The repository checks itself against its own files, not against numbers someone 
 
 | Command | Checks |
 |---------|--------|
-| `bash scripts/check-drift.sh` | Count and version claims on every surface (manifests, README, website, promo source, `AGENTS.md`) match the tree: 53 skills, 10 hooks, 30 helper prompts, one version |
+| `bash scripts/check-drift.sh` | Count and version claims on every surface (manifests, README, website, promo source, `AGENTS.md`) match the tree: 53 skills, 10 hooks, 30 helper prompts, one version. It also fails when README.md or index.html brings back adoption or ecosystem wording |
 | `python3 scripts/check-skill-collisions.py` | Frontmatter YAML, `references/` pointers and § headings resolve, no near-duplicate descriptions |
 | `python3 scripts/check-portability.py` | The rules for all eight tools: agentskills frontmatter only, the `ab-` prefix, the 8,000-byte cap, no tool variables or cross-skill paths, no slash names, the manual-only pairing, no text Hermes would quarantine |
 | `python3 scripts/check-manifests.py` | Every manifest and every skill's `metadata.version` agree with the release |
@@ -706,7 +708,7 @@ The Session Continuity section of `docs/context/STATUS.md` is the handoff note b
 
 ## Error recovery
 
-The scaffolded `AGENTS.md` carries guidance for common failures:
+The scaffolded `AGENTS.md` has a "When something goes wrong" table for the first six situations below; the last row is about the ship runner.
 
 | Situation | Recovery |
 |-----------|----------|
@@ -716,7 +718,7 @@ The scaffolded `AGENTS.md` carries guidance for common failures:
 | Corrupted worktree | Create a fresh one from main and cherry-pick the finished commits |
 | A helper returns bad results | Verify the findings before acting on them |
 | Lost uncommitted changes | Check `git stash list`, `git reflog`, `git fsck --lost-found` |
-| A ship run stalls or stops | Read `.agent-blueprint/run/state.json` and its `reason`; the `ab-forensics` skill reads the logs, run state and git history |
+| A ship run stalls or stops | Read the runner's last output and exit code. `.agent-blueprint/run/state.json` holds a `reason` when the skill stopped the run; after a stop by the runner it can still say `running` or `done`. The `ab-forensics` skill reads the logs, run state and git history |
 
 ## Tested in each tool
 
@@ -763,7 +765,7 @@ GitHub Releases carry the full notes for each version.
 <details>
 <summary><strong>Which tool should I use?</strong></summary>
 
-Whichever you already use. The tables under [Install](#install) show what each one gets: hooks only in Claude Code and Codex, helpers everywhere except Pi without `pi-subagents`, and manual-only skills kept out of the model's list everywhere except Amp and Hermes. The pipelines run end to end in every tool; the support note under `docs/hosts/` for yours says what is different there and how it did in the smoke test.
+Whichever you already use. The tables under [Install](#install) show what each one gets: hooks only in Claude Code and Codex, helpers everywhere except Pi without `pi-subagents`, and manual-only skills kept out of the model's list everywhere except Amp and Hermes. Every pipeline is written to run in all eight tools, and [Tested in each tool](#tested-in-each-tool) shows where the smoke test confirmed it. The support note under `docs/hosts/` for yours says what is different there and how it did in the smoke test.
 </details>
 
 <details>

@@ -2519,7 +2519,8 @@
       <div class="guide">
         <div class="guide__step reveal">
           <h3 class="guide__title">When a run stops early</h3>
-          <p>The run ends as <code>blocked</code> or <code>needs-human</code> with a <code>reason</code> in <code>state.json</code>, or as <code>blocked</code> when the stage, the commits and the team ledger stay unchanged for two iterations. Fix the cause and continue with <code>--resume</code>. When the reason isn't enough, the <code>ab-forensics</code> skill reads the run's logs, state and git history.</p>
+          <p>When the skill stops the run, it sets <code>blocked</code> or <code>needs-human</code> in <code>.agent-blueprint/run/state.json</code> and writes its <code>reason</code> there. When the runner stops it on one of its own checks (preflight, the stall rule, repeated tool errors, a publish check or the <code>--max</code> iteration limit), the runner prints the reason in the terminal and sets its exit code, and <code>state.json</code> may still say <code>running</code> or <code>done</code>. The stall rule ends a run as <code>blocked</code> when the stage, the commits and the team ledger stay unchanged for two iterations. The exit codes are 0 published, 1 usage or preflight, 2 blocked, 3 needs-human, 4 iteration limit and 130 interrupted.</p>
+          <p>For an unattended run, keep the runner's output, for example by redirecting it to a file. The runner logs what the tool printed in each iteration under <code>${XDG_STATE_HOME:-~/.local/state}/agent-blueprint/&lt;repo hash&gt;/logs/</code>, outside the working tree, but its own stop messages go only to the terminal. Fix the reported cause and continue with <code>--resume</code>. When that is not enough, the <code>ab-forensics</code> skill reads the run's logs, state and git history.</p>
         </div>
         <div class="guide__step reveal">
           <h3 class="guide__title">How much each tool is allowed to do</h3>
@@ -2604,7 +2605,7 @@
               <tr><th>Install route</th><th>How to update</th></tr>
             </thead>
             <tbody>
-              <tr><td>Claude Code plugin</td><td><code>claude plugin update agent-blueprint@agent-blueprint</code>, then <code>/reload-plugins</code></td></tr>
+              <tr><td>Claude Code plugin</td><td><code>claude plugin marketplace update agent-blueprint</code>, then <code>claude plugin update agent-blueprint@agent-blueprint</code>, then <code>/reload-plugins</code></td></tr>
               <tr><td>Codex plugin</td><td><code>codex plugin</code> from the marketplace you added; the <code>ab-plugin-update</code> skill finds the right subcommand, or falls back to the shared copy</td></tr>
               <tr><td>Antigravity</td><td><code>git pull</code> in the checkout, then <code>agy plugin install &lt;checkout&gt;</code> again</td></tr>
               <tr><td>The shared copy (Codex, Grok Build, Pi, Cursor CLI, Hermes, Amp)</td><td><code>git pull</code> in the checkout, then <code>bash install.sh</code> again</td></tr>
@@ -3334,7 +3335,7 @@
     <div class="container">
       <div class="section-header reveal">
         <h2>All 53 skills</h2>
-        <p>Every skill, by category. Each one runs in all eight tools: name it the way your tool names skills, or describe the task and let the tool pick it.</p>
+        <p>Every skill, by category. Each one is written to run in all eight tools, and <a href="#tested-in-each-tool">Tested in each tool</a> shows what the smoke test confirmed in each. Name a skill the way your tool names skills, or describe the task and let the tool pick it.</p>
       </div>
       <div class="skills-grid reveal reveal-stagger">
         <!-- Pipelines -->
@@ -3511,7 +3512,7 @@
                 <tr><th>Command</th><th>Checks</th></tr>
               </thead>
               <tbody>
-                <tr><td><code>bash scripts/check-drift.sh</code></td><td>Count and version claims on every surface (manifests, README, website, promo source, <code>AGENTS.md</code>) match the tree</td></tr>
+                <tr><td><code>bash scripts/check-drift.sh</code></td><td>Count and version claims on every surface (manifests, README, website, promo source, <code>AGENTS.md</code>) match the tree. It also fails when README.md or index.html brings back adoption or ecosystem wording</td></tr>
                 <tr><td><code>python3 scripts/check-skill-collisions.py</code></td><td>Frontmatter YAML, <code>references/</code> pointers and &sect; headings resolve, no near-duplicate descriptions</td></tr>
                 <tr><td><code>python3 scripts/check-portability.py</code></td><td>The rules for all eight tools: agentskills frontmatter only, the <code>ab-</code> prefix, the 8,000-byte cap, no tool variables or cross-skill paths, no slash names, the manual-only pairing, no text Hermes would quarantine</td></tr>
                 <tr><td><code>python3 scripts/check-manifests.py</code></td><td>Every manifest and every skill's <code>metadata.version</code> agree with the release</td></tr>
@@ -3679,7 +3680,7 @@
             <svg class="faq__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="faq__answer"><div class="faq__answer-inner">
-            Whichever you already use. The tables under <a href="#install">Install</a> show what each one gets: hooks only in Claude Code and Codex, helpers everywhere except Pi without <code>pi-subagents</code>, and manual-only skills kept out of the model's list everywhere except Amp and Hermes. The pipelines run end to end in every tool; the support note under <code>docs/hosts/</code> for yours says what is different there and how it did in the smoke test.
+            Whichever you already use. The tables under <a href="#install">Install</a> show what each one gets: hooks only in Claude Code and Codex, helpers everywhere except Pi without <code>pi-subagents</code>, and manual-only skills kept out of the model's list everywhere except Amp and Hermes. Every pipeline is written to run in all eight tools, and <a href="#tested-in-each-tool">Tested in each tool</a> shows where the smoke test confirmed it. The support note under <code>docs/hosts/</code> for yours says what is different there and how it did in the smoke test.
           </div></div>
         </div>
         <div class="faq__item">

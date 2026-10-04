@@ -20,6 +20,9 @@ them against CLI 2.1.268 and adds two new candidates (S2, S5) and two new probes
 per R19 so future cycles do not re-litigate. Outcome: **no custom machinery removed**, one
 native-first adoption with the manual path kept as fallback, released as v3.6.0 (minor).
 
+The next cycle's verdicts, re-verified against CLI 2.1.283, are in
+[the 2026-09-27 cli-watch record](2026-09-27-cli-watch-cycle-verdicts.md).
+
 ## Cutoff pin
 
 | Field | Value |

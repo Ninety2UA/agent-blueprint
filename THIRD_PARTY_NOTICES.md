@@ -6,6 +6,8 @@ Some files in this repository include code under the MIT License from the projec
 
 Files: `skills/ab-source-driven-development/`, `hooks/handlers/sdd-cache-pre.sh`, `hooks/handlers/sdd-cache-post.sh`.
 
+The skill folder carries its own copy of this notice, `skills/ab-source-driven-development/assets/NOTICE.txt`, for installs that copy only the skill folder.
+
 ```text
 MIT License
 

@@ -31,7 +31,7 @@ Run these before you push; CI runs the same set on every pull request.
 
 | Command | Checks |
 |---------|--------|
-| `bash scripts/check-drift.sh` | Count and version claims on every surface match the tree |
+| `bash scripts/check-drift.sh` | Count and version claims on every surface match the tree, and README.md and index.html say nothing about adopting ideas from other projects or analyzing them |
 | `python3 scripts/check-skill-collisions.py` | Frontmatter YAML, `references/` pointers and § headings resolve, no near-duplicate descriptions |
 | `python3 scripts/check-portability.py` | The portability rules for all eight hosts (see the ab-writing-skills skill's `references/portable-authoring.md`) |
 | `python3 scripts/check-manifests.py` | Every host manifest and every skill's `metadata.version` agree with the release |
