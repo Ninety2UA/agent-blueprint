@@ -33,7 +33,8 @@
 #   msg-secret             a key in a commit message
 #   symlink:PATH:TARGET    plant PATH as a symlink to TARGET
 #   block-commit           leave .git/index.lock behind, so the runner's own commit fails
-#   bigmsg                 end with one 100,000-character line (put it last)
+#   bigmsg                 a 100,000-character final message whose 160th byte is inside a
+#                          multibyte character, plus one such line after the JSON (put it last)
 #
 # The probe prompt (it names agent-blueprint-probe) is answered without consuming a scenario line.
 
@@ -183,6 +184,11 @@ for step in $LINE; do
     esac
 done
 
-echo '{"result": "fake host finished call '"$N"'"}'
-if [ "$BIGMSG" = 1 ]; then head -c 100000 /dev/zero | tr '\0' 'x'; echo; fi
+if [ "$BIGMSG" = 1 ]; then
+    big=$(head -c 159 /dev/zero | tr '\0' 'x'; printf '\342\200\224'; head -c 100000 /dev/zero | tr '\0' 'x')
+    echo '{"result": "fake host finished call '"$N"': '"$big"'"}'
+    echo "$big"
+else
+    echo '{"result": "fake host finished call '"$N"'"}'
+fi
 exit "$EXIT_CODE"

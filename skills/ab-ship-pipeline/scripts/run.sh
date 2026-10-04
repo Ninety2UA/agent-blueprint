@@ -703,8 +703,10 @@ Ship runner iteration $N of at most $MAX. Use the $AB_SKILL_NAME skill for the f
         transition "iteration $N: the host denied a command (logged in $LOG); continuing"
     fi
     [ "$RC" -ne 0 ] && [ "$RC" -ne 124 ] && warn "iteration $N: $RUN_HOST exited $RC (checking the state file, not the exit code)"
-    # `head` closes the pipe early on a long message; `|| true` keeps that from ending the runner.
-    LAST=$(host_final_message "$RUN_HOST" "$LOG" "$LASTMSG" 2>/dev/null | tr -d '\000-\010\013-\037\177' | head -c 160 | tr '\n' ' ' || true)
+    # `cut` closes the pipe early on a long message; `|| true` keeps that from ending the runner. The
+    # two tr calls work on bytes (LC_ALL=C) so a stray byte in the host's text cannot fail them, and
+    # the cut counts characters, so it never ends inside one.
+    LAST=$(host_final_message "$RUN_HOST" "$LOG" "$LASTMSG" 2>/dev/null | LC_ALL=C tr -d '\000-\010\013-\037\177' | LC_ALL=C tr '\n' ' ' | cut -c1-160 || true)
     [ -n "$LAST" ] && printf '    %blast message: %s%b\n' "$DIM" "$LAST" "$NC"
 
     [ "$GIT_WRITABLE" = 0 ] && commit_for_skill "$N"

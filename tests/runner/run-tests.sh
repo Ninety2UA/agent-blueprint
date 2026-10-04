@@ -423,7 +423,7 @@ t30_a_long_final_message_does_not_end_the_runner() {
     new_repo t30
     scenario "state:done:ship commit:a.txt pr-body bigmsg"
     run_runner --host fake "feature"
-    assert_rc 0 && assert_out "Run complete: published after 1 iteration(s)."
+    assert_rc 0 && assert_out "Run complete: published after 1 iteration(s)." && assert_not_out "Illegal byte sequence"
 }
 
 t31_scan_reads_hidden_paths_merges_and_commit_messages() {
