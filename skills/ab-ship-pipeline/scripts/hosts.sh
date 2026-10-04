@@ -137,7 +137,7 @@ host_skill_ref() {
         claude)
             # A plugin loaded with --plugin-dir is namespaced by its name (/agent-blueprint:ab-...).
             if [ -n "$plugin_dir" ]; then echo "/agent-blueprint:$skill"; else echo "/$skill"; fi ;;
-        grok)         echo "/$skill" ;;
+        grok|agy)     echo "/$skill" ;;
         codex)        echo "\$$skill" ;;
         pi)           echo "/skill:$skill" ;;
         *)            echo "the $skill skill" ;;

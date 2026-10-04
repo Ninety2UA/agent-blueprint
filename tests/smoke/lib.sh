@@ -87,6 +87,12 @@ fill_prompt_with() {
     local scenario="$1" ref="$2" text
     text=$(cat "$scenario/prompt.txt")
     if [ -n "$ref" ]; then
+        # A host with no slash or $ form gets a sentence, so the skill is an instruction, not a
+        # fragment run into the task ("the ab-x skill The test suite fails" was read as noise).
+        case "$ref" in
+            /*|\$*) ;;
+            *) ref="Use $ref." ;;
+        esac
         text="${text//\{\{SKILL_REF\}\}/$ref}"
         text="$text
 

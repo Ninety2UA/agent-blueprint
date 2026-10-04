@@ -21,9 +21,9 @@ Check: `agy plugin list` shows `agent-blueprint` with its components; `agy plugi
 
 ## Invoke a skill
 
-- Explicit: `/ab-name`.
+- Explicit: `/ab-name` (verified headless on 1.2.16).
 - By description: Antigravity picks a skill whose description matches the request.
-- Manual-only: not verified. Antigravity documents no `disable-model-invocation` or other implicit-invocation control, so it may pick `ab-plugin-update` or `ab-migrate` from a matching request. Both descriptions avoid broad trigger words, and `ab-migrate` asks before it removes anything.
+- Manual-only: Antigravity documents no `disable-model-invocation` control, but the smoke test's manual-only cell passes on 1.2.16: `ab-plugin-update` is absent from the catalog the model sees while other `ab-p` skills are in it. Both manual-only descriptions also avoid broad trigger words, and `ab-migrate` asks before it removes anything.
 
 ## Model and effort
 
