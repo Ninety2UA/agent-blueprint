@@ -2512,7 +2512,7 @@
         </div>
         <div class="unattended__detail-card reveal">
           <h4><span class="install__step-num">4</span>Publishing</h4>
-          <p>The runner scans every commit in the outgoing range, their messages and the pull request body for secrets, including any <code>.env</code> file a commit added. Then it pushes only to the remote and branch it recorded and opens or updates the pull request. It stops as <code>needs-human</code> instead if <code>.git/config</code> changed during the run, or if the range touches <code>.github/workflows</code> or <code>.github/actions</code> and you did not pass <code>--allow-ci-changes</code>.</p>
+          <p>The runner scans every commit the push would publish (each one the remote does not have yet, plus the run's own), their messages and the pull request body for secrets, including any <code>.env</code> file a commit added. Then it pushes exactly the commit it scanned, only to the remote and branch it recorded, and opens or updates the pull request. It stops as <code>needs-human</code> instead if it cannot read the remote's branches, if <code>.git/config</code> changed during the run, or if those commits touch <code>.github/workflows</code> or <code>.github/actions</code> and you did not pass <code>--allow-ci-changes</code>.</p>
         </div>
       </div>
 
@@ -3797,7 +3797,7 @@
             <svg class="faq__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="faq__answer"><div class="faq__answer-inner">
-            The runner uses the least-privileged headless posture each tool offers, scans every outgoing commit and the pull request body for secrets before it pushes, pushes only to the remote and branch it recorded at preflight, and stops as <code>needs-human</code> if <code>.git/config</code> changed or the range touches CI configuration. Pi, Amp and Antigravity can only run unguarded, so they need <code>--allow-unguarded</code>, and there the agent holds your git and <code>gh</code> credentials. Amp's headless threads are visible to your workspace by default, according to its docs.
+            The runner uses the least-privileged headless posture each tool offers, scans every outgoing commit and the pull request body for secrets before it pushes, pushes only to the remote and branch it recorded at preflight, and stops as <code>needs-human</code> if <code>.git/config</code> changed or the commits to publish touch CI configuration. Pi, Amp and Antigravity can only run unguarded, so they need <code>--allow-unguarded</code>, and there the agent holds your git and <code>gh</code> credentials. Amp's headless threads are visible to your workspace by default, according to its docs.
           </div></div>
         </div>
         <div class="faq__item">

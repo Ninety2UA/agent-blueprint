@@ -9,7 +9,7 @@
 #   --iterations-timeout S   Seconds each iteration may take before its process group is killed
 #                            (default: the host's row in hosts.sh)
 #   --allow-unguarded        Required for a host whose posture has no guard (pi, amp, agy)
-#   --allow-ci-changes       Publish even when the range touches .github/workflows or .github/actions
+#   --allow-ci-changes       Publish even when the commits to publish touch .github/workflows or .github/actions
 #   --resume                 Continue a stopped run from the iteration the runner recorded; the host
 #                            and the opt-in flags come from this command line, never from state.json
 #   --plugin-dir PATH        A local plugin checkout, passed to hosts that take one (claude, cursor-agent, agy)
@@ -62,6 +62,7 @@ pr_repo_from_url() {
 # shellcheck source=hosts.sh disable=SC1091
 . "$SCRIPT_DIR/hosts.sh"
 SCAN="$SCRIPT_DIR/scan-secrets.sh"
+OUTGOING="$SCRIPT_DIR/outgoing-commits.sh"
 
 RUN_DIR=".agent-blueprint/run"
 STATE_FILE="$RUN_DIR/state.json"
@@ -535,34 +536,8 @@ done_check() {
     return 0
 }
 
-# outgoing_commits: prints, oldest first, every commit the push would publish: those reachable from
-# HEAD that no branch of the recorded remote has. That is more than the run's own commits when the
-# branch carried unpushed commits before the run started, and the whole branch when the remote does
-# not have it yet. A branch tip this clone lacks is fetched first (its objects only, no ref or
-# FETCH_HEAD is written), so commits a remote branch gained since the last fetch count as already
-# published. Returns 1 when the remote cannot be read.
-outgoing_commits() {
-    local heads tips types="" missing
-    heads=$(git ls-remote --heads "$REC_push_url" 2>/dev/null) || return 1
-    tips=$(printf '%s\n' "$heads" | cut -f1 | grep -E '^[0-9a-f]{40,64}$' || true)
-    if [ -n "$tips" ]; then
-        types=$(printf '%s\n' "$tips" | git cat-file --batch-check='%(objectname) %(objecttype)')
-        missing=$(printf '%s\n' "$types" | sed -n 's/ missing$//p')
-        if [ -n "$missing" ]; then
-            printf '%s\n' "$missing" | git -c core.hooksPath=/dev/null fetch --quiet --no-tags --no-recurse-submodules --no-write-fetch-head --stdin "$REC_push_url" >/dev/null 2>&1 || return 1
-            types=$(printf '%s\n' "$tips" | git cat-file --batch-check='%(objectname) %(objecttype)')
-        fi
-    fi
-    {
-        echo HEAD
-        if [ -n "$types" ]; then
-            printf '%s\n' "$types" | sed -n 's/^\([0-9a-f]*\) commit$/^\1/p'
-        fi
-    } | git rev-list --reverse --stdin
-}
-
 publish() {
-    local body_copy hook_now url_now cfg_now ci_files out number title outgoing count
+    local body_copy hook_now url_now cfg_now ci_files out number title outgoing count head rc
     echo ""
     info "Publishing $BRANCH"
     gh auth status >/dev/null 2>&1 || needs_human "gh is not authenticated, so the pull request cannot be opened" "gh auth login"
@@ -576,8 +551,18 @@ publish() {
     [ "$(git symbolic-ref --short -q HEAD)" = "$REC_branch" ] || needs_human "HEAD is no longer on $REC_branch" "git switch $REC_branch"
     git merge-base --is-ancestor "$REC_base" HEAD 2>/dev/null || needs_human "the branch moved away from the recorded base $(git rev-parse --short "$REC_base")" "rebase onto it or start a new run"
 
-    # Both the CI check and the secret scan cover outgoing_commits, not only REC_base..HEAD.
-    outgoing=$(outgoing_commits) || needs_human "could not read the branches of $(mask_url "$REC_push_url") to tell which commits the push would publish; nothing was pushed" "check the network and the git credential, then re-run"
+    # The CI check and the secret scan cover what outgoing-commits.sh lists: the run's own commits
+    # since the recorded base, whatever the remote holds, and every older one no branch at the push
+    # URL has. They are listed for the commit HEAD names now, and that commit is what gets pushed,
+    # so a commit added after this point is never published unscanned.
+    head=$(git rev-parse HEAD)
+    rc=0
+    outgoing=$(bash "$OUTGOING" "$REC_push_url" "$REC_base" "$head") || rc=$?
+    case "$rc" in
+        0) ;;
+        1) needs_human "could not read the branches of $(mask_url "$REC_push_url") to tell which commits the push would publish; nothing was pushed" "check the network and the git credential, then re-run" ;;
+        *) needs_human "could not list the commits the push would publish; nothing was pushed" "check the repository with git log, then re-run" ;;
+    esac
 
     ci_files=""
     if [ -n "$outgoing" ]; then
@@ -585,7 +570,7 @@ publish() {
             || needs_human "could not list the files the commits to publish change" "check the repository with git log, then re-run"
     fi
     if [ -n "$ci_files" ] && [ "$ALLOW_CI" != true ]; then
-        needs_human "the range touches CI configuration: $(printf '%s' "$ci_files" | tr '\n' ' ')" "review it, then re-run with --allow-ci-changes"
+        needs_human "the commits the push would publish touch CI configuration: $(printf '%s' "$ci_files" | tr '\n' ' ')" "review it, then re-run with --allow-ci-changes"
     fi
 
     # The PR body: the fixed path only, no symlink on it, read once into a runner-owned copy.
@@ -601,12 +586,12 @@ publish() {
     info "Scanning the $count commit(s) the push would publish and the PR body for secrets"
     if ! out=$(printf '%s\n' "$outgoing" | bash "$SCAN" --commits - --file "$body_copy" 2>&1); then
         printf '%s\n' "$out" | sed 's/^/      /'
-        needs_human "the secret scan found key-shaped values or a .env file (listed above, values masked); nothing was pushed" "remove them from the commits and the PR body, then re-run"
+        needs_human "the secret scan found key-shaped values or a .env file (listed above, values masked); nothing was pushed" "remove them from the commits and the PR body, then re-run. A hit in upstream commits that a fork's out-of-date default branch lacks clears once the fork is synced"
     fi
     success "No secrets found"
 
-    # Push to the recorded URL and branch only, with every git hook disabled.
-    if ! out=$(git -c core.hooksPath=/dev/null push "$REC_push_url" "refs/heads/$REC_branch:refs/heads/$REC_branch" 2>&1); then
+    # Push the scanned commit to the recorded URL and branch only, with every git hook disabled.
+    if ! out=$(git -c core.hooksPath=/dev/null push "$REC_push_url" "$head:refs/heads/$REC_branch" 2>&1); then
         printf '%s\n' "$out" | tail -5 | sed 's/^/      /'
         case "$out" in
             *rotected*branch*|*GH006*)   needs_human "the remote refused the push: branch protection on $REC_branch" "push through a reviewer or adjust the protection rule, then re-run" ;;
@@ -615,6 +600,7 @@ publish() {
         esac
     fi
     success "Pushed $REC_branch to $(mask_url "$REC_push_url")"
+    [ "$(git rev-parse HEAD)" = "$head" ] || warn "HEAD moved while publishing; pushed $(git rev-parse --short "$head"), the commit the scan covered, and left the newer commits unpublished"
 
     title=$(printf '%s' "$FEATURE" | cut -c1-72)
     [ -n "$title" ] || title="$REC_branch"

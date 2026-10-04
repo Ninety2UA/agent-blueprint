@@ -171,7 +171,7 @@ For a well-defined feature you want built hands-off, the ship runner drives `ab-
 1. Preflight. It checks that the tool is installed and signed in, records the remote and branch it will push to, and probes whether the tool's headless posture can write to `.git`. Where it cannot (Codex `workspace-write`), the skill leaves its work uncommitted with the message in `.agent-blueprint/run/commit-msg.md`, and the runner commits after each iteration.
 2. The loop. Every iteration is a new headless session with a clean context. The skill locks the requirements as decisions, writes and verifies a plan, deepens it with research, builds it through `ab-orchestrate`, reviews and fixes until no P1 finding is left (three rounds at most by default), records what it learned, commits, and writes the pull request body. Between iterations the runner reads `.agent-blueprint/run/state.json`.
 3. The finish check. Text the agent prints never ends a run. It is done only when the state file says `done`, there are new commits since the recorded base, the pull request body exists, and the provenance record names the skill and its version.
-4. Publishing. The runner scans every commit in the outgoing range, their messages and the pull request body for secrets, including any `.env` file a commit added. Then it pushes only to the remote and branch it recorded and opens or updates the pull request. It stops as `needs-human` instead if `.git/config` changed during the run, or if the range touches `.github/workflows` or `.github/actions` and you did not pass `--allow-ci-changes`.
+4. Publishing. The runner scans every commit the push would publish (each one the remote does not have yet, plus the run's own), their messages and the pull request body for secrets, including any `.env` file a commit added. Then it pushes exactly the commit it scanned, only to the remote and branch it recorded, and opens or updates the pull request. It stops as `needs-human` instead if it cannot read the remote's branches, if `.git/config` changed during the run, or if those commits touch `.github/workflows` or `.github/actions` and you did not pass `--allow-ci-changes`.
 
 ### When a run stops early
 
@@ -843,7 +843,7 @@ Swarms are read-only helpers that analyze the same input and report to a synthes
 <details>
 <summary><strong>Is an unattended run safe?</strong></summary>
 
-The runner uses the least-privileged headless posture each tool offers, scans every outgoing commit and the pull request body for secrets before it pushes, pushes only to the remote and branch it recorded at preflight, and stops as `needs-human` if `.git/config` changed or the range touches CI configuration. Pi, Amp and Antigravity can only run unguarded, so they need `--allow-unguarded`, and there the agent holds your git and `gh` credentials. Amp's headless threads are visible to your workspace by default, according to its docs.
+The runner uses the least-privileged headless posture each tool offers, scans every outgoing commit and the pull request body for secrets before it pushes, pushes only to the remote and branch it recorded at preflight, and stops as `needs-human` if `.git/config` changed or the commits to publish touch CI configuration. Pi, Amp and Antigravity can only run unguarded, so they need `--allow-unguarded`, and there the agent holds your git and `gh` credentials. Amp's headless threads are visible to your workspace by default, according to its docs.
 </details>
 
 <details>

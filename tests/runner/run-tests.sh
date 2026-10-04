@@ -291,7 +291,7 @@ t13_skill_names_a_runner_that_exists_after_copy_install() {
     grep -q 'scripts/run.sh' "$REPO/skills/ab-ship-pipeline/references/modes-and-reports.md" || fail "modes-and-reports.md does not name scripts/run.sh"
     (cd "$REPO" && bash install.sh --copy-dir "$D/skills" > "$OUT" 2>&1) || fail "install.sh --copy-dir failed ($OUT)"
     local copy="$D/skills/ab-ship-pipeline/scripts"
-    assert_file "$copy/run.sh" && assert_file "$copy/hosts.sh" && assert_file "$copy/scan-secrets.sh" && assert_file "$copy/host-limits.tsv"
+    assert_file "$copy/run.sh" && assert_file "$copy/hosts.sh" && assert_file "$copy/scan-secrets.sh" && assert_file "$copy/outgoing-commits.sh" && assert_file "$copy/host-limits.tsv"
     RC=0; bash "$copy/run.sh" --help > "$OUT" 2>&1 || RC=$?
     assert_rc 0 && assert_out "--host HOST"
 }
@@ -367,7 +367,7 @@ t20_ci_paths_remote_url_and_prepush_hook() {
     new_repo t20a
     scenario "state:done:ship workflow pr-body"
     run_runner --host fake "feature"
-    assert_rc 3 && assert_out "CI configuration" && assert_out "--allow-ci-changes"
+    assert_rc 3 && assert_out "the commits the push would publish touch CI configuration" && assert_out "--allow-ci-changes"
     ! remote_has_branch feat/x || fail "pushed a workflow change without the flag"
     run_runner --host fake --resume --allow-ci-changes
     assert_rc 0
@@ -625,6 +625,20 @@ t41_an_env_path_named_like_a_commit_header_fails_the_range_scan() {
         out=$(bash "$SCAN" --range HEAD~1..HEAD 2>&1) && fail "the scan passed a range that adds .env under a directory named with a newline"
         printf '%s\n' "$out" | grep -Fq ":two?lines/.env: .env file" || fail "no one-line hit naming two?lines/.env ($out)"
     fi
+    # A directory named by a single newline: the paths already reported are compared whole, so
+    # this one is not taken for one of them. Added, deleted and added again, it is reported once.
+    # Scanned as the runner scans, through --commits.
+    local nl=$'\n'
+    if mkdir "$nl" 2>/dev/null; then
+        local from
+        from=$(git rev-parse HEAD)
+        echo "APP_MODE=placeholder" > "$nl/.env" && git add -A && git commit -q -m "add env under a newline directory"
+        git rm -q "$nl/.env" && git commit -q -m "drop it"
+        mkdir "$nl" && echo "APP_MODE=placeholder" > "$nl/.env" && git add -A && git commit -q -m "add it again"
+        out=$(git rev-list --reverse "$from..HEAD" | bash "$SCAN" --commits - 2>&1) && fail "the scan passed commits that add .env under a directory named by a newline"
+        assert_eq "$(printf '%s\n' "$out" | grep -c '.env file$')" 1 "hits for the .env file under the newline directory ($out)"
+        printf '%s\n' "$out" | grep -Fq ":?/.env: .env file" || fail "no one-line hit naming ?/.env ($out)"
+    fi
 }
 
 t42_the_scanner_reads_a_list_of_commits() {
@@ -642,6 +656,137 @@ t42_the_scanner_reads_a_list_of_commits() {
     assert_rc 2 && assert_out "not a full commit hash"
     RC=0; printf -- '--all\n' | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
     assert_rc 2
+}
+
+t43_the_runs_own_commits_are_checked_even_when_a_remote_branch_has_them() {
+    # A commit drops out of the remote-relative list once any branch at the push URL holds it; the
+    # run's own commits since the recorded base are scanned and checked all the same.
+    new_repo t43a
+    scenario "state:done:ship secret-commit push:session-copy commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "secret scan" && assert_out "cloud access key" && assert_not_out "AKIAQQQQ"
+    ! remote_has_branch feat/x || fail "pushed a key the session had already pushed to another branch"
+    ! grep -q "pr create" "$D/gh/calls.log" 2>/dev/null || fail "gh pr create was called"
+    new_repo t43b
+    git clone -q "$REMOTE" "$D/other"
+    (cd "$D/other" && git switch -q -c ci-update && mkdir -p .github/workflows && printf 'name: ci\non: push\njobs: {}\n' > .github/workflows/ci.yml \
+        && git add .github && git commit -q -m "ci: add a workflow" && git push -q origin ci-update)
+    scenario "state:done:ship ff:ci-update commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "CI configuration" && assert_out "ci.yml"
+    ! remote_has_branch feat/x || fail "pushed a workflow the session fast-forwarded onto"
+}
+
+t44_an_unreadable_remote_stops_the_publish() {
+    new_repo t44
+    scenario "state:running:plan commit:a.txt" "state:done:ship commit:b.txt pr-body"
+    run_runner --host fake "feature" --max 1
+    assert_rc 4
+    # The push URL cannot be listed at all.
+    mv "$REMOTE" "$REMOTE.away"
+    run_runner --host fake --resume
+    mv "$REMOTE.away" "$REMOTE"
+    assert_rc 3 && assert_out "could not read the branches" && assert_out "nothing was pushed"
+    ! remote_has_branch feat/x || fail "pushed although the remote could not be listed"
+    # The listing works, but a branch tip this clone lacks cannot be fetched: its object is corrupt.
+    git clone -q "$REMOTE" "$D/other"
+    (cd "$D/other" && git switch -q -c broken && echo b > b.txt && git add b.txt && git commit -q -m "b" && git push -q origin broken)
+    local tip obj
+    tip=$(git --git-dir="$REMOTE" rev-parse broken)
+    obj="$REMOTE/objects/$(printf '%s' "$tip" | cut -c1-2)/$(printf '%s' "$tip" | cut -c3-)"
+    [ -f "$obj" ] || fail "the case needs the broken tip as a loose object ($obj)"
+    chmod u+w "$obj" && printf 'corrupt' > "$obj"
+    run_runner --host fake --resume
+    assert_rc 3 && assert_out "could not read the branches" && assert_out "nothing was pushed"
+    ! remote_has_branch feat/x || fail "pushed although a remote branch tip could not be fetched"
+    ! grep -q "pr create" "$D/gh/calls.log" 2>/dev/null || fail "gh pr create was called"
+    git --git-dir="$REMOTE" update-ref -d refs/heads/broken
+    run_runner --host fake --resume
+    assert_rc 0 && assert_out "Opened pull request"
+}
+
+t45_the_push_sends_the_commit_that_was_scanned() {
+    new_repo t45
+    # A bash shim on PATH commits once the secret scan has run, as a leftover background process might.
+    local real
+    real=$(command -v bash)
+    mkdir -p "$D/shim"
+    cat > "$D/shim/bash" <<EOF
+#!$real
+case "\${1:-}" in
+    *scan-secrets.sh)
+        rc=0; "$real" "\$@" || rc=\$?
+        echo late >> late.txt && git add late.txt && git commit -q -m "late commit"
+        exit "\$rc" ;;
+esac
+exec "$real" "\$@"
+EOF
+    chmod +x "$D/shim/bash"
+    scenario "state:done:ship commit:a.txt pr-body"
+    PATH="$D/shim:$PATH" run_runner --host fake "feature"
+    assert_rc 0 && assert_out "Opened pull request" && assert_out "HEAD moved while publishing"
+    assert_eq "$(git log -1 --format=%s)" "late commit" "the local branch after the shim ran"
+    assert_eq "$(git --git-dir="$REMOTE" rev-parse feat/x)" "$(git rev-parse HEAD~1)" "the pushed commit"
+}
+
+t46_outgoing_commits_reads_the_push_url_live() {
+    local list="$REPO/skills/ab-ship-pipeline/scripts/outgoing-commits.sh" p c parent
+    new_repo t46a
+    # A commit whose remote branch was deleted keeps a stale tracking ref after a fetch; the live
+    # listing still counts it as unpublished.
+    echo p > p.txt && git add p.txt && git commit -q -m "p"
+    p=$(git rev-parse HEAD)
+    git push -q origin HEAD:refs/heads/gone && git fetch -q origin
+    git --git-dir="$REMOTE" update-ref -d refs/heads/gone
+    git rev-parse -q --verify refs/remotes/origin/gone > /dev/null || fail "the case needs a stale tracking ref"
+    echo c > c.txt && git add c.txt && git commit -q -m "c"
+    RC=0; bash "$list" "$(git remote get-url --push origin)" "$p" > "$OUT" 2>&1 || RC=$?
+    assert_rc 0 && assert_eq "$(cat "$OUT")" "$(git rev-list --reverse main..HEAD)" "commits a stale tracking ref would hide, oldest first"
+    # The push URL is read, not the fetch URL.
+    git init -q --bare "$D/fork.git"
+    git remote set-url --push origin "$D/fork.git"
+    RC=0; bash "$list" "$(git remote get-url --push origin)" "$p" > "$OUT" 2>&1 || RC=$?
+    assert_rc 0 && assert_eq "$(cat "$OUT")" "$(git rev-list --reverse HEAD)" "every commit, for an empty push target"
+    git remote set-url --push origin "$REMOTE"
+    # The range from the base is listed whole, though a branch at the push URL holds part of it.
+    git push -q origin HEAD:refs/heads/copy
+    echo d > d.txt && git add d.txt && git commit -q -m "d"
+    RC=0; bash "$list" "$REMOTE" "$p" > "$OUT" 2>&1 || RC=$?
+    assert_rc 0 && assert_eq "$(cat "$OUT")" "$(git rev-list --reverse "$p..HEAD")" "the range from the base"
+    # Usage and failures: an unreadable URL is 1; anything else wrong is 2, and an option-shaped
+    # URL never reaches git.
+    RC=0; bash "$list" "$D/nowhere.git" "$p" > "$OUT" 2>&1 || RC=$?
+    assert_rc 1
+    RC=0; bash "$list" "$REMOTE" not-a-commit > "$OUT" 2>&1 || RC=$?
+    assert_rc 2
+    RC=0; bash "$list" "--upload-pack=touch $D/pwned" "$p" > "$OUT" 2>&1 || RC=$?
+    assert_rc 2 && assert_no_file "$D/pwned"
+    RC=0; bash "$list" "$REMOTE" HEAD "$p" > "$OUT" 2>&1 || RC=$?
+    assert_rc 2 && assert_out "not an ancestor"
+    # A merge of a published branch: the commits it brings in are in the range though the remote
+    # has them, and an unpublished commit from before the base comes first. The list is the union,
+    # every commit after the parents it lists.
+    new_repo t46b
+    git clone -q "$REMOTE" "$D/other"
+    (cd "$D/other" && git switch -q -c published && echo o > o.txt && git add o.txt && git commit -q -m "o" && git push -q origin published)
+    echo x > x.txt && git add x.txt && git commit -q -m "x"
+    p=$(git rev-parse HEAD)
+    git fetch -q origin published && git merge -q --no-ff -m "merge published" FETCH_HEAD
+    echo c > c.txt && git add c.txt && git commit -q -m "c"
+    RC=0; bash "$list" "$REMOTE" "$p" > "$OUT" 2>&1 || RC=$?
+    assert_rc 0
+    assert_eq "$(LC_ALL=C sort "$OUT" | tr '\n' ' ')" "$(git rev-list main..HEAD | LC_ALL=C sort | tr '\n' ' ')" "the listed commits"
+    local listed
+    listed=$(cat "$OUT")
+    while IFS= read -r c; do
+        for parent in $(git log -1 --format=%P "$c"); do
+            if printf '%s\n' "$listed" | grep -qx "$parent" && ! printf '%s\n' "$listed" | sed "/^$c\$/,\$d" | grep -qx "$parent"; then
+                fail "$c is listed before its parent $parent"
+            fi
+        done
+    done <<EOF
+$listed
+EOF
 }
 
 t22_resume_takes_the_host_from_the_command_line() {
@@ -721,7 +866,9 @@ t34_resume_at_the_cap_says_how_to_continue t35_dry_run_masks_credentials_and_nam
 t36_every_scan_pattern_is_caught_and_masked t37_a_blank_commit_message_falls_back_to_the_default
 t38_a_removed_env_file_still_fails_the_range_scan t39_an_env_file_under_a_quoted_directory_fails_the_range_scan
 t40_commits_from_before_the_run_are_scanned_and_checked t41_an_env_path_named_like_a_commit_header_fails_the_range_scan
-t42_the_scanner_reads_a_list_of_commits"
+t42_the_scanner_reads_a_list_of_commits t43_the_runs_own_commits_are_checked_even_when_a_remote_branch_has_them
+t44_an_unreadable_remote_stops_the_publish t45_the_push_sends_the_commit_that_was_scanned
+t46_outgoing_commits_reads_the_push_url_live"
 
 SELECTED="${*:-$ALL}"
 PASSED=0 FAILED=0

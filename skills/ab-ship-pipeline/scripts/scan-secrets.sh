@@ -105,6 +105,16 @@ is_env_path() {
     esac
     return 1
 }
+# is_listed WORD [ITEM]...: WORD equals one of the ITEMs. A path may hold any byte but NUL, so
+# paths are compared whole, never through a newline-separated list that a newline would split.
+is_listed() {
+    local word="$1" item
+    shift
+    for item in "$@"; do
+        if [ "$item" = "$word" ]; then return 0; fi
+    done
+    return 1
+}
 # hit_path WHERE: count and report one path that is a secret by its name; nothing of it is read.
 # A control character in the path (a newline, say) is printed as ?, so one hit stays on one line.
 hit_path() {
@@ -112,13 +122,13 @@ hit_path() {
     echo "$(printf '%s' "$1" | LC_ALL=C tr '\001-\037\177' '?'): .env file"
 }
 
-# scan_range BASE..HEAD: every commit in the range.
+# scan_range BASE..HEAD: every commit in the range, listed oldest first and scanned as a list is.
 scan_range() {
-    case "$1" in *..*) ;; *) echo "scan-secrets: --range wants BASE..HEAD, got $1" >&2; exit 2 ;; esac
+    # A leading - would reach git rev-list as an option.
+    case "$1" in [!-]*..*) ;; *) echo "scan-secrets: --range wants BASE..HEAD, got $1" >&2; exit 2 ;; esac
     REVS_TMP=$(mktemp "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
-    printf '%s\n' "$1" > "$REVS_TMP"
-    scan_commits "" "$1"
-    rm -f "$REVS_TMP"; REVS_TMP=""
+    git rev-list --reverse "$1" > "$REVS_TMP" 2>/dev/null || { echo "scan-secrets: git rev-list failed for $1" >&2; exit 2; }
+    scan_commits "$1"
 }
 
 # scan_list FILE: exactly the commits FILE lists (- for standard input), read once and checked:
@@ -134,20 +144,19 @@ scan_list() {
         echo "scan-secrets: --commits wants one full commit hash per line; not a full commit hash: $(printf '%s' "$bad" | cut -c1-80)" >&2
         exit 2
     fi
-    # git log reads an empty list as HEAD; an empty list has nothing to scan.
-    if [ -s "$REVS_TMP" ]; then scan_commits --no-walk=unsorted "the listed commits"; fi
-    rm -f "$REVS_TMP"; REVS_TMP=""
+    scan_commits "the listed commits"
 }
 
-# scan_commits WALK WHAT: the three passes over the revisions in $REVS_TMP, which git log reads
-# with --stdin. WALK is --no-walk=unsorted for a list (each listed commit, in its order) and empty
-# for a range; WHAT names them in an error.
+# scan_commits WHAT: the three passes over the commits $REVS_TMP lists, oldest first, which git
+# log reads with --stdin --no-walk=unsorted (each listed commit, in its order); WHAT names them in
+# an error. git log reads an empty list as HEAD, so an empty list scans nothing.
 scan_commits() {
-    local walk="$1" what="$2" commit="" file="" line seen="" want_path=0
+    local what="$1" commit="" file="" line want_path=0 seen=()
+    if [ ! -s "$REVS_TMP" ]; then rm -f "$REVS_TMP"; REVS_TMP=""; return 0; fi
     PATCH_TMP=$(mktemp "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
     # --text: a path marked -diff or binary in .gitattributes still prints its lines.
     # -m: a merge is diffed against each parent, so lines a merge itself introduces are seen.
-    if ! git log -p -m --text --no-color --no-ext-diff --format='commit %H' ${walk:+"$walk"} --stdin -- . < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null; then
+    if ! git log -p -m --text --no-color --no-ext-diff --format='commit %H' --no-walk=unsorted --stdin -- . < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null; then
         echo "scan-secrets: git log failed for $what" >&2
         exit 2
     fi
@@ -165,7 +174,7 @@ scan_commits() {
         done < "$PATCH_TMP"
     fi
     # Commit messages are pushed too, and the runner commits the skill's commit-msg.md verbatim.
-    if ! git log --format='commit %H%n%B' ${walk:+"$walk"} --stdin < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null; then
+    if ! git log --format='commit %H%n%B' --no-walk=unsorted --stdin < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null; then
         echo "scan-secrets: git log failed for $what" >&2
         exit 2
     fi
@@ -183,8 +192,7 @@ scan_commits() {
     # puts a status record (A) before each path, so the parse below knows a path by its position
     # and never by its text: a path named like the commit line ("commit secrets/.env") is a path.
     # The record after each commit hash starts with the newline git puts before the file list.
-    # A list is already oldest first; a range is walked in reverse.
-    if ! git log "${walk:---reverse}" --diff-filter=A --name-status --no-renames -m -z --format=%H --stdin -- . < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null; then
+    if ! git log --no-walk=unsorted --diff-filter=A --name-status --no-renames -m -z --format=%H --stdin -- . < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null; then
         echo "scan-secrets: git log failed for $what" >&2
         exit 2
     fi
@@ -195,8 +203,8 @@ scan_commits() {
         while IFS= read -r -d '' line || [ -n "$line" ]; do
             if [ "$want_path" = 1 ]; then
                 want_path=0
-                if is_env_path "$line" && ! printf '%s\n' "$seen" | grep -Fxq -- "$line"; then
-                    seen="$seen$line"$'\n'
+                if is_env_path "$line" && ! is_listed "$line" ${seen[@]+"${seen[@]}"}; then
+                    seen+=("$line")
                     hit_path "$commit:$line"
                 fi
                 continue
@@ -208,7 +216,7 @@ scan_commits() {
             esac
         done < "$PATCH_TMP"
     fi
-    rm -f "$PATCH_TMP"; PATCH_TMP=""
+    rm -f "$PATCH_TMP" "$REVS_TMP"; PATCH_TMP="" REVS_TMP=""
 }
 
 [ $# -gt 0 ] || { usage; exit 2; }

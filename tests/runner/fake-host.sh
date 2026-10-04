@@ -32,6 +32,8 @@
 #   merge-secret           a key introduced by a merge commit's own resolution
 #   msg-secret             a key in a commit message
 #   symlink:PATH:TARGET    plant PATH as a symlink to TARGET
+#   push:BRANCH            push HEAD to BRANCH on origin, as a session that publishes its own work
+#   ff:BRANCH              fetch BRANCH from origin and fast-forward onto it
 #   block-commit           leave .git/index.lock behind, so the runner's own commit fails
 #   bigmsg                 a 100,000-character final message whose 160th byte is inside a
 #                          multibyte character, plus one such line after the JSON (put it last)
@@ -159,6 +161,8 @@ for step in $LINE; do
             mkdir -p "$(dirname "$link")"
             rm -rf "$link"
             ln -s "$target" "$link" ;;
+        push:*)          git push -q origin "HEAD:refs/heads/$arg" ;;
+        ff:*)            git fetch -q origin "$arg" && git merge -q --ff-only FETCH_HEAD ;;
         block-commit)    : > "$(git rev-parse --git-dir)/index.lock" ;;
         bigmsg)          BIGMSG=1 ;;
         gh-unauth)       touch "${AGENT_BLUEPRINT_FAKE_GH_DIR:?}/unauth" ;;
