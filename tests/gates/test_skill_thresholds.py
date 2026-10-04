@@ -14,8 +14,8 @@ SKILLS = os.path.join(REPO, "skills")
 CANONICAL = "under three files"
 BOUNDARY_SKILLS = ("ab-quick-fix", "ab-brainstorming")
 # Digit, off-by-one and inverted spellings of the quick-fix boundary; matched case-insensitively.
-FORBIDDEN = ("up to 3 files", "up to three files", "4 or more files", "4+ files", "< 3 files", "under 3 files",
-             "3 or more files")
+FORBIDDEN = ("up to 3 files", "up to three files", "4 or more files", "four or more files", "4+ files", "< 3 files",
+             "under 3 files", "3 or more files")
 DRIFT = re.compile("|".join(re.escape(s) for s in FORBIDDEN), re.IGNORECASE)
 
 

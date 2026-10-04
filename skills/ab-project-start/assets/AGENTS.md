@@ -41,7 +41,7 @@ The Agent Blueprint skills carry the workflows. Start one the way your tool star
 | ab-systematic-debugging | Finding the root cause of a failure |
 | ab-session-wrap | Ending a session so the next one can pick up |
 
-Small work goes straight to ab-quick-fix: write the failing test, fix, verify, commit. Work that touches four or more files, adds an API or changes a data model goes through ab-brainstorming and then ab-build-pipeline, because those changes are expensive to redo once others build on them.
+Small work goes straight to ab-quick-fix: write the failing test, fix, verify, commit. Work that touches three or more files, adds an API or changes a data model goes through ab-brainstorming and then ab-build-pipeline, because those changes are expensive to redo once others build on them.
 
 ## How to work
 
