@@ -351,5 +351,88 @@ sum_usage() {
 # plugin_version PLUGIN_JSON: the version field of a plugin manifest.
 plugin_version() { python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$1"; }
 
+# ── installed copies (run-smoke.sh; here so the selftest can call them) ──
+# host_installed_copies HOST: every catalog location that already holds the blueprint (an
+# ab-ship-pipeline/SKILL.md), one per line. On a host that takes a plugin directory such a copy
+# wins over it; on one that does not (Codex reads the shared copy in ~/.agents/skills, for one)
+# the installed copies are all the host has.
+host_installed_copies() {
+    local d
+    while IFS= read -r d; do
+        if [ -n "$d" ] && [ -f "$d/ab-ship-pipeline/SKILL.md" ]; then echo "$d"; fi
+    done <<LIST
+$(host_catalog_dirs "$1" "")
+LIST
+    return 0
+}
+
+# skills_content_diff CATALOG_DIR CHECKOUT_SKILLS_DIR: nothing when both hold the same ab- skill
+# folders with the same files and bytes (bytecode caches and .DS_Store aside); otherwise one line
+# naming the folders that differ. Every commit of a release carries the same version, so only the
+# content tells an installed copy of an older commit from this one.
+skills_content_diff() {
+    python3 - "$1" "$2" <<'PY'
+import hashlib, os, sys
+
+def digests(root):
+    out = {}
+    try:
+        names = sorted(os.listdir(root))
+    except OSError:
+        return out
+    for name in names:
+        top = os.path.join(root, name)
+        if not name.startswith("ab-") or not os.path.isdir(top):
+            continue
+        h = hashlib.sha256()
+        for d, subdirs, files in os.walk(top, followlinks=True):
+            subdirs[:] = sorted(s for s in subdirs if s != "__pycache__")
+            for f in sorted(files):
+                if f == ".DS_Store" or f.endswith(".pyc"):
+                    continue
+                p = os.path.join(d, f)
+                h.update(os.path.relpath(p, top).encode("utf-8", "surrogateescape") + b"\0")
+                try:
+                    with open(p, "rb") as fh:
+                        h.update(hashlib.sha256(fh.read()).digest())
+                except OSError:
+                    h.update(b"<unreadable>")
+        out[name] = h.hexdigest()
+    return out
+
+def named(names):
+    return ", ".join(names[:5]) + (", ..." if len(names) > 5 else "")
+
+installed, checkout = digests(sys.argv[1]), digests(sys.argv[2])
+changed = sorted(n for n in installed.keys() & checkout.keys() if installed[n] != checkout[n])
+missing = sorted(checkout.keys() - installed.keys())
+extra = sorted(installed.keys() - checkout.keys())
+parts = []
+if changed:
+    parts.append("%d skill folder(s) differ (%s)" % (len(changed), named(changed)))
+if missing:
+    parts.append("%d missing (%s)" % (len(missing), named(missing)))
+if extra:
+    parts.append("%d not in the checkout (%s)" % (len(extra), named(extra)))
+print("; ".join(parts))
+PY
+}
+
+# installed_copy_version CATALOG_DIR: the version in the copy route's install record inside the
+# catalog, else in the plugin manifest beside it (<root>/.claude-plugin/plugin.json or
+# <root>/plugin.json), or "unknown".
+installed_copy_version() {
+    local root f
+    # The copy route (install.sh into ~/.agents/skills) keeps its version in the install record
+    # inside the catalog folder; a plugin install keeps it in the manifest beside the folder.
+    f="$1/.agent-blueprint-install.json"
+    if [ -f "$f" ] && plugin_version "$f" 2>/dev/null; then return 0; fi
+    root=$(dirname "$1")
+    for f in "$root/.claude-plugin/plugin.json" "$root/plugin.json"; do
+        if [ -f "$f" ] && plugin_version "$f" 2>/dev/null; then return 0; fi
+    done
+    echo unknown
+}
+
 # strip_ansi: a filter that removes color codes (BSD sed has no \x1b, so the ESC is spelled out).
 strip_ansi() { sed "s/$(printf '\033')\[[0-9;]*m//g"; }

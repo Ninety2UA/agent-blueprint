@@ -89,14 +89,91 @@ check "fake · canary fails on an installed copy of another version" [ "$(state_
 check "the version mismatch is named" grep -q "version 0.0.1, not" <<<"$(reason_of "$J" fake canary)"
 check "the result row carries the installed copy as plugin_dir" grep -qF "\"plugin_dir\": \"$stale/skills\"" "$WORK"/logs/*/fake/results.jsonl
 
-echo "== a copy-route install (install record, no manifest) of this version runs its cells"
+echo "== a copy-route install (install record, no manifest) of this checkout runs its cells"
 copy="$WORK/copy/skills"
-mkdir -p "$copy/ab-ship-pipeline"
-: > "$copy/ab-ship-pipeline/SKILL.md"
+mkdir -p "$copy"
+cp -R "$REPO/skills/." "$copy/"
 printf '{"plugin": "agent-blueprint", "version": "%s"}\n' "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$REPO/.claude-plugin/plugin.json")" > "$copy/.agent-blueprint-install.json"
 AGENT_BLUEPRINT_FAKE_CATALOG="$copy" \
     bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --cell canary > "$WORK/copy.log" 2>&1 || true
-check "fake · canary runs against a copy-route install of this version" [ "$(state_of "$J" fake canary)" = pass ]
+check "fake · canary runs against a copy-route install of this checkout" [ "$(state_of "$J" fake canary)" = pass ]
+
+echo "== an installed copy of this version with other skill content: every cell fails and the row names it"
+echo "edited after the install" >> "$copy/ab-ship-pipeline/SKILL.md"
+AGENT_BLUEPRINT_FAKE_CATALOG="$copy" \
+    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --cell canary > "$WORK/drift.log" 2>&1 || true
+check "fake · canary fails on an installed copy whose skills differ from the checkout" [ "$(state_of "$J" fake canary)" = fail ]
+check "the differing skill folder is named" grep -q "differ.*ab-ship-pipeline" <<<"$(reason_of "$J" fake canary)"
+
+echo "== a host without a plugin directory (Codex) reads the shared copy, so the installed-copy check covers it"
+installed_out() {   # HOST HOME: lib.sh's host_installed_copies under another HOME, in a subshell as effort_out does
+    # shellcheck source=lib.sh disable=SC1091
+    ( . "$HERE/lib.sh" && HOME="$2" CODEX_HOME="$2/.codex" host_installed_copies "$1" )
+}
+home="$WORK/home"
+mkdir -p "$home/.agents/skills/ab-ship-pipeline"
+: > "$home/.agents/skills/ab-ship-pipeline/SKILL.md"
+check "codex: the shared copy in ~/.agents/skills is the installed copy" [ "$(installed_out codex "$home")" = "$home/.agents/skills" ]
+
+echo "== the review check: a finding on eval in cli.py passes; a clean verdict that names them fails"
+review_check() {   # FINAL_TEXT [ARTIFACT_JSON]: scenarios/review/check.sh on a scratch repository
+    local d="$WORK/review-check"
+    rm -rf "$d"; mkdir -p "$d/docs"
+    git -C "$d" init -q
+    printf 'old\n' > "$d/docs/old.md"   # deleted after the base: the check lists it and must not stop there
+    git -C "$d" add docs/old.md
+    git -C "$d" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false commit -q -m base
+    rm "$d/docs/old.md"
+    printf '%s\n' "$1" > "$WORK/review-check.final"
+    if [ -n "${2:-}" ]; then
+        mkdir -p "$d/.agent-blueprint/review-runs/r1"
+        printf '%s\n' "$2" > "$d/.agent-blueprint/review-runs/r1/security-sentinel.json"
+    fi
+    bash "$HERE/scenarios/review/check.sh" "$d" "$(git -C "$d" rev-parse HEAD)" "$WORK/review-check.final" /dev/null "" > "$WORK/review-check.reason" 2>&1
+}
+fails() { ! "$@"; }
+check "a clean verdict that names eval and cli.py fails" fails review_check "No findings: eval in cli.py is safe"
+check "a clean security verdict fails" fails review_check "No security issues. The eval in src/notes/cli.py only sees the operator's own filter, so it is fine."
+check "a zero count of critical findings fails" fails review_check "P1 Critical: 0, High: none. The eval in src/notes/cli.py was reviewed."
+check "no critical findings fails" fails review_check "No critical findings. The eval in src/notes/cli.py was reviewed."
+check "a finding the swarm discarded fails" fails review_check "## Review Swarm Synthesis
+
+### Summary
+- P1 Critical: 0 | P2 Important: 0 | P3 Suggestion: 0
+
+### Discarded (false positives)
+- **eval() in src/notes/cli.py runs arbitrary code** — reported by security-sentinel, discarded because the filter is the operator's own input"
+check "a P2 note on eval's scoping beside a security non-finding fails" fails review_check "1. **P2 — Valid nested expressions crash** — src/notes/cli.py:45. \`note\` is passed only in eval's locals.
+
+Security assessment: filters execute unrestricted Python, but this was not classified as an injection vulnerability."
+check "an empty JSON finding list with eval only in residual risks fails" fails review_check "No findings." \
+    '{"reviewer": "security-sentinel", "findings": [], "residual_risks": ["eval in src/notes/cli.py is acceptable for a local CLI"], "testing_gaps": []}'
+check "a swarm P1 on eval in cli.py passes" review_check "## Review Swarm Synthesis
+
+### P1 — Critical (must fix)
+1. **\`--filter\` is passed to eval()** — \`src/notes/cli.py:45\` — Confidence: 100 — Tier: gated_auto
+   - Impact: any expression the caller supplies runs in the CLI process.
+   - Fix: parse the expression with ast and allow only comparisons."
+check "a finding under a title that starts with Filtered passes" review_check "## Filtered listing runs arbitrary code
+
+- \`src/notes/cli.py:45\` hands the --filter text to eval(), so a caller can run arbitrary code."
+check "a finding below the swarm's confidence gate fails" fails review_check "### Filtered (below confidence gate)
+- **eval() in src/notes/cli.py runs arbitrary code** — P1 at confidence 25, gate requires 50"
+check "a reviewer's JSON finding on eval in cli.py passes" review_check "Review done; the findings are in the run folder." \
+    '{"reviewer": "security-sentinel", "findings": [{"title": "Code injection through --filter", "severity": "P1", "file": "src/notes/cli.py", "line": 45, "why_it_matters": "eval() runs any Python the caller passes", "confidence": 100, "tier": "gated_auto", "evidence": ["src/notes/cli.py:45 -- eval(args.filter, {}, {\"note\": note})"], "pre_existing": false, "requires_verification": true}], "residual_risks": [], "testing_gaps": []}'
+
+echo "== the upgrade scenario deletes only the folder it made inside --work"
+up="$WORK/upgrade-work"
+mkdir -p "$up" "$WORK/stub-bin" "$WORK/v3/plugins/claude-code-blueprint/.claude-plugin"
+printf 'keep\n' > "$up/caller-file"
+printf '{"name": "claude-code-blueprint", "version": "3.8.0"}\n' > "$WORK/v3/plugins/claude-code-blueprint/.claude-plugin/plugin.json"
+printf '#!/bin/sh\nexit 1\n' > "$WORK/stub-bin/claude"   # fails the first step, so the scenario exits through its cleanup
+cp "$WORK/stub-bin/claude" "$WORK/stub-bin/node"
+chmod +x "$WORK/stub-bin/claude" "$WORK/stub-bin/node"
+PATH="$WORK/stub-bin:$PATH" bash "$HERE/scenarios/upgrade/run-upgrade.sh" --v3-dir "$WORK/v3" --v4-dir "$REPO" --work "$up" > "$WORK/upgrade.log" 2>&1 || true
+check "the stubbed claude fails the first upgrade step" grep -q '^FAIL: add the v3.8.0 marketplace' "$WORK/upgrade.log"
+check "the caller's file in --work survives the scenario" [ -f "$up/caller-file" ]
+check "the scenario removed the folder it made inside --work" [ "$(ls -A "$up" 2>/dev/null)" = caller-file ]
 
 echo "== the effort check (AE2) on synthetic transcripts: a helper without an effort field is not a match"
 effort_out() {   # SESSION CONFIG_DIR: lib.sh's effort_check, in a subshell so lib.sh's globals (WORK) stay out of this script

@@ -73,7 +73,7 @@ From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-
 | `build` | pass | 30m21s | acceptance test passes (deps: tabulate>=0.9.0,<0.10) · helper steps: helper,helper,helper,helper,inline |
 | `helpers-off` | n/a | 0s | no helper switch on cursor-agent |
 | `effort` | n/a | 0s | no per-dispatch effort metadata on cursor-agent |
-| `review` | pass | 9m02s | the review names eval and cli.py · helper steps: helper |
+| `review` | pass | 9m02s | the review rates the eval in cli.py a security risk (re-checked on 2026-10-04 with the tightened review check) · helper steps: helper |
 | `debug` | pass | 7m49s | suite passes; store.py fixed; regression test present · helper steps: helper |
 | `ship` | pass | 22m32s | published; pr create recorded; acceptance test passes (deps: tabulate) on the pushed branch |
 | `team` | pass | 9m15s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |

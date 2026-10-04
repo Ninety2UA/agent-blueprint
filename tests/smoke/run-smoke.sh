@@ -110,7 +110,8 @@ HOST="" CELL="" CELL_START=0 LOG="" LASTMSG="" FINAL="" RESULTS="" HOST_LOG_DIR=
 SESSION="" LINK="" CHECK_RC=0 CHECK_REASON="" RUN_RC=0
 # What one host's cells remember for a later cell: the canary's trace file and outcome (0 when the
 # run completed and passed its check; CHECK_RC, or the host's non-zero exit, otherwise), the build's
-# session, and the installed copy that won over --plugin-dir (KTD18), or nothing.
+# session, and the first installed copy the host reads (on a plugin-directory host it wins over
+# --plugin-dir, KTD18), or nothing.
 CANARY_TRACE="" CANARY_RC=0 CANARY_REASON="" BUILD_SESSION="" BUILD_CHECKED=false SMOKE_TRACE_FILE="" HOST_INSTALLED=""
 
 cell_timeout() {   # SECONDS for the current host; ship cells get twice the host's row
@@ -436,7 +437,9 @@ cell_upgrade() {
     local rc=0 secs
     secs=$(cell_timeout upgrade)
     WORK_ROOT=$(smoke_tmp upgrade); WORK="$WORK_ROOT"
-    run_command_timed "$secs" "$LOG" bash "$SMOKE_SCENARIOS/upgrade/run-upgrade.sh" --v3-dir "$V3_DIR" --v4-dir "$PLUGIN_DIR" --work "$WORK_ROOT" || rc=$?
+    # The scenario works in a folder of its own inside WORK_ROOT and keeps it; finish_cell then
+    # removes WORK_ROOT on a pass and keeps it, upgrade.log included, on a failure.
+    run_command_timed "$secs" "$LOG" bash "$SMOKE_SCENARIOS/upgrade/run-upgrade.sh" --v3-dir "$V3_DIR" --v4-dir "$PLUGIN_DIR" --work "$WORK_ROOT" --keep || rc=$?
     if [ "$rc" -eq 124 ]; then finish_cell timeout "no result after ${secs}s"; return 0; fi
     if [ "$rc" -eq 0 ]; then
         finish_cell pass "$(grep -c '^PASS:' "$LOG") checks passed: both plugin ids listed, detect-v3.sh reported and removed the v3 traces, the session-start warning names the v3 plugin"
@@ -463,41 +466,12 @@ run_cell() {
     esac
 }
 
-# host_installed_copy HOST: the catalog location that already holds the blueprint (an
-# ab-ship-pipeline/SKILL.md), for a host that takes a plugin directory; empty otherwise.
-host_installed_copy() {
-    local d
-    case "$1" in claude|cursor-agent|agy|fake) ;; *) return 0 ;; esac
-    while IFS= read -r d; do
-        if [ -n "$d" ] && [ -f "$d/ab-ship-pipeline/SKILL.md" ]; then echo "$d"; return 0; fi
-    done <<LIST
-$(host_catalog_dirs "$1" "")
-LIST
-    return 0
-}
-
 # host_plugin_dir HOST INSTALLED: the checkout, for a host that takes a plugin directory and has no
 # installed copy; empty otherwise. A host with the installed copy and the plugin directory would
 # list every skill twice (KTD18), so the installed copy wins, and run_host_all says so.
 host_plugin_dir() {
     case "$1" in claude|cursor-agent|agy|fake) [ -n "$2" ] || echo "$PLUGIN_DIR" ;; esac
     return 0
-}
-
-# installed_copy_version CATALOG_DIR: the version in the copy route's install record inside the
-# catalog, else in the plugin manifest beside it (<root>/.claude-plugin/plugin.json or
-# <root>/plugin.json), or "unknown".
-installed_copy_version() {
-    local root f
-    # The copy route (install.sh into ~/.agents/skills) keeps its version in the install record
-    # inside the catalog folder; a plugin install keeps it in the manifest beside the folder.
-    f="$1/.agent-blueprint-install.json"
-    if [ -f "$f" ] && plugin_version "$f" 2>/dev/null; then return 0; fi
-    root=$(dirname "$1")
-    for f in "$root/.claude-plugin/plugin.json" "$root/plugin.json"; do
-        if [ -f "$f" ] && plugin_version "$f" 2>/dev/null; then return 0; fi
-    done
-    echo unknown
 }
 
 # ─── One host, every selected cell ────────────────────────────
@@ -508,9 +482,10 @@ run_host_all() {
     RESULTS="$HOST_LOG_DIR/results.jsonl"
     : > "$RESULTS"
     CANARY_TRACE="" CANARY_RC=0 CANARY_REASON="" BUILD_SESSION="" BUILD_CHECKED=false
-    HOST_INSTALLED=$(host_installed_copy "$HOST")
+    local bin version out rc=0 c installed_version="" copies copy mismatch="" diff
+    copies=$(host_installed_copies "$HOST")
+    HOST_INSTALLED=$(printf '%s\n' "$copies" | sed -n 1p)
     HOST_PLUGIN_DIR=$(host_plugin_dir "$HOST" "$HOST_INSTALLED")
-    local bin version out rc=0 c installed_version=""
     bin=$(host_bin "$HOST")
     version=$(host_version "$HOST")
     printf '%s\t%s\n' "$HOST" "$version" >> "$LOG_ROOT/versions.tsv"
@@ -518,7 +493,11 @@ run_host_all() {
     echo -e "  ${BOLD}══ $HOST${NC} ${DIM}$version · $(host_posture "$HOST")${NC}"
     if [ -n "$HOST_INSTALLED" ]; then
         installed_version=$(installed_copy_version "$HOST_INSTALLED")
-        warn "$HOST: the installed copy at $HOST_INSTALLED wins over --plugin-dir (version $installed_version)"
+        if [ -n "$(host_plugin_dir "$HOST" "")" ]; then
+            warn "$HOST: the installed copy at $HOST_INSTALLED wins over --plugin-dir (version $installed_version)"
+        else
+            info "$HOST reads the installed copy at $HOST_INSTALLED (version $installed_version)"
+        fi
     fi
     if [ "$HOST" != fake ] && ! command -v "$bin" >/dev/null 2>&1; then
         warn "$bin is not on PATH: every cell renders not-installed"
@@ -537,11 +516,27 @@ run_host_all() {
         done
         return 0
     fi
-    # An installed copy of another version would put that version's tree in this version's table.
-    if [ -n "$HOST_INSTALLED" ] && [ "$installed_version" != "$VERSION" ]; then
-        error "the installed copy on $HOST is version $installed_version, not $VERSION; every cell renders fail"
+    # An installed copy of another version, or of this version with other skill content (every
+    # commit of a release carries its version), would put another tree in this version's table.
+    # The host reads every copy it finds, so each one must match the plugin under test. A copy with
+    # no manifest or install record beside it (version unknown) is judged by its content alone.
+    while IFS= read -r copy; do
+        [ -n "$copy" ] || continue
+        installed_version=$(installed_copy_version "$copy")
+        if [ "$installed_version" != unknown ] && [ "$installed_version" != "$VERSION" ]; then
+            mismatch="the installed copy at $copy is version $installed_version, not $VERSION"; break
+        fi
+        diff=$(skills_content_diff "$copy" "$PLUGIN_DIR/skills") || diff="the skill folders could not be compared"
+        if [ -n "$diff" ]; then
+            mismatch="the installed copy at $copy differs from $PLUGIN_DIR/skills: $diff"; break
+        fi
+    done <<LIST
+$copies
+LIST
+    if [ -n "$mismatch" ]; then
+        error "$mismatch; every cell renders fail"
         for c in $CELLS; do
-            begin_cell "$c"; finish_cell fail "the installed copy at $HOST_INSTALLED is version $installed_version, not $VERSION; reinstall it from this checkout (KTD19)"
+            begin_cell "$c"; finish_cell fail "$mismatch; reinstall it from this checkout (KTD19)"
         done
         return 0
     fi

@@ -4,8 +4,9 @@
 # Usage: bash run-upgrade.sh --v3-dir DIR --v4-dir DIR [--work DIR] [--keep]
 #   --v3-dir DIR   a checkout of the main branch at v3.8.0 (its plugin root is plugins/claude-code-blueprint)
 #   --v4-dir DIR   this checkout (the repository root is the plugin root)
-#   --work DIR     where the temporary Claude config and the fixture project go (default: a temp dir)
-#   --keep         keep that folder
+#   --work DIR     the scenario makes its own folder for the temporary Claude config and the fixture
+#                  project inside DIR (default: inside $TMPDIR); nothing else in DIR is touched
+#   --keep         keep the scenario's folder (otherwise it is deleted on exit)
 #
 # In a temporary CLAUDE_CONFIG_DIR (the user's own config is never touched): add the v3 marketplace
 # from the v3 checkout and install claude-code-blueprint, add the v4 marketplace from the v4
@@ -34,10 +35,10 @@ V3_DIR="$(cd "$V3_DIR" && pwd)"; V4_DIR="$(cd "$V4_DIR" && pwd)"
 [ -f "$V4_DIR/.claude-plugin/plugin.json" ] || { echo "FAIL: $V4_DIR has no .claude-plugin/plugin.json"; exit 1; }
 command -v claude >/dev/null 2>&1 || { echo "FAIL: claude is not on PATH"; exit 1; }
 command -v node >/dev/null 2>&1 || { echo "FAIL: node is not on PATH (the session-start hook needs it)"; exit 1; }
-if [ -z "$WORK" ]; then
-    t="${TMPDIR:-/tmp}"; WORK=$(mktemp -d "${t%/}/ab-smoke-upgrade-XXXXXX")
-fi
-mkdir -p "$WORK"
+# The cleanup deletes only the folder made here, never the caller's --work folder or what is in it.
+PARENT="${WORK:-${TMPDIR:-/tmp}}"
+mkdir -p "$PARENT"
+WORK=$(mktemp -d "${PARENT%/}/ab-smoke-upgrade-XXXXXX")
 cleanup() { [ "$KEEP" = true ] || rm -rf "$WORK"; }
 trap cleanup EXIT
 

@@ -104,7 +104,7 @@
           "link": "",
           "log": "$TMPDIR/.../review.log",
           "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
-          "reason": "no provenance record for ab-requesting-code-review; the review names eval and cli.py \u00b7 work: $TMPDIR/ab-smoke-review-am7svK",
+          "reason": "no provenance record for ab-requesting-code-review; the review rates the eval in cli.py a security risk \u00b7 work: $TMPDIR/ab-smoke-review-am7svK",
           "seconds": 68,
           "session": "",
           "state": "fail",
@@ -308,7 +308,7 @@
           "date": "2026-10-01T20:53:38Z",
           "link": "",
           "log": "tests/smoke/logs/20261001-220423/claude/review.log",
-          "reason": "the review names eval and cli.py \u00b7 helper steps: helper",
+          "reason": "the review rates the eval in cli.py a security risk (re-checked on 2026-10-04 with the tightened review check) \u00b7 helper steps: helper",
           "seconds": 215,
           "session": "0bf7baa3-e9a6-480b-a2da-53bf9f556f5c",
           "state": "pass",
@@ -450,10 +450,10 @@
           "date": "2026-10-03T18:21:56Z",
           "link": "",
           "log": "$TMPDIR/.../review.log",
-          "reason": "the review names eval and cli.py \u00b7 helper steps: helper",
+          "reason": "re-checked on 2026-10-04 with the tightened review check: the recorded review names eval in cli.py but rates it no security risk (three P2s on scoping, validation and tests); rerun on the final commit \u00b7 helper steps: helper",
           "seconds": 487,
           "session": "",
-          "state": "pass",
+          "state": "fail",
           "tokens": null
         },
         "ship": {
@@ -591,7 +591,7 @@
           "date": "2026-10-01T20:44:22Z",
           "link": "",
           "log": "tests/smoke/logs/20261001-220423/cursor-agent/review.log",
-          "reason": "the review names eval and cli.py \u00b7 helper steps: helper",
+          "reason": "the review rates the eval in cli.py a security risk (re-checked on 2026-10-04 with the tightened review check) \u00b7 helper steps: helper",
           "seconds": 542,
           "session": "bdc53933-0e22-4404-8998-b92dad9391fe",
           "state": "pass",
@@ -1154,5 +1154,5 @@
       "plugin_dir": "~/projects/claude-eng/project-template/project-template-phase4"
     }
   ],
-  "updated": "2026-10-04 14:46 UTC"
+  "updated": "2026-10-04 17:48 UTC"
 }

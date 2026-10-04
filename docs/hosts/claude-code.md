@@ -79,7 +79,7 @@ From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-
 | `build` | pass | 19m43s | acceptance test passes (deps: tabulate>=0.9) (host exited 1) · helper steps: helper,helper,helper,helper |
 | `helpers-off` | degraded-pass (inline) | 14m44s | acceptance test passes (deps: tabulate>=0.9) · helper steps: inline,inline,inline,inline |
 | `effort` | pass | 0s | session effort xhigh; 4 helper transcript(s) at the same effort |
-| `review` | pass | 3m35s | the review names eval and cli.py · helper steps: helper |
+| `review` | pass | 3m35s | the review rates the eval in cli.py a security risk (re-checked on 2026-10-04 with the tightened review check) · helper steps: helper |
 | `debug` | pass | 6m07s | suite passes; store.py fixed; regression test present · helper steps: helper |
 | `ship` | pass | 109m31s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch |
 | `team` | pass | 10m11s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |
