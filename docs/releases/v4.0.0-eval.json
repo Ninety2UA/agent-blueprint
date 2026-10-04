@@ -6,6 +6,13 @@
       "runs_per_task": 3,
       "v3_dir": "$TMPDIR/.../u15-v3",
       "v4_dir": "~/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "command": "bash tests/smoke/eval.sh --task build --runs 1 (requested Opus 5.5 at medium effort via ANTHROPIC_MODEL=claude-opus-5-5 CLAUDE_EFFORT=medium; v4 at 5cf646a; the review and debug rows ran earlier on the session default, Fable 5.1 at xhigh, with v4 at 7e5b47f)",
+      "date": "2026-10-04 13:07 UTC",
+      "runs_per_task": 1,
+      "v3_dir": "$TMPDIR/.../u15-v3",
+      "v4_dir": "~/projects/claude-eng/project-template/project-template-skills"
     }
   ],
   "release": "4.0.0",
@@ -177,7 +184,35 @@
       "task": "debug",
       "tokens": 228078,
       "version": "v4"
+    },
+    {
+      "cell": "build",
+      "cost_usd": 0.9052,
+      "date": "2026-10-04T13:00:19Z",
+      "host": "claude",
+      "log": "$TMPDIR/.../build-v3-1.log",
+      "reason": "acceptance test passes (deps: tabulate); 1 commit(s) after the base",
+      "run": "1",
+      "seconds": 125,
+      "state": "pass",
+      "task": "build",
+      "tokens": 488444,
+      "version": "v3"
+    },
+    {
+      "cell": "build",
+      "cost_usd": 3.855,
+      "date": "2026-10-04T13:07:04Z",
+      "host": "claude",
+      "log": "$TMPDIR/.../build-v4-1.log",
+      "reason": "acceptance test passes (deps: tabulate>=0.9); 4 commit(s) after the base",
+      "run": "1",
+      "seconds": 405,
+      "state": "pass",
+      "task": "build",
+      "tokens": 1348498,
+      "version": "v4"
     }
   ],
-  "updated": "2026-10-04 12:46 UTC"
+  "updated": "2026-10-04 13:07 UTC"
 }
