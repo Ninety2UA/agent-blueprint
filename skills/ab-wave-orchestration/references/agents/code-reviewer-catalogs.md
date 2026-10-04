@@ -68,3 +68,7 @@ The right question is "what code change would I propose if I had to choose now?"
 | `FYI:` | Informational only — context for future readers | No action expected |
 
 Pair the prefix with the severity field in structured output, not as a substitute for it. The prefix is for fast human scanning; the severity field is for the synthesizer's gate logic.
+
+## Declined to judge
+
+On a final whole-branch review only: anchors 0 and 25 are suppressed, so also list, in one line each, what you declined to judge and why (needs runtime evidence, outside the diff's visible contract, spec ambiguous). The session rules on each; silence must not read as clean.
