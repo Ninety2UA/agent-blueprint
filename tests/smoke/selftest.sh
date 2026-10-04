@@ -119,10 +119,9 @@ echo "== the review check: a finding on eval in cli.py passes; a clean verdict t
 review_check() {   # FINAL_TEXT [ARTIFACT_JSON]: scenarios/review/check.sh on a scratch repository
     local d="$WORK/review-check"
     rm -rf "$d"; mkdir -p "$d/docs"
-    git -C "$d" init -q
     printf 'old\n' > "$d/docs/old.md"   # deleted after the base: the check lists it and must not stop there
-    git -C "$d" add docs/old.md
-    git -C "$d" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false commit -q -m base
+    # shellcheck source=lib.sh disable=SC1091
+    ( . "$HERE/lib.sh" && git_h -C "$d" init -q && git_h -C "$d" add docs/old.md && git_h -C "$d" commit -q -m base )
     rm "$d/docs/old.md"
     printf '%s\n' "$1" > "$WORK/review-check.final"
     if [ -n "${2:-}" ]; then

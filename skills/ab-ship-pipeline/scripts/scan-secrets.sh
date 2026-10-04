@@ -143,9 +143,7 @@ scan_list() {
 # with --stdin. WALK is --no-walk=unsorted for a list (each listed commit, in its order) and empty
 # for a range; WHAT names them in an error.
 scan_commits() {
-    local walk="$1" what="$2" order="--reverse" commit="" file="" line seen="" want_path=0
-    # A list is already oldest first.
-    [ -n "$walk" ] && order="$walk"
+    local walk="$1" what="$2" commit="" file="" line seen="" want_path=0
     PATCH_TMP=$(mktemp "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
     # --text: a path marked -diff or binary in .gitattributes still prints its lines.
     # -m: a merge is diffed against each parent, so lines a merge itself introduces are seen.
@@ -185,26 +183,31 @@ scan_commits() {
     # puts a status record (A) before each path, so the parse below knows a path by its position
     # and never by its text: a path named like the commit line ("commit secrets/.env") is a path.
     # The record after each commit hash starts with the newline git puts before the file list.
-    if ! git log "$order" --diff-filter=A --name-status --no-renames -m -z --format=%H --stdin -- . < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null; then
+    # A list is already oldest first; a range is walked in reverse.
+    if ! git log "${walk:---reverse}" --diff-filter=A --name-status --no-renames -m -z --format=%H --stdin -- . < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null; then
         echo "scan-secrets: git log failed for $what" >&2
         exit 2
     fi
     commit=""
-    while IFS= read -r -d '' line || [ -n "$line" ]; do
-        if [ "$want_path" = 1 ]; then
-            want_path=0
-            if is_env_path "$line" && ! printf '%s\n' "$seen" | grep -Fxq -- "$line"; then
-                seen="$seen$line"$'\n'
-                hit_path "$commit:$line"
+    # No ".env" bytes means no .env path, so the loop (one read per byte) is skipped; a grep error
+    # (exit 2) still runs it.
+    if LC_ALL=C grep -qaF .env "$PATCH_TMP" || [ $? -gt 1 ]; then
+        while IFS= read -r -d '' line || [ -n "$line" ]; do
+            if [ "$want_path" = 1 ]; then
+                want_path=0
+                if is_env_path "$line" && ! printf '%s\n' "$seen" | grep -Fxq -- "$line"; then
+                    seen="$seen$line"$'\n'
+                    hit_path "$commit:$line"
+                fi
+                continue
             fi
-            continue
-        fi
-        line="${line#$'\n'}"
-        case "$line" in
-            [A-Z]) want_path=1 ;;
-            *)     commit="${line:0:12}" ;;
-        esac
-    done < "$PATCH_TMP"
+            line="${line#$'\n'}"
+            case "$line" in
+                [A-Z]) want_path=1 ;;
+                *)     commit="${line:0:12}" ;;
+            esac
+        done < "$PATCH_TMP"
+    fi
     rm -f "$PATCH_TMP"; PATCH_TMP=""
 }
 

@@ -470,8 +470,14 @@ run_cell() {
 # installed copy; empty otherwise. A host with the installed copy and the plugin directory would
 # list every skill twice (KTD18), so the installed copy wins, and run_host_all says so.
 host_plugin_dir() {
-    case "$1" in claude|cursor-agent|agy|fake) [ -n "$2" ] || echo "$PLUGIN_DIR" ;; esac
+    if host_takes_plugin_dir "$1" && [ -z "$2" ]; then echo "$PLUGIN_DIR"; fi
     return 0
+}
+
+# host_takes_plugin_dir HOST: true for a host whose headless run takes a plugin directory.
+host_takes_plugin_dir() {
+    case "$1" in claude|cursor-agent|agy|fake) return 0 ;; esac
+    return 1
 }
 
 # ─── One host, every selected cell ────────────────────────────
@@ -482,9 +488,9 @@ run_host_all() {
     RESULTS="$HOST_LOG_DIR/results.jsonl"
     : > "$RESULTS"
     CANARY_TRACE="" CANARY_RC=0 CANARY_REASON="" BUILD_SESSION="" BUILD_CHECKED=false
-    local bin version out rc=0 c installed_version="" copies copy mismatch="" diff
+    local bin version out rc=0 c installed_version="" first_version="" copies copy mismatch="" diff
     copies=$(host_installed_copies "$HOST")
-    HOST_INSTALLED=$(printf '%s\n' "$copies" | sed -n 1p)
+    HOST_INSTALLED=${copies%%$'\n'*}
     HOST_PLUGIN_DIR=$(host_plugin_dir "$HOST" "$HOST_INSTALLED")
     bin=$(host_bin "$HOST")
     version=$(host_version "$HOST")
@@ -492,8 +498,9 @@ run_host_all() {
     echo ""
     echo -e "  ${BOLD}══ $HOST${NC} ${DIM}$version · $(host_posture "$HOST")${NC}"
     if [ -n "$HOST_INSTALLED" ]; then
-        installed_version=$(installed_copy_version "$HOST_INSTALLED")
-        if [ -n "$(host_plugin_dir "$HOST" "")" ]; then
+        first_version=$(installed_copy_version "$HOST_INSTALLED")
+        installed_version=$first_version
+        if host_takes_plugin_dir "$HOST"; then
             warn "$HOST: the installed copy at $HOST_INSTALLED wins over --plugin-dir (version $installed_version)"
         else
             info "$HOST reads the installed copy at $HOST_INSTALLED (version $installed_version)"
@@ -522,7 +529,11 @@ run_host_all() {
     # no manifest or install record beside it (version unknown) is judged by its content alone.
     while IFS= read -r copy; do
         [ -n "$copy" ] || continue
-        installed_version=$(installed_copy_version "$copy")
+        if [ "$copy" = "$HOST_INSTALLED" ]; then
+            installed_version=$first_version
+        else
+            installed_version=$(installed_copy_version "$copy")
+        fi
         if [ "$installed_version" != unknown ] && [ "$installed_version" != "$VERSION" ]; then
             mismatch="the installed copy at $copy is version $installed_version, not $VERSION"; break
         fi

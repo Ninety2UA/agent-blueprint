@@ -94,7 +94,6 @@ OWNED=false
 blueprint_installed && OWNED=true
 
 found=0
-unsure=0
 remove_paths=()
 note() { found=$((found + 1)); echo "$1"; }
 plan_rm() { remove_paths+=("$1"); note "remove  $1"; }
@@ -104,9 +103,9 @@ plan_copy() {
     local file="$1"
     if [ -d "$1" ]; then file="$1/SKILL.md"; fi
     if [ "$OWNED" != true ]; then
-        unsure=$((unsure + 1)); echo "unsure  $1  (a v3 blueprint name, but nothing else here shows the blueprint installed it; left alone)"
+        echo "unsure  $1  (a v3 blueprint name, but nothing else here shows the blueprint installed it; left alone)"
     elif ! shipped "$file"; then
-        unsure=$((unsure + 1)); echo "unsure  $1  (a v3 blueprint name, but not a file the blueprint shipped: another pack's, or edited; left alone)"
+        echo "unsure  $1  (a v3 blueprint name, but not a file the blueprint shipped: another pack's, or edited; left alone)"
     else
         plan_rm "$1"
     fi
@@ -143,7 +142,7 @@ done
 if is_blueprint_hooks_json; then
     plan_rm hooks/hooks.json
 elif [ -f hooks/hooks.json ] && grep -q 'handlers/' hooks/hooks.json; then
-    unsure=$((unsure + 1)); echo "unsure  hooks/hooks.json  (it names handlers that are not the blueprint's; left alone)"
+    echo "unsure  hooks/hooks.json  (it names handlers that are not the blueprint's; left alone)"
 fi
 if is_blueprint_ship; then plan_rm scripts/ship.sh; fi
 if is_blueprint_manifest; then plan_rm .claude-plugin/plugin.json; fi

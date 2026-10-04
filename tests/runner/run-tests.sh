@@ -13,6 +13,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 RUNNER="$REPO/skills/ab-ship-pipeline/scripts/run.sh"
+SCAN="$REPO/skills/ab-ship-pipeline/scripts/scan-secrets.sh"
 FAKE="$HERE/fake-host.sh"
 SKILL_VERSION=$(sed -n 's/^  version: *"\{0,1\}\([^"]*\)"\{0,1\}.*/\1/p' "$REPO/skills/ab-ship-pipeline/SKILL.md" | head -1)
 [ -n "$SKILL_VERSION" ] || { echo "cannot read the skill version" >&2; exit 1; }
@@ -615,32 +616,31 @@ t41_an_env_path_named_like_a_commit_header_fails_the_range_scan() {
     new_repo t41
     mkdir -p "commit secrets" && echo "APP_MODE=placeholder" > "commit secrets/.env"
     git add "commit secrets" && git commit -q -m "add env"
-    out=$(bash "$REPO/skills/ab-ship-pipeline/scripts/scan-secrets.sh" --range main..HEAD 2>&1) && fail "the scan passed a range that adds 'commit secrets/.env'"
+    out=$(bash "$SCAN" --range main..HEAD 2>&1) && fail "the scan passed a range that adds 'commit secrets/.env'"
     printf '%s\n' "$out" | grep -Fq ":commit secrets/.env: .env file" || fail "no hit naming 'commit secrets/.env' ($out)"
     # A newline in a directory name stays inside the one line that reports it; skipped on a
     # filesystem that refuses the name.
     if mkdir -p "$(printf 'two\nlines')" 2>/dev/null; then
         echo "APP_MODE=placeholder" > "$(printf 'two\nlines')/.env" && git add -A && git commit -q -m "add env under a newline"
-        out=$(bash "$REPO/skills/ab-ship-pipeline/scripts/scan-secrets.sh" --range HEAD~1..HEAD 2>&1) && fail "the scan passed a range that adds .env under a directory named with a newline"
+        out=$(bash "$SCAN" --range HEAD~1..HEAD 2>&1) && fail "the scan passed a range that adds .env under a directory named with a newline"
         printf '%s\n' "$out" | grep -Fq ":two?lines/.env: .env file" || fail "no one-line hit naming two?lines/.env ($out)"
     fi
 }
 
 t42_the_scanner_reads_a_list_of_commits() {
     new_repo t42
-    local scan="$REPO/skills/ab-ship-pipeline/scripts/scan-secrets.sh"
     echo clean > clean.txt && git add clean.txt && git commit -q -m "clean"
     printf 'key = AKIA%s\n' "$(printf 'Q%.0s' {1..16})" > k.txt && git add k.txt && git commit -q -m "add key"
-    out=$(git rev-list --reverse main..HEAD | bash "$scan" --commits - 2>&1) && fail "the scan passed a list holding the commit that adds a key"
+    out=$(git rev-list --reverse main..HEAD | bash "$SCAN" --commits - 2>&1) && fail "the scan passed a list holding the commit that adds a key"
     printf '%s\n' "$out" | grep -Fq ":k.txt: cloud access key" || fail "no hit naming k.txt ($out)"
     git rev-parse HEAD~1 > "$D/clean.list"
-    bash "$scan" --commits "$D/clean.list" > "$OUT" 2>&1 || fail "a list of one clean commit is not clean ($OUT)"
+    bash "$SCAN" --commits "$D/clean.list" > "$OUT" 2>&1 || fail "a list of one clean commit is not clean ($(cat "$OUT"))"
     # An empty list scans nothing; it never falls back to HEAD, which adds the key.
-    RC=0; printf '' | bash "$scan" --commits - > "$OUT" 2>&1 || RC=$?
+    RC=0; printf '' | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
     assert_rc 0
-    RC=0; printf 'HEAD\n' | bash "$scan" --commits - > "$OUT" 2>&1 || RC=$?
+    RC=0; printf 'HEAD\n' | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
     assert_rc 2 && assert_out "not a full commit hash"
-    RC=0; printf -- '--all\n' | bash "$scan" --commits - > "$OUT" 2>&1 || RC=$?
+    RC=0; printf -- '--all\n' | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
     assert_rc 2
 }
 

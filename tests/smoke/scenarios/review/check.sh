@@ -34,8 +34,9 @@ for p in files:
         pass
 everything = "\n".join(t for _, t in texts)
 
+EVAL = r"(^|[^A-Za-z0-9_])eval([^A-Za-z0-9_]|$)"   # an ASCII word edge, the same with and without re.I
 missing = []
-if not re.search(r"(^|[^A-Za-z0-9_])eval([^A-Za-z0-9_]|$)", everything, re.M):
+if not re.search(EVAL, everything, re.M):
     missing.append("eval")
 if "cli.py" not in everything:
     missing.append("cli.py")
@@ -43,27 +44,26 @@ if missing:
     print("the review output does not name: " + ", ".join(missing))
     sys.exit(1)
 
-I = re.I
-SUBJECT = re.compile(r"(^|[^A-Za-z0-9_])eval([^A-Za-z0-9_]|$)|cli\.py|--filter", I | re.M)
+SUBJECT = re.compile(EVAL + r"|cli\.py|--filter", re.I | re.M)
 SECURITY = re.compile(r"\b(arbitrary|security|insecure|unsafe|dangerous|untrusted|malicious|rce)\b"
                       r"|\binject(ion|ed|s)?\b|\bvulnerab\w*|\bexploit\w*|\battacker\w*"
-                      r"|\b(code|command|shell) execution\b", I)
+                      r"|\b(code|command|shell) execution\b", re.I)
 SEVERITY = re.compile(r"\b(p0|p1|critical|blocker)\b|\b(severity|priority)\W{0,3}(high|critical)\b"
-                      r"|\bhigh[- ](severity|priority|risk)\b", I)
-ZERO_BEFORE = re.compile(r"\b(0|no|zero)\s+$", I)              # "0 P1", "no critical"
-ZERO_AFTER = re.compile(r"^\W*(\w+\W+)?(0|none)\b", I)         # "P1 Critical: 0", "Critical: none"
+                      r"|\bhigh[- ](severity|priority|risk)\b", re.I)
+ZERO_BEFORE = re.compile(r"\b(0|no|zero)\s+$", re.I)              # "0 P1", "no critical"
+ZERO_AFTER = re.compile(r"^\W*(\w+\W+)?(0|none)\b", re.I)         # "P1 Critical: 0", "Critical: none"
 CLEAN = re.compile(r"\bno (findings|issues|problems|concerns|vulnerabilities)\b"
                    r"|\bno (security|blocking|actionable|real|critical|major|high|p0|p1)( or \w+)?"
                    r" (findings|issues|problems|concerns|risks?|impact|vulnerabilities)\b"
                    r"|\b(is|are|looks|seems) (safe|fine|harmless|acceptable)\b"
                    r"|\bnot (a|an) (real |actual |security )?(issue|problem|concern|vulnerability|finding|bug)\b"
                    r"|\bnot (classified|considered|treated|rated|flagged) as\b"
-                   r"|\bnothing to (report|flag|fix)\b|\blgtm\b|\b(discarded|dismissed) (as|because)\b", I)
+                   r"|\bnothing to (report|flag|fix)\b|\blgtm\b|\b(discarded|dismissed) (as|because)\b", re.I)
 # Section headings for findings that were set aside ("Discarded (false positives)", "Filtered (below
 # confidence gate)", "No Issues Found In", "Declined, and the ruling"), matched at a heading's start
 # or by the gate's wording, so a title such as "Filtered listing runs arbitrary code" still counts.
 SET_ASIDE = re.compile(r"^\W*(discarded|dismissed|declined|false positives?|no issues|no findings)\b"
-                       r"|false positive|confidence gate|below (the )?confidence", I)
+                       r"|false positive|confidence gate|below (the )?confidence", re.I)
 ITEM = re.compile(r"^(\s*)([-*+]|\d+[.)])\s")
 
 
