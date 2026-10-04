@@ -2,6 +2,18 @@
   "hosts": {
     "agy": {
       "cells": {
+        "build": {
+          "cost_usd": null,
+          "date": "2026-10-04T14:11:55Z",
+          "link": "",
+          "log": "$TMPDIR/.../build.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "no provenance record for ab-build-pipeline; acceptance test passes (deps: tabulate); 1 commit(s) after the base \u00b7 work: $TMPDIR/ab-smoke-build-Qpp5Tj",
+          "seconds": 115,
+          "session": "",
+          "state": "fail",
+          "tokens": 95251
+        },
         "canary": {
           "cost_usd": null,
           "date": "2026-10-04T13:42:25Z",
@@ -13,6 +25,18 @@
           "session": "",
           "state": "pass",
           "tokens": 21513
+        },
+        "debug": {
+          "cost_usd": null,
+          "date": "2026-10-04T14:14:14Z",
+          "link": "",
+          "log": "$TMPDIR/.../debug.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: inline",
+          "seconds": 71,
+          "session": "",
+          "state": "degraded-pass (inline)",
+          "tokens": 73834
         },
         "discovery": {
           "cost_usd": null,
@@ -73,6 +97,42 @@
           "session": "",
           "state": "pass",
           "tokens": 25872
+        },
+        "review": {
+          "cost_usd": null,
+          "date": "2026-10-04T14:13:03Z",
+          "link": "",
+          "log": "$TMPDIR/.../review.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "no provenance record for ab-requesting-code-review; the review names eval and cli.py \u00b7 work: $TMPDIR/ab-smoke-review-am7svK",
+          "seconds": 68,
+          "session": "",
+          "state": "fail",
+          "tokens": 64267
+        },
+        "ship": {
+          "cost_usd": 0.0,
+          "date": "2026-10-04T14:05:22Z",
+          "link": "",
+          "log": "$TMPDIR/.../ship.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "published; pr create recorded; acceptance test passes (deps: tabulate) on the pushed branch",
+          "seconds": 151,
+          "session": "",
+          "state": "pass",
+          "tokens": 143496
+        },
+        "team": {
+          "cost_usd": null,
+          "date": "2026-10-04T14:09:43Z",
+          "link": "",
+          "log": "$TMPDIR/.../team.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "ledger done; 3 commits; tests pass",
+          "seconds": 261,
+          "session": "",
+          "state": "pass",
+          "tokens": 200647
         },
         "upgrade": {
           "cost_usd": null,
@@ -1066,7 +1126,22 @@
         "agy"
       ],
       "plugin_dir": "~/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "build",
+        "debug",
+        "review",
+        "ship",
+        "team"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host agy --cell build,review,debug,ship,team --plugin-dir . (Antigravity 1.2.16, Gemini 3.1 Pro High; build/review/debug rerun after b600227 and d02d774)",
+      "date": "2026-10-04 14:14 UTC",
+      "hosts": [
+        "agy"
+      ],
+      "plugin_dir": "~/projects/claude-eng/project-template/project-template-phase4"
     }
   ],
-  "updated": "2026-10-04 13:47 UTC"
+  "updated": "2026-10-04 14:14 UTC"
 }

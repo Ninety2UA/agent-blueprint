@@ -34,6 +34,7 @@ Check: `agy plugin list` shows `agent-blueprint` with its components; `agy plugi
 - Hooks: none. The blueprint ships no `hooks.json` for Antigravity, so the five hook effects are absent: the session-start pointer to `docs/context/STATUS.md` (Antigravity has no session-start event in any case), the injection scanner on writes, the commit-message check, the ship-pipeline Stop guard and the Agent Teams gates. Nothing else depends on them. Per a third-party report, `PreToolUse` hooks do not fire under `--dangerously-skip-permissions` anyway.
 - Helpers: `invoke_subagent`, asynchronous and parallel, started fresh without the parent's history; a helper's workspace can be a git worktree (`branch` mode). No documented cap.
 - Team work: no cap in `host-limits.tsv`; worktree isolation. Antigravity's Teamwork mode (`/teamwork-preview`) is paid, in preview and opens with a user interview, so no skill drives it.
+- Provenance records: Gemini 3.1 Pro does the pipeline's work but does not always write `.agent-blueprint/run/provenance/<skill>.json`. In the smoke runs on 2026-10-04 the build and review pipelines completed correctly every time, yet two runs wrote the timestamp as a shell expression (invalid JSON; the snippet now asks for a literal value) and two skipped the record; debug wrote it. Nothing in a pipeline's outcome depends on the record, and the ship runner keeps its own; the smoke test's build and review cells require it and render `fail` until Gemini writes it reliably.
 - Questions: `ask_question`, a blocking question tool (per the compound-engineering spec, not the docs); a headless run takes the documented default.
 - Task tracking: the plan file's checkboxes; `/tasks` is a user command, and a model-callable todo tool is not verified.
 - Instructions: Antigravity reads `GEMINI.md` and `AGENTS.md` at the workspace root; per a third-party report `GEMINI.md` wins on conflict and `CLAUDE.md` is not read.
@@ -70,6 +71,13 @@ From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-
 | `canary` | pass | 11s | final message names HARBOR-19 |
 | `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
 | `manual-only` | pass | 36s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `build` | fail | 1m55s | no provenance record for ab-build-pipeline; acceptance test passes (deps: tabulate); 1 commit(s) after the base |
 | `helpers-off` | n/a | 0s | no helper switch on agy |
 | `effort` | n/a | 0s | no per-dispatch effort metadata on agy |
+| `review` | fail | 1m08s | no provenance record for ab-requesting-code-review; the review names eval and cli.py |
+| `debug` | degraded-pass (inline) | 1m11s | suite passes; store.py fixed; regression test present · helper steps: inline |
+| `ship` | pass | 2m31s | published; pr create recorded; acceptance test passes (deps: tabulate) on the pushed branch |
+| `team` | pass | 4m21s | ledger done; 3 commits; tests pass |
 | `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |
+
+A `fail` cell blocks the release until it passes or is confirmed as a vendor bug (then it renders `degraded (vendor bug)` with the upstream link; see `docs/releases/v4.0.0-checklist.md`).
