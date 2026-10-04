@@ -63,21 +63,21 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version grok 1.0.34 (3736acbc8658) [stable], last cell 2026-10-03.
+From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version grok 1.0.34 (3736acbc8658) [stable], last cell 2026-10-04.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
 | `discovery` | pass | 6s | 53 ab- skills once each in 3 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 10s | final message names HARBOR-19 |
+| `canary` | pass | 8s | final message names HARBOR-19 |
 | `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
-| `manual-only` | pass | 10s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
-| `build` | fail | 6m30s | the host refused the run: usage or rate limit reached (Grok free tier). acceptance test failed: tabulate is not declared in pyproject.toml or requirements.txt (host exited 1) |
+| `manual-only` | pass | 13s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `build` | fail | 1m42s | the host refused the run: usage or rate limit reached. acceptance test failed: tabulate is not declared in pyproject.toml or requirements.txt (host exited 1) |
 | `helpers-off` | n/a | 0s | no helper switch on grok |
 | `effort` | n/a | 0s | no per-dispatch effort metadata on grok |
-| `review` | fail | 12s | the host refused the run: usage or rate limit reached (Grok free tier). no provenance record for ab-requesting-code-review; the host refused the run: usage or rate limit reached. the review output does not name: eval, cl |
-| `debug` | fail | 12s | the host refused the run: usage or rate limit reached (Grok free tier). no provenance record for ab-systematic-debugging; the test suite still fails (host exited 1) |
-| `ship` | fail | 3m53s | the host refused the run: usage or rate limit reached (Grok free tier). runner exit 3:   status: needs-human — the host failed 6 times in a row with a transient error (see $TMPDIR/.../state the runner did not report a pu |
-| `team` | fail | 6s | the host refused the run: usage or rate limit reached (Grok free tier). no provenance record for ab-orchestrate; the host refused the run: usage or rate limit reached. no .agent-blueprint/team/<run>/ledger.md (host exite |
+| `review` | fail | 4s | no provenance record for ab-requesting-code-review; the host refused the run: usage or rate limit reached. the review output does not name: eval, cli.py (host exited 1) |
+| `debug` | fail | 5s | no provenance record for ab-systematic-debugging; the host refused the run: usage or rate limit reached. the test suite still fails (host exited 1) |
+| `ship` | fail | 3m35s | runner exit 3:   status: needs-human — the host failed 6 times in a row with a transient error (see $TMPDIR/.../state the runner did not report a publish (see the log) |
+| `team` | fail | 14s | no provenance record for ab-orchestrate; the host refused the run: usage or rate limit reached. no .agent-blueprint/team/<run>/ledger.md (host exited 1) |
 | `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |
 
 A `fail` cell blocks the release until it passes or is confirmed as a vendor bug (then it renders `degraded (vendor bug)` with the upstream link; see `docs/releases/v4.0.0-checklist.md`).

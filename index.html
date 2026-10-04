@@ -3546,10 +3546,10 @@
                 <tr><th>Tool</th><th>Version tested</th><th>Result</th></tr>
               </thead>
               <tbody>
-                <tr><td>Claude Code</td><td>2.1.288</td><td>Every check passes; with helpers switched off, the pipelines run inline as designed</td></tr>
-                <tr><td>Codex</td><td>0.155.1</td><td>Every check that applies passes except review: its recorded review named the eval in cli.py without rating it a security risk, which the review check, tightened after the run, counts as a fail; it reruns on the final commit (hooks, effort and upgrade do not apply to Codex)</td></tr>
-                <tr><td>Cursor CLI</td><td>2026.10.01</td><td>Every check that applies passes; the manual-only check ran in a profile with only the blueprint installed</td></tr>
-                <tr><td>Antigravity</td><td>1.2.16</td><td>Discovery, <code>AGENTS.md</code>, hooks, manual-only, ship and team pass, and debug passes inline. Build and review finish their work, but Gemini does not always write the provenance record those two checks require</td></tr>
+                <tr><td>Claude Code</td><td>2.1.289</td><td>Every check passes; with helpers switched off, the pipelines run inline as designed</td></tr>
+                <tr><td>Codex</td><td>0.155.1</td><td>Every check that applies passes (hooks, effort and upgrade do not apply to Codex)</td></tr>
+                <tr><td>Cursor CLI</td><td>2026.10.01</td><td>Every check that applies passes; the manual-only and debug checks ran in a profile with only the blueprint installed, because Cursor caps its skill list and also imports Claude Code plugins, including an old v3 install on the test machine</td></tr>
+                <tr><td>Antigravity</td><td>1.2.16</td><td>Discovery, <code>AGENTS.md</code>, hooks, manual-only, ship and team pass, and review passes inline. Build and debug finish their work, but Gemini does not always write the provenance record those checks require</td></tr>
                 <tr><td>Grok Build</td><td>1.0.34</td><td>Discovery, <code>AGENTS.md</code>, hooks and manual-only pass; the pipeline checks stopped on the free tier's usage limit</td></tr>
                 <tr><td>Pi, Hermes, Amp</td><td>Not installed on the test machine</td><td>Their install routes follow the vendor docs and have not been run yet</td></tr>
               </tbody>

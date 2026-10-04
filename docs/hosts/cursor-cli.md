@@ -11,7 +11,7 @@ git clone https://github.com/Ninety2UA/agent-blueprint.git
 bash agent-blueprint/install.sh --only cursor-agent
 ```
 
-Cursor's plugin route also works, through `.cursor-plugin/plugin.json`: `cursor-agent plugin marketplace add https://github.com/Ninety2UA/agent-blueprint` (after the rename; `--git-ref` pins a ref), then `/plugin` in the session to install; `cursor-agent --plugin-dir <checkout>` loads a checkout for one session. There is no `plugin install` shell subcommand in 2026.09.10. Do not combine a plugin with the copy: Cursor would list every skill twice. Cursor also imports Claude Code plugins and shows them next to native ones, so a Claude Code user already sees the skills here; `bash install.sh` warns about that, and you keep one route.
+Cursor's plugin route also works, through `.cursor-plugin/plugin.json`: `cursor-agent plugin marketplace add https://github.com/Ninety2UA/agent-blueprint` (after the rename; `--git-ref` pins a ref), then `/plugin` in the session to install; `cursor-agent --plugin-dir <checkout>` loads a checkout for one session. There is no `plugin install` shell subcommand in 2026.09.10. Do not combine a plugin with the copy: Cursor would list every skill twice. Cursor also imports Claude Code plugins and shows them next to native ones, so a Claude Code user already sees the skills here; `bash install.sh` warns about that, and you keep one route. That import includes plugins Claude Code installed for other projects: with the v3 `claude-code-blueprint` plugin still installed anywhere, Cursor sees its unprefixed skills (for example `systematic-debugging`) beside the v4 `ab-` skills and may follow the old one. Remove the v3 plugin as `docs/upgrade/v4.md` describes.
 
 Trust step: none is documented for skills or plugins; headless runs pass `--trust` for the workspace.
 
@@ -66,15 +66,15 @@ From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | pass | 16s | 53 ab- skills once each in 8 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 10s | final message names HARBOR-19 |
+| `discovery` | pass | 21s | 53 ab- skills once each in 8 location(s); the answer names ab-ship-pipeline |
+| `canary` | pass | 8s | final message names HARBOR-19 |
 | `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
-| `manual-only` | pass | 11s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
-| `build` | pass | 30m21s | acceptance test passes (deps: tabulate>=0.9.0,<0.10) · helper steps: helper,helper,helper,helper,inline |
+| `manual-only` | pass | 15s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `build` | pass | 32m42s | acceptance test passes (deps: tabulate>=0.9.0); 5 commit(s) after the base · helper steps: helper,helper,helper,helper |
 | `helpers-off` | n/a | 0s | no helper switch on cursor-agent |
 | `effort` | n/a | 0s | no per-dispatch effort metadata on cursor-agent |
-| `review` | pass | 9m02s | the review rates the eval in cli.py a security risk (re-checked on 2026-10-04 with the tightened review check) · helper steps: helper |
-| `debug` | pass | 7m49s | suite passes; store.py fixed; regression test present · helper steps: helper |
-| `ship` | pass | 22m32s | published; pr create recorded; acceptance test passes (deps: tabulate) on the pushed branch |
-| `team` | pass | 9m15s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |
+| `review` | pass | 9m20s | the review reports eval in cli.py as a finding (security: arbitrary) · helper steps: helper |
+| `debug` | pass | 38s | suite passes; store.py fixed; regression test present · helper steps: helper |
+| `ship` | pass | 44m25s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9,<0.10) on the pushed branch |
+| `team` | pass | 10m27s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |
 | `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |

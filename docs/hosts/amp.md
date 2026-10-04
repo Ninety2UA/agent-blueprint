@@ -62,7 +62,7 @@ Headless threads are visible to your workspace by default: per the SDK docs a th
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version not installed, last cell 2026-10-01.
+From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version not installed, last cell 2026-10-04.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
@@ -70,6 +70,13 @@ From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-
 | `canary` | not-installed | 0s | amp not on PATH |
 | `hooks` | not-installed | 0s | amp not on PATH |
 | `manual-only` | not-installed | 0s | amp not on PATH |
+| `build` | not-installed | 0s | amp not on PATH |
+| `helpers-off` | not-installed | 0s | amp not on PATH |
+| `effort` | not-installed | 0s | amp not on PATH |
+| `review` | not-installed | 0s | amp not on PATH |
+| `debug` | not-installed | 0s | amp not on PATH |
+| `ship` | not-installed | 0s | amp not on PATH |
+| `team` | not-installed | 0s | amp not on PATH |
 | `upgrade` | not-installed | 0s | amp not on PATH |
 
 The tool is not installed on the build machine, so nothing ran; the adapter row in `hosts.sh` follows the vendor docs and is unverified.

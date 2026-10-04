@@ -69,7 +69,7 @@ Nothing beyond the host's own terms is known. Hermes is self-hosted, so where it
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version not installed, last cell 2026-10-01.
+From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version not installed, last cell 2026-10-04.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
@@ -77,6 +77,13 @@ From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-
 | `canary` | not-installed | 0s | hermes not on PATH |
 | `hooks` | not-installed | 0s | hermes not on PATH |
 | `manual-only` | not-installed | 0s | hermes not on PATH |
+| `build` | not-installed | 0s | hermes not on PATH |
+| `helpers-off` | not-installed | 0s | hermes not on PATH |
+| `effort` | not-installed | 0s | hermes not on PATH |
+| `review` | not-installed | 0s | hermes not on PATH |
+| `debug` | not-installed | 0s | hermes not on PATH |
+| `ship` | not-installed | 0s | hermes not on PATH |
+| `team` | not-installed | 0s | hermes not on PATH |
 | `upgrade` | not-installed | 0s | hermes not on PATH |
 
 The tool is not installed on the build machine, so nothing ran; the adapter row in `hosts.sh` follows the vendor docs and is unverified.
