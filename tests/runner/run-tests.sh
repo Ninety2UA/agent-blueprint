@@ -987,18 +987,20 @@ t52_added_lines_that_look_like_headers_are_scanned() {
 
 t53_paths_are_labelled_as_they_are_named() {
     # A path with a space carries no tab from the diff header, a path git quotes is unquoted (a
-    # control character in it shows as ?), and diff.noprefix in the configuration changes nothing.
+    # control character in it shows as ?), and diff.noprefix in the configuration changes nothing,
+    # not even for a path under a top-level directory named b.
     local k short
     k="AKIA$(rep Q 16)"
     new_repo t53
     git config diff.noprefix true
-    mkdir -p "sp ace" café && echo "a $k" > "sp ace/f f.txt" && echo "c $k" > café/k.txt
+    mkdir -p "sp ace" café b && echo "a $k" > "sp ace/f f.txt" && echo "c $k" > café/k.txt && echo "e $k" > b/k.txt
     if mkdir -p 'qu"ote' 2>/dev/null; then echo "b $k" > 'qu"ote/k.txt'; fi
     if mkdir -p "$(printf 'n\nl')" 2>/dev/null; then echo "d $k" > "$(printf 'n\nl')/k.txt"; fi
     git add -A && git commit -q -m "feat: odd paths"
     short=$(short_hash)
     RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
     assert_rc 1 && assert_out "$short:sp ace/f f.txt: cloud access key" && assert_out "$short:café/k.txt: cloud access key"
+    assert_out "$short:b/k.txt: cloud access key"
     if [ -d 'qu"ote' ]; then assert_out "$short:qu\"ote/k.txt: cloud access key"; fi
     if [ -d "$(printf 'n\nl')" ]; then assert_out "$short:n?l/k.txt: cloud access key"; fi
     assert_not_out "$(printf '\t'):"
@@ -1143,6 +1145,138 @@ t59_a_file_named_like_an_option_is_scanned() {
     assert_rc 1 && assert_out ":-x.txt: cloud access key"
 }
 
+t60_a_key_a_merge_adds_to_a_binary_file_is_caught() {
+    # --cc prints only "Binary files differ" for a file marked -diff or binary in .gitattributes, or
+    # holding a NUL byte, whatever --text says, so a key an evil merge added to one went unread. The
+    # one under a top-level b/ directory keeps its name, and log.diffMerges, which would turn the
+    # per-parent reading of those files back into --cc, changes nothing.
+    local k f n short
+    k="AKIA$(rep Q 16)"
+    new_repo t60
+    git config log.diffMerges dense-combined
+    body() {   # FILE [KEY]: five lines, a NUL byte in the second for a .raw file, KEY in the third
+        local nul=""
+        case "$1" in *.raw) nul='\0' ;; esac
+        printf 'one\nt%bwo\nthree%s\nfour\nfive\n' "$nul" "${2:+ = $2}" > "$1"
+    }
+    mkdir -p b && printf 'f.dat -diff\nb/g.bin binary\n' > .gitattributes
+    for f in f.dat b/g.bin h.raw; do body "$f"; done
+    git add -A && git commit -q -m "fixtures"
+    n=0
+    for f in f.dat b/g.bin h.raw; do
+        n=$((n + 1))
+        git switch -q -c "side$n" && echo "$n" > "side$n.txt" && git add "side$n.txt" && git commit -q -m "side $n"
+        git switch -q feat/x && git merge -q --no-ff --no-commit "side$n" > /dev/null
+        body "$f" "$k" && git add "$f" && git commit -q -m "merge side $n, with a key"
+        assert_eq "$(git log -1 --format=%P | wc -w | tr -d ' ')" 2 "parents of the merge that edits $f"
+        short=$(short_hash)
+        RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+        assert_rc 1 && assert_out "$short:$f: cloud access key" && assert_out "    three = ****" && assert_not_out "AKIAQQQQ"
+    done
+}
+
+t61_a_file_named_with_a_newline_is_reported_masked() {
+    # The file's name labels each hit: a newline in it split a hit over three lines, and the report
+    # then printed a key line as a label, unmasked. Skipped on a file system that refuses the name.
+    local p
+    new_repo t61
+    p="$D/$(printf 'two\nlines').md"
+    if ! printf 'key = AKIA%s\ntoken ghp_%s\n' "$(rep Q 16)" "$(rep a 36)" > "$p" 2>/dev/null; then
+        echo "skip: the file system refuses a newline in a file name"; return 0
+    fi
+    RC=0; bash "$SCAN" --file "$p" > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$D/two?lines.md:1: cloud access key" && assert_out "$D/two?lines.md:2: GitHub token"
+    assert_not_out "AKIAQQQQ" && assert_not_out "ghp_aaaa" && assert_out "2 hit(s)"
+}
+
+t62_a_hit_only_the_c_locale_reads_is_masked() {
+    # glibc's tr_TR folds I to a dotless i, so API_KEY=... matches without case only byte by byte
+    # (LC_ALL=C), and the mask, run in the locale alone, printed the value. Skipped without the locale.
+    local loc v
+    v=$(rep v 30)
+    new_repo t62
+    loc=$(locale -a 2>/dev/null | grep -Ei '^tr_TR\.utf-?8$' | head -1 || true)
+    if [ -z "$loc" ]; then echo "skip: no tr_TR UTF-8 locale"; return 0; fi
+    printf 'API_KEY=%s\nPRIVATE_KEY=%s\n' "$v" "$v" > keys.txt
+    RC=0; LC_ALL=$loc bash "$SCAN" --file keys.txt > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "keys.txt:1: secret assignment" && assert_out "keys.txt:2: secret assignment" && assert_not_out "vvvvvvvv"
+    git add keys.txt && git commit -q -m "feat: keys"
+    RC=0; git rev-parse HEAD | LC_ALL=$loc bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$(short_hash):keys.txt: secret assignment" && assert_not_out "vvvvvvvv"
+}
+
+t63_a_key_in_a_utf16_file_is_caught_on_its_own() {
+    # UTF-16 puts a NUL after every ASCII byte. The pre-filter read them while the report dropped
+    # them, so a commit or a file whose only key was in UTF-16 scanned clean.
+    new_repo t63
+    { printf '\377\376'; printf 'key = AKIA%s\n' "$(rep Q 16)" | LC_ALL=C sed 's/./&|/g' | LC_ALL=C tr '|' '\000'; printf '\000'; } > wide.txt
+    git add wide.txt && git commit -q -m "feat: a UTF-16 file"
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$(short_hash):wide.txt: cloud access key"
+    ! LC_ALL=C grep -aFq "AKIAQQQQ" "$OUT" || fail "the scan printed the raw key ($OUT)"
+    RC=0; bash "$SCAN" --file wide.txt > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "wide.txt:1: cloud access key"
+    ! LC_ALL=C grep -aFq "AKIAQQQQ" "$OUT" || fail "the scan printed the raw key ($OUT)"
+}
+
+t64_a_replaced_commit_is_scanned_as_it_is_pushed() {
+    # git replace shows git log a clean stand-in while git push sends the original commit.
+    local bad good
+    new_repo t64
+    printf 'key = AKIA%s\n' "$(rep Q 16)" > k.txt && git add k.txt && git commit -q -m "feat: a key"
+    bad=$(git rev-parse HEAD)
+    good=$(git commit-tree -p HEAD~1 -m "feat: a key" "HEAD~1^{tree}")
+    git replace "$bad" "$good"
+    RC=0; echo "$bad" | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$(short_hash "$bad"):k.txt: cloud access key"
+    RC=0; bash "$SCAN" --range main..feat/x > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$(short_hash "$bad"):k.txt: cloud access key"
+}
+
+t65_a_root_commit_is_scanned_whatever_log_showroot_says() {
+    # With log.showRoot=false git log shows no diff for a root commit, so the first commit of an
+    # unrelated history, or of a first publish, went unread.
+    new_repo t65
+    git config log.showRoot false
+    git switch -q --orphan other
+    printf 'key = AKIA%s\n' "$(rep Q 16)" > r.txt && echo X=1 > .env
+    git add r.txt .env && git commit -q -m "root: a key and a .env"
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$(short_hash):r.txt: cloud access key" && assert_out "$(short_hash):.env: .env file" && assert_out "2 hit(s)"
+}
+
+t66_a_grep_that_fails_fails_the_scan() {
+    # The pre-filter took a grep error (exit 2) for "no match", so a file grep never read passed.
+    local real
+    new_repo t66
+    real=$(command -v grep)
+    mkdir -p "$D/shim"
+    cat > "$D/shim/grep" <<EOF
+#!/bin/sh
+case "\$1" in -q*) exit 2 ;; esac
+exec "$real" "\$@"
+EOF
+    chmod +x "$D/shim/grep"
+    printf 'key = AKIA%s\n' "$(rep Q 16)" > k.txt
+    RC=0; PATH="$D/shim:$PATH" bash "$SCAN" --file k.txt > "$OUT" 2>&1 || RC=$?
+    assert_rc 2 && assert_out "grep failed"
+    git add k.txt && git commit -q -m "feat: a key"
+    RC=0; git rev-parse HEAD | PATH="$D/shim:$PATH" bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 2 && assert_out "grep failed"
+}
+
+t67_a_hit_line_holding_a_nul_byte_is_labelled_and_masked() {
+    # awk on macOS ends a record at a NUL byte, so the lines are read with their NULs dropped: the
+    # token after one keeps its kind and its mask.
+    new_repo t67
+    printf 'zz\000 token ghp_%s\n' "$(rep a 36)" > bin.dat
+    git add bin.dat && git commit -q -m "feat: a NUL byte"
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$(short_hash):bin.dat: GitHub token" && assert_out "    zz token ****" && assert_not_out "ghp_aaaa"
+    RC=0; bash "$SCAN" --file bin.dat > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "bin.dat:1: GitHub token" && assert_out "    zz token ****" && assert_not_out "ghp_aaaa"
+}
+
 t22_resume_takes_the_host_from_the_command_line() {
     new_repo t22
     scenario "state:running:plan commit:a.txt" "state:done:ship commit:b.txt pr-body"
@@ -1228,7 +1362,11 @@ t50_a_change_to_the_global_git_config_stops_the_publish t51_a_url_rule_that_redi
 t52_added_lines_that_look_like_headers_are_scanned t53_paths_are_labelled_as_they_are_named
 t54_lines_the_locale_cannot_read_are_scanned t55_message_hits_name_their_commit
 t56_a_textconv_filter_does_not_hide_a_key t57_the_ci_check_reads_merges_like_the_scan
-t58_a_byte_read_as_half_a_character_does_not_shift_the_report t59_a_file_named_like_an_option_is_scanned"
+t58_a_byte_read_as_half_a_character_does_not_shift_the_report t59_a_file_named_like_an_option_is_scanned
+t60_a_key_a_merge_adds_to_a_binary_file_is_caught t61_a_file_named_with_a_newline_is_reported_masked
+t62_a_hit_only_the_c_locale_reads_is_masked t63_a_key_in_a_utf16_file_is_caught_on_its_own
+t64_a_replaced_commit_is_scanned_as_it_is_pushed t65_a_root_commit_is_scanned_whatever_log_showroot_says
+t66_a_grep_that_fails_fails_the_scan t67_a_hit_line_holding_a_nul_byte_is_labelled_and_masked"
 
 SELECTED="${*:-$ALL}"
 PASSED=0 FAILED=0

@@ -24,6 +24,9 @@
 # Exit: 0 = clean · 1 = at least one hit · 2 = usage or git error
 
 set -euo pipefail
+# A replace ref (git replace) would show every git command here a stand-in for a commit, while git
+# push sends the commit itself, so they all read the objects as they are.
+export GIT_NO_REPLACE_OBJECTS=1
 
 usage() { sed -n -- '2,24p' "$0" | sed 's/^# \{0,1\}//'; }
 die() { echo "scan-secrets: $1" >&2; exit 2; }
@@ -51,19 +54,31 @@ OTHER_KIND="secret assignment"
 join_patterns() { printf '%s' "$1" | tr '\n' '|' | sed 's/|$//'; }
 STRICT_ERE=$(join_patterns "$STRICT_PATTERNS")
 LOOSE_ERE="$LOOSE_PATTERNS"
+# The sed program that masks a line: every value either set matches becomes ****.
+MASK_SED="s#$STRICT_ERE#****#g; s#$LOOSE_ERE#\1=****#Ig"
 
 # Every match is tried twice: in the locale, which may read more (a Unicode space for [[:space:]],
 # a letter that case-folds to ASCII, such as a long s), and byte by byte (LC_ALL=C), which reads a
 # line the locale cannot, such as one with bytes that are not valid UTF-8 (macOS grep skips it). A
-# line counts when either matches, so neither reading hides a key the other sees.
+# line counts when either matches, so neither reading hides a key the other sees, and its values
+# are masked in both readings alike (in tr_TR, I does not fold to i, so only C reads API_KEY=).
 
 # Every file name reaches grep, sed, cut and awk after --, so a name that starts with - (--file -x.txt)
 # is read as a file, never taken for an option.
 
+# matches GREP_ARGUMENT...: whether grep -q finds a match; exits 2 when grep fails, so a file grep
+# cannot read is never taken for one without a match.
+matches() {
+    local rc=0
+    grep -q "$@" || rc=$?
+    [ "$rc" -le 1 ] || die "grep failed"
+    return "$rc"
+}
+
 # any_match FILE: whether any line of FILE matches either pattern set.
 any_match() {
-    grep -qaE -- "$STRICT_ERE" "$1" || grep -qaiE -- "$LOOSE_ERE" "$1" ||
-        LC_ALL=C grep -qaE -- "$STRICT_ERE" "$1" || LC_ALL=C grep -qaiE -- "$LOOSE_ERE" "$1"
+    matches -aE -- "$STRICT_ERE" "$1" || matches -aiE -- "$LOOSE_ERE" "$1" ||
+        LC_ALL=C matches -aE -- "$STRICT_ERE" "$1" || LC_ALL=C matches -aiE -- "$LOOSE_ERE" "$1"
 }
 
 # line_numbers FILE [GREP_OPTION]... PATTERN: the numbers of FILE's matching lines, in both readings;
@@ -81,25 +96,33 @@ line_numbers() {
 
 mask() {   # the line with every matched value replaced by ****, cut to 200 characters
     local out
-    if out=$(printf '%s\n' "$1" | sed -E "s#$STRICT_ERE#****#g; s#$LOOSE_ERE#\1=****#Ig" 2>/dev/null | cut -c1-200 2>/dev/null); then
+    if out=$(printf '%s\n' "$1" | sed -E "$MASK_SED" 2>/dev/null | LC_ALL=C sed -E "$MASK_SED" | cut -c1-200 2>/dev/null); then
         printf '%s\n' "$out"
         return 0
     fi
     # The locale cannot read the line: mask it byte by byte, every long value-shaped run included.
-    printf '%s\n' "$1" | LC_ALL=C sed -E "s#$STRICT_ERE#****#g; s#$LOOSE_ERE#\1=****#Ig; s#[A-Za-z0-9_/+.=-]{20,}#****#g" | LC_ALL=C cut -c1-200
+    printf '%s\n' "$1" | LC_ALL=C sed -E "$MASK_SED; s#[A-Za-z0-9_/+.=-]{20,}#****#g" | LC_ALL=C cut -c1-200
 }
 
 HITS=0
 
+# nonul: standard input without its NUL bytes. Every text is scanned that way, by the pre-filter and
+# the report alike: awk on macOS ends a record at its first NUL and would read less of a line than
+# grep matched, and UTF-16 text (a NUL after every ASCII byte) matches only without them.
+nonul() { LC_ALL=C tr -d '\000'; }
+
 scan_file() {
     local path="$1"
     [ -f "$path" ] || die "not a file: $path"
+    PATCH_TMP=$(mktemp "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
+    nonul < "$path" > "$PATCH_TMP" || die "cannot read $path"
     # Pre-filter with grep so a large clean file costs one pass.
-    if any_match "$path"; then report_hits "$path" file; fi
+    if any_match "$PATCH_TMP"; then report_hits "$PATCH_TMP" file "$path"; fi
+    rm -f "$PATCH_TMP"; PATCH_TMP=""
 }
 
-PATCH_TMP="" REVS_TMP="" LINES_TMP=""
-trap 'rm -rf ${PATCH_TMP:+"$PATCH_TMP"} ${REVS_TMP:+"$REVS_TMP"} ${LINES_TMP:+"$LINES_TMP"}' EXIT
+PATCH_TMP="" REVS_TMP="" LINES_TMP="" BINARY_TMP=""
+trap 'rm -rf ${PATCH_TMP:+"$PATCH_TMP"} ${REVS_TMP:+"$REVS_TMP"} ${LINES_TMP:+"$LINES_TMP"} ${BINARY_TMP:+"$BINARY_TMP"}' EXIT
 
 # hit WHERE KIND MASKED: count and report one matching line, already masked.
 hit() {
@@ -108,46 +131,57 @@ hit() {
     echo "    $3"
 }
 
-# report_hits FILE MODE: every line of FILE that matches, reported through hit() in file order. grep
-# finds the matching lines, one pass per pattern set and reading, one awk pass names where each one
-# is, one grep per key shape and reading labels them all, and one sed pass masks them, so no process
-# starts per line unless the locale cannot read one. Lines are matched with their NUL bytes dropped,
-# because awk on macOS ends a record at its first NUL and would read less of a line than grep matched.
+# printable NAME: NAME with ? for each control character (a newline, say), so it fits on one line.
+printable() { printf '%s' "$1" | LC_ALL=C tr '\001-\037\177' '?'; }
+
+# The awk function path(TEXT, PREFIX): the file a diff header line names after its "+++ " or
+# "diff --cc ", with PREFIX dropped. A quoted path (git -c core.quotePath=false quotes only one with
+# a control character, a double quote or a backslash) is unquoted, with ? for a control character;
+# the tab git puts after an unquoted path with a space in it is dropped.
+PATH_AWK='
+    function path(s, prefix,   out, i, n, c) {
+        if (substr(s, 1, 1) != "\"") { sub(/\t$/, "", s) }
+        else {
+            out = ""; n = length(s)
+            for (i = 2; i <= n; i++) {
+                c = substr(s, i, 1)
+                if (c == "\"") break
+                if (c == "\\") {
+                    i++; c = substr(s, i, 1)
+                    if (c ~ /[0-7]/) { i += 2; c = "?" }
+                    else if (c != "\\" && c != "\"") c = "?"
+                }
+                out = out c
+            }
+            s = out
+        }
+        return substr(s, 1, length(prefix)) == prefix ? substr(s, length(prefix) + 1) : s
+    }'
+
+# report_hits FILE MODE [NAME]: every line of FILE, a text already through nonul, that matches,
+# reported through hit() in file order. grep finds the matching lines, one pass per pattern set and
+# reading, one awk pass names where each one is, one grep per key shape and reading labels them all,
+# and one sed pass masks them, so no process starts per line unless the locale cannot read one.
 # MODE patch: git log -p output; only the lines a commit adds count. "+++ " names the file only in a
 # file's header, between its diff line and its first hunk, so an added "++ ..." line is content. A
 # merge's combined diff has one column per parent, and a line counts only when every column is +, so
-# a line that a parent already has is left to that parent's commit.
+# a line that a parent already has is left to that parent's commit. With NAME, a file of
+# "<commit hash><tab><path>" lines, only the files it lists count.
 # MODE message: commit messages printed as "commit <hash>" lines followed by the message indented
 # one space, so no message line can pose as the header that names the commit.
-# MODE file: a plain file, such as the PR body; where is FILE:<line number>.
+# MODE file: the text of the file NAME, such as the PR body; where is NAME:<line number>, with NAME
+# printable.
 report_hits() {
-    local file="$1" mode="$2" where line kind masked pat label
+    local file="$1" mode="$2" name="${3:-}" only="" where line kind masked pat label
+    if [ "$mode" = patch ]; then only="$name"; fi
     LINES_TMP=$(mktemp -d "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
-    LC_ALL=C tr -d '\000' < "$file" > "$LINES_TMP/lines" || die "tr failed"
-    { line_numbers "$LINES_TMP/lines" -E -e "$STRICT_ERE"; line_numbers "$LINES_TMP/lines" -iE -e "$LOOSE_ERE"; } > "$LINES_TMP/numbers"
-    # Two lines per hit: where, then the line. A quoted path (git -c core.quotePath=false quotes only
-    # one with a control character, a double quote or a backslash) is unquoted, with ? for a control
-    # character; the tab git puts after an unquoted path with a space in it is dropped.
-    LABEL="$file" LC_ALL=C awk -v mode="$mode" -v nums="$LINES_TMP/numbers" -- '
-        function path(s,   out, i, n, c) {
-            if (substr(s, 1, 1) != "\"") { sub(/\t$/, "", s) }
-            else {
-                out = ""; n = length(s)
-                for (i = 2; i <= n; i++) {
-                    c = substr(s, i, 1)
-                    if (c == "\"") break
-                    if (c == "\\") {
-                        i++; c = substr(s, i, 1)
-                        if (c ~ /[0-7]/) { i += 2; c = "?" }
-                        else if (c != "\\" && c != "\"") c = "?"
-                    }
-                    out = out c
-                }
-                s = out
-            }
-            return substr(s, 1, 2) == "b/" ? substr(s, 3) : s
+    { line_numbers "$file" -E -e "$STRICT_ERE"; line_numbers "$file" -iE -e "$LOOSE_ERE"; } > "$LINES_TMP/numbers"
+    # Two lines per hit: where, then the line, so a file's name is made printable first.
+    LABEL=$(printable "$name") LC_ALL=C awk -v mode="$mode" -v nums="$LINES_TMP/numbers" -v only="$only" -- "$PATH_AWK"'
+        BEGIN {
+            while ((getline n < nums) > 0) want[n] = 1; close(nums); cols = 1; plus = "+"
+            if (only != "") { while ((getline n < only) > 0) keep[n] = 1; close(only) }
         }
-        BEGIN { while ((getline n < nums) > 0) want[n] = 1; close(nums); cols = 1; plus = "+" }
         mode == "file" { if (NR in want) print ENVIRON["LABEL"] ":" NR "\n" $0; next }
         mode == "message" {
             if (substr($0, 1, 7) == "commit ") commit = substr($0, 8, 12)
@@ -156,14 +190,14 @@ report_hits() {
         }
         substr($0, 1, 7) == "commit " {
             c = substr($0, 8); i = index(c, " "); if (i) c = substr(c, 1, i - 1)
-            commit = substr(c, 1, 12); cols = 1; plus = "+"; header = 0; next
+            full = c; commit = substr(c, 1, 12); cols = 1; plus = "+"; header = 0; next
         }
         substr($0, 1, 5) == "diff " { header = 1; file = ""; next }
-        header && substr($0, 1, 4) == "+++ " { file = path(substr($0, 5)); next }
+        header && substr($0, 1, 4) == "+++ " { file = path(substr($0, 5), "b/"); next }
         substr($0, 1, 2) == "@@" { header = 0; cols = 0; plus = ""; while (substr($0, cols + 2, 1) == "@") { cols++; plus = plus "+" }; next }
         header { next }
-        (NR in want) && substr($0, 1, cols) == plus { print commit ":" file "\n" substr($0, cols + 1) }
-    ' "$LINES_TMP/lines" > "$LINES_TMP/hits" || die "awk failed"
+        (NR in want) && substr($0, 1, cols) == plus && (only == "" || ((full "\t" file) in keep)) { print commit ":" file "\n" substr($0, cols + 1) }
+    ' "$file" > "$LINES_TMP/hits" || die "awk failed"
     # The kind of each hit, one per line in hit order: the first key shape in STRICT_TABLE that
     # matches it in either reading, or OTHER_KIND.
     LC_ALL=C sed -n -- 'n;p' "$LINES_TMP/hits" > "$LINES_TMP/text"
@@ -176,10 +210,10 @@ EOF
         !($1 in kind) { kind[$1] = $2 }
         END { for (i = 1; i <= hits; i++) print (i in kind) ? kind[i] : other }
     ' "$LINES_TMP/kinds" > "$LINES_TMP/labels" || die "awk failed"
-    # Each hit masked, one per line in hit order, in one pass with mask()'s expressions. When the
+    # Each hit masked, one per line in hit order, in one pass per reading, as mask() masks. When the
     # locale cannot read a line (macOS sed and cut fail on bytes that are not valid UTF-8), every
     # line goes through mask() on its own instead, so each is masked exactly as mask() masks it.
-    if ! sed -E -- "s#$STRICT_ERE#****#g; s#$LOOSE_ERE#\1=****#Ig" "$LINES_TMP/text" 2>/dev/null | cut -c1-200 > "$LINES_TMP/masked" 2>/dev/null; then
+    if ! sed -E -- "$MASK_SED" "$LINES_TMP/text" 2>/dev/null | LC_ALL=C sed -E -- "$MASK_SED" | cut -c1-200 > "$LINES_TMP/masked" 2>/dev/null; then
         while IFS= LC_ALL=C read -r line; do printf '%s\n' "$(mask "$line")"; done < "$LINES_TMP/text" > "$LINES_TMP/masked"
     fi
     # The records are read byte by byte (LC_ALL=C): bash 5 in a UTF-8 locale takes a byte that starts
@@ -212,10 +246,10 @@ is_listed() {
     return 1
 }
 # hit_path WHERE: count and report one path that is a secret by its name; nothing of it is read.
-# A control character in the path (a newline, say) is printed as ?, so one hit stays on one line.
+# The path is printed printable, so one hit stays on one line.
 hit_path() {
     HITS=$((HITS + 1))
-    echo "$(printf '%s' "$1" | LC_ALL=C tr '\001-\037\177' '?'): .env file"
+    echo "$(printable "$1"): .env file"
 }
 
 # scan_range BASE..HEAD: every commit in the range, listed oldest first and scanned as a list is.
@@ -240,6 +274,30 @@ scan_list() {
     scan_commits "the listed commits"
 }
 
+# scan_binary_files WHAT: --cc prints only "Binary files differ" for a file it takes for binary
+# (marked -diff or binary in .gitattributes, or holding a NUL byte), whatever --text says, so the
+# lines a merge adds to one are read again. One awk pass lists each merge and file the patch in
+# $PATCH_TMP shows that way, and git log reads those merges against each parent in turn (-m, which
+# honours --text; log.diffMerges, which -m follows, is pinned to separate). Only the listed files
+# count there, and a line a parent brings in is reported again, which errs on the safe side.
+scan_binary_files() {
+    BINARY_TMP=$(mktemp -d "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
+    LC_ALL=C awk -- "$PATH_AWK"'
+        substr($0, 1, 7) == "commit " { c = substr($0, 8); i = index(c, " "); if (i) c = substr(c, 1, i - 1); header = 0; next }
+        substr($0, 1, 10) == "diff --cc " { file = path(substr($0, 11), ""); header = 1; next }
+        substr($0, 1, 5) == "diff " || substr($0, 1, 2) == "@@" { header = 0; next }
+        header && substr($0, 1, 13) == "Binary files " { print c "\t" file; header = 0 }
+    ' "$PATCH_TMP" > "$BINARY_TMP/files" || die "awk failed"
+    # git log would read an empty list as HEAD.
+    if [ -s "$BINARY_TMP/files" ]; then
+        LC_ALL=C cut -f1 -- "$BINARY_TMP/files" | uniq > "$BINARY_TMP/merges" || die "cut failed"
+        git -c core.quotePath=false -c log.diffMerges=separate log -p -m --text --no-textconv --no-color --no-ext-diff --src-prefix=a/ --dst-prefix=b/ \
+            --format='commit %H' --no-walk=unsorted --stdin -- . < "$BINARY_TMP/merges" 2>/dev/null | nonul > "$BINARY_TMP/patch" || die "git log failed for $1"
+        if any_match "$BINARY_TMP/patch"; then report_hits "$BINARY_TMP/patch" patch "$BINARY_TMP/files"; fi
+    fi
+    rm -rf "$BINARY_TMP"; BINARY_TMP=""
+}
+
 # scan_commits WHAT: the three passes over the commits $REVS_TMP lists, oldest first, which git
 # log reads with --stdin --no-walk=unsorted (each listed commit, in its order); WHAT names them in
 # an error. git log reads an empty list as HEAD, so an empty list scans nothing.
@@ -247,19 +305,23 @@ scan_commits() {
     local what="$1" commit="" line status="" seen=()
     if [ ! -s "$REVS_TMP" ]; then rm -f "$REVS_TMP"; REVS_TMP=""; return 0; fi
     PATCH_TMP=$(mktemp "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
-    # --text: a path marked -diff or binary in .gitattributes still prints its lines, and
-    # --no-textconv shows the committed text, never a diff driver's rendering of it.
+    # --text: a path marked -diff or binary in .gitattributes still prints its lines (except in a
+    # merge, which scan_binary_files reads again), and --no-textconv shows the committed text,
+    # never a diff driver's rendering of it.
     # --cc: a merge is diffed against all its parents at once, so the lines it introduces itself
     # (an evil merge, a conflict resolution) are seen, and a line one parent brings in is not
     # reported again: that parent's commit is scanned on its own while it is outgoing.
     # The prefixes are fixed whatever diff.noprefix says, and core.quotePath=false leaves a
-    # non-ASCII path unquoted, so report_hits can name every file.
-    git -c core.quotePath=false log -p --cc --text --no-textconv --no-color --no-ext-diff --src-prefix=a/ --dst-prefix=b/ \
-        --format='commit %H' --no-walk=unsorted --stdin -- . < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null || die "git log failed for $what"
+    # non-ASCII path unquoted, so report_hits can name every file. --root: a root commit shows its
+    # lines whatever log.showRoot says.
+    git -c core.quotePath=false log -p --cc --root --text --no-textconv --no-color --no-ext-diff --src-prefix=a/ --dst-prefix=b/ \
+        --format='commit %H' --no-walk=unsorted --stdin -- . < "$REVS_TMP" 2>/dev/null | nonul > "$PATCH_TMP" || die "git log failed for $what"
     if any_match "$PATCH_TMP"; then report_hits "$PATCH_TMP" patch; fi
+    # "Binary files" starts no line of a diff --text prints, so only --cc can have printed one.
+    if LC_ALL=C matches -a -- '^Binary files ' "$PATCH_TMP"; then scan_binary_files "$what"; fi
     # Commit messages are pushed too, and the runner commits the skill's commit-msg.md verbatim.
     # %w(0,1,1) indents every message line by one space and wraps none.
-    git log --format='commit %H%n%w(0,1,1)%B' --no-walk=unsorted --stdin < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null ||
+    git log --format='commit %H%n%w(0,1,1)%B' --no-walk=unsorted --stdin < "$REVS_TMP" 2>/dev/null | nonul > "$PATCH_TMP" ||
         die "git log failed for $what"
     if any_match "$PATCH_TMP"; then report_hits "$PATCH_TMP" message; fi
     # A .env file is a secret by its name alone, and one a later commit deletes again is still in
@@ -271,7 +333,8 @@ scan_commits() {
     # The record after each commit hash starts with the newline git puts before the file list.
     # --cc gives a merge one status letter per parent after an empty record, and a path counts
     # only when it is added against every parent (AA): one a parent has is that parent's to report.
-    git log --no-walk=unsorted --diff-filter=A --name-status --no-renames --cc -z --format=%H --stdin -- . < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null ||
+    # --root, as in the patch pass: a root commit lists the paths it adds.
+    git log --no-walk=unsorted --root --diff-filter=A --name-status --no-renames --cc -z --format=%H --stdin -- . < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null ||
         die "git log failed for $what"
     commit=""
     # No ".env" bytes means no .env path, so the loop (one read per byte) is skipped; a grep error
