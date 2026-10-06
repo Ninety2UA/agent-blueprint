@@ -1114,6 +1114,50 @@ t57_the_ci_check_reads_merges_like_the_scan() {
     ! remote_has_branch feat/x || fail "pushed an action an outgoing side branch added"
 }
 
+t58_a_byte_read_as_half_a_character_does_not_shift_the_report() {
+    # bash 5 in a UTF-8 locale reads a Latin-1 byte at the end of a record as the start of a
+    # character and takes the delimiter after it into the same read. A hit line ending in one paired
+    # every later hit with the wrong label (a key line was printed unmasked as a label), and a path
+    # ending in one hid the .env path after it. The output holds those bytes, so it is read byte by byte.
+    local k g short loc label n
+    k="AKIA$(printf 'Q%.0s' {1..16})"; g="ghp_$(printf 'a%.0s' {1..36})"
+    new_repo t58
+    printf 'password = %s\351\nkey %s\ntoken %s\n' "$(printf 'v%.0s' {1..24})" "$k" "$g" > latin1.txt
+    # Not every file system takes a name that is not UTF-8, so the path goes into the index directly.
+    git update-index --add --cacheinfo "100644,$(echo x | git hash-object -w --stdin),$(printf 'a\351')"
+    mkdir -p b && echo X=1 > b/.env
+    git add latin1.txt b/.env && git commit -q -m "feat: latin-1 bytes"
+    short=$(git rev-parse HEAD | cut -c1-12)
+    cp latin1.txt "$D/body.md"
+    for loc in en_US.UTF-8 C.UTF-8; do
+        RC=0; git rev-parse HEAD | LC_ALL=$loc bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+        assert_rc 1
+        LC_ALL=C grep -aFq "4 hit(s)" "$OUT" || fail "$loc: expected 4 hits ($OUT)"
+        LC_ALL=C grep -aFq "$short:b/.env: .env file" "$OUT" || fail "$loc: the .env path is not reported ($OUT)"
+        for label in "secret assignment" "cloud access key" "GitHub token"; do
+            n=$(LC_ALL=C grep -acF -- "$short:latin1.txt: $label" "$OUT" || true)
+            assert_eq "$n" 1 "$loc: hits labelled $label in $OUT"
+        done
+        ! LC_ALL=C grep -aEq 'AKIAQQQQ|ghp_aaaa|vvvvvvvv' "$OUT" || fail "$loc: the scan printed a raw value ($OUT)"
+        RC=0; LC_ALL=$loc bash "$SCAN" --file "$D/body.md" > "$OUT" 2>&1 || RC=$?
+        assert_rc 1
+        LC_ALL=C grep -aFq "$D/body.md:3: GitHub token" "$OUT" || fail "$loc: the third line is not labelled ($OUT)"
+        ! LC_ALL=C grep -aEq 'AKIAQQQQ|ghp_aaaa|vvvvvvvv' "$OUT" || fail "$loc: the scan printed a raw value ($OUT)"
+    done
+}
+
+t59_a_file_named_like_an_option_is_scanned() {
+    # A name that starts with - reached grep as an option, so the file went unread and the scan
+    # reported it clean.
+    new_repo t59
+    printf 'key = AKIA%s\n' "$(printf 'Q%.0s' {1..16})" > ./-x.txt
+    RC=0; bash "$SCAN" --file -x.txt > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "-x.txt:1: cloud access key" && assert_not_out "AKIAQQQQ" && assert_not_out "grep:"
+    git add -- -x.txt && git commit -q -m "feat: dash" && git rev-parse HEAD > ./-c.txt
+    RC=0; bash "$SCAN" --commits -c.txt > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out ":-x.txt: cloud access key"
+}
+
 t22_resume_takes_the_host_from_the_command_line() {
     new_repo t22
     scenario "state:running:plan commit:a.txt" "state:done:ship commit:b.txt pr-body"
@@ -1198,7 +1242,8 @@ t48_a_merge_is_scanned_for_what_it_adds_itself t49_an_unpushed_merge_of_publishe
 t50_a_change_to_the_global_git_config_stops_the_publish t51_a_url_rule_that_redirects_the_push_stops_it
 t52_added_lines_that_look_like_headers_are_scanned t53_paths_are_labelled_as_they_are_named
 t54_lines_the_locale_cannot_read_are_scanned t55_message_hits_name_their_commit
-t56_a_textconv_filter_does_not_hide_a_key t57_the_ci_check_reads_merges_like_the_scan"
+t56_a_textconv_filter_does_not_hide_a_key t57_the_ci_check_reads_merges_like_the_scan
+t58_a_byte_read_as_half_a_character_does_not_shift_the_report t59_a_file_named_like_an_option_is_scanned"
 
 SELECTED="${*:-$ALL}"
 PASSED=0 FAILED=0
