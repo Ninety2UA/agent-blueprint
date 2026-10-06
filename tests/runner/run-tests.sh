@@ -315,7 +315,7 @@ t13_skill_names_a_runner_that_exists_after_copy_install() {
     local copy="$D/skills/ab-ship-pipeline/scripts"
     assert_file "$copy/run.sh" && assert_file "$copy/hosts.sh" && assert_file "$copy/scan-secrets.sh" && assert_file "$copy/outgoing-commits.sh" && assert_file "$copy/host-limits.tsv"
     RC=0; bash "$copy/run.sh" --help > "$OUT" 2>&1 || RC=$?
-    assert_rc 0 && assert_out "--host HOST"
+    assert_rc 0 && assert_out "--host HOST" && assert_out "AGENT_BLUEPRINT_RUNNER_BACKOFF"
 }
 
 t14_state_pr_body_path_is_ignored() {
@@ -397,12 +397,12 @@ t20_ci_paths_remote_url_and_prepush_hook() {
     new_repo t20b
     scenario "state:done:ship commit:a.txt pr-body remote-url"
     run_runner --host fake "feature"
-    assert_rc 3 && assert_out "push URL"
+    assert_rc 3 && assert_out "push URL" && assert_not_out "Scanning the"
     ! remote_has_branch feat/x || fail "pushed after the push URL changed"
     new_repo t20c
     scenario "state:done:ship commit:a.txt pr-body prepush-hook"
     run_runner --host fake "feature"
-    assert_rc 3 && assert_out "pre-push hook"
+    assert_rc 3 && assert_out "pre-push hook" && assert_not_out "Scanning the"
     assert_no_file .agent-blueprint/run/hook-ran
     ! remote_has_branch feat/x || fail "pushed with a planted pre-push hook"
 }
@@ -900,21 +900,21 @@ t50_a_change_to_the_global_git_config_stops_the_publish() {
     mkdir -p "$HOME" && cp "$WORK/home/.gitconfig" "$HOME/.gitconfig"
     scenario "state:done:ship commit:a.txt pr-body global-config"
     run_runner --host fake "feature"
-    assert_rc 3 && assert_out "$HOME/.gitconfig" && assert_out "nothing is pushed"
+    assert_rc 3 && assert_out "$HOME/.gitconfig" && assert_out "nothing is pushed" && assert_not_out "Scanning the"
     ! remote_has_branch feat/x || fail "pushed after ~/.gitconfig changed"
     export HOME="$WORK/home"
     new_repo t50b
     export XDG_CONFIG_HOME="$D/xdg"
     scenario "state:done:ship commit:a.txt pr-body xdg-config"
     run_runner --host fake "feature"
-    assert_rc 3 && assert_out "$D/xdg/git/config" && assert_out "nothing is pushed"
+    assert_rc 3 && assert_out "$D/xdg/git/config" && assert_out "nothing is pushed" && assert_not_out "Scanning the"
     ! remote_has_branch feat/x || fail "pushed after \$XDG_CONFIG_HOME/git/config changed"
     unset XDG_CONFIG_HOME
     new_repo t50c
     own_global_config
     scenario "state:done:ship commit:a.txt pr-body global-config"
     run_runner --host fake "feature"
-    assert_rc 3 && assert_out "$D/global.gitconfig" && assert_out "nothing is pushed"
+    assert_rc 3 && assert_out "$D/global.gitconfig" && assert_out "nothing is pushed" && assert_not_out "Scanning the"
     ! remote_has_branch feat/x || fail "pushed after the GIT_CONFIG_GLOBAL file changed"
     unset GIT_CONFIG_GLOBAL
     ! grep -q planted-by-the-session "$HOME/.gitconfig" || fail "a case wrote the shared test HOME's .gitconfig"
@@ -1277,6 +1277,178 @@ t67_a_hit_line_holding_a_nul_byte_is_labelled_and_masked() {
     assert_rc 1 && assert_out "bin.dat:1: GitHub token" && assert_out "    zz token ****" && assert_not_out "ghp_aaaa"
 }
 
+t70_a_push_target_whose_branches_git_reads_elsewhere_stops_the_run() {
+    # Chained insteadOf rules rewrite the remote's push URL (start/ to a/), the runner's push of that
+    # URL (a/ to b/), and a listing of the push target once more (b/ to c/): outgoing-commits.sh would
+    # read c/'s branches while the push lands in b/. Only c/ holds the commit with a key that the
+    # branch carried before the run, so listed against c/ it would count as published and go unscanned.
+    chain_repo() {   # NAME: origin is start/remote.git, b/remote.git holds main, c/remote.git the key too
+        new_repo "$1"
+        printf 'key = AKIA%s\n' "$(rep Q 16)" > k.txt && git add k.txt && git commit -q -m "chore: key"
+        mkdir -p "$D/b" "$D/c"
+        git clone -q --bare "$REMOTE" "$D/b/remote.git"
+        git clone -q --bare "$D/work" "$D/c/remote.git"
+        git remote set-url origin "$D/start/remote.git"
+        git config url."$D/a/".insteadOf "$D/start/"
+        git config url."$D/b/".insteadOf "$D/a/"
+    }
+    chain_repo t70a
+    git config url."$D/c/".insteadOf "$D/b/"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature" --dry-run
+    assert_rc 1 && assert_out "git reads its branches from $D/c/remote.git"
+    run_runner --host fake "feature"
+    assert_rc 1 && assert_out "a push to $D/b/remote.git" && assert_out "git reads its branches from $D/c/remote.git"
+    ! remote_has_branch feat/x "$D/b/remote.git" || fail "pushed a key that the listing of another repository hid"
+    assert_no_file "$FAKE_LOG"
+    # The last rule arrives once the run is recorded, in a global file whose fingerprint is then taken
+    # again: the check before the push still stops it, before anything is listed.
+    chain_repo t70b
+    own_global_config
+    scenario "state:running:plan commit:a.txt" "state:done:ship commit:b.txt pr-body"
+    run_runner --host fake "feature" --max 1
+    assert_rc 4
+    git config --global url."$D/c/".insteadOf "$D/b/"
+    sed '/^global_config_hash=/d' "$(record_file)" > "$D/record.new" && cat "$D/record.new" > "$(record_file)"
+    run_runner --host fake --resume
+    assert_rc 3 && assert_out "git reads the branches of the push target $D/b/remote.git from $D/c/remote.git" && assert_out "nothing is pushed"
+    assert_not_out "Scanning the"
+    ! remote_has_branch feat/x "$D/b/remote.git" || fail "pushed a key that the listing of another repository hid"
+}
+
+t71_a_credential_helper_the_user_sets_up_is_accepted_through_the_record() {
+    # The runner's remedies for a remote it cannot read or that refuses the push can lead to a
+    # credential helper in the global git configuration (gh auth setup-git writes one), which the
+    # fingerprint check then stops. Each remedy names the accept path the resume supports: without its
+    # global_config_hash= line, the record is fingerprinted again, from the configuration as it is then.
+    local accept
+    new_repo t71
+    own_global_config
+    accept="delete the global_config_hash= line from $(record_file)"
+    scenario "state:done:ship commit:a.txt pr-body"
+    mv "$REMOTE" "$REMOTE.away"
+    run_runner --host fake "feature"
+    mv "$REMOTE.away" "$REMOTE"
+    assert_rc 3 && assert_out "could not read the branches" && assert_out "$accept"
+    # The remote refuses the push as it would refuse one without a credential.
+    mkdir -p "$REMOTE/hooks"
+    printf '#!/bin/sh\necho "Authentication failed for the fixture remote" >&2\nexit 1\n' > "$REMOTE/hooks/pre-receive"
+    chmod +x "$REMOTE/hooks/pre-receive"
+    run_runner --host fake --resume
+    assert_rc 3 && assert_out "not authenticated" && assert_out "$accept"
+    rm -f "$REMOTE/hooks/pre-receive"
+    git config --global credential.helper "store --file=$D/credentials"
+    run_runner --host fake --resume
+    assert_rc 3 && assert_out "configuration outside .git/config changed" && assert_out "$accept"
+    ! remote_has_branch feat/x || fail "pushed after the git configuration changed"
+    sed '/^global_config_hash=/d' "$(record_file)" > "$D/record.new" && cat "$D/record.new" > "$(record_file)"
+    run_runner --host fake --resume
+    assert_rc 0 && assert_out "Recorded a fingerprint" && assert_out "Opened pull request"
+    remote_has_branch feat/x || fail "the accepted configuration did not let the publish through"
+}
+
+t72_a_replace_ref_does_not_hide_what_the_push_sends() {
+    # git replace makes git log and git rev-list read another commit in place of one, while git push
+    # sends the commit itself. A session that commits a workflow or a key and then points the commit at
+    # a clean one gets it past neither the CI check nor the secret scan.
+    local list="$REPO/skills/ab-ship-pipeline/scripts/outgoing-commits.sh" k b
+    new_repo t72a
+    scenario "state:done:ship workflow replace-head pr-body"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "CI configuration" && assert_out "planted.yml"
+    ! remote_has_branch feat/x || fail "pushed a workflow that a replace ref hid"
+    new_repo t72b
+    scenario "state:done:ship secret-commit replace-head pr-body"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "config.ini: cloud access key" && assert_not_out "AKIAQQQQ"
+    ! remote_has_branch feat/x || fail "pushed a key that a replace ref hid"
+    # A replacement whose parent is published would drop the older commits behind it from the list.
+    new_repo t72c
+    printf 'key = AKIA%s\n' "$(rep Q 16)" > k.txt && git add k.txt && git commit -q -m "chore: key"
+    k=$(git rev-parse HEAD)
+    echo b > b.txt && git add b.txt && git commit -q -m "feat: b"
+    b=$(git rev-parse HEAD)
+    git replace "$b" "$(git commit-tree "$b^{tree}" -p main -m "feat: b")"
+    RC=0; bash "$list" "$REMOTE" "$b" > "$OUT" 2>&1 || RC=$?
+    assert_rc 0 && assert_eq "$(cat "$OUT")" "$(printf '%s\n%s' "$k" "$b")" "the commits listed behind a replace ref"
+}
+
+t73_a_remote_named_like_the_runners_helper_does_not_move_the_push_target() {
+    # The runner resolves the push target through a remote it defines on the command line. A remote of
+    # that name in the configuration, with a pushurl of its own, must not answer for it: the commits
+    # would be listed against the pushurl's repository (here one that holds the branch's earlier commit
+    # with a key) while git push still sends them to the recorded URL.
+    new_repo t73
+    printf 'key = AKIA%s\n' "$(rep Q 16)" > k.txt && git add k.txt && git commit -q -m "chore: key"
+    git clone -q --bare "$D/work" "$D/elsewhere.git"
+    git config remote.agent-blueprint-push.pushurl "$D/elsewhere.git"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "k.txt: cloud access key" && assert_not_out "which git sends to"
+    ! remote_has_branch feat/x || fail "pushed a key that the helper remote's pushurl hid from the scan"
+}
+
+t74_outgoing_commits_refuses_a_url_whose_branches_git_reads_elsewhere() {
+    # An interactive publish lists the commits for the remote's push URL as git remote get-url --push
+    # prints it, already rewritten once (start/ to a/), and git push origin sends them there. git
+    # ls-remote would rewrite that URL again (a/ to b/), and b/ holds the base commit, with a key, that
+    # a/ lacks: listed against b/, it would count as published and go unscanned.
+    local lister="$REPO/skills/ab-ship-pipeline/scripts/outgoing-commits.sh" list
+    new_repo t74
+    git switch -q main
+    printf 'key = AKIA%s\n' "$(rep Q 16)" > k.txt && git add k.txt && git commit -q -m "chore: key"
+    git switch -q -C feat/x
+    mkdir -p "$D/a" "$D/b"
+    git clone -q --bare "$REMOTE" "$D/a/remote.git"
+    git clone -q --bare "$D/work" "$D/b/remote.git"
+    echo c > c.txt && git add c.txt && git commit -q -m "feat: c"
+    git remote set-url origin "$D/start/remote.git"
+    git config url."$D/a/".insteadOf "$D/start/"
+    git config url."$D/b/".insteadOf "$D/a/"
+    echo "Body" > "$D/body.md"
+    # The list and the scan as stages.md runs them before an interactive publish.
+    RC=0
+    { list=$(bash "$lister" "$(git remote get-url --push origin)" "$(git merge-base HEAD main)") &&
+        printf '%s\n' "$list" | bash "$SCAN" --commits - --file "$D/body.md"; } > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "git reads the branches of $D/a/remote.git from $D/b/remote.git"
+    # Both URLs are named masked.
+    git config url."$D/b/".insteadOf "https://bot:s3cr3t-token@example.invalid/"
+    RC=0; bash "$lister" "https://bot:s3cr3t-token@example.invalid/remote.git" HEAD > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "https://***@example.invalid/remote.git from $D/b/remote.git" && assert_not_out "s3cr3t-token"
+}
+
+t75_a_legacy_remote_file_named_after_the_push_url_stops_it() {
+    # git push and git ls-remote take a URL with no slash in it for the name of a remote first, and read
+    # its URL from a file under the remotes/ or branches/ git path, which no configuration check covers.
+    # The remote's push URL ab-start-remote.git is rewritten to zz-remote.git, and the runner's push of
+    # that once more, to the real remote; a file named zz-remote.git would send the push elsewhere.
+    legacy_repo() {   # NAME: origin pushes to zz-remote.git, which git sends to remote.git; elsewhere.git is empty
+        new_repo "$1"
+        git config remote.origin.pushurl ab-start-remote.git
+        git config url.zz-.insteadOf ab-start-
+        git config url."$D/".insteadOf zz-
+        git init -q --bare "$D/elsewhere.git"
+    }
+    legacy_repo t75a
+    mkdir -p "$(git rev-parse --git-path branches)"
+    printf '%s\n' "$D/elsewhere.git" > "$(git rev-parse --git-path branches)/zz-remote.git"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature" --dry-run
+    assert_rc 1 && assert_out "branches/zz-remote.git, a legacy remote file"
+    run_runner --host fake "feature"
+    assert_rc 1 && assert_out "branches/zz-remote.git, a legacy remote file" && assert_out "zz-remote.git or its target"
+    ! remote_has_branch feat/x "$D/elsewhere.git" || fail "pushed where the legacy remote file sends the push"
+    ! remote_has_branch feat/x || fail "pushed although a legacy remote file decides where the push goes"
+    assert_no_file "$FAKE_LOG"
+    # The file appears during the run.
+    legacy_repo t75b
+    scenario "state:done:ship commit:a.txt pr-body remotes-file:$D/elsewhere.git"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "remotes/zz-remote.git, a legacy remote file" && assert_out "nothing is pushed" && assert_not_out "Scanning the"
+    ! remote_has_branch feat/x "$D/elsewhere.git" || fail "pushed where the planted legacy remote file sends the push"
+    ! remote_has_branch feat/x || fail "pushed although a planted legacy remote file decides where the push goes"
+}
+
 t22_resume_takes_the_host_from_the_command_line() {
     new_repo t22
     scenario "state:running:plan commit:a.txt" "state:done:ship commit:b.txt pr-body"
@@ -1366,7 +1538,11 @@ t58_a_byte_read_as_half_a_character_does_not_shift_the_report t59_a_file_named_l
 t60_a_key_a_merge_adds_to_a_binary_file_is_caught t61_a_file_named_with_a_newline_is_reported_masked
 t62_a_hit_only_the_c_locale_reads_is_masked t63_a_key_in_a_utf16_file_is_caught_on_its_own
 t64_a_replaced_commit_is_scanned_as_it_is_pushed t65_a_root_commit_is_scanned_whatever_log_showroot_says
-t66_a_grep_that_fails_fails_the_scan t67_a_hit_line_holding_a_nul_byte_is_labelled_and_masked"
+t66_a_grep_that_fails_fails_the_scan t67_a_hit_line_holding_a_nul_byte_is_labelled_and_masked
+t70_a_push_target_whose_branches_git_reads_elsewhere_stops_the_run
+t71_a_credential_helper_the_user_sets_up_is_accepted_through_the_record t72_a_replace_ref_does_not_hide_what_the_push_sends
+t73_a_remote_named_like_the_runners_helper_does_not_move_the_push_target
+t74_outgoing_commits_refuses_a_url_whose_branches_git_reads_elsewhere t75_a_legacy_remote_file_named_after_the_push_url_stops_it"
 
 SELECTED="${*:-$ALL}"
 PASSED=0 FAILED=0

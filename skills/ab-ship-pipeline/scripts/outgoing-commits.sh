@@ -15,19 +15,26 @@
 # The branches are read live with git ls-remote, so a stale tracking ref, or a fetch URL that
 # differs from the push URL, cannot hide a commit. A branch tip this clone lacks is fetched first
 # (its objects only; no ref or FETCH_HEAD is written), so commits a branch gained since the last
-# fetch count as published.
+# fetch count as published. git ls-remote and git fetch apply url.<base>.insteadOf rules to the URL
+# they are given; when git would read the branches of PUSH_URL from another URL, nothing is listed,
+# since that URL's branches say nothing about what a push to PUSH_URL publishes.
 #
-# Exit: 0 = listed · 1 = PUSH_URL could not be read · 2 = usage or git error
+# Exit: 0 = listed · 1 = PUSH_URL could not be read, or git reads its branches elsewhere · 2 = usage or git error
 
 set -euo pipefail
+# A replace ref (git replace) makes git read another commit in place of one, while git push sends the
+# commit itself: the list follows the commits as they are.
+export GIT_NO_REPLACE_OBJECTS=1
 
-usage() { sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; }
+# The header comment from line 2 to its first non-comment line, so the range cannot drift from it.
+usage() { sed -n '1d; /^#/!q; s/^# \{0,1\}//p' "$0"; }
 die() { echo "outgoing-commits: $1" >&2; exit 2; }
+# A push URL may carry credentials (https://user:token@host/...); it is printed only like this.
+mask_url() { printf '%s' "$1" | sed -E 's#://[^/@]*@#://***@#'; }
 
 case "${1:-}" in -h|--help) usage; exit 0 ;; esac
 if [ $# -lt 2 ] || [ $# -gt 3 ]; then usage >&2; exit 2; fi
 # An argument that starts with - would reach git as an option (ls-remote --upload-pack=..., say).
-# The URL is never printed: it may carry a credential.
 case "$1" in ''|-*) die "PUSH_URL must be a URL or a path" ;; esac
 for rev in "$2" "${3:-HEAD}"; do
     case "$rev" in ''|-*) die "not a commit: $rev" ;; esac
@@ -37,6 +44,12 @@ base=$(git rev-parse -q --verify "$2^{commit}") || die "not a commit: $2"
 tip=$(git rev-parse -q --verify "${3:-HEAD}^{commit}") || die "not a commit: ${3:-HEAD}"
 git merge-base --is-ancestor "$base" "$tip" || die "$2 is not an ancestor of ${3:-HEAD}"
 
+# The URL git ls-remote and git fetch would read for PUSH_URL, after its rules (or a remote of that name).
+listed=$(git ls-remote --get-url -- "$url" 2>/dev/null) || exit 1
+if [ "$listed" != "$url" ]; then
+    echo "outgoing-commits: git reads the branches of $(mask_url "$url") from $(mask_url "$listed") (a url.<base>.insteadOf rule, or a remote of that name, sends it there), so the commits a push would publish cannot be listed" >&2
+    exit 1
+fi
 heads=$(git ls-remote --heads "$url" 2>/dev/null) || exit 1
 tips=$(printf '%s\n' "$heads" | cut -f1 | grep -E '^[0-9a-f]{40,64}$' || true)
 types=""

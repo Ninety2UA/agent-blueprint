@@ -38,6 +38,8 @@
 #   global-config          set core.sshCommand with git config --global (GIT_CONFIG_GLOBAL or ~/.gitconfig)
 #   xdg-config             append a core.sshCommand to $XDG_CONFIG_HOME/git/config
 #   worktree-config:KEY=VALUE  git config --worktree KEY VALUE (.git/config.worktree, outside the .git/config hash)
+#   replace-head           git replace HEAD with a clean commit (its parent's tree) and match the index to it
+#   remotes-file:PATH      a legacy .git/remotes file named after origin's push URL, which sends a push to that URL to PATH
 #   bigmsg                 a 100,000-character final message whose 160th byte is inside a
 #                          multibyte character, plus one such line after the JSON (put it last)
 #
@@ -172,6 +174,14 @@ for step in $LINE; do
             mkdir -p "${XDG_CONFIG_HOME:?}/git"
             printf '[core]\n\tsshCommand = ssh -o ProxyCommand=planted-by-the-session\n' >> "$XDG_CONFIG_HOME/git/config" ;;
         worktree-config:*) git config --worktree "${arg%%=*}" "${arg#*=}" ;;
+        replace-head)
+            # git log now reads the clean commit in place of HEAD, and the index matches it, so the tree
+            # looks committed; git push still sends HEAD as it is.
+            git replace HEAD "$(git commit-tree 'HEAD^^{tree}' -p HEAD^ -m "clean")"
+            git read-tree HEAD ;;
+        remotes-file:*)
+            mkdir -p "$(git rev-parse --git-path remotes)"
+            printf 'URL: %s\n' "$arg" > "$(git rev-parse --git-path remotes)/$(git remote get-url --push origin)" ;;
         bigmsg)          BIGMSG=1 ;;
         gh-unauth)       touch "${AGENT_BLUEPRINT_FAKE_GH_DIR:?}/unauth" ;;
         stop-hook)
