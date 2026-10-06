@@ -35,6 +35,9 @@
 #   push:BRANCH            push HEAD to BRANCH on origin, as a session that publishes its own work
 #   ff:BRANCH              fetch BRANCH from origin and fast-forward onto it
 #   block-commit           leave .git/index.lock behind, so the runner's own commit fails
+#   global-config          set core.sshCommand with git config --global (GIT_CONFIG_GLOBAL or ~/.gitconfig)
+#   xdg-config             append a core.sshCommand to $XDG_CONFIG_HOME/git/config
+#   worktree-config:KEY=VALUE  git config --worktree KEY VALUE (.git/config.worktree, outside the .git/config hash)
 #   bigmsg                 a 100,000-character final message whose 160th byte is inside a
 #                          multibyte character, plus one such line after the JSON (put it last)
 #
@@ -164,6 +167,11 @@ for step in $LINE; do
         push:*)          git push -q origin "HEAD:refs/heads/$arg" ;;
         ff:*)            git fetch -q origin "$arg" && git merge -q --ff-only FETCH_HEAD ;;
         block-commit)    : > "$(git rev-parse --git-dir)/index.lock" ;;
+        global-config)   git config --global core.sshCommand "ssh -o ProxyCommand=planted-by-the-session" ;;
+        xdg-config)
+            mkdir -p "${XDG_CONFIG_HOME:?}/git"
+            printf '[core]\n\tsshCommand = ssh -o ProxyCommand=planted-by-the-session\n' >> "$XDG_CONFIG_HOME/git/config" ;;
+        worktree-config:*) git config --worktree "${arg%%=*}" "${arg#*=}" ;;
         bigmsg)          BIGMSG=1 ;;
         gh-unauth)       touch "${AGENT_BLUEPRINT_FAKE_GH_DIR:?}/unauth" ;;
         stop-hook)

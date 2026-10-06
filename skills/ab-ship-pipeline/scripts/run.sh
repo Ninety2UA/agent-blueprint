@@ -17,10 +17,11 @@
 #   --swarm, --deploy, --iterations N, --convergence MODE
 #                            Forwarded to the skill
 #
-# The runner keeps its own record of the run (base commit, branch, push URL, a hash of .git/config,
-# the iteration count) under ${XDG_STATE_HOME:-~/.local/state}/agent-blueprint/<repo hash>/, outside
-# the working tree, and never takes those values from state.json. Every state.json field is untrusted:
-# it is validated before use and only ever passed as a quoted argument.
+# The runner keeps its own record of the run (base commit, branch, push URL, a hash of .git/config and
+# a fingerprint of all the git configuration it reads, the iteration count) under
+# ${XDG_STATE_HOME:-~/.local/state}/agent-blueprint/<repo hash>/, outside the working tree, and never
+# takes those values from state.json. Every state.json field is untrusted: it is validated before use
+# and only ever passed as a quoted argument.
 #
 # Exit: 0 published · 1 usage or preflight · 2 blocked · 3 needs-human · 4 max iterations · 130 interrupted
 # Environment: AGENT_BLUEPRINT_RUNNER_BACKOFF (seconds between transient retries, default 30).
@@ -77,7 +78,7 @@ PROBE_TIMEOUT=180
 # ─── Arguments ────────────────────────────────────────────────
 RUN_HOST="" FEATURE="" MAX=10 TIMEOUT="" ALLOW_UNGUARDED=false ALLOW_CI=false RESUME=false PLUGIN_DIR="" DRY_RUN=false
 SKILL_FLAGS=""
-usage() { sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; }
 while [ $# -gt 0 ]; do
     case "$1" in
         --host)               [ $# -ge 2 ] || { usage; exit 1; }; RUN_HOST="$2"; shift 2 ;;
@@ -132,6 +133,31 @@ sha256_stdin() {
 }
 sha256_file() { [ -f "$1" ] && sha256_stdin < "$1" || echo none; }
 now_utc() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+# global_config_hash: a fingerprint of every configuration entry git reads for this repository, with
+# the file it comes from: the global files (GIT_CONFIG_GLOBAL, or $XDG_CONFIG_HOME/git/config and
+# ~/.gitconfig), the system file, .git/config, .git/config.worktree and every file they include.
+# A session that writes one can redirect the push (url.<base>.pushInsteadOf) or run code during it
+# (core.sshCommand). `git config --global --list` would read only one of the two global files.
+global_config_hash() {
+    { git config --list --show-origin --includes -z 2>/dev/null || true; } | sha256_stdin
+}
+global_config_files() {   # the global files as git finds them, for messages
+    if [ -n "${GIT_CONFIG_GLOBAL:-}" ]; then echo "$GIT_CONFIG_GLOBAL"
+    else echo "${XDG_CONFIG_HOME:-$HOME/.config}/git/config, $HOME/.gitconfig"; fi
+}
+# push_target URL: where `git push URL` goes once the url.<base>.pushInsteadOf and insteadOf rules of
+# every configuration file are applied to URL itself; fails unless that is exactly one URL. `git remote
+# -v` applies the rules to a remote defined on the command line, which `git remote get-url` refuses.
+# The runner pushes to the remote's push URL as git reports it, already rewritten once, so a chained
+# setup (an insteadOf rule and a pushInsteadOf rule matching its result) sends the push further on.
+push_target() {
+    local t
+    t=$(git -c "remote.agent-blueprint-push.url=$1" remote -v 2>/dev/null | sed -n 's/^agent-blueprint-push[[:space:]]\(.*\) (push)$/\1/p')
+    case "$t" in ''|*$'\n'*) return 1 ;; esac
+    printf '%s\n' "$t"
+}
+# via_target URL TARGET: ", which git sends to TARGET" when a rule sends a push to URL elsewhere.
+via_target() { [ "$1" = "$2" ] || printf ', which git sends to %s' "$(mask_url "$2")"; }
 
 SKILL_VERSION=$(sed -n 's/^  version: *"\{0,1\}\([^"]*\)"\{0,1\}.*/\1/p' "$SKILL_DIR/SKILL.md" | head -1)
 [ -n "$SKILL_VERSION" ] || { error "Cannot read metadata.version from $SKILL_DIR/SKILL.md"; exit 1; }
@@ -233,8 +259,9 @@ info "Working tree clean"
 # ─── Dry run stops here ───────────────────────────────────────
 if [ "$DRY_RUN" = true ]; then
     DRY_URL=$(git remote get-url --push "$REMOTE")
-    DRY_REPO=$(pr_repo_from_url "$DRY_URL")
-    info "Would record base $(git rev-parse --short HEAD), branch $BRANCH, push URL $(mask_url "$DRY_URL")${DRY_REPO:+, pull requests in $DRY_REPO}"
+    DRY_TARGET=$(push_target "$DRY_URL") || { error "Cannot tell where a push to $(mask_url "$DRY_URL") goes: git remote -v shows no single push URL for it"; exit 1; }
+    DRY_REPO=$(pr_repo_from_url "$DRY_TARGET")
+    info "Would record base $(git rev-parse --short HEAD), branch $BRANCH, push URL $(mask_url "$DRY_URL")$(via_target "$DRY_URL" "$DRY_TARGET")${DRY_REPO:+, pull requests in $DRY_REPO}"
     info "Would run per iteration: $(host_bin "$RUN_HOST") with the skill prompt for: ${FEATURE:-<feature>}"
     info "Skill reference on this host: $(host_skill_ref "$RUN_HOST" "$AB_SKILL_NAME" "$PLUGIN_DIR")${SKILL_FLAGS:+ · flags:$SKILL_FLAGS}"
     success "Dry run complete"
@@ -280,13 +307,13 @@ trap on_signal INT TERM
 trap 'release_lock' EXIT
 
 # ─── Record: the runner's own memory of the run ───────────────
-declare REC_base="" REC_branch="" REC_remote="" REC_push_url="" REC_pr_repo="" REC_config_hash="" REC_prepush_hash="" REC_iteration=0 REC_feature="" REC_git_writable=""
+declare REC_base="" REC_branch="" REC_remote="" REC_push_url="" REC_push_target="" REC_pr_repo="" REC_config_hash="" REC_global_config_hash="" REC_prepush_hash="" REC_iteration=0 REC_feature="" REC_git_writable=""
 load_record() {
     local k v
     while IFS='=' read -r k v; do
         case "$k" in
-            base) REC_base="$v" ;; branch) REC_branch="$v" ;; remote) REC_remote="$v" ;; push_url) REC_push_url="$v" ;; pr_repo) REC_pr_repo="$v" ;;
-            config_hash) REC_config_hash="$v" ;; prepush_hash) REC_prepush_hash="$v" ;; iteration) REC_iteration="$v" ;;
+            base) REC_base="$v" ;; branch) REC_branch="$v" ;; remote) REC_remote="$v" ;; push_url) REC_push_url="$v" ;; push_target) REC_push_target="$v" ;; pr_repo) REC_pr_repo="$v" ;;
+            config_hash) REC_config_hash="$v" ;; global_config_hash) REC_global_config_hash="$v" ;; prepush_hash) REC_prepush_hash="$v" ;; iteration) REC_iteration="$v" ;;
             feature) REC_feature="$v" ;; git_writable) REC_git_writable="$v" ;;
         esac
     done < "$RECORD"
@@ -305,8 +332,10 @@ save_record() {
         echo "branch=$REC_branch"
         echo "remote=$REC_remote"
         echo "push_url=$REC_push_url"
+        echo "push_target=$REC_push_target"
         echo "pr_repo=$REC_pr_repo"
         echo "config_hash=$REC_config_hash"
+        echo "global_config_hash=$REC_global_config_hash"
         echo "prepush_hash=$REC_prepush_hash"
         echo "iteration=$REC_iteration"
         echo "git_writable=$REC_git_writable"
@@ -323,6 +352,18 @@ if [ "$RESUME" = true ]; then
     [ "$REC_branch" = "$BRANCH" ] || { error "The recorded run is on branch $REC_branch, not $BRANCH; check it out first"; exit 1; }
     [ -n "$FEATURE" ] || FEATURE="$REC_feature"
     info "Resuming after iteration $REC_iteration (base $(git rev-parse --short "$REC_base"), recorded $(sed -n 's/^updated=//p' "$RECORD"))"
+    # A record written before the fingerprint or the push target existed has none: it was not
+    # recorded, which is not a change. It is taken now and covers the rest of the run.
+    if [ -z "$REC_global_config_hash" ]; then
+        REC_global_config_hash=$(global_config_hash)
+        save_record
+        info "Recorded a fingerprint of the git configuration; a change to it from now on stops the publish"
+    fi
+    if [ -z "$REC_push_target" ]; then
+        REC_push_target=$(push_target "$REC_push_url") || { error "Cannot tell where a push to $(mask_url "$REC_push_url") goes: git remote -v shows no single push URL for it"; exit 1; }
+        save_record
+        info "Recorded the push target: $(mask_url "$REC_push_target"); a change to it from now on stops the publish"
+    fi
 else
     if [ -f "$RECORD" ] && [ -f "$STATE_FILE" ]; then
         error "A runner record exists for this repository (a previous run stopped after iteration $(sed -n 's/^iteration=//p' "$RECORD")). Use --resume to continue it."
@@ -333,13 +374,17 @@ else
     REC_branch="$BRANCH"
     REC_remote="$REMOTE"
     REC_push_url=$(git remote get-url --push "$REMOTE")
-    REC_pr_repo=$(pr_repo_from_url "$REC_push_url")
+    # Where the push really goes: the commits are listed against it, the pull request goes to its
+    # repository, and the push stops if it changes during the run.
+    REC_push_target=$(push_target "$REC_push_url") || { error "Cannot tell where a push to $(mask_url "$REC_push_url") goes: git remote -v shows no single push URL for it"; exit 1; }
+    REC_pr_repo=$(pr_repo_from_url "$REC_push_target")
     REC_config_hash=$(sha256_file "$(git rev-parse --git-path config)")
+    REC_global_config_hash=$(global_config_hash)
     REC_prepush_hash=$(sha256_file "$(prepush_hook_path)")
     REC_iteration=0
     REC_feature="$FEATURE"
     save_record
-    info "Recorded base $(git rev-parse --short "$REC_base") on $BRANCH, push URL $(mask_url "$REC_push_url")${REC_pr_repo:+, pull requests in $REC_pr_repo}"
+    info "Recorded base $(git rev-parse --short "$REC_base") on $BRANCH, push URL $(mask_url "$REC_push_url")$(via_target "$REC_push_url" "$REC_push_target")${REC_pr_repo:+, pull requests in $REC_pr_repo}"
 fi
 
 # ─── Running the host under a timeout ─────────────────────────
@@ -536,37 +581,53 @@ done_check() {
     return 0
 }
 
+# push_guard: stops as needs-human when anything that decides where the push goes, or what runs
+# during it, changed since the run was recorded. publish calls it first and again just before the
+# push, so a change made while the commits are listed and scanned is caught as well.
+push_guard() {
+    local url_now target cfg_now global_now hook_now
+    url_now=$(git remote get-url --push "$REC_remote" 2>/dev/null || true)
+    [ "$url_now" = "$REC_push_url" ] || needs_human "the push URL of $REC_remote changed from $(mask_url "$REC_push_url") to $(mask_url "${url_now:-<none>}")" "set it back with git remote set-url --push $REC_remote <the recorded URL>"
+    # The remote's URL above misses a rule that matches only the recorded URL, which git push rewrites too.
+    target=$(push_target "$REC_push_url" || true)
+    [ "$target" = "$REC_push_target" ] || needs_human "a url.<base>.pushInsteadOf or insteadOf rule changed where a push to $(mask_url "$REC_push_url") goes, from $(mask_url "$REC_push_target") to $(mask_url "${target:-<unknown>}"); nothing is pushed" "remove the rule (git config --show-origin --get-regexp '^url\\.' lists them), then re-run"
+    cfg_now=$(sha256_file "$(git rev-parse --git-path config)")
+    [ "$cfg_now" = "$REC_config_hash" ] || needs_human ".git/config changed during the run; nothing is pushed until it is reviewed" "inspect $(git rev-parse --git-path config), restore it, then re-run"
+    global_now=$(global_config_hash)
+    [ "$global_now" = "$REC_global_config_hash" ] || needs_human "the git configuration outside .git/config changed during the run ($(global_config_files), the system file, .git/config.worktree or a file one of them includes); nothing is pushed until it is reviewed" "git config --list --show-origin lists every entry with its file; restore the change, then re-run"
+    hook_now=$(sha256_file "$(prepush_hook_path)")
+    [ "$hook_now" = "$REC_prepush_hash" ] || needs_human "a pre-push hook appeared or changed during the run ($(prepush_hook_path)); it did not run" "inspect it, remove it, then re-run"
+}
+
 publish() {
-    local body_copy hook_now url_now cfg_now ci_files out number title outgoing count head rc
+    local body_copy ci_files out number title outgoing count head rc
     echo ""
     info "Publishing $BRANCH"
     gh auth status >/dev/null 2>&1 || needs_human "gh is not authenticated, so the pull request cannot be opened" "gh auth login"
 
-    url_now=$(git remote get-url --push "$REC_remote" 2>/dev/null || true)
-    [ "$url_now" = "$REC_push_url" ] || needs_human "the push URL of $REC_remote changed from $(mask_url "$REC_push_url") to $(mask_url "${url_now:-<none>}")" "set it back with git remote set-url --push $REC_remote <the recorded URL>"
-    cfg_now=$(sha256_file "$(git rev-parse --git-path config)")
-    [ "$cfg_now" = "$REC_config_hash" ] || needs_human ".git/config changed during the run; nothing is pushed until it is reviewed" "inspect $(git rev-parse --git-path config), restore it, then re-run"
-    hook_now=$(sha256_file "$(prepush_hook_path)")
-    [ "$hook_now" = "$REC_prepush_hash" ] || needs_human "a pre-push hook appeared or changed during the run ($(prepush_hook_path)); it did not run" "inspect it, remove it, then re-run"
+    push_guard
     [ "$(git symbolic-ref --short -q HEAD)" = "$REC_branch" ] || needs_human "HEAD is no longer on $REC_branch" "git switch $REC_branch"
     git merge-base --is-ancestor "$REC_base" HEAD 2>/dev/null || needs_human "the branch moved away from the recorded base $(git rev-parse --short "$REC_base")" "rebase onto it or start a new run"
 
     # The CI check and the secret scan cover what outgoing-commits.sh lists: the run's own commits
     # since the recorded base, whatever the remote holds, and every older one no branch at the push
-    # URL has. They are listed for the commit HEAD names now, and that commit is what gets pushed,
+    # target has. They are listed for the commit HEAD names now, and that commit is what gets pushed,
     # so a commit added after this point is never published unscanned.
     head=$(git rev-parse HEAD)
     rc=0
-    outgoing=$(bash "$OUTGOING" "$REC_push_url" "$REC_base" "$head") || rc=$?
+    outgoing=$(bash "$OUTGOING" "$REC_push_target" "$REC_base" "$head") || rc=$?
     case "$rc" in
         0) ;;
-        1) needs_human "could not read the branches of $(mask_url "$REC_push_url") to tell which commits the push would publish; nothing was pushed" "check the network and the git credential, then re-run" ;;
+        1) needs_human "could not read the branches of $(mask_url "$REC_push_target") to tell which commits the push would publish; nothing was pushed" "check the network and the git credential, then re-run" ;;
         *) needs_human "could not list the commits the push would publish; nothing was pushed" "check the repository with git log, then re-run" ;;
     esac
 
+    # --cc, as in the secret scan: a merge counts for the CI files none of its parents has, so a clean
+    # merge of a published workflow change passes, while an evil merge that edits one, and every
+    # outgoing commit that edits one on its own, stop the publish.
     ci_files=""
     if [ -n "$outgoing" ]; then
-        ci_files=$(printf '%s\n' "$outgoing" | git log --no-walk=unsorted --stdin --format= --name-only --no-renames -m -- .github/workflows .github/actions | sed '/^$/d' | LC_ALL=C sort -u) \
+        ci_files=$(printf '%s\n' "$outgoing" | git log --no-walk=unsorted --stdin --format= --name-only --no-renames --cc -- .github/workflows .github/actions | sed '/^$/d' | LC_ALL=C sort -u) \
             || needs_human "could not list the files the commits to publish change" "check the repository with git log, then re-run"
     fi
     if [ -n "$ci_files" ] && [ "$ALLOW_CI" != true ]; then
@@ -590,7 +651,9 @@ publish() {
     fi
     success "No secrets found"
 
-    # Push the scanned commit to the recorded URL and branch only, with every git hook disabled.
+    # Push the scanned commit to the recorded URL and branch only, with every git hook disabled; push_guard
+    # has just checked that git still sends that URL to the recorded target.
+    push_guard
     if ! out=$(git -c core.hooksPath=/dev/null push "$REC_push_url" "$head:refs/heads/$REC_branch" 2>&1); then
         printf '%s\n' "$out" | tail -5 | sed 's/^/      /'
         case "$out" in
@@ -599,7 +662,7 @@ publish() {
             *) needs_human "git push failed" "read the message above, fix it, then re-run" ;;
         esac
     fi
-    success "Pushed $REC_branch to $(mask_url "$REC_push_url")"
+    success "Pushed $REC_branch to $(mask_url "$REC_push_target")"
     [ "$(git rev-parse HEAD)" = "$head" ] || warn "HEAD moved while publishing; pushed $(git rev-parse --short "$head"), the commit the scan covered, and left the newer commits unpublished"
 
     title=$(printf '%s' "$FEATURE" | cut -c1-72)

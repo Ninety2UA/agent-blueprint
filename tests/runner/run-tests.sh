@@ -789,6 +789,331 @@ $listed
 EOF
 }
 
+t47_the_scan_starts_no_process_per_line() {
+    # One key among thousands of added lines: the lines are matched in one pass, so the number of
+    # grep calls does not grow with the patch (it used to be two per added line).
+    new_repo t47
+    local real calls
+    real=$(command -v grep)
+    mkdir -p "$D/shim"
+    printf '#!/bin/sh\necho x >> "%s"\nexec "%s" "$@"\n' "$D/grep-calls" "$real" > "$D/shim/grep"
+    chmod +x "$D/shim/grep"
+    { seq 1 3000 | sed 's/^/line /'; printf 'key = AKIA%s\n' "$(printf 'Q%.0s' {1..16})"; } > big.txt
+    git add big.txt && git commit -q -m "feat: big" -m "token: $(printf 'm%.0s' {1..24})"
+    RC=0; git rev-parse HEAD | PATH="$D/shim:$PATH" bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$(git rev-parse --short=12 HEAD):big.txt: cloud access key" && assert_out ":commit message: secret assignment" && assert_out "2 hit(s)"
+    calls=$(grep -c . "$D/grep-calls" 2>/dev/null || echo 0)
+    [ "$calls" -lt 100 ] || fail "the scan called grep $calls times for one commit"
+}
+
+t48_a_merge_is_scanned_for_what_it_adds_itself() {
+    # A merge is diffed against all its parents at once: a line or a .env file that no parent has
+    # is the merge's own and is reported once, at the merge. One a parent already has is reported
+    # through that parent's commit while it is outgoing, and not at all once it is published.
+    local k1 k2 k3 m s short
+    k1="AKIA$(printf 'Q%.0s' {1..16})"; k2="AKIA$(printf 'Z%.0s' {1..16})"; k3="AKIA$(printf 'Y%.0s' {1..16})"
+    new_repo t48
+    git switch -q main
+    printf 'one\ntwo\nthree\nfour\nfive\n' > f.txt && printf 'l1\nl2\nmid\nl4\nl5\n' > c.txt
+    git add f.txt c.txt && git commit -q -m "fixtures" && git push -q origin main
+    git switch -q -C feat/x
+    edit() { sed "$2" "$1" > "$1.tmp" && mv "$1.tmp" "$1"; }
+    # A clean merge of main, which published a key and a .env: nothing is new.
+    git switch -q main
+    printf 'pub = %s\n' "$k1" > pub.txt && echo "APP_MODE=published" > .env && edit f.txt 's/^one$/ONE/'
+    git add -A && git commit -q -m "main: a fixture key and a .env" && git push -q origin main
+    git switch -q feat/x
+    edit f.txt 's/^five$/FIVE/' && git commit -q -am "feat: five"
+    git merge -q --no-ff -m "merge main" main
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 0
+    # An evil merge: a key in a file both sides changed, and a .env file, neither in any parent.
+    git switch -q main
+    edit f.txt 's/^two$/TWO/' && git commit -q -am "main: two" && git push -q origin main
+    git switch -q feat/x
+    edit f.txt 's/^four$/FOUR/' && git commit -q -am "feat: four"
+    git merge -q --no-ff --no-commit main > /dev/null
+    edit f.txt "s/^three\$/three = $k2/" && echo "APP_MODE=merge" > .env.local
+    git add -A && git commit -q -m "merge main, with additions"
+    short=$(git rev-parse --short=12 HEAD)
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$short:f.txt: cloud access key" && assert_out "$short:.env.local: .env file" && assert_out "2 hit(s)"
+    # A conflict resolved with main's published key kept and a new key added: only the new one.
+    git switch -q main
+    edit c.txt "s/^mid\$/pub = $k1/" && git commit -q -am "main: c" && git push -q origin main
+    git switch -q feat/x
+    edit c.txt 's/^mid$/featmid/' && git commit -q -am "feat: c"
+    git merge -q main > /dev/null 2>&1 && fail "the case needs a conflict"
+    printf 'l1\nl2\nfeatmid\npub = %s\nnew = %s\nl4\nl5\n' "$k1" "$k3" > c.txt
+    git add c.txt && git commit -q --no-edit
+    short=$(git rev-parse --short=12 HEAD)
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$short:c.txt: cloud access key" && assert_out "    new = ****" && assert_not_out "pub = ****" && assert_out "1 hit(s)"
+    # A .env file a merge brings in from an outgoing branch is reported once, at that branch's commit.
+    git switch -q -c side
+    echo "APP_MODE=side" > .env.staging && git add .env.staging && git commit -q -m "side: env"
+    s=$(git rev-parse HEAD)
+    git switch -q feat/x && git merge -q --no-ff -m "merge side" side
+    m=$(git rev-parse HEAD)
+    RC=0; printf '%s\n%s\n' "$s" "$m" | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$(git rev-parse --short=12 "$s"):.env.staging: .env file" && assert_not_out "$(git rev-parse --short=12 "$m"):" && assert_out "1 hit(s)"
+    # An octopus merge (three parents, three columns) that adds a key of its own.
+    git switch -q -c o1 feat/x && echo o1 > o1.txt && git add o1.txt && git commit -q -m "o1"
+    git switch -q -c o2 feat/x && echo o2 > o2.txt && git add o2.txt && git commit -q -m "o2"
+    git switch -q feat/x && git merge -q --no-ff --no-commit o1 o2 > /dev/null
+    printf 'octo = %s\n' "$k2" > octo.txt && git add octo.txt && git commit -q -m "octopus"
+    assert_eq "$(git log -1 --format=%P | wc -w | tr -d ' ')" 3 "parents of the octopus merge"
+    short=$(git rev-parse --short=12 HEAD)
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$short:octo.txt: cloud access key" && assert_out "1 hit(s)"
+}
+
+t49_an_unpushed_merge_of_published_work_publishes() {
+    # The remote's main published a fixture key and a .env; the branch merged it before the run and
+    # never pushed the merge. The merge is outgoing, but what it brings in is not new.
+    new_repo t49
+    git clone -q "$REMOTE" "$D/other"
+    (cd "$D/other" && printf 'fixture = AKIA%s\n' "$(printf 'P%.0s' {1..16})" > fixture.txt && echo "APP_MODE=published" > .env \
+        && git add -A && git commit -q -m "test: published fixture" && git push -q origin main)
+    echo mine > mine.txt && git add mine.txt && git commit -q -m "feat: mine"
+    git fetch -q origin main && git merge -q --no-ff -m "merge main" FETCH_HEAD
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 0 && assert_out "Opened pull request" && assert_not_out "secret scan found"
+    assert_eq "$(remote_commits_ahead feat/x)" 3 "commits pushed past the remote's main"
+}
+
+t50_a_change_to_the_global_git_config_stops_the_publish() {
+    # The configuration outside the repository can redirect the push or run code during it
+    # (url.<base>.pushInsteadOf, core.sshCommand). Each case writes only under $D: its own HOME,
+    # XDG_CONFIG_HOME or GIT_CONFIG_GLOBAL, never the shared test HOME, let alone the real one.
+    new_repo t50a
+    export HOME="$D/home"
+    mkdir -p "$HOME" && cp "$WORK/home/.gitconfig" "$HOME/.gitconfig"
+    scenario "state:done:ship commit:a.txt pr-body global-config"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "$HOME/.gitconfig" && assert_out "nothing is pushed"
+    ! remote_has_branch feat/x || fail "pushed after ~/.gitconfig changed"
+    export HOME="$WORK/home"
+    new_repo t50b
+    export XDG_CONFIG_HOME="$D/xdg"
+    scenario "state:done:ship commit:a.txt pr-body xdg-config"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "$D/xdg/git/config" && assert_out "nothing is pushed"
+    ! remote_has_branch feat/x || fail "pushed after \$XDG_CONFIG_HOME/git/config changed"
+    unset XDG_CONFIG_HOME
+    new_repo t50c
+    export GIT_CONFIG_GLOBAL="$D/global.gitconfig"
+    cp "$HOME/.gitconfig" "$GIT_CONFIG_GLOBAL"
+    scenario "state:done:ship commit:a.txt pr-body global-config"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "$D/global.gitconfig" && assert_out "nothing is pushed"
+    ! remote_has_branch feat/x || fail "pushed after the GIT_CONFIG_GLOBAL file changed"
+    unset GIT_CONFIG_GLOBAL
+    ! grep -q planted-by-the-session "$HOME/.gitconfig" || fail "a case wrote the shared test HOME's .gitconfig"
+    # A record written before the fingerprint and the push target existed has no line for either:
+    # it loads, both are taken on resume, and the run publishes.
+    new_repo t50d
+    scenario "state:running:plan commit:a.txt" "state:done:ship commit:b.txt pr-body"
+    run_runner --host fake "feature" --max 1
+    assert_rc 4
+    grep -q '^global_config_hash=.' "$(record_file)" || fail "the record holds no fingerprint of the global git config"
+    grep -q "^push_target=$REMOTE\$" "$(record_file)" || fail "the record holds no push target"
+    sed '/^global_config_hash=/d; /^push_target=/d' "$(record_file)" > "$D/record.old" && cat "$D/record.old" > "$(record_file)"
+    run_runner --host fake --resume
+    assert_rc 0 && assert_out "Opened pull request" && assert_out "Recorded a fingerprint" && assert_out "Recorded the push target"
+}
+
+t51_a_url_rule_that_redirects_the_push_stops_it() {
+    # git push applies url.<base>.pushInsteadOf and insteadOf rules, from any configuration file, to
+    # the recorded URL itself, so the runner checks where that URL goes, not only what the remote's
+    # URL resolves to. The remote is named through an alias that a global insteadOf rule expands;
+    # a rule matching the expanded URL changes neither the remote's URL nor .git/config.
+    local real
+    new_repo t51a
+    export GIT_CONFIG_GLOBAL="$D/global.gitconfig"
+    cp "$HOME/.gitconfig" "$GIT_CONFIG_GLOBAL"
+    git config --global url."$D/".insteadOf ab-alias:
+    git remote set-url origin ab-alias:remote.git
+    git config extensions.worktreeConfig true
+    git init -q --bare "$D/elsewhere-remote.git"
+    scenario "state:done:ship commit:a.txt pr-body worktree-config:url.$D/elsewhere-.pushInsteadOf=$D/"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "pushInsteadOf" && assert_out "nothing is pushed"
+    ! git --git-dir="$D/elsewhere-remote.git" show-ref --verify -q refs/heads/feat/x || fail "pushed where the planted rule sends the push"
+    ! remote_has_branch feat/x || fail "pushed although a rule redirects the push"
+    # The same rule in place before the run, a chained setup: git rewrites the push URL a second
+    # time. The run records where the push goes, shows it, lists and scans against it, and publishes there.
+    new_repo t51b
+    export GIT_CONFIG_GLOBAL="$D/global.gitconfig"
+    cp "$HOME/.gitconfig" "$GIT_CONFIG_GLOBAL"
+    git config --global url."$D/".insteadOf ab-alias:
+    git config --global url."$D/elsewhere-".pushInsteadOf "$D/"
+    git remote set-url origin ab-alias:remote.git
+    git init -q --bare "$D/elsewhere-remote.git"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 0 && assert_out "push URL $D/remote.git, which git sends to $D/elsewhere-remote.git" && assert_out "Opened pull request"
+    git --git-dir="$D/elsewhere-remote.git" show-ref --verify -q refs/heads/feat/x || fail "the push did not reach the recorded target"
+    ! remote_has_branch feat/x || fail "the push went to the URL before its rewrite"
+    # A rule added after the publish checks ran, while the commits were scanned (a leftover process
+    # might), that changes only where the recorded URL goes: the checks run again just before the push.
+    new_repo t51c
+    export GIT_CONFIG_GLOBAL="$D/global.gitconfig"
+    cp "$HOME/.gitconfig" "$GIT_CONFIG_GLOBAL"
+    git config --global url."$D/".insteadOf ab-alias:
+    git remote set-url origin ab-alias:remote.git
+    git config extensions.worktreeConfig true
+    git init -q --bare "$D/elsewhere-remote.git"
+    real=$(command -v bash)
+    mkdir -p "$D/shim"
+    cat > "$D/shim/bash" <<EOF
+#!$real
+case "\${1:-}" in
+    *scan-secrets.sh)
+        rc=0; "$real" "\$@" || rc=\$?
+        git config --worktree url."$D/elsewhere-".pushInsteadOf "$D/"
+        exit "\$rc" ;;
+esac
+exec "$real" "\$@"
+EOF
+    chmod +x "$D/shim/bash"
+    scenario "state:done:ship commit:a.txt pr-body"
+    PATH="$D/shim:$PATH" run_runner --host fake "feature"
+    assert_rc 3 && assert_out "No secrets found" && assert_out "pushInsteadOf" && assert_out "nothing is pushed"
+    ! git --git-dir="$D/elsewhere-remote.git" show-ref --verify -q refs/heads/feat/x || fail "pushed where the rule added during the scan sends the push"
+    ! remote_has_branch feat/x || fail "pushed although a rule added during the scan redirects the push"
+}
+
+t52_added_lines_that_look_like_headers_are_scanned() {
+    # "+++ " and "--- " are headers only between a file's diff line and its first hunk: an added
+    # line "++ ..." is content, and an added "++ b/x" does not rename the file the hits are in.
+    local short
+    new_repo t52
+    { printf '++ key = AKIA%s\n' "$(printf 'Q%.0s' {1..16})"; echo "++ b/elsewhere.txt"
+      printf 'token ghp_%s\n' "$(printf 'a%.0s' {1..36})"; echo "--- a removed-looking line"; } > plus.txt
+    git add plus.txt && git commit -q -m "feat: plus lines"
+    short=$(git rev-parse HEAD | cut -c1-12)
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$short:plus.txt: cloud access key" && assert_out "    ++ key = ****" && assert_out "$short:plus.txt: GitHub token"
+    assert_not_out "elsewhere.txt:" && assert_out "2 hit(s)"
+}
+
+t53_paths_are_labelled_as_they_are_named() {
+    # A path with a space carries no tab from the diff header, a path git quotes is unquoted (a
+    # control character in it shows as ?), and diff.noprefix in the configuration changes nothing.
+    local k short
+    k="AKIA$(printf 'Q%.0s' {1..16})"
+    new_repo t53
+    git config diff.noprefix true
+    mkdir -p "sp ace" café && echo "a $k" > "sp ace/f f.txt" && echo "c $k" > café/k.txt
+    if mkdir -p 'qu"ote' 2>/dev/null; then echo "b $k" > 'qu"ote/k.txt'; fi
+    if mkdir -p "$(printf 'n\nl')" 2>/dev/null; then echo "d $k" > "$(printf 'n\nl')/k.txt"; fi
+    git add -A && git commit -q -m "feat: odd paths"
+    short=$(git rev-parse HEAD | cut -c1-12)
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$short:sp ace/f f.txt: cloud access key" && assert_out "$short:café/k.txt: cloud access key"
+    if [ -d 'qu"ote' ]; then assert_out "$short:qu\"ote/k.txt: cloud access key"; fi
+    if [ -d "$(printf 'n\nl')" ]; then assert_out "$short:n?l/k.txt: cloud access key"; fi
+    assert_not_out "$(printf '\t'):"
+}
+
+t54_lines_the_locale_cannot_read_are_scanned() {
+    # A line with bytes that are not valid UTF-8 is matched byte by byte, so a UTF-8 locale that
+    # cannot read it (macOS) does not hide a key, and the value is masked all the same. The output
+    # holds those bytes, so it is checked byte by byte too.
+    local k short
+    k="AKIA$(printf 'Q%.0s' {1..16})"
+    new_repo t54
+    printf 'bad \377\376 key = %s\n' "$k" > bytes.txt
+    git add bytes.txt && git commit -q -m "feat: latin-1 bytes"
+    short=$(git rev-parse HEAD | cut -c1-12)
+    RC=0; git rev-parse HEAD | LC_ALL=en_US.UTF-8 bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$short:bytes.txt: cloud access key" && assert_not_out "RE error"
+    LC_ALL=C grep -Fq "key = ****" "$OUT" || fail "the line is not shown masked ($OUT)"
+    ! LC_ALL=C grep -Fq "AKIAQQQQ" "$OUT" || fail "the scan printed the raw key ($OUT)"
+    printf 'Body\nbad \377\376 key = %s\n' "$k" > "$D/body.md"
+    RC=0; LC_ALL=en_US.UTF-8 bash "$SCAN" --file "$D/body.md" > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$D/body.md:2: cloud access key"
+    ! LC_ALL=C grep -Fq "AKIAQQQQ" "$OUT" || fail "the scan printed the raw key ($OUT)"
+    # The locale still counts where it reads more: a private key header spaced with an em space
+    # (its [[:space:]]), and an assignment spelled with a long s wherever the locale folds it to s.
+    printf -- '-----BEGIN\342\200\203PRIVATE KEY-----\n' > em.txt
+    printf 'pa\305\277\305\277word = %s\n' "$(printf 'v%.0s' {1..24})" > longs.txt
+    git add em.txt longs.txt && git commit -q -m "feat: unicode"
+    short=$(git rev-parse HEAD | cut -c1-12)
+    RC=0; git rev-parse HEAD | LC_ALL=en_US.UTF-8 bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    if printf 'a\342\200\203b\n' | LC_ALL=en_US.UTF-8 grep -qE 'a[[:space:]]b'; then assert_out "$short:em.txt: private key block"; fi
+    if printf 'pa\305\277\305\277word\n' | LC_ALL=en_US.UTF-8 grep -qi 'password'; then assert_out "$short:longs.txt: secret assignment" && assert_not_out "vvvvvvvv"; fi
+    return 0
+}
+
+t55_message_hits_name_their_commit() {
+    # The commit a message hit names comes from git, not from the message: a body line that looks
+    # like a commit header does not take over the label, and a SHA-256 repository's 64-character
+    # hashes are labelled like 40-character ones.
+    new_repo t55
+    echo m >> m.txt && git add m.txt
+    git commit -q -m "feat: m" -m "commit 0123456789abcdef0123456789abcdef01234567" -m "deploy token ghp_$(printf 'B%.0s' {1..36})"
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$(git rev-parse HEAD | cut -c1-12):commit message: GitHub token" && assert_not_out "0123456789ab:"
+    if git init -q --object-format=sha256 "$D/sha256" 2>/dev/null; then
+        (cd "$D/sha256" && echo x > x && git add x && git commit -q -m "add x" -m "deploy token ghp_$(printf 'C%.0s' {1..36})")
+        RC=0; (cd "$D/sha256" || exit 2; git rev-parse HEAD | bash "$SCAN" --commits -) > "$OUT" 2>&1 || RC=$?
+        assert_rc 1 && assert_out "$(git -C "$D/sha256" rev-parse HEAD | cut -c1-12):commit message: GitHub token"
+    fi
+    return 0
+}
+
+t56_a_textconv_filter_does_not_hide_a_key() {
+    # A diff driver's textconv in the user's configuration (a pdf or image filter, say) and one line
+    # of .gitattributes would show the scan the filter's output instead of the committed text.
+    new_repo t56
+    export GIT_CONFIG_GLOBAL="$D/global.gitconfig"
+    cp "$HOME/.gitconfig" "$GIT_CONFIG_GLOBAL"
+    git config --global diff.pdf.textconv true
+    printf 'keys.txt diff=pdf\n' > .gitattributes && printf 'key = AKIA%s\n' "$(printf 'Q%.0s' {1..16})" > keys.txt
+    git add -A && git commit -q -m "feat: keys behind a textconv"
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out ":keys.txt: cloud access key" && assert_not_out "AKIAQQQQ"
+}
+
+t57_the_ci_check_reads_merges_like_the_scan() {
+    # A merge counts only for the CI files none of its parents has: a clean merge of a published
+    # workflow change does not stop the run, an evil merge that edits a workflow does, and so does an
+    # outgoing side-branch commit that edits one, through its own commit.
+    new_repo t57a
+    git clone -q "$REMOTE" "$D/other"
+    (cd "$D/other" && mkdir -p .github/workflows && printf 'name: ci\non: push\njobs: {}\n' > .github/workflows/ci.yml \
+        && git add .github && git commit -q -m "ci: published workflow" && git push -q origin main)
+    echo mine > mine.txt && git add mine.txt && git commit -q -m "feat: mine"
+    git fetch -q origin main && git merge -q --no-ff -m "merge main" FETCH_HEAD
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 0 && assert_out "Opened pull request" && assert_not_out "CI configuration"
+    new_repo t57b
+    git clone -q "$REMOTE" "$D/other"
+    (cd "$D/other" && echo more >> README.md && git commit -q -am "docs: more" && git push -q origin main)
+    echo mine > mine.txt && git add mine.txt && git commit -q -m "feat: mine"
+    git fetch -q origin main && git merge -q --no-ff --no-commit FETCH_HEAD > /dev/null
+    mkdir -p .github/workflows && printf 'name: evil\non: push\njobs: {}\n' > .github/workflows/evil.yml
+    git add .github && git commit -q -m "merge main, with a workflow"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "CI configuration" && assert_out "evil.yml"
+    ! remote_has_branch feat/x || fail "pushed a workflow an evil merge added"
+    new_repo t57c
+    git switch -q -c side
+    mkdir -p .github/actions/x && printf 'name: x\nruns: {using: node20, main: x.js}\n' > .github/actions/x/action.yml
+    git add .github && git commit -q -m "ci: an action" && git switch -q feat/x
+    echo mine > mine.txt && git add mine.txt && git commit -q -m "feat: mine"
+    git merge -q --no-ff -m "merge side" side
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "CI configuration" && assert_out "action.yml"
+    ! remote_has_branch feat/x || fail "pushed an action an outgoing side branch added"
+}
+
 t22_resume_takes_the_host_from_the_command_line() {
     new_repo t22
     scenario "state:running:plan commit:a.txt" "state:done:ship commit:b.txt pr-body"
@@ -868,7 +1193,12 @@ t38_a_removed_env_file_still_fails_the_range_scan t39_an_env_file_under_a_quoted
 t40_commits_from_before_the_run_are_scanned_and_checked t41_an_env_path_named_like_a_commit_header_fails_the_range_scan
 t42_the_scanner_reads_a_list_of_commits t43_the_runs_own_commits_are_checked_even_when_a_remote_branch_has_them
 t44_an_unreadable_remote_stops_the_publish t45_the_push_sends_the_commit_that_was_scanned
-t46_outgoing_commits_reads_the_push_url_live"
+t46_outgoing_commits_reads_the_push_url_live t47_the_scan_starts_no_process_per_line
+t48_a_merge_is_scanned_for_what_it_adds_itself t49_an_unpushed_merge_of_published_work_publishes
+t50_a_change_to_the_global_git_config_stops_the_publish t51_a_url_rule_that_redirects_the_push_stops_it
+t52_added_lines_that_look_like_headers_are_scanned t53_paths_are_labelled_as_they_are_named
+t54_lines_the_locale_cannot_read_are_scanned t55_message_hits_name_their_commit
+t56_a_textconv_filter_does_not_hide_a_key t57_the_ci_check_reads_merges_like_the_scan"
 
 SELECTED="${*:-$ALL}"
 PASSED=0 FAILED=0
