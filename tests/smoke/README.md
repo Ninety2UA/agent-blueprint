@@ -79,6 +79,19 @@ HOME="$P" bash tests/smoke/run-smoke.sh --host cursor-agent --cell manual-only -
 
 The profile changes nothing in the real home directory; delete it afterwards. Do not run `cursor-agent login` inside it: the login would overwrite the keychain entry of the account already signed in.
 
+Antigravity drops skills past a context budget, and a dropped skill does not load even by `/ab-name`, so on a crowded machine the pipeline cells fail without the skill ever running (`docs/hosts/antigravity.md` § Catalog budget). Its sign-in is a file, so link that file into the profile:
+
+```bash
+P=/private/tmp/agy-blueprint-profile
+mkdir -p "$P/.gemini/antigravity-cli" "$P/Library" && ln -sfn "$HOME/Library/Keychains" "$P/Library/Keychains"
+ln -s "$HOME/.gemini/oauth_creds.json" "$HOME/.gemini/google_accounts.json" "$P/.gemini/"
+cp "$HOME/.gemini/antigravity-cli/settings.json" "$P/.gemini/antigravity-cli/"
+HOME="$P" agy plugin install .
+HOME="$P" bash tests/smoke/run-smoke.sh --host agy --plugin-dir .
+```
+
+Do not sign in again inside this profile either.
+
 ## Adding a host or a cell
 
 A host is a row in `skills/ab-ship-pipeline/scripts/hosts.sh` (KTD15): add it to `AB_HOSTS` and to every `host_*` function, including the smoke rows `host_version`, `host_helpers_off_args`, `host_hooks`, `host_manual_only`, `host_catalog_dirs` and `host_usage`. The smoke test reads nothing about a host from anywhere else.

@@ -21,7 +21,7 @@ Check: `agy plugin list` shows `agent-blueprint` with its components; `agy plugi
 
 ## Invoke a skill
 
-- Explicit: `/ab-name` (verified headless on 1.2.16).
+- Explicit: `/ab-name` (verified headless on 1.2.16 and 1.3.0), for a skill in the catalog; see Catalog budget below.
 - By description: Antigravity picks a skill whose description matches the request.
 - Manual-only: Antigravity documents no `disable-model-invocation` control, but the smoke test's manual-only cell passes on 1.2.16: `ab-plugin-update` is absent from the catalog the model sees while other `ab-p` skills are in it. Both manual-only descriptions also avoid broad trigger words, and `ab-migrate` asks before it removes anything.
 
@@ -34,7 +34,7 @@ Check: `agy plugin list` shows `agent-blueprint` with its components; `agy plugi
 - Hooks: none. The blueprint ships no `hooks.json` for Antigravity, so the five hook effects are absent: the session-start pointer to `docs/context/STATUS.md` (Antigravity has no session-start event in any case), the injection scanner on writes, the commit-message check, the ship-pipeline Stop guard and the Agent Teams gates. Nothing else depends on them. Per a third-party report, `PreToolUse` hooks do not fire under `--dangerously-skip-permissions` anyway.
 - Helpers: `invoke_subagent`, asynchronous and parallel, started fresh without the parent's history; a helper's workspace can be a git worktree (`branch` mode). No documented cap.
 - Team work: no cap in `host-limits.tsv`; worktree isolation. Antigravity's Teamwork mode (`/teamwork-preview`) is paid, in preview and opens with a user interview, so no skill drives it.
-- Provenance records: Gemini 3.1 Pro does the pipeline's work but does not always write `.agent-blueprint/run/provenance/<skill>.json`. In the smoke runs on 2026-10-04 the build and review pipelines completed correctly every time, yet two runs wrote the timestamp as a shell expression (invalid JSON; the snippet now asks for a literal value) and two skipped the record; debug wrote it. Nothing in a pipeline's outcome depends on the record, and the ship runner keeps its own; the smoke test's build and review cells require it and render `fail` until Gemini writes it reliably.
+- Catalog budget: Antigravity lists skills to the model only up to a context budget and names the ones it left out. On the build machine, with 237 skills from other plugins and `~/.gemini/config/skills` installed, 1.3.0 left out 48 of the 53 `ab-` skills (2026-10-06). A left-out skill does not load even by name: a headless `/ab-build-pipeline` reached the model as plain text, and Gemini built the feature without the pipeline or its provenance record, which is why the smoke test's build and debug cells failed on that machine. With only the blueprint installed, both cells load the skill and write the record (verified 2026-10-06 in a clean profile; `tests/smoke/README.md` § A clean profile for a capped catalog). If `ab-` skills are missing, keep fewer skills in `~/.gemini/config/skills` and fewer plugins enabled (`agy plugin disable <name>`; whether a disabled plugin stops counting is not verified).
 - Questions: `ask_question`, a blocking question tool (not in the vendor docs; not verified); a headless run takes the documented default.
 - Task tracking: the plan file's checkboxes; `/tasks` is a user command, and a model-callable todo tool is not verified.
 - Instructions: Antigravity reads `GEMINI.md` and `AGENTS.md` at the workspace root; per a third-party report `GEMINI.md` wins on conflict and `CLAUDE.md` is not read.
