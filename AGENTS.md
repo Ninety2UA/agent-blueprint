@@ -51,7 +51,7 @@ The allowlist in `scripts/portability-allowlist.json` only shrinks: a fixed viol
 
 ## Releasing
 
-Bump the version in `.claude-plugin/plugin.json`, the marketplace entry and every skill's `metadata.version` together (the manifest gate holds them equal) whenever plugin content changes on the default branch. Installed plugin caches only re-sync when the version changes, so an unbumped release never reaches users.
+Bump the version in `.claude-plugin/plugin.json`, the marketplace entry and every skill's `metadata.version` together (the manifest gate holds them equal) whenever plugin content changes on the default branch, then run `python3 scripts/sync-shared.py`, which writes the new version into each pipeline skill's provenance command. Installed plugin caches only re-sync when the version changes, so an unbumped release never reaches users.
 
 ## How to work
 

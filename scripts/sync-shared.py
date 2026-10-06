@@ -6,9 +6,10 @@ Two kinds of shared text, both registered in scripts/prompt-owners.json:
   snippets  "snippet_owner" names one markdown file. Each "## <id>" section's first
             paragraph is a canonical snippet that opens with a bold label, such as
             "**Helper step.**". Any paragraph in a skill that opens with that label is
-            a copy and must equal the snippet byte for byte (indentation aside). The
-            site-specific line that follows a copy is its own paragraph and is never
-            touched.
+            a copy and must equal the snippet byte for byte (indentation aside), with
+            {{name}} and {{version}} filled from the frontmatter `name` and
+            `metadata.version` of the skill holding the copy. The site-specific line
+            that follows a copy is its own paragraph and is never touched.
   files     "shared" lists {"owner": path, "copies": [path, ...]}: whole files (prompt
             files, the v4 name map, host-limits.tsv) kept byte-identical to the owner.
 
@@ -31,6 +32,13 @@ import sys
 FENCE_OPEN = re.compile(r"^[ \t]*(?:(`{3,})[^`]*|(~{3,}).*)$")
 LABEL = re.compile(r"^\*\*[^*\n]+\*\*")
 LIST_LEAD = re.compile(r"^\s*(?:[-*+]\s+|\d+[.)]\s+|>\s*)*")
+# Per-skill fields a snippet may hold; each copy gets its own skill's values.
+FIELD = re.compile(r"\{\{(name|version)\}\}")
+FIELD_NAME = {"name": "`name`", "version": "`metadata.version`"}
+FRONTMATTER = re.compile(r"\A---\n(.*?)\n---(?:\n|\Z)", re.DOTALL)
+FIELD_LINE = {"name": re.compile(r'^name:[ \t]*"?([^"\n]*?)"?[ \t]*$', re.MULTILINE),
+              "version": re.compile(r'^metadata:[ \t]*\n(?:[ \t]+.*\n)*?[ \t]+version:[ \t]*"?([^"\n]*?)"?[ \t]*$',
+                                    re.MULTILINE)}
 
 
 def read(path):
@@ -127,21 +135,49 @@ def skill_prose(repo):
                     yield os.path.join(dirpath, name)
 
 
-def snippet_drift(text, snips):
-    """[(line_no, label, kind, (first, last, indent) or None)] for copies in text.
+def skill_fields(repo, path, cache):
+    """{field: value} from the frontmatter of the skill folder holding path."""
+    skill = os.path.join(repo, *os.path.relpath(path, repo).split(os.sep)[:2])
+    if skill not in cache:
+        m = FRONTMATTER.match(read(os.path.join(skill, "SKILL.md")))
+        found = ((k, p.search(m.group(1))) for k, p in FIELD_LINE.items()) if m else ()
+        cache[skill] = {k: hit.group(1) for k, hit in found if hit and hit.group(1)}
+    return cache[skill]
 
-    kind is 'drift' (a paragraph of its own that differs: rewrite it), 'run-on' (text
-    written right under the snippet in the same paragraph) or 'run-in' (the label opens
-    a later line or a list item); the last two need a hand fix, so sync never deletes text.
+
+def fill(snips, fields):
+    """({label: snippet with fields filled in}, {label: [fields the skill lacks]})."""
+    filled, missing = {}, {}
+    for label, canon in snips.items():
+        lacks = sorted({k for k in FIELD.findall(canon) if k not in fields})
+        if lacks:
+            missing[label] = lacks
+        else:
+            filled[label] = FIELD.sub(lambda m: fields[m.group(1)], canon)
+    return filled, missing
+
+
+def snippet_drift(text, snips, missing=None):
+    """[(line_no, label, kind, detail)] for copies in text.
+
+    kind is 'drift' (a paragraph of its own that differs: rewrite it; detail is
+    (first, last, indent)), 'run-on' (text written right under the snippet in the same
+    paragraph), 'run-in' (the label opens a later line or a list item) or 'unfilled'
+    (the skill lacks a field the snippet needs; detail lists them); the last three need
+    a hand fix, so sync never deletes text. missing is fill()'s second value.
     """
+    missing = missing or {}
     lines, ranges = blocks(text)
     found = []
     for first, last in ranges:
         indent, body = dedent(lines[first:last + 1])
         para = "\n".join(body)
-        for label, canon in snips.items():
+        for label in list(snips) + list(missing):
+            canon = snips.get(label)
             if para.startswith(label):
-                if len(body) > canon.count("\n") + 1:
+                if canon is None:
+                    found.append((first + 1, label, "unfilled", missing[label]))
+                elif len(body) > canon.count("\n") + 1:
                     found.append((first + 1, label, "run-on", None))
                 elif para != canon:
                     found.append((first + 1, label, "drift", (first, last, indent)))
@@ -160,16 +196,20 @@ def find_drift(repo, registry=None):
     if missing:
         out.append((os.path.join(repo, missing), "owner-missing", "snippet owner file does not exist"))
     if snips:
+        cache = {}
         for path in skill_prose(repo):
             if owner_path and os.path.samefile(path, owner_path):
                 continue
-            for line, label, kind, _ in snippet_drift(read(path), snips):
+            for line, label, kind, detail in snippet_drift(read(path), *fill(snips, skill_fields(repo, path, cache))):
                 if kind == "drift":
                     out.append((path, "snippet-drift", "line %d: the %s snippet differs from its owner; run "
                                 "python3 scripts/sync-shared.py" % (line, label)))
                 elif kind == "run-on":
                     out.append((path, "snippet-drift", "line %d: the %s snippet must be a paragraph of its own; "
                                 "add a blank line between it and the following text" % (line, label)))
+                elif kind == "unfilled":
+                    out.append((path, "snippet-drift", "line %d: the %s snippet needs %s in this skill's frontmatter"
+                                % (line, label, " and ".join(FIELD_NAME[k] for k in detail))))
                 else:
                     out.append((path, "snippet-drift", "line %d: the %s snippet must be a paragraph of its own, "
                                 "with a blank line before and after" % (line, label)))
@@ -203,15 +243,22 @@ def sync(repo, registry=None):
     if missing:
         problems.append("%s: snippet owner file does not exist" % missing)
     if snips:
+        cache = {}
         for path in skill_prose(repo):
             if owner_path and os.path.samefile(path, owner_path):
                 continue
             text = read(path)
-            hits = snippet_drift(text, snips)
+            filled, lacking = fill(snips, skill_fields(repo, path, cache))
+            hits = snippet_drift(text, filled, lacking)
             if not hits:
                 continue
             lines = text.split("\n")
             for line, label, kind, span in sorted(hits, key=lambda h: -h[0]):
+                if kind == "unfilled":
+                    problems.append("%s:%d: the %s snippet needs %s in this skill's frontmatter"
+                                    % (os.path.relpath(path, repo), line, label,
+                                       " and ".join(FIELD_NAME[k] for k in span)))
+                    continue
                 if kind == "run-on":
                     problems.append("%s:%d: the %s snippet has text right under it; add a blank line between them"
                                     % (os.path.relpath(path, repo), line, label))
@@ -221,7 +268,7 @@ def sync(repo, registry=None):
                                     % (os.path.relpath(path, repo), line, label))
                     continue
                 first, last, indent = span
-                lines[first:last + 1] = [indent + l if l else l for l in snips[label].split("\n")]
+                lines[first:last + 1] = [indent + l if l else l for l in filled[label].split("\n")]
             new = "\n".join(lines)
             if new != text:
                 with open(path, "w", encoding="utf-8") as fh:

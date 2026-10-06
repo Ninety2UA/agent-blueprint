@@ -161,6 +161,36 @@ class SyncTool(unittest.TestCase):
         snips, _, _ = SYNC.snippets(self.repo.root, SYNC.load_registry(self.repo.root))
         self.assertEqual(snips, self.snips)
 
+    def test_sync_fills_each_skills_name_and_version(self):
+        canon = self.snips["**Provenance record.**"]
+        self.assertIn("{{name}}", canon)
+        self.assertIn("{{version}}", canon)
+        self.repo.edit(SKILL, "  owner: gate-tests\n", '  owner: gate-tests\n  version: "1.2.3"\n')
+        self.paste(canon, "Then read the guide.")
+        code, out = run_gate("sync-shared.py", self.repo.root, "--check")
+        self.assertEqual(code, 1, out)
+        self.assertIn("**Provenance record.** snippet differs", out)
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 0, out)
+        filled = canon.replace("{{name}}", "ab-fixture").replace("{{version}}", "1.2.3")
+        self.assertIn("\n%s\n\nThen read the guide.\n" % filled, self.repo.read(SKILL))
+        code, out = run_gate("check-portability.py", self.repo.root)
+        self.assertEqual(code, 0, out)
+        self.repo.edit(SKILL, 'version: "1.2.3"', 'version: "1.2.4"')
+        code, out = run_gate("sync-shared.py", self.repo.root, "--check")
+        self.assertEqual(code, 1, "a version change leaves the old version in the copy: %s" % out)
+
+    def test_snippet_needing_a_missing_field_needs_a_hand_fix(self):
+        self.paste(self.snips["**Provenance record.**"], "Then read the guide.")
+        before = self.repo.read(SKILL)
+        code, out = run_gate("check-portability.py", self.repo.root)
+        self.assertEqual(code, 1, out)
+        self.assertIn("needs `metadata.version` in this skill's frontmatter", out)
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 1, out)
+        self.assertIn("needs a hand fix", out)
+        self.assertEqual(self.repo.read(SKILL), before)
+
     def test_owner_file_itself_is_not_a_copy(self):
         code, out = run_gate("sync-shared.py", self.repo.root, "--check")
         self.assertEqual(code, 0, out)
