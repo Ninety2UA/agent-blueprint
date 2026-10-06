@@ -8,8 +8,11 @@ Two kinds of shared text, both registered in scripts/prompt-owners.json:
             "**Helper step.**". Any paragraph in a skill that opens with that label is
             a copy and must equal the snippet byte for byte (indentation aside), with
             {{name}} and {{version}} filled from the frontmatter `name` and
-            `metadata.version` of the skill holding the copy. The site-specific line
-            that follows a copy is its own paragraph and is never touched.
+            `metadata.version` of the skill holding the copy. The values land in a
+            shell command, so only plain ones fill (FIELD_VALUE; quotes around a value
+            are dropped): any other value counts as missing, and the copy needs a hand
+            fix. The site-specific line that follows a copy is its own paragraph and
+            is never touched.
   files     "shared" lists {"owner": path, "copies": [path, ...]}: whole files (prompt
             files, the v4 name map, host-limits.tsv) kept byte-identical to the owner.
 
@@ -32,13 +35,19 @@ import sys
 FENCE_OPEN = re.compile(r"^[ \t]*(?:(`{3,})[^`]*|(~{3,}).*)$")
 LABEL = re.compile(r"^\*\*[^*\n]+\*\*")
 LIST_LEAD = re.compile(r"^\s*(?:[-*+]\s+|\d+[.)]\s+|>\s*)*")
-FRONTMATTER = re.compile(r"\A---\n(.*?)\n---(?:\n|\Z)", re.DOTALL)
-# Per-skill fields a snippet may hold; each copy gets its own skill's values.
-FIELD_LINE = {"name": re.compile(r'^name:[ \t]*"?([^"\n]*?)"?[ \t]*$', re.MULTILINE),
-              "version": re.compile(r'^metadata:[ \t]*\n(?:[ \t]+.*\n)*?[ \t]+version:[ \t]*"?([^"\n]*?)"?[ \t]*$',
-                                    re.MULTILINE)}
+FRONTMATTER = re.compile(r"\A---\n(.*?)\n---(?:\n|\Z)", re.DOTALL)   # read() turns CRLF into \n
+# Per-skill fields a snippet may hold; each copy gets its own skill's values. A metadata line
+# matches as one space or tab, then the rest: "[ \t]+.*" could split the indent many ways, which
+# backtracked exponentially on a block without a version.
+FIELD_LINE = {"name": re.compile(r"^name:(.*)$", re.MULTILINE),
+              "version": re.compile(r"^metadata:[ \t]*\n(?:[ \t].*\n)*?[ \t]+version:(.*)$", re.MULTILINE)}
+# A value lands inside a single-quoted shell string and a file name, so only these fill a copy;
+# any other value counts as missing.
+FIELD_VALUE = {"name": re.compile(r"[a-z0-9][a-z0-9-]*"), "version": re.compile(r"[0-9A-Za-z][0-9A-Za-z.+-]*")}
 FIELD = re.compile(r"\{\{(%s)\}\}" % "|".join(FIELD_LINE))
 FIELD_NAME = {"name": "`name`", "version": "`metadata.version`"}
+FIELD_FORM = {"name": "lowercase letters, digits and hyphens",
+              "version": "letters, digits, dots, plus signs and hyphens"}
 
 
 def read(path):
@@ -135,13 +144,22 @@ def skill_prose(repo):
                     yield os.path.join(dirpath, name)
 
 
+def field_value(field, raw):
+    """raw without surrounding whitespace and one pair of matching quotes, or None unless FIELD_VALUE accepts it."""
+    raw = raw.strip()
+    if len(raw) > 1 and raw[0] == raw[-1] and raw[0] in "\"'":
+        raw = raw[1:-1]
+    return raw if FIELD_VALUE[field].fullmatch(raw) else None
+
+
 def skill_fields(repo, path, cache):
-    """{field: value} from the frontmatter of the skill folder holding path."""
+    """{field: value} from the frontmatter of the skill folder holding path; a value FIELD_VALUE rejects is left out."""
     skill = os.path.join(repo, *os.path.relpath(path, repo).split(os.sep)[:2])
     if skill not in cache:
         m = FRONTMATTER.match(read(os.path.join(skill, "SKILL.md")))
         found = ((k, p.search(m.group(1))) for k, p in FIELD_LINE.items()) if m else ()
-        cache[skill] = {k: hit.group(1) for k, hit in found if hit and hit.group(1)}
+        values = ((k, field_value(k, hit.group(1))) for k, hit in found if hit)
+        cache[skill] = {k: v for k, v in values if v}
     return cache[skill]
 
 
@@ -158,7 +176,9 @@ def fill(snips, fields):
 
 
 def needs_fields(label, lacks):
-    return "the %s snippet needs %s in this skill's frontmatter" % (label, " and ".join(FIELD_NAME[k] for k in lacks))
+    return "the %s snippet needs %s in this skill's frontmatter%s" % (
+        label, " and ".join(FIELD_NAME[k] for k in lacks),
+        "".join("; %s may hold only %s" % (FIELD_NAME[k], FIELD_FORM[k]) for k in lacks))
 
 
 def snippet_drift(text, snips, fields):
@@ -167,9 +187,9 @@ def snippet_drift(text, snips, fields):
     kind is 'drift' (a paragraph of its own that differs: rewrite it; detail is
     (first, last, indent, filled snippet)), 'run-on' (text written right under the
     snippet in the same paragraph), 'run-in' (the label opens a later line or a list
-    item) or 'unfilled' (the skill lacks a field the snippet needs; detail lists them);
-    the last three need a hand fix, so sync never deletes text. fields is skill_fields()'s
-    value for the skill holding text.
+    item) or 'unfilled' (the skill lacks a field the snippet needs, or holds one that is
+    not plain; detail lists them); the last three need a hand fix, so sync never deletes
+    text. fields is skill_fields()'s value for the skill holding text.
     """
     filled, missing = fill(snips, fields)
     lines, ranges = blocks(text)
