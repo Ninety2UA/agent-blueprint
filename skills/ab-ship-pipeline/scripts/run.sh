@@ -17,8 +17,9 @@
 #   --swarm, --deploy, --iterations N, --convergence MODE
 #                            Forwarded to the skill
 #
-# The runner keeps its own record of the run (base commit, branch, push URL, a hash of .git/config and
-# a fingerprint of all the git configuration it reads, the iteration count) under
+# The runner keeps its own record of the run (base commit, branch, push URL and the push target git
+# resolves it to, a hash of .git/config and a fingerprint of all the git configuration it reads, the
+# iteration count) under
 # ${XDG_STATE_HOME:-~/.local/state}/agent-blueprint/<repo hash>/, outside the working tree, and never
 # takes those values from state.json. Every state.json field is untrusted: it is validated before use
 # and only ever passed as a quoted argument.
@@ -156,6 +157,8 @@ push_target() {
     case "$t" in ''|*$'\n'*) return 1 ;; esac
     printf '%s\n' "$t"
 }
+# no_push_target URL: stop the run when git names no single push URL for URL.
+no_push_target() { error "Cannot tell where a push to $(mask_url "$1") goes: git remote -v shows no single push URL for it"; exit 1; }
 # via_target URL TARGET: ", which git sends to TARGET" when a rule sends a push to URL elsewhere.
 via_target() { [ "$1" = "$2" ] || printf ', which git sends to %s' "$(mask_url "$2")"; }
 
@@ -259,7 +262,7 @@ info "Working tree clean"
 # ─── Dry run stops here ───────────────────────────────────────
 if [ "$DRY_RUN" = true ]; then
     DRY_URL=$(git remote get-url --push "$REMOTE")
-    DRY_TARGET=$(push_target "$DRY_URL") || { error "Cannot tell where a push to $(mask_url "$DRY_URL") goes: git remote -v shows no single push URL for it"; exit 1; }
+    DRY_TARGET=$(push_target "$DRY_URL") || no_push_target "$DRY_URL"
     DRY_REPO=$(pr_repo_from_url "$DRY_TARGET")
     info "Would record base $(git rev-parse --short HEAD), branch $BRANCH, push URL $(mask_url "$DRY_URL")$(via_target "$DRY_URL" "$DRY_TARGET")${DRY_REPO:+, pull requests in $DRY_REPO}"
     info "Would run per iteration: $(host_bin "$RUN_HOST") with the skill prompt for: ${FEATURE:-<feature>}"
@@ -360,7 +363,7 @@ if [ "$RESUME" = true ]; then
         info "Recorded a fingerprint of the git configuration; a change to it from now on stops the publish"
     fi
     if [ -z "$REC_push_target" ]; then
-        REC_push_target=$(push_target "$REC_push_url") || { error "Cannot tell where a push to $(mask_url "$REC_push_url") goes: git remote -v shows no single push URL for it"; exit 1; }
+        REC_push_target=$(push_target "$REC_push_url") || no_push_target "$REC_push_url"
         save_record
         info "Recorded the push target: $(mask_url "$REC_push_target"); a change to it from now on stops the publish"
     fi
@@ -376,7 +379,7 @@ else
     REC_push_url=$(git remote get-url --push "$REMOTE")
     # Where the push really goes: the commits are listed against it, the pull request goes to its
     # repository, and the push stops if it changes during the run.
-    REC_push_target=$(push_target "$REC_push_url") || { error "Cannot tell where a push to $(mask_url "$REC_push_url") goes: git remote -v shows no single push URL for it"; exit 1; }
+    REC_push_target=$(push_target "$REC_push_url") || no_push_target "$REC_push_url"
     REC_pr_repo=$(pr_repo_from_url "$REC_push_target")
     REC_config_hash=$(sha256_file "$(git rev-parse --git-path config)")
     REC_global_config_hash=$(global_config_hash)
@@ -651,8 +654,7 @@ publish() {
     fi
     success "No secrets found"
 
-    # Push the scanned commit to the recorded URL and branch only, with every git hook disabled; push_guard
-    # has just checked that git still sends that URL to the recorded target.
+    # Push the scanned commit to the recorded URL and branch only, with every git hook disabled.
     push_guard
     if ! out=$(git -c core.hooksPath=/dev/null push "$REC_push_url" "$head:refs/heads/$REC_branch" 2>&1); then
         printf '%s\n' "$out" | tail -5 | sed 's/^/      /'
