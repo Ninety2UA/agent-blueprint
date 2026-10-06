@@ -122,8 +122,30 @@ run_runner() {   # args...; captures output and exit code in RC
     [ -n "${RUNNER_TESTS_SHOW:-}" ] && { echo "--- run.sh $* (exit $RC)"; cat "$OUT"; } >&2
     return 0
 }
-remote_has_branch() { git --git-dir="$REMOTE" show-ref --verify -q "refs/heads/$1"; }
+remote_has_branch() { git --git-dir="${2:-$REMOTE}" show-ref --verify -q "refs/heads/$1"; }   # BRANCH [GIT_DIR]
 remote_commits_ahead() { git --git-dir="$REMOTE" rev-list --count "main..$1"; }
+short_hash() { git rev-parse "${1:-HEAD}" | cut -c1-12; }   # [REV]: the 12 characters the scanner labels hits with
+rep() { printf "$1%.0s" $(seq 1 "$2"); }   # CHAR COUNT
+own_global_config() {   # points git's global configuration at a copy under $D, for the test's subshell only
+    export GIT_CONFIG_GLOBAL="$D/global.gitconfig"
+    cp "$HOME/.gitconfig" "$GIT_CONFIG_GLOBAL"
+}
+after_scan_shim() {   # CMD: writes $D/shim/bash, which runs CMD once the secret scan has run
+    local real
+    real=$(command -v bash)
+    mkdir -p "$D/shim"
+    cat > "$D/shim/bash" <<EOF
+#!$real
+case "\${1:-}" in
+    *scan-secrets.sh)
+        rc=0; "$real" "\$@" || rc=\$?
+        $1
+        exit "\$rc" ;;
+esac
+exec "$real" "\$@"
+EOF
+    chmod +x "$D/shim/bash"
+}
 state_dir() { echo "$XDG_STATE_HOME/agent-blueprint/$(git -C "$D/work" rev-parse --show-toplevel | tr -d '\n' | sha256_stdin | cut -c1-16)"; }
 record_file() { echo "$(state_dir)/record"; }
 run_log() { echo "$(state_dir)/logs/iteration-$1.log"; }
@@ -511,7 +533,6 @@ t35_dry_run_masks_credentials_and_names_the_pr_repository() {
 
 t36_every_scan_pattern_is_caught_and_masked() {
     new_repo t36
-    rep() { printf "$1%.0s" $(seq 1 "$2"); }
     {
         echo "cloud AKIA$(rep Q 16)"
         echo "github ghp_$(rep a 36)"
@@ -708,20 +729,7 @@ t44_an_unreadable_remote_stops_the_publish() {
 t45_the_push_sends_the_commit_that_was_scanned() {
     new_repo t45
     # A bash shim on PATH commits once the secret scan has run, as a leftover background process might.
-    local real
-    real=$(command -v bash)
-    mkdir -p "$D/shim"
-    cat > "$D/shim/bash" <<EOF
-#!$real
-case "\${1:-}" in
-    *scan-secrets.sh)
-        rc=0; "$real" "\$@" || rc=\$?
-        echo late >> late.txt && git add late.txt && git commit -q -m "late commit"
-        exit "\$rc" ;;
-esac
-exec "$real" "\$@"
-EOF
-    chmod +x "$D/shim/bash"
+    after_scan_shim 'echo late >> late.txt && git add late.txt && git commit -q -m "late commit"'
     scenario "state:done:ship commit:a.txt pr-body"
     PATH="$D/shim:$PATH" run_runner --host fake "feature"
     assert_rc 0 && assert_out "Opened pull request" && assert_out "HEAD moved while publishing"
@@ -791,17 +799,17 @@ EOF
 
 t47_the_scan_starts_no_process_per_line() {
     # One key among thousands of added lines: the lines are matched in one pass, so the number of
-    # grep calls does not grow with the patch (it used to be two per added line).
+    # grep calls does not grow with the patch.
     new_repo t47
     local real calls
     real=$(command -v grep)
     mkdir -p "$D/shim"
     printf '#!/bin/sh\necho x >> "%s"\nexec "%s" "$@"\n' "$D/grep-calls" "$real" > "$D/shim/grep"
     chmod +x "$D/shim/grep"
-    { seq 1 3000 | sed 's/^/line /'; printf 'key = AKIA%s\n' "$(printf 'Q%.0s' {1..16})"; } > big.txt
-    git add big.txt && git commit -q -m "feat: big" -m "token: $(printf 'm%.0s' {1..24})"
+    { seq 1 3000 | sed 's/^/line /'; printf 'key = AKIA%s\n' "$(rep Q 16)"; } > big.txt
+    git add big.txt && git commit -q -m "feat: big" -m "token: $(rep m 24)"
     RC=0; git rev-parse HEAD | PATH="$D/shim:$PATH" bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
-    assert_rc 1 && assert_out "$(git rev-parse --short=12 HEAD):big.txt: cloud access key" && assert_out ":commit message: secret assignment" && assert_out "2 hit(s)"
+    assert_rc 1 && assert_out "$(short_hash):big.txt: cloud access key" && assert_out ":commit message: secret assignment" && assert_out "2 hit(s)"
     calls=$(grep -c . "$D/grep-calls" 2>/dev/null || echo 0)
     [ "$calls" -lt 100 ] || fail "the scan called grep $calls times for one commit"
 }
@@ -811,7 +819,7 @@ t48_a_merge_is_scanned_for_what_it_adds_itself() {
     # is the merge's own and is reported once, at the merge. One a parent already has is reported
     # through that parent's commit while it is outgoing, and not at all once it is published.
     local k1 k2 k3 m s short
-    k1="AKIA$(printf 'Q%.0s' {1..16})"; k2="AKIA$(printf 'Z%.0s' {1..16})"; k3="AKIA$(printf 'Y%.0s' {1..16})"
+    k1="AKIA$(rep Q 16)"; k2="AKIA$(rep Z 16)"; k3="AKIA$(rep Y 16)"
     new_repo t48
     git switch -q main
     printf 'one\ntwo\nthree\nfour\nfive\n' > f.txt && printf 'l1\nl2\nmid\nl4\nl5\n' > c.txt
@@ -835,7 +843,7 @@ t48_a_merge_is_scanned_for_what_it_adds_itself() {
     git merge -q --no-ff --no-commit main > /dev/null
     edit f.txt "s/^three\$/three = $k2/" && echo "APP_MODE=merge" > .env.local
     git add -A && git commit -q -m "merge main, with additions"
-    short=$(git rev-parse --short=12 HEAD)
+    short=$(short_hash)
     RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
     assert_rc 1 && assert_out "$short:f.txt: cloud access key" && assert_out "$short:.env.local: .env file" && assert_out "2 hit(s)"
     # A conflict resolved with main's published key kept and a new key added: only the new one.
@@ -846,7 +854,7 @@ t48_a_merge_is_scanned_for_what_it_adds_itself() {
     git merge -q main > /dev/null 2>&1 && fail "the case needs a conflict"
     printf 'l1\nl2\nfeatmid\npub = %s\nnew = %s\nl4\nl5\n' "$k1" "$k3" > c.txt
     git add c.txt && git commit -q --no-edit
-    short=$(git rev-parse --short=12 HEAD)
+    short=$(short_hash)
     RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
     assert_rc 1 && assert_out "$short:c.txt: cloud access key" && assert_out "    new = ****" && assert_not_out "pub = ****" && assert_out "1 hit(s)"
     # A .env file a merge brings in from an outgoing branch is reported once, at that branch's commit.
@@ -856,14 +864,14 @@ t48_a_merge_is_scanned_for_what_it_adds_itself() {
     git switch -q feat/x && git merge -q --no-ff -m "merge side" side
     m=$(git rev-parse HEAD)
     RC=0; printf '%s\n%s\n' "$s" "$m" | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
-    assert_rc 1 && assert_out "$(git rev-parse --short=12 "$s"):.env.staging: .env file" && assert_not_out "$(git rev-parse --short=12 "$m"):" && assert_out "1 hit(s)"
+    assert_rc 1 && assert_out "$(short_hash "$s"):.env.staging: .env file" && assert_not_out "$(short_hash "$m"):" && assert_out "1 hit(s)"
     # An octopus merge (three parents, three columns) that adds a key of its own.
     git switch -q -c o1 feat/x && echo o1 > o1.txt && git add o1.txt && git commit -q -m "o1"
     git switch -q -c o2 feat/x && echo o2 > o2.txt && git add o2.txt && git commit -q -m "o2"
     git switch -q feat/x && git merge -q --no-ff --no-commit o1 o2 > /dev/null
     printf 'octo = %s\n' "$k2" > octo.txt && git add octo.txt && git commit -q -m "octopus"
     assert_eq "$(git log -1 --format=%P | wc -w | tr -d ' ')" 3 "parents of the octopus merge"
-    short=$(git rev-parse --short=12 HEAD)
+    short=$(short_hash)
     RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
     assert_rc 1 && assert_out "$short:octo.txt: cloud access key" && assert_out "1 hit(s)"
 }
@@ -873,7 +881,7 @@ t49_an_unpushed_merge_of_published_work_publishes() {
     # never pushed the merge. The merge is outgoing, but what it brings in is not new.
     new_repo t49
     git clone -q "$REMOTE" "$D/other"
-    (cd "$D/other" && printf 'fixture = AKIA%s\n' "$(printf 'P%.0s' {1..16})" > fixture.txt && echo "APP_MODE=published" > .env \
+    (cd "$D/other" && printf 'fixture = AKIA%s\n' "$(rep P 16)" > fixture.txt && echo "APP_MODE=published" > .env \
         && git add -A && git commit -q -m "test: published fixture" && git push -q origin main)
     echo mine > mine.txt && git add mine.txt && git commit -q -m "feat: mine"
     git fetch -q origin main && git merge -q --no-ff -m "merge main" FETCH_HEAD
@@ -903,8 +911,7 @@ t50_a_change_to_the_global_git_config_stops_the_publish() {
     ! remote_has_branch feat/x || fail "pushed after \$XDG_CONFIG_HOME/git/config changed"
     unset XDG_CONFIG_HOME
     new_repo t50c
-    export GIT_CONFIG_GLOBAL="$D/global.gitconfig"
-    cp "$HOME/.gitconfig" "$GIT_CONFIG_GLOBAL"
+    own_global_config
     scenario "state:done:ship commit:a.txt pr-body global-config"
     run_runner --host fake "feature"
     assert_rc 3 && assert_out "$D/global.gitconfig" && assert_out "nothing is pushed"
@@ -929,59 +936,38 @@ t51_a_url_rule_that_redirects_the_push_stops_it() {
     # the recorded URL itself, so the runner checks where that URL goes, not only what the remote's
     # URL resolves to. The remote is named through an alias that a global insteadOf rule expands;
     # a rule matching the expanded URL changes neither the remote's URL nor .git/config.
-    local real
-    new_repo t51a
-    export GIT_CONFIG_GLOBAL="$D/global.gitconfig"
-    cp "$HOME/.gitconfig" "$GIT_CONFIG_GLOBAL"
-    git config --global url."$D/".insteadOf ab-alias:
-    git remote set-url origin ab-alias:remote.git
+    aliased_repo() {   # NAME: a fixture whose origin is ab-alias:remote.git, beside an empty elsewhere-remote.git
+        new_repo "$1"
+        own_global_config
+        git config --global url."$D/".insteadOf ab-alias:
+        git remote set-url origin ab-alias:remote.git
+        git init -q --bare "$D/elsewhere-remote.git"
+    }
+    aliased_repo t51a
     git config extensions.worktreeConfig true
-    git init -q --bare "$D/elsewhere-remote.git"
     scenario "state:done:ship commit:a.txt pr-body worktree-config:url.$D/elsewhere-.pushInsteadOf=$D/"
     run_runner --host fake "feature"
     assert_rc 3 && assert_out "pushInsteadOf" && assert_out "nothing is pushed"
-    ! git --git-dir="$D/elsewhere-remote.git" show-ref --verify -q refs/heads/feat/x || fail "pushed where the planted rule sends the push"
+    ! remote_has_branch feat/x "$D/elsewhere-remote.git" || fail "pushed where the planted rule sends the push"
     ! remote_has_branch feat/x || fail "pushed although a rule redirects the push"
     # The same rule in place before the run, a chained setup: git rewrites the push URL a second
     # time. The run records where the push goes, shows it, lists and scans against it, and publishes there.
-    new_repo t51b
-    export GIT_CONFIG_GLOBAL="$D/global.gitconfig"
-    cp "$HOME/.gitconfig" "$GIT_CONFIG_GLOBAL"
-    git config --global url."$D/".insteadOf ab-alias:
+    aliased_repo t51b
     git config --global url."$D/elsewhere-".pushInsteadOf "$D/"
-    git remote set-url origin ab-alias:remote.git
-    git init -q --bare "$D/elsewhere-remote.git"
     scenario "state:done:ship commit:a.txt pr-body"
     run_runner --host fake "feature"
     assert_rc 0 && assert_out "push URL $D/remote.git, which git sends to $D/elsewhere-remote.git" && assert_out "Opened pull request"
-    git --git-dir="$D/elsewhere-remote.git" show-ref --verify -q refs/heads/feat/x || fail "the push did not reach the recorded target"
+    remote_has_branch feat/x "$D/elsewhere-remote.git" || fail "the push did not reach the recorded target"
     ! remote_has_branch feat/x || fail "the push went to the URL before its rewrite"
     # A rule added after the publish checks ran, while the commits were scanned (a leftover process
     # might), that changes only where the recorded URL goes: the checks run again just before the push.
-    new_repo t51c
-    export GIT_CONFIG_GLOBAL="$D/global.gitconfig"
-    cp "$HOME/.gitconfig" "$GIT_CONFIG_GLOBAL"
-    git config --global url."$D/".insteadOf ab-alias:
-    git remote set-url origin ab-alias:remote.git
+    aliased_repo t51c
     git config extensions.worktreeConfig true
-    git init -q --bare "$D/elsewhere-remote.git"
-    real=$(command -v bash)
-    mkdir -p "$D/shim"
-    cat > "$D/shim/bash" <<EOF
-#!$real
-case "\${1:-}" in
-    *scan-secrets.sh)
-        rc=0; "$real" "\$@" || rc=\$?
-        git config --worktree url."$D/elsewhere-".pushInsteadOf "$D/"
-        exit "\$rc" ;;
-esac
-exec "$real" "\$@"
-EOF
-    chmod +x "$D/shim/bash"
+    after_scan_shim "git config --worktree url.\"$D/elsewhere-\".pushInsteadOf \"$D/\""
     scenario "state:done:ship commit:a.txt pr-body"
     PATH="$D/shim:$PATH" run_runner --host fake "feature"
     assert_rc 3 && assert_out "No secrets found" && assert_out "pushInsteadOf" && assert_out "nothing is pushed"
-    ! git --git-dir="$D/elsewhere-remote.git" show-ref --verify -q refs/heads/feat/x || fail "pushed where the rule added during the scan sends the push"
+    ! remote_has_branch feat/x "$D/elsewhere-remote.git" || fail "pushed where the rule added during the scan sends the push"
     ! remote_has_branch feat/x || fail "pushed although a rule added during the scan redirects the push"
 }
 
@@ -990,10 +976,10 @@ t52_added_lines_that_look_like_headers_are_scanned() {
     # line "++ ..." is content, and an added "++ b/x" does not rename the file the hits are in.
     local short
     new_repo t52
-    { printf '++ key = AKIA%s\n' "$(printf 'Q%.0s' {1..16})"; echo "++ b/elsewhere.txt"
-      printf 'token ghp_%s\n' "$(printf 'a%.0s' {1..36})"; echo "--- a removed-looking line"; } > plus.txt
+    { printf '++ key = AKIA%s\n' "$(rep Q 16)"; echo "++ b/elsewhere.txt"
+      printf 'token ghp_%s\n' "$(rep a 36)"; echo "--- a removed-looking line"; } > plus.txt
     git add plus.txt && git commit -q -m "feat: plus lines"
-    short=$(git rev-parse HEAD | cut -c1-12)
+    short=$(short_hash)
     RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
     assert_rc 1 && assert_out "$short:plus.txt: cloud access key" && assert_out "    ++ key = ****" && assert_out "$short:plus.txt: GitHub token"
     assert_not_out "elsewhere.txt:" && assert_out "2 hit(s)"
@@ -1003,14 +989,14 @@ t53_paths_are_labelled_as_they_are_named() {
     # A path with a space carries no tab from the diff header, a path git quotes is unquoted (a
     # control character in it shows as ?), and diff.noprefix in the configuration changes nothing.
     local k short
-    k="AKIA$(printf 'Q%.0s' {1..16})"
+    k="AKIA$(rep Q 16)"
     new_repo t53
     git config diff.noprefix true
     mkdir -p "sp ace" café && echo "a $k" > "sp ace/f f.txt" && echo "c $k" > café/k.txt
     if mkdir -p 'qu"ote' 2>/dev/null; then echo "b $k" > 'qu"ote/k.txt'; fi
     if mkdir -p "$(printf 'n\nl')" 2>/dev/null; then echo "d $k" > "$(printf 'n\nl')/k.txt"; fi
     git add -A && git commit -q -m "feat: odd paths"
-    short=$(git rev-parse HEAD | cut -c1-12)
+    short=$(short_hash)
     RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
     assert_rc 1 && assert_out "$short:sp ace/f f.txt: cloud access key" && assert_out "$short:café/k.txt: cloud access key"
     if [ -d 'qu"ote' ]; then assert_out "$short:qu\"ote/k.txt: cloud access key"; fi
@@ -1023,11 +1009,11 @@ t54_lines_the_locale_cannot_read_are_scanned() {
     # cannot read it (macOS) does not hide a key, and the value is masked all the same. The output
     # holds those bytes, so it is checked byte by byte too.
     local k short
-    k="AKIA$(printf 'Q%.0s' {1..16})"
+    k="AKIA$(rep Q 16)"
     new_repo t54
     printf 'bad \377\376 key = %s\n' "$k" > bytes.txt
     git add bytes.txt && git commit -q -m "feat: latin-1 bytes"
-    short=$(git rev-parse HEAD | cut -c1-12)
+    short=$(short_hash)
     RC=0; git rev-parse HEAD | LC_ALL=en_US.UTF-8 bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
     assert_rc 1 && assert_out "$short:bytes.txt: cloud access key" && assert_not_out "RE error"
     LC_ALL=C grep -Fq "key = ****" "$OUT" || fail "the line is not shown masked ($OUT)"
@@ -1039,9 +1025,9 @@ t54_lines_the_locale_cannot_read_are_scanned() {
     # The locale still counts where it reads more: a private key header spaced with an em space
     # (its [[:space:]]), and an assignment spelled with a long s wherever the locale folds it to s.
     printf -- '-----BEGIN\342\200\203PRIVATE KEY-----\n' > em.txt
-    printf 'pa\305\277\305\277word = %s\n' "$(printf 'v%.0s' {1..24})" > longs.txt
+    printf 'pa\305\277\305\277word = %s\n' "$(rep v 24)" > longs.txt
     git add em.txt longs.txt && git commit -q -m "feat: unicode"
-    short=$(git rev-parse HEAD | cut -c1-12)
+    short=$(short_hash)
     RC=0; git rev-parse HEAD | LC_ALL=en_US.UTF-8 bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
     if printf 'a\342\200\203b\n' | LC_ALL=en_US.UTF-8 grep -qE 'a[[:space:]]b'; then assert_out "$short:em.txt: private key block"; fi
     if printf 'pa\305\277\305\277word\n' | LC_ALL=en_US.UTF-8 grep -qi 'password'; then assert_out "$short:longs.txt: secret assignment" && assert_not_out "vvvvvvvv"; fi
@@ -1054,13 +1040,13 @@ t55_message_hits_name_their_commit() {
     # hashes are labelled like 40-character ones.
     new_repo t55
     echo m >> m.txt && git add m.txt
-    git commit -q -m "feat: m" -m "commit 0123456789abcdef0123456789abcdef01234567" -m "deploy token ghp_$(printf 'B%.0s' {1..36})"
+    git commit -q -m "feat: m" -m "commit 0123456789abcdef0123456789abcdef01234567" -m "deploy token ghp_$(rep B 36)"
     RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
-    assert_rc 1 && assert_out "$(git rev-parse HEAD | cut -c1-12):commit message: GitHub token" && assert_not_out "0123456789ab:"
+    assert_rc 1 && assert_out "$(short_hash):commit message: GitHub token" && assert_not_out "0123456789ab:"
     if git init -q --object-format=sha256 "$D/sha256" 2>/dev/null; then
-        (cd "$D/sha256" && echo x > x && git add x && git commit -q -m "add x" -m "deploy token ghp_$(printf 'C%.0s' {1..36})")
+        (cd "$D/sha256" && echo x > x && git add x && git commit -q -m "add x" -m "deploy token ghp_$(rep C 36)")
         RC=0; (cd "$D/sha256" || exit 2; git rev-parse HEAD | bash "$SCAN" --commits -) > "$OUT" 2>&1 || RC=$?
-        assert_rc 1 && assert_out "$(git -C "$D/sha256" rev-parse HEAD | cut -c1-12):commit message: GitHub token"
+        assert_rc 1 && assert_out "$(cd "$D/sha256" && short_hash):commit message: GitHub token"
     fi
     return 0
 }
@@ -1069,10 +1055,9 @@ t56_a_textconv_filter_does_not_hide_a_key() {
     # A diff driver's textconv in the user's configuration (a pdf or image filter, say) and one line
     # of .gitattributes would show the scan the filter's output instead of the committed text.
     new_repo t56
-    export GIT_CONFIG_GLOBAL="$D/global.gitconfig"
-    cp "$HOME/.gitconfig" "$GIT_CONFIG_GLOBAL"
+    own_global_config
     git config --global diff.pdf.textconv true
-    printf 'keys.txt diff=pdf\n' > .gitattributes && printf 'key = AKIA%s\n' "$(printf 'Q%.0s' {1..16})" > keys.txt
+    printf 'keys.txt diff=pdf\n' > .gitattributes && printf 'key = AKIA%s\n' "$(rep Q 16)" > keys.txt
     git add -A && git commit -q -m "feat: keys behind a textconv"
     RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
     assert_rc 1 && assert_out ":keys.txt: cloud access key" && assert_not_out "AKIAQQQQ"
@@ -1120,14 +1105,14 @@ t58_a_byte_read_as_half_a_character_does_not_shift_the_report() {
     # every later hit with the wrong label (a key line was printed unmasked as a label), and a path
     # ending in one hid the .env path after it. The output holds those bytes, so it is read byte by byte.
     local k g short loc label n
-    k="AKIA$(printf 'Q%.0s' {1..16})"; g="ghp_$(printf 'a%.0s' {1..36})"
+    k="AKIA$(rep Q 16)"; g="ghp_$(rep a 36)"
     new_repo t58
-    printf 'password = %s\351\nkey %s\ntoken %s\n' "$(printf 'v%.0s' {1..24})" "$k" "$g" > latin1.txt
+    printf 'password = %s\351\nkey %s\ntoken %s\n' "$(rep v 24)" "$k" "$g" > latin1.txt
     # Not every file system takes a name that is not UTF-8, so the path goes into the index directly.
     git update-index --add --cacheinfo "100644,$(echo x | git hash-object -w --stdin),$(printf 'a\351')"
     mkdir -p b && echo X=1 > b/.env
     git add latin1.txt b/.env && git commit -q -m "feat: latin-1 bytes"
-    short=$(git rev-parse HEAD | cut -c1-12)
+    short=$(short_hash)
     cp latin1.txt "$D/body.md"
     for loc in en_US.UTF-8 C.UTF-8; do
         RC=0; git rev-parse HEAD | LC_ALL=$loc bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
@@ -1150,7 +1135,7 @@ t59_a_file_named_like_an_option_is_scanned() {
     # A name that starts with - reached grep as an option, so the file went unread and the scan
     # reported it clean.
     new_repo t59
-    printf 'key = AKIA%s\n' "$(printf 'Q%.0s' {1..16})" > ./-x.txt
+    printf 'key = AKIA%s\n' "$(rep Q 16)" > ./-x.txt
     RC=0; bash "$SCAN" --file -x.txt > "$OUT" 2>&1 || RC=$?
     assert_rc 1 && assert_out "-x.txt:1: cloud access key" && assert_not_out "AKIAQQQQ" && assert_not_out "grep:"
     git add -- -x.txt && git commit -q -m "feat: dash" && git rev-parse HEAD > ./-c.txt
