@@ -147,16 +147,23 @@ global_config_files() {   # the global files as git finds them, for messages
     if [ -n "${GIT_CONFIG_GLOBAL:-}" ]; then echo "$GIT_CONFIG_GLOBAL"
     else echo "${XDG_CONFIG_HOME:-$HOME/.config}/git/config, $HOME/.gitconfig"; fi
 }
+# push_remote: the name of the remote that push_target and the push define on the command line, one no
+# configuration file uses: an existing remote of that name would bring its own URLs, and its pushurl
+# would stand in for the push target.
+push_remote() {
+    local name=agent-blueprint-push
+    while git config --get-regexp "^remote\\.$name\\." >/dev/null 2>&1; do name="agent-blueprint-push-$RANDOM$RANDOM"; done
+    printf '%s\n' "$name"
+}
 # push_target URL: where `git push URL` goes once the url.<base>.pushInsteadOf and insteadOf rules of
 # every configuration file are applied to URL itself; fails unless that is exactly one URL. `git remote
 # -v` applies the rules to a remote defined on the command line, which `git remote get-url` refuses.
-# The runner pushes to the remote's push URL as git reports it, already rewritten once, so a chained
-# setup (an insteadOf rule and a pushInsteadOf rule matching its result) sends the push further on.
-# The remote's name is one no configuration file uses: an existing remote of that name would bring its
-# own URLs, and its pushurl would stand in for the push target.
+# The runner pushes the remote's push URL as git reports it, already rewritten once, through such a
+# remote, so a chained setup (an insteadOf rule and a pushInsteadOf rule matching its result) sends the
+# push further on.
 push_target() {
-    local name=agent-blueprint-push t
-    while git config --get-regexp "^remote\\.$name\\." >/dev/null 2>&1; do name="agent-blueprint-push-$RANDOM$RANDOM"; done
+    local name t
+    name=$(push_remote)
     t=$(git -c "remote.$name.url=$1" remote -v 2>/dev/null | sed -n "s/^${name}[[:space:]]\\(.*\\) (push)\$/\\1/p")
     case "$t" in ''|*$'\n'*) return 1 ;; esac
     printf '%s\n' "$t"
@@ -164,9 +171,11 @@ push_target() {
 # no_push_target URL: stop the run when git names no single push URL for URL.
 no_push_target() { error "Cannot tell where a push to $(mask_url "$1") goes: git remote -v shows no single push URL for it"; exit 1; }
 # listed_url TARGET: the URL whose branches outgoing-commits.sh reads for TARGET. Its git ls-remote and
-# git fetch apply the insteadOf rules to TARGET once more, so a rule that matches the push target itself
-# would list the branches of a repository the push never reaches.
-listed_url() { git ls-remote --get-url -- "$1" 2>/dev/null; }
+# git fetch would apply the insteadOf rules to TARGET once more, or take it for the name of a remote, so
+# they run with the rule url.TARGET.insteadOf=TARGET, as here: its prefix is the whole URL, the longest
+# a rule can have, so only a rule in a configuration file for that exact URL (which wins the tie) or a
+# remote of that name can still send them elsewhere.
+listed_url() { git -c "url.$1.insteadOf=$1" ls-remote --get-url -- "$1" 2>/dev/null; }
 # remote_file NAME...: prints the first file under the remotes/ or branches/ git path named after one
 # of the NAMEs. git push, git ls-remote and git fetch take a name with no slash in it for a remote
 # first and, when no configuration defines that remote, read its URL from such a file, which neither
@@ -182,18 +191,36 @@ remote_file() {
     done
     return 1
 }
-# check_push_target URL TARGET: stop the run when a legacy remote file decides where a push to URL goes,
-# or when git would read the branches of its push target TARGET from another URL.
-check_push_target() {
+# push_target_problem URL TARGET: returns 0, with the reason in PT_WHY and what clears it in PT_FIX, when
+# the commits a push to URL, which git sends to TARGET, would publish cannot be told; returns 1 when
+# nothing stands in the way. The preflight and push_guard each stop on it their own way. A legacy remote
+# file named after either URL decides where git pushes or reads branches by that name; a TARGET holding
+# '=' cannot be named in listed_url's rule (git -c splits at the first =); and listed_url may still find
+# another URL.
+PT_WHY="" PT_FIX=""
+push_target_problem() {
     local f listed
+    PT_FIX="remove that file, rule or remote (git config --show-origin --get-regexp '^(url|remote)\\.' lists the rules and remotes)"
     if f=$(remote_file "$1" "$2"); then
-        error "$f, a legacy remote file named after the push URL $(mask_url "$1") or its target, would make git push or read branches where the file says. Remove it"
+        PT_WHY="$f, a legacy remote file named after the push URL $(mask_url "$1") or its target, would make git push or read branches where the file says"
+        return 0
+    fi
+    case "$2" in
+        *=*) PT_WHY="the push target $(mask_url "$2") holds '=', which cannot appear in the url.<base>.insteadOf rule that makes git read the branches of exactly that URL"
+             PT_FIX="use a push URL without '=' (a credential belongs in a credential helper, not in the URL)"
+             return 0 ;;
+    esac
+    listed=$(listed_url "$2" || true)
+    [ "$listed" = "$2" ] && return 1
+    PT_WHY="git reads the branches of the push target $(mask_url "$2") from $(mask_url "${listed:-<unknown>}") (a url.<base>.insteadOf rule for that exact URL, or a remote of that name, sends it there), so the commits a push to $(mask_url "$1") would publish cannot be listed"
+    return 0
+}
+# check_push_target URL TARGET: stop the run at the preflight on a push_target_problem.
+check_push_target() {
+    if push_target_problem "$1" "$2"; then
+        error "$PT_WHY. To publish, $PT_FIX"
         exit 1
     fi
-    listed=$(listed_url "$2" || true)
-    [ "$listed" = "$2" ] && return 0
-    error "Cannot tell which commits a push to $(mask_url "$2") would publish: git reads its branches from $(mask_url "${listed:-<unknown>}"), because a url.<base>.insteadOf rule rewrites it again. Remove that rule (git config --show-origin --get-regexp '^url\\.' lists them)"
-    exit 1
 }
 # via_target URL TARGET: ", which git sends to TARGET" when a rule sends a push to URL elsewhere.
 via_target() { [ "$1" = "$2" ] || printf ', which git sends to %s' "$(mask_url "$2")"; }
@@ -392,8 +419,10 @@ if [ "$RESUME" = true ]; then
     [ "$REC_branch" = "$BRANCH" ] || { error "The recorded run is on branch $REC_branch, not $BRANCH; check it out first"; exit 1; }
     [ -n "$FEATURE" ] || FEATURE="$REC_feature"
     info "Resuming after iteration $REC_iteration (base $(git rev-parse --short "$REC_base"), recorded $(sed -n 's/^updated=//p' "$RECORD"))"
-    # A record written before the fingerprint or the push target existed has none: it was not
-    # recorded, which is not a change. It is taken now and covers the rest of the run.
+    # A record without the fingerprint or the push target takes it now, and it covers the rest of the
+    # run. A record from an older runner lacks both. One whose global_config_hash= line was deleted lacks
+    # the fingerprint: that is the accept path accept_config names, by which the person running the runner
+    # accepts a configuration change they made themselves (t71), so the first block is no compatibility shim.
     if [ -z "$REC_global_config_hash" ]; then
         REC_global_config_hash=$(global_config_hash)
         save_record
@@ -632,17 +661,15 @@ accept_config() { printf 'delete the global_config_hash= line from %s before the
 # during it, changed since the run was recorded. publish calls it first and again just before the
 # push, so a change made while the commits are listed and scanned is caught as well.
 push_guard() {
-    local url_now target file listed cfg_now global_now hook_now
+    local url_now target cfg_now global_now hook_now
     url_now=$(git remote get-url --push "$REC_remote" 2>/dev/null || true)
     [ "$url_now" = "$REC_push_url" ] || needs_human "the push URL of $REC_remote changed from $(mask_url "$REC_push_url") to $(mask_url "${url_now:-<none>}")" "set it back with git remote set-url --push $REC_remote <the recorded URL>"
     # The remote's URL above misses a rule that matches only the recorded URL, which git push rewrites too.
     target=$(push_target "$REC_push_url" || true)
     [ "$target" = "$REC_push_target" ] || needs_human "a url.<base>.pushInsteadOf or insteadOf rule changed where a push to $(mask_url "$REC_push_url") goes, from $(mask_url "$REC_push_target") to $(mask_url "${target:-<unknown>}"); nothing is pushed" "remove the rule (git config --show-origin --get-regexp '^url\\.' lists them), then re-run"
-    if file=$(remote_file "$REC_push_url" "$REC_push_target"); then
-        needs_human "$file, a legacy remote file named after the push URL or its target, would make git push or read branches where the file says; nothing is pushed" "inspect it, remove it, then re-run"
+    if push_target_problem "$REC_push_url" "$REC_push_target"; then
+        needs_human "$PT_WHY; nothing is pushed" "$PT_FIX, then re-run"
     fi
-    listed=$(listed_url "$REC_push_target" || true)
-    [ "$listed" = "$REC_push_target" ] || needs_human "git reads the branches of the push target $(mask_url "$REC_push_target") from $(mask_url "${listed:-<unknown>}"), because a url.<base>.insteadOf rule rewrites it again, so the commits the push would publish cannot be listed; nothing is pushed" "remove the rule (git config --show-origin --get-regexp '^url\\.' lists them), then re-run"
     cfg_now=$(sha256_file "$(git rev-parse --git-path config)")
     [ "$cfg_now" = "$REC_config_hash" ] || needs_human ".git/config changed during the run; nothing is pushed until it is reviewed" "inspect $(git rev-parse --git-path config), restore it, then re-run"
     global_now=$(global_config_hash)
@@ -652,18 +679,18 @@ push_guard() {
 }
 
 publish() {
-    local body_copy ci_files out number title outgoing count head rc
+    local body_copy ci_files out number title outgoing count head rc push_name
+    # From here on git reads every commit as git push sends it, never a stand-in that git replace shows in
+    # its place (outgoing-commits.sh and scan-secrets.sh set this themselves too). publish is only ever
+    # followed by exit, so no host session inherits it.
+    export GIT_NO_REPLACE_OBJECTS=1
     echo ""
     info "Publishing $BRANCH"
     gh auth status >/dev/null 2>&1 || needs_human "gh is not authenticated, so the pull request cannot be opened" "gh auth login"
 
     push_guard
     [ "$(git symbolic-ref --short -q HEAD)" = "$REC_branch" ] || needs_human "HEAD is no longer on $REC_branch" "git switch $REC_branch"
-    # The checks from here on read the commits themselves: a replace ref (git replace) shows git log and
-    # rev-list another commit in place of one, while git push sends the commit as it is. outgoing-commits.sh
-    # sets GIT_NO_REPLACE_OBJECTS=1 itself; the other commands get it one by one, so the environment the
-    # host sessions run in stays as it was.
-    GIT_NO_REPLACE_OBJECTS=1 git merge-base --is-ancestor "$REC_base" HEAD 2>/dev/null || needs_human "the branch moved away from the recorded base $(git rev-parse --short "$REC_base")" "rebase onto it or start a new run"
+    git merge-base --is-ancestor "$REC_base" HEAD 2>/dev/null || needs_human "the branch moved away from the recorded base $(git rev-parse --short "$REC_base")" "rebase onto it or start a new run"
 
     # The CI check and the secret scan cover what outgoing-commits.sh lists: the run's own commits
     # since the recorded base, whatever the remote holds, and every older one no branch at the push
@@ -680,10 +707,11 @@ publish() {
 
     # --cc, as in the secret scan: a merge counts for the CI files none of its parents has, so a clean
     # merge of a published workflow change passes, while an evil merge that edits one, and every
-    # outgoing commit that edits one on its own, stop the publish.
+    # outgoing commit that edits one on its own, stop the publish. --root, as there too: a root commit
+    # lists its files whatever log.showRoot says.
     ci_files=""
     if [ -n "$outgoing" ]; then
-        ci_files=$(printf '%s\n' "$outgoing" | GIT_NO_REPLACE_OBJECTS=1 git log --no-walk=unsorted --stdin --format= --name-only --no-renames --cc -- .github/workflows .github/actions | sed '/^$/d' | LC_ALL=C sort -u) \
+        ci_files=$(printf '%s\n' "$outgoing" | git log --no-walk=unsorted --stdin --format= --name-only --no-renames --cc --root -- .github/workflows .github/actions | sed '/^$/d' | LC_ALL=C sort -u) \
             || needs_human "could not list the files the commits to publish change" "check the repository with git log, then re-run"
     fi
     if [ -n "$ci_files" ] && [ "$ALLOW_CI" != true ]; then
@@ -701,15 +729,19 @@ publish() {
 
     count=$(printf '%s' "$outgoing" | grep -c . || true)
     info "Scanning the $count commit(s) the push would publish and the PR body for secrets"
-    if ! out=$(printf '%s\n' "$outgoing" | GIT_NO_REPLACE_OBJECTS=1 bash "$SCAN" --commits - --file "$body_copy" 2>&1); then
+    if ! out=$(printf '%s\n' "$outgoing" | bash "$SCAN" --commits - --file "$body_copy" 2>&1); then
         printf '%s\n' "$out" | sed 's/^/      /'
         needs_human "the secret scan found key-shaped values or a .env file (listed above, values masked); nothing was pushed" "remove them from the commits and the PR body, then re-run. A hit in upstream commits that a fork's out-of-date default branch lacks clears once the fork is synced"
     fi
     success "No secrets found"
 
-    # Push the scanned commit to the recorded URL and branch only, with every git hook disabled.
+    # Push the scanned commit to the recorded URL and branch only, with every git hook disabled, through
+    # a remote defined on the command line as push_target defines it: the push follows exactly the rules
+    # the push target was resolved with, and a remote named after the push URL, which `git push URL`
+    # would take first, plays no part. That remote has no fetch refspec, so no tracking ref is written.
     push_guard
-    if ! out=$(git -c core.hooksPath=/dev/null push "$REC_push_url" "$head:refs/heads/$REC_branch" 2>&1); then
+    push_name=$(push_remote)
+    if ! out=$(git -c core.hooksPath=/dev/null -c "remote.$push_name.url=$REC_push_url" push "$push_name" "$head:refs/heads/$REC_branch" 2>&1); then
         printf '%s\n' "$out" | tail -5 | sed 's/^/      /'
         case "$out" in
             *rotected*branch*|*GH006*)   needs_human "the remote refused the push: branch protection on $REC_branch" "push through a reviewer or adjust the protection rule, then re-run" ;;

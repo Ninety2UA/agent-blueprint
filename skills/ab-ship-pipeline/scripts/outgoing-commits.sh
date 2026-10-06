@@ -16,8 +16,13 @@
 # differs from the push URL, cannot hide a commit. A branch tip this clone lacks is fetched first
 # (its objects only; no ref or FETCH_HEAD is written), so commits a branch gained since the last
 # fetch count as published. git ls-remote and git fetch apply url.<base>.insteadOf rules to the URL
-# they are given; when git would read the branches of PUSH_URL from another URL, nothing is listed,
-# since that URL's branches say nothing about what a push to PUSH_URL publishes.
+# they are given, or take it for the name of a remote, so both run with a rule on the command line that
+# rewrites PUSH_URL to itself: its prefix is the whole URL, the longest a rule can have, so no prefix
+# rule (a fetch mirror, or fetching over https while pushes go over ssh) sends them elsewhere. When git
+# would still read the branches of PUSH_URL from another URL (a rule in a configuration file for that
+# exact URL wins the tie, as does a remote of that name), nothing is listed, since that URL's branches
+# say nothing about what a push to PUSH_URL publishes. Nor is anything listed for a PUSH_URL holding
+# '=', which git -c cannot take in that rule's name.
 #
 # Exit: 0 = listed · 1 = PUSH_URL could not be read, or git reads its branches elsewhere · 2 = usage or git error
 
@@ -44,20 +49,26 @@ base=$(git rev-parse -q --verify "$2^{commit}") || die "not a commit: $2"
 tip=$(git rev-parse -q --verify "${3:-HEAD}^{commit}") || die "not a commit: ${3:-HEAD}"
 git merge-base --is-ancestor "$base" "$tip" || die "$2 is not an ancestor of ${3:-HEAD}"
 
-# The URL git ls-remote and git fetch would read for PUSH_URL, after its rules (or a remote of that name).
-listed=$(git ls-remote --get-url -- "$url" 2>/dev/null) || exit 1
+# git -c splits its argument at the first =, so the rule below cannot name a URL holding one.
+case "$url" in
+    *=*) echo "outgoing-commits: PUSH_URL $(mask_url "$url") holds '=', which cannot appear in the url.<base>.insteadOf rule that makes git read the branches of exactly that URL, so the commits a push would publish cannot be listed" >&2
+         exit 1 ;;
+esac
+exact="url.$url.insteadOf=$url"
+# The URL git ls-remote and git fetch read for PUSH_URL, after that rule (or a remote of that name).
+listed=$(git -c "$exact" ls-remote --get-url -- "$url" 2>/dev/null) || exit 1
 if [ "$listed" != "$url" ]; then
-    echo "outgoing-commits: git reads the branches of $(mask_url "$url") from $(mask_url "$listed") (a url.<base>.insteadOf rule, or a remote of that name, sends it there), so the commits a push would publish cannot be listed" >&2
+    echo "outgoing-commits: git reads the branches of $(mask_url "$url") from $(mask_url "$listed") (a url.<base>.insteadOf rule for that exact URL, or a remote of that name, sends it there), so the commits a push would publish cannot be listed" >&2
     exit 1
 fi
-heads=$(git ls-remote --heads "$url" 2>/dev/null) || exit 1
+heads=$(git -c "$exact" ls-remote --heads "$url" 2>/dev/null) || exit 1
 tips=$(printf '%s\n' "$heads" | cut -f1 | grep -E '^[0-9a-f]{40,64}$' || true)
 types=""
 if [ -n "$tips" ]; then
     types=$(printf '%s\n' "$tips" | git cat-file --batch-check='%(objectname) %(objecttype)') || exit 2
     missing=$(printf '%s\n' "$types" | sed -n 's/ missing$//p')
     if [ -n "$missing" ]; then
-        printf '%s\n' "$missing" | git -c core.hooksPath=/dev/null fetch --quiet --no-tags --no-recurse-submodules --no-write-fetch-head --stdin "$url" >/dev/null 2>&1 || exit 1
+        printf '%s\n' "$missing" | git -c core.hooksPath=/dev/null -c "$exact" fetch --quiet --no-tags --no-recurse-submodules --no-write-fetch-head --stdin "$url" >/dev/null 2>&1 || exit 1
         types=$(printf '%s\n' "$tips" | git cat-file --batch-check='%(objectname) %(objecttype)') || exit 2
     fi
 fi

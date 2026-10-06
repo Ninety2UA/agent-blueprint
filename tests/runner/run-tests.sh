@@ -1288,9 +1288,9 @@ t67_a_hit_line_holding_a_nul_byte_is_labelled_and_masked() {
 
 t70_a_push_target_whose_branches_git_reads_elsewhere_stops_the_run() {
     # Chained insteadOf rules rewrite the remote's push URL (start/ to a/), the runner's push of that
-    # URL (a/ to b/), and a listing of the push target once more (b/ to c/): outgoing-commits.sh would
-    # read c/'s branches while the push lands in b/. Only c/ holds the commit with a key that the
-    # branch carried before the run, so listed against c/ it would count as published and go unscanned.
+    # URL (a/ to b/), and a listing of the push target once more (b/ to c/). Only c/ holds the commit
+    # with a key that the branch carried before the run, so listed against c/ it would count as
+    # published and go unscanned while the push lands in b/.
     chain_repo() {   # NAME: origin is start/remote.git, b/remote.git holds main, c/remote.git the key too
         new_repo "$1"
         printf 'key = AKIA%s\n' "$(rep Q 16)" > k.txt && git add k.txt && git commit -q -m "chore: key"
@@ -1301,26 +1301,38 @@ t70_a_push_target_whose_branches_git_reads_elsewhere_stops_the_run() {
         git config url."$D/a/".insteadOf "$D/start/"
         git config url."$D/b/".insteadOf "$D/a/"
     }
+    # A prefix rule for b/: the listing reads b/remote.git itself, through a rule for that exact URL that
+    # outranks every prefix rule, so the key commit is listed and scanned, and nothing is pushed.
     chain_repo t70a
     git config url."$D/c/".insteadOf "$D/b/"
     scenario "state:done:ship commit:a.txt pr-body"
     run_runner --host fake "feature" --dry-run
-    assert_rc 1 && assert_out "git reads its branches from $D/c/remote.git"
+    assert_rc 0 && assert_out "push URL $D/a/remote.git, which git sends to $D/b/remote.git"
     run_runner --host fake "feature"
-    assert_rc 1 && assert_out "a push to $D/b/remote.git" && assert_out "git reads its branches from $D/c/remote.git"
+    assert_rc 3 && assert_out "secret scan" && assert_out "k.txt: cloud access key" && assert_not_out "AKIAQQQQ"
+    ! remote_has_branch feat/x "$D/b/remote.git" || fail "pushed a key committed before the run"
+    # A rule for the push target's exact URL wins over the runner's own on the tie, so the listing would
+    # read c/ after all: the preflight stops the run before any iteration.
+    chain_repo t70c
+    git config url."$D/c/remote.git".insteadOf "$D/b/remote.git"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature" --dry-run
+    assert_rc 1 && assert_out "git reads the branches of the push target $D/b/remote.git from $D/c/remote.git"
+    run_runner --host fake "feature"
+    assert_rc 1 && assert_out "git reads the branches of the push target $D/b/remote.git from $D/c/remote.git" && assert_out "a remote of that name" && assert_out "a push to $D/a/remote.git"
     ! remote_has_branch feat/x "$D/b/remote.git" || fail "pushed a key that the listing of another repository hid"
     assert_no_file "$FAKE_LOG"
-    # The last rule arrives once the run is recorded, in a global file whose fingerprint is then taken
+    # The exact rule arrives once the run is recorded, in a global file whose fingerprint is then taken
     # again: the check before the push still stops it, before anything is listed.
     chain_repo t70b
     own_global_config
     scenario "state:running:plan commit:a.txt" "state:done:ship commit:b.txt pr-body"
     run_runner --host fake "feature" --max 1
     assert_rc 4
-    git config --global url."$D/c/".insteadOf "$D/b/"
+    git config --global url."$D/c/remote.git".insteadOf "$D/b/remote.git"
     sed '/^global_config_hash=/d' "$(record_file)" > "$D/record.new" && cat "$D/record.new" > "$(record_file)"
     run_runner --host fake --resume
-    assert_rc 3 && assert_out "git reads the branches of the push target $D/b/remote.git from $D/c/remote.git" && assert_out "nothing is pushed"
+    assert_rc 3 && assert_out "git reads the branches of the push target $D/b/remote.git from $D/c/remote.git" && assert_out "a push to $D/a/remote.git" && assert_out "nothing is pushed"
     assert_not_out "Scanning the"
     ! remote_has_branch feat/x "$D/b/remote.git" || fail "pushed a key that the listing of another repository hid"
 }
@@ -1399,9 +1411,10 @@ t73_a_remote_named_like_the_runners_helper_does_not_move_the_push_target() {
 
 t74_outgoing_commits_refuses_a_url_whose_branches_git_reads_elsewhere() {
     # An interactive publish lists the commits for the remote's push URL as git remote get-url --push
-    # prints it, already rewritten once (start/ to a/), and git push origin sends them there. git
+    # prints it, already rewritten once (start/ to a/), and git push origin sends them there. A plain git
     # ls-remote would rewrite that URL again (a/ to b/), and b/ holds the base commit, with a key, that
-    # a/ lacks: listed against b/, it would count as published and go unscanned.
+    # a/ lacks: listed against b/, it would count as published and go unscanned. The list reads a/
+    # itself, through a rule for that exact URL that outranks the prefix rule, so the scan sees the key.
     local lister="$REPO/skills/ab-ship-pipeline/scripts/outgoing-commits.sh" list
     new_repo t74
     git switch -q main
@@ -1419,11 +1432,12 @@ t74_outgoing_commits_refuses_a_url_whose_branches_git_reads_elsewhere() {
     RC=0
     { list=$(bash "$lister" "$(git remote get-url --push origin)" "$(git merge-base HEAD main)") &&
         printf '%s\n' "$list" | bash "$SCAN" --commits - --file "$D/body.md"; } > "$OUT" 2>&1 || RC=$?
-    assert_rc 1 && assert_out "git reads the branches of $D/a/remote.git from $D/b/remote.git"
-    # Both URLs are named masked.
-    git config url."$D/b/".insteadOf "https://bot:s3cr3t-token@example.invalid/"
+    assert_rc 1 && assert_out "k.txt: cloud access key" && assert_not_out "AKIAQQQQ" && assert_not_out "git reads the branches"
+    # A rule in the configuration for the exact URL wins the tie with the list's own, so git would read
+    # b/ after all: nothing is listed, and both URLs are named masked.
+    git config url."$D/b/remote.git".insteadOf "https://bot:s3cr3t-token@example.invalid/remote.git"
     RC=0; bash "$lister" "https://bot:s3cr3t-token@example.invalid/remote.git" HEAD > "$OUT" 2>&1 || RC=$?
-    assert_rc 1 && assert_out "https://***@example.invalid/remote.git from $D/b/remote.git" && assert_not_out "s3cr3t-token"
+    assert_rc 1 && assert_out "git reads the branches of https://***@example.invalid/remote.git from $D/b/remote.git" && assert_not_out "s3cr3t-token"
 }
 
 t75_a_legacy_remote_file_named_after_the_push_url_stops_it() {
@@ -1453,9 +1467,104 @@ t75_a_legacy_remote_file_named_after_the_push_url_stops_it() {
     legacy_repo t75b
     scenario "state:done:ship commit:a.txt pr-body remotes-file:$D/elsewhere.git"
     run_runner --host fake "feature"
-    assert_rc 3 && assert_out "remotes/zz-remote.git, a legacy remote file" && assert_out "nothing is pushed" && assert_not_out "Scanning the"
+    assert_rc 3 && assert_out "remotes/zz-remote.git, a legacy remote file" && assert_out "push URL zz-remote.git or its target" && assert_out "nothing is pushed" && assert_not_out "Scanning the"
     ! remote_has_branch feat/x "$D/elsewhere.git" || fail "pushed where the planted legacy remote file sends the push"
     ! remote_has_branch feat/x || fail "pushed although a planted legacy remote file decides where the push goes"
+}
+
+t76_prefix_rules_for_fetching_do_not_move_the_listing() {
+    # The commits are listed from exactly the push target, whatever prefix rules say about fetching:
+    # git reads its branches through a rule for that exact URL, which outranks them. Neither setup
+    # below lists or publishes anything wrong, and both stopped before.
+    local lister="$REPO/skills/ab-ship-pipeline/scripts/outgoing-commits.sh" side other
+    # Fetching over https and pushing over ssh takes two rules, url.<https>.insteadOf <ssh> and
+    # url.<ssh>.pushInsteadOf <https>, and works whichever way the remote is written. F/ and P/ are two
+    # names for one bare repository, F/ read like https and P/ pushed to like ssh.
+    for side in F P; do
+        other=F; [ "$side" = F ] && other=P
+        new_repo "t76$side"
+        mkdir -p "$D/F" && mv "$REMOTE" "$D/F/remote.git" && ln -s F "$D/P"
+        REMOTE="$D/F/remote.git"
+        git config url."$D/F/".insteadOf "$D/P/"
+        git config url."$D/P/".pushInsteadOf "$D/F/"
+        git remote set-url origin "$D/$side/remote.git"
+        echo c > c.txt && git add c.txt && git commit -q -m "feat: c"
+        # The list as stages.md runs it before an interactive publish.
+        RC=0; bash "$lister" "$(git remote get-url --push origin)" "$(git merge-base HEAD main)" > "$OUT" 2>&1 || RC=$?
+        assert_rc 0 && assert_eq "$(cat "$OUT")" "$(git rev-list --reverse main..HEAD)" "the commits listed with the remote written as $side/"
+        scenario "state:done:ship commit:a.txt pr-body"
+        run_runner --host fake "feature"
+        assert_rc 0 && assert_out "push URL $D/$other/remote.git, which git sends to $D/$side/remote.git" && assert_out "Opened pull request"
+        remote_has_branch feat/x || fail "the run with the remote written as $side/ did not publish feat/x"
+    done
+    # Fetching from a mirror while pushing to the origin: url.<mirror>.insteadOf <origin> and
+    # url.<origin>.pushInsteadOf <origin>. The mirror here is empty, so a list read from it would hold
+    # every commit, main's too.
+    new_repo t76m
+    mkdir -p "$D/origin" "$D/mirror" && mv "$REMOTE" "$D/origin/remote.git" && git init -q --bare "$D/mirror/remote.git"
+    REMOTE="$D/origin/remote.git"
+    git config url."$D/mirror/".insteadOf "$D/origin/"
+    git config url."$D/origin/".pushInsteadOf "$D/origin/"
+    git remote set-url origin "$D/origin/remote.git"
+    echo c > c.txt && git add c.txt && git commit -q -m "feat: c"
+    RC=0; bash "$lister" "$(git remote get-url --push origin)" "$(git merge-base HEAD main)" > "$OUT" 2>&1 || RC=$?
+    assert_rc 0 && assert_eq "$(cat "$OUT")" "$(git rev-list --reverse main..HEAD)" "the commits listed from the origin, not the mirror"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 0 && assert_out "push URL $D/origin/remote.git" && assert_out "Opened pull request"
+    remote_has_branch feat/x || fail "the run that fetches from a mirror did not publish feat/x to the origin"
+    ! remote_has_branch feat/x "$D/mirror/remote.git" || fail "pushed to the mirror"
+}
+
+t77_a_remote_named_after_the_push_url_does_not_move_the_push() {
+    # git push URL takes URL for the name of a remote first: a remote named after the push URL, with a
+    # pushurl of its own, sent the push elsewhere while the push target, the listing and the scan all
+    # read the recorded one. git takes no remote name that starts with /, so origin is a file:// URL.
+    new_repo t77
+    git remote set-url origin "file://$REMOTE"
+    git init -q --bare "$D/elsewhere.git"
+    git config "remote.file://$REMOTE.pushurl" "$D/elsewhere.git"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 0 && assert_out "Pushed feat/x to file://$REMOTE"
+    ! remote_has_branch feat/x "$D/elsewhere.git" || fail "pushed where the remote named after the push URL sends the push"
+    remote_has_branch feat/x || fail "the push did not reach the recorded target"
+    assert_eq "$(git for-each-ref --format='%(refname)' refs/remotes)" "" "tracking refs the push wrote"
+    assert_eq "$(git config --get-regexp '^remote\.agent-blueprint' || true)" "" "remotes the push left in the configuration"
+}
+
+t78_the_ci_check_reads_a_root_commit_whatever_log_showroot_says() {
+    # With log.showRoot=false git log lists no files for a root commit, so a workflow that the first
+    # commit of a merged unrelated history adds was pushed without --allow-ci-changes. The merge itself
+    # adds nothing its second parent lacks.
+    new_repo t78
+    git config log.showRoot false
+    git switch -q --orphan ci-root
+    mkdir -p .github/workflows && printf 'name: x\non: push\njobs: {}\n' > .github/workflows/x.yml
+    git add .github && git commit -q -m "ci: an unrelated history with a workflow"
+    git switch -q feat/x
+    git merge -q --no-ff --allow-unrelated-histories -m "merge an unrelated history" ci-root
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "touch CI configuration" && assert_out ".github/workflows/x.yml"
+    ! remote_has_branch feat/x || fail "pushed a workflow that a root commit adds"
+}
+
+t79_a_push_url_holding_an_equals_sign_is_refused() {
+    # The list pins git to the push target with url.<target>.insteadOf=<target> on the command line, and
+    # git -c splits its argument at the first =, so a target holding one cannot be named that way: the
+    # list and the run refuse it, with the URL masked, rather than read a URL they could not pin.
+    local lister="$REPO/skills/ab-ship-pipeline/scripts/outgoing-commits.sh" url="https://bot:dG9rZW4=@example.invalid/remote.git"
+    new_repo t79
+    RC=0; bash "$lister" "$url" HEAD > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "PUSH_URL https://***@example.invalid/remote.git holds '='" && assert_not_out "dG9rZW4"
+    git remote set-url origin "$url"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature" --dry-run
+    assert_rc 1 && assert_out "the push target https://***@example.invalid/remote.git holds '='" && assert_not_out "dG9rZW4"
+    run_runner --host fake "feature"
+    assert_rc 1 && assert_out "the push target https://***@example.invalid/remote.git holds '='" && assert_out "without '='" && assert_not_out "dG9rZW4"
+    assert_no_file "$FAKE_LOG"
 }
 
 t80_a_hit_the_locales_sed_misses_is_masked_byte_by_byte() {
@@ -1680,6 +1789,8 @@ t70_a_push_target_whose_branches_git_reads_elsewhere_stops_the_run
 t71_a_credential_helper_the_user_sets_up_is_accepted_through_the_record t72_a_replace_ref_does_not_hide_what_the_push_sends
 t73_a_remote_named_like_the_runners_helper_does_not_move_the_push_target
 t74_outgoing_commits_refuses_a_url_whose_branches_git_reads_elsewhere t75_a_legacy_remote_file_named_after_the_push_url_stops_it
+t76_prefix_rules_for_fetching_do_not_move_the_listing t77_a_remote_named_after_the_push_url_does_not_move_the_push
+t78_the_ci_check_reads_a_root_commit_whatever_log_showroot_says t79_a_push_url_holding_an_equals_sign_is_refused
 t80_a_hit_the_locales_sed_misses_is_masked_byte_by_byte t81_a_name_that_prints_like_a_binary_files_is_not_read_with_it
 t82_the_scanners_help_prints_its_whole_header t83_a_scan_from_a_subdirectory_reads_the_whole_repository
 t84_a_key_an_octopus_merge_adds_to_a_binary_file_is_caught t85_a_key_a_merge_adds_to_a_binary_file_it_renames_is_caught"
