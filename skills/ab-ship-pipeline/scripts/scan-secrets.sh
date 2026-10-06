@@ -4,7 +4,10 @@
 # Usage: scan-secrets.sh [--range BASE..HEAD] [--commits FILE] [--file PATH]...
 #   --range BASE..HEAD   Every line added by every commit in the range (git log -p), so a
 #                        key committed and removed again inside the range is still caught;
-#                        a merge counts the lines none of its parents has, the committed
+#                        a merge counts the lines none of its parents has, except in a file
+#                        git shows there only as binary: that file is read against each
+#                        parent, so a line a parent brought in is reported again there, and
+#                        a line the merge adds is reported once per parent. The committed
 #                        text is read whatever .gitattributes says, and so are the messages.
 #                        A .env file (or .env.*, except .env.example, .env.sample,
 #                        .env.template and .env.dist) added by any commit in the range is a
@@ -20,7 +23,8 @@
 #
 # Output on a hit: "<where>:<line>: <kind>" followed by the line with every matched
 # value replaced by ****, or "<commit>:<path>: .env file" for a path. No value and no
-# file content is ever printed.
+# file content is ever printed. The closing "N hit(s)" counts every report, a line
+# reported once per parent included.
 # Exit: 0 = clean · 1 = at least one hit · 2 = usage or git error
 
 set -euo pipefail
@@ -28,7 +32,8 @@ set -euo pipefail
 # push sends the commit itself, so they all read the objects as they are.
 export GIT_NO_REPLACE_OBJECTS=1
 
-usage() { sed -n -- '2,24p' "$0" | sed 's/^# \{0,1\}//'; }
+# The header comment from line 2 to its first non-comment line, so the range cannot drift from it.
+usage() { sed -n -- '1d; /^#/!q; s/^# \{0,1\}//p' "$0"; }
 die() { echo "scan-secrets: $1" >&2; exit 2; }
 
 # Case-sensitive, key-shaped tokens, one per line as PATTERN<tab>LABEL (the \t below become
@@ -137,7 +142,9 @@ printable() { printf '%s' "$1" | LC_ALL=C tr '\001-\037\177' '?'; }
 # The awk function path(TEXT, PREFIX): the file a diff header line names after its "+++ " or
 # "diff --cc ", with PREFIX dropped. A quoted path (git -c core.quotePath=false quotes only one with
 # a control character, a double quote or a backslash) is unquoted, with ? for a control character;
-# the tab git puts after an unquoted path with a space in it is dropped.
+# the tab git puts after a path with a space in it is dropped. path() labels a hit, and two names
+# can label alike (a<newline>b and a?b), so a file is matched by printed(TEXT, PREFIX) instead: the
+# path as git printed it, quotes and escapes kept, with PREFIX and that tab dropped.
 PATH_AWK='
     function path(s, prefix,   out, i, n, c) {
         if (substr(s, 1, 1) != "\"") { sub(/\t$/, "", s) }
@@ -156,17 +163,22 @@ PATH_AWK='
             s = out
         }
         return substr(s, 1, length(prefix)) == prefix ? substr(s, length(prefix) + 1) : s
+    }
+    function printed(s, prefix,   q) {
+        sub(/\t$/, "", s); q = (substr(s, 1, 1) == "\"")
+        return substr(s, q + 1, length(prefix)) == prefix ? substr(s, 1, q) substr(s, q + length(prefix) + 1) : s
     }'
 
 # report_hits FILE MODE [NAME]: every line of FILE, a text already through nonul, that matches,
 # reported through hit() in file order. grep finds the matching lines, one pass per pattern set and
 # reading, one awk pass names where each one is, one grep per key shape and reading labels them all,
-# and one sed pass masks them, so no process starts per line unless the locale cannot read one.
+# and one sed pass per reading masks them, so no process starts per line unless the locale cannot
+# read one.
 # MODE patch: git log -p output; only the lines a commit adds count. "+++ " names the file only in a
 # file's header, between its diff line and its first hunk, so an added "++ ..." line is content. A
 # merge's combined diff has one column per parent, and a line counts only when every column is +, so
 # a line that a parent already has is left to that parent's commit. With NAME, a file of
-# "<commit hash><tab><path>" lines, only the files it lists count.
+# "<commit hash><tab><path as printed() gives it>" lines, only the files it lists count.
 # MODE message: commit messages printed as "commit <hash>" lines followed by the message indented
 # one space, so no message line can pose as the header that names the commit.
 # MODE file: the text of the file NAME, such as the PR body; where is NAME:<line number>, with NAME
@@ -192,11 +204,11 @@ report_hits() {
             c = substr($0, 8); i = index(c, " "); if (i) c = substr(c, 1, i - 1)
             full = c; commit = substr(c, 1, 12); cols = 1; plus = "+"; header = 0; next
         }
-        substr($0, 1, 5) == "diff " { header = 1; file = ""; next }
-        header && substr($0, 1, 4) == "+++ " { file = path(substr($0, 5), "b/"); next }
+        substr($0, 1, 5) == "diff " { header = 1; file = ""; id = ""; next }
+        header && substr($0, 1, 4) == "+++ " { file = path(substr($0, 5), "b/"); id = printed(substr($0, 5), "b/"); next }
         substr($0, 1, 2) == "@@" { header = 0; cols = 0; plus = ""; while (substr($0, cols + 2, 1) == "@") { cols++; plus = plus "+" }; next }
         header { next }
-        (NR in want) && substr($0, 1, cols) == plus && (only == "" || ((full "\t" file) in keep)) { print commit ":" file "\n" substr($0, cols + 1) }
+        (NR in want) && substr($0, 1, cols) == plus && (only == "" || ((full "\t" id) in keep)) { print commit ":" file "\n" substr($0, cols + 1) }
     ' "$file" > "$LINES_TMP/hits" || die "awk failed"
     # The kind of each hit, one per line in hit order: the first key shape in STRICT_TABLE that
     # matches it in either reading, or OTHER_KIND.
@@ -279,19 +291,20 @@ scan_list() {
 # lines a merge adds to one are read again. One awk pass lists each merge and file the patch in
 # $PATCH_TMP shows that way, and git log reads those merges against each parent in turn (-m, which
 # honours --text; log.diffMerges, which -m follows, is pinned to separate). Only the listed files
-# count there, and a line a parent brings in is reported again, which errs on the safe side.
+# count there, each known by its path as git printed it; a line a parent brings in is reported
+# again, and a line the merge adds is reported once per parent, which errs on the safe side.
 scan_binary_files() {
     BINARY_TMP=$(mktemp -d "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
     LC_ALL=C awk -- "$PATH_AWK"'
         substr($0, 1, 7) == "commit " { c = substr($0, 8); i = index(c, " "); if (i) c = substr(c, 1, i - 1); header = 0; next }
-        substr($0, 1, 10) == "diff --cc " { file = path(substr($0, 11), ""); header = 1; next }
+        substr($0, 1, 10) == "diff --cc " { file = printed(substr($0, 11), ""); header = 1; next }
         substr($0, 1, 5) == "diff " || substr($0, 1, 2) == "@@" { header = 0; next }
         header && substr($0, 1, 13) == "Binary files " { print c "\t" file; header = 0 }
     ' "$PATCH_TMP" > "$BINARY_TMP/files" || die "awk failed"
     # git log would read an empty list as HEAD.
     if [ -s "$BINARY_TMP/files" ]; then
         LC_ALL=C cut -f1 -- "$BINARY_TMP/files" | uniq > "$BINARY_TMP/merges" || die "cut failed"
-        git -c core.quotePath=false -c log.diffMerges=separate log -p -m --text --no-textconv --no-color --no-ext-diff --src-prefix=a/ --dst-prefix=b/ \
+        git -C "$TOP" -c core.quotePath=false -c log.diffMerges=separate log -p -m --text --no-textconv --no-color --no-ext-diff --src-prefix=a/ --dst-prefix=b/ \
             --format='commit %H' --no-walk=unsorted --stdin -- . < "$BINARY_TMP/merges" 2>/dev/null | nonul > "$BINARY_TMP/patch" || die "git log failed for $1"
         if any_match "$BINARY_TMP/patch"; then report_hits "$BINARY_TMP/patch" patch "$BINARY_TMP/files"; fi
     fi
@@ -304,17 +317,23 @@ scan_binary_files() {
 scan_commits() {
     local what="$1" commit="" line status="" seen=()
     if [ ! -s "$REVS_TMP" ]; then rm -f "$REVS_TMP"; REVS_TMP=""; return 0; fi
+    # Every pass that lists paths runs at the top of the work tree (git -C "$TOP"): its -- . and
+    # diff.relative both count from the working directory, so a scan started in a subdirectory
+    # would read only that subtree. --show-cdup prints nothing at the top and in a bare repository,
+    # and git -C with an empty path stays where it is.
+    TOP=$(git rev-parse --show-cdup 2>/dev/null) || die "git rev-parse failed for $what"
     PATCH_TMP=$(mktemp "${TMPDIR:-/tmp}/scan-secrets.XXXXXX")
     # --text: a path marked -diff or binary in .gitattributes still prints its lines (except in a
     # merge, which scan_binary_files reads again), and --no-textconv shows the committed text,
     # never a diff driver's rendering of it.
     # --cc: a merge is diffed against all its parents at once, so the lines it introduces itself
     # (an evil merge, a conflict resolution) are seen, and a line one parent brings in is not
-    # reported again: that parent's commit is scanned on its own while it is outgoing.
+    # reported again (except in a file --cc shows only as binary, which scan_binary_files reads
+    # against each parent): that parent's commit is scanned on its own while it is outgoing.
     # The prefixes are fixed whatever diff.noprefix says, and core.quotePath=false leaves a
     # non-ASCII path unquoted, so report_hits can name every file. --root: a root commit shows its
     # lines whatever log.showRoot says.
-    git -c core.quotePath=false log -p --cc --root --text --no-textconv --no-color --no-ext-diff --src-prefix=a/ --dst-prefix=b/ \
+    git -C "$TOP" -c core.quotePath=false log -p --cc --root --text --no-textconv --no-color --no-ext-diff --src-prefix=a/ --dst-prefix=b/ \
         --format='commit %H' --no-walk=unsorted --stdin -- . < "$REVS_TMP" 2>/dev/null | nonul > "$PATCH_TMP" || die "git log failed for $what"
     if any_match "$PATCH_TMP"; then report_hits "$PATCH_TMP" patch; fi
     # "Binary files" starts no line of a diff --text prints, so only --cc can have printed one.
@@ -334,7 +353,7 @@ scan_commits() {
     # --cc gives a merge one status letter per parent after an empty record, and a path counts
     # only when it is added against every parent (AA): one a parent has is that parent's to report.
     # --root, as in the patch pass: a root commit lists the paths it adds.
-    git log --no-walk=unsorted --root --diff-filter=A --name-status --no-renames --cc -z --format=%H --stdin -- . < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null ||
+    git -C "$TOP" log --no-walk=unsorted --root --diff-filter=A --name-status --no-renames --cc -z --format=%H --stdin -- . < "$REVS_TMP" > "$PATCH_TMP" 2>/dev/null ||
         die "git log failed for $what"
     commit=""
     # No ".env" bytes means no .env path, so the loop (one read per byte) is skipped; a grep error

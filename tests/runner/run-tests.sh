@@ -1149,7 +1149,9 @@ t60_a_key_a_merge_adds_to_a_binary_file_is_caught() {
     # --cc prints only "Binary files differ" for a file marked -diff or binary in .gitattributes, or
     # holding a NUL byte, whatever --text says, so a key an evil merge added to one went unread. The
     # one under a top-level b/ directory keeps its name, and log.diffMerges, which would turn the
-    # per-parent reading of those files back into --cc, changes nothing.
+    # per-parent reading of those files back into --cc, changes nothing. Each side branch brings in
+    # a key of its own, which that reading must leave alone: only the files --cc showed as binary
+    # count there.
     local k f n short
     k="AKIA$(rep Q 16)"
     new_repo t60
@@ -1165,13 +1167,14 @@ t60_a_key_a_merge_adds_to_a_binary_file_is_caught() {
     n=0
     for f in f.dat b/g.bin h.raw; do
         n=$((n + 1))
-        git switch -q -c "side$n" && echo "$n" > "side$n.txt" && git add "side$n.txt" && git commit -q -m "side $n"
+        git switch -q -c "side$n" && printf 'token ghp_%s\n' "$(rep a 36)" > "side$n.txt" && git add "side$n.txt" && git commit -q -m "side $n"
         git switch -q feat/x && git merge -q --no-ff --no-commit "side$n" > /dev/null
         body "$f" "$k" && git add "$f" && git commit -q -m "merge side $n, with a key"
         assert_eq "$(git log -1 --format=%P | wc -w | tr -d ' ')" 2 "parents of the merge that edits $f"
         short=$(short_hash)
         RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
         assert_rc 1 && assert_out "$short:$f: cloud access key" && assert_out "    three = ****" && assert_not_out "AKIAQQQQ"
+        assert_not_out "side$n.txt"
     done
 }
 
@@ -1191,12 +1194,18 @@ t61_a_file_named_with_a_newline_is_reported_masked() {
 
 t62_a_hit_only_the_c_locale_reads_is_masked() {
     # glibc's tr_TR folds I to a dotless i, so API_KEY=... matches without case only byte by byte
-    # (LC_ALL=C), and the mask, run in the locale alone, printed the value. Skipped without the locale.
+    # (LC_ALL=C), and the mask, run in the locale alone, printed the value. Skipped where no tr_TR
+    # locale keeps I apart from i: macOS's folds I as C does, so the test could not fail there (t80
+    # plays such a locale anywhere). CI's Ubuntu cell generates one (.github/workflows/ci.yml), so a
+    # skip there fails instead.
     local loc v
     v=$(rep v 30)
     new_repo t62
     loc=$(locale -a 2>/dev/null | grep -Ei '^tr_TR\.utf-?8$' | head -1 || true)
-    if [ -z "$loc" ]; then echo "skip: no tr_TR UTF-8 locale"; return 0; fi
+    if [ -z "$loc" ] || printf 'I\n' | LC_ALL=$loc grep -qi '^i$'; then
+        [ "${GITHUB_ACTIONS:-}" != true ] || [ "$(uname -s)" != Linux ] || fail "no tr_TR locale that keeps I apart from i on the Ubuntu CI runner"
+        echo "skip: no tr_TR UTF-8 locale that keeps I apart from i"; return 0
+    fi
     printf 'API_KEY=%s\nPRIVATE_KEY=%s\n' "$v" "$v" > keys.txt
     RC=0; LC_ALL=$loc bash "$SCAN" --file keys.txt > "$OUT" 2>&1 || RC=$?
     assert_rc 1 && assert_out "keys.txt:1: secret assignment" && assert_out "keys.txt:2: secret assignment" && assert_not_out "vvvvvvvv"
@@ -1449,6 +1458,134 @@ t75_a_legacy_remote_file_named_after_the_push_url_stops_it() {
     ! remote_has_branch feat/x || fail "pushed although a planted legacy remote file decides where the push goes"
 }
 
+t80_a_hit_the_locales_sed_misses_is_masked_byte_by_byte() {
+    # Where the locale keeps I apart from i (glibc's tr_TR), its sed leaves API_KEY= unmasked and only
+    # the byte-wise pass (LC_ALL=C) masks the value. t62 needs such a locale; this sed shim plays one
+    # anywhere: a program that masks (it writes ****) matches nothing unless LC_ALL=C. With
+    # SED_SHIM=fail it fails on a file instead, as a sed that cannot read a line does, so the scan
+    # masks each line on its own (mask()).
+    local real v mode
+    v=$(rep v 30)
+    new_repo t80
+    real=$(command -v sed)
+    mkdir -p "$D/shim"
+    cat > "$D/shim/sed" <<EOF
+#!/bin/sh
+n=\$# masking="" file=""
+for a in "\$@"; do
+    if [ -n "\$masking" ]; then file=1; fi
+    case "\$a" in *'****'*) if [ "\${LC_ALL:-}" != C ]; then masking=1; a=""; fi ;; esac
+    set -- "\$@" "\$a"
+done
+shift "\$n"
+if [ -n "\$file" ] && [ "\${SED_SHIM:-}" = fail ]; then exit 1; fi
+exec "$real" "\$@"
+EOF
+    chmod +x "$D/shim/sed"
+    printf 'API_KEY=%s\nPRIVATE_KEY=%s\n' "$v" "$v" > keys.txt
+    git add keys.txt && git commit -q -m "feat: keys"
+    for mode in miss fail; do
+        RC=0; SED_SHIM=$mode PATH="$D/shim:$PATH" LC_ALL=C.UTF-8 bash "$SCAN" --file keys.txt > "$OUT" 2>&1 || RC=$?
+        assert_rc 1 && assert_out "keys.txt:1: secret assignment" && assert_out "keys.txt:2: secret assignment" && assert_not_out "vvvvvvvv"
+        RC=0; git rev-parse HEAD | SED_SHIM=$mode PATH="$D/shim:$PATH" LC_ALL=C.UTF-8 bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+        assert_rc 1 && assert_out "$(short_hash):keys.txt: secret assignment" && assert_not_out "vvvvvvvv"
+    done
+}
+
+t81_a_name_that_prints_like_a_binary_files_is_not_read_with_it() {
+    # A merge's per-parent reading keeps only the files --cc showed as binary, and it knew them by
+    # their printable names: a binary file named a<newline>b.dat let the text file a?b.dat in, so a
+    # key a parent brought into that file was reported against the merge. Skipped on a file system
+    # that refuses a newline in a file name.
+    local bin short
+    new_repo t81
+    bin=$(printf 'a\nb.dat')
+    if ! printf 'one\nt\0wo\nthree\n' > "$bin" 2>/dev/null; then
+        echo "skip: the file system refuses a newline in a file name"; return 0
+    fi
+    git add -A && git commit -q -m "a binary file"
+    git switch -q -c side1 && printf 'token ghp_%s\n' "$(rep a 36)" > 'a?b.dat' && git add 'a?b.dat' && git commit -q -m "side 1"
+    git switch -q feat/x && git merge -q --no-ff --no-commit side1 > /dev/null
+    printf 'one\nt\0wo\nthree, merged\n' > "$bin" && git add -A && git commit -q -m "merge side 1"
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 0 && assert_not_out "GitHub token"
+    # A key the merge adds to the binary file is still reported, under its printable name, while
+    # a?b.dat, which the second parent lacks, is still left out.
+    git switch -q -c side2 HEAD~1 && echo 2 > side2.txt && git add side2.txt && git commit -q -m "side 2"
+    git switch -q feat/x && git merge -q --no-ff --no-commit side2 > /dev/null
+    printf 'one\nt\0wo\nthree = AKIA%s\n' "$(rep Q 16)" > "$bin" && git add -A && git commit -q -m "merge side 2, with a key"
+    short=$(short_hash)
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$short:a?b.dat: cloud access key" && assert_out "    three = ****" && assert_not_out "AKIAQQQQ"
+    assert_not_out "GitHub token"
+}
+
+t82_the_scanners_help_prints_its_whole_header() {
+    # usage() printed a fixed range of lines, so a header that grew lost its last lines from --help.
+    D="$WORK/t82"; mkdir -p "$D"; OUT="$D/out.txt"
+    RC=0; bash "$SCAN" --help > "$OUT" 2>&1 || RC=$?
+    assert_rc 0 && assert_out "Usage: scan-secrets.sh" && assert_out "Exit: 0 = clean" && assert_not_out "set -euo"
+}
+
+t83_a_scan_from_a_subdirectory_reads_the_whole_repository() {
+    # Every commit pass limited its paths with -- ., which counts from the working directory, as
+    # diff.relative does, so a scan started in a subdirectory read only that subtree: a key, a .env
+    # file and a merge's binary file at the top all went unread. A --file path still counts from
+    # where the scan starts.
+    local k c m
+    k="AKIA$(rep Q 16)"
+    new_repo t83
+    git config diff.relative true
+    mkdir -p sub && echo 1 > sub/x.txt && printf 'f.dat -diff\n' > .gitattributes && echo one > f.dat
+    git add -A && git commit -q -m "fixtures"
+    printf 'key = %s\n' "$k" > k.txt && echo X=1 > .env && git add k.txt .env && git commit -q -m "feat: a key and a .env"
+    c=$(short_hash)
+    git switch -q -c side && echo 2 > sub/y.txt && git add sub/y.txt && git commit -q -m "side"
+    git switch -q feat/x && git merge -q --no-ff --no-commit side > /dev/null
+    printf 'one = %s\n' "$k" > f.dat && git add f.dat && git commit -q -m "merge side, with a key"
+    m=$(short_hash)
+    printf 'token ghp_%s\n' "$(rep a 36)" > sub/body.md
+    cd sub
+    RC=0; bash "$SCAN" --range main..feat/x --file body.md > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$c:k.txt: cloud access key" && assert_out "$c:.env: .env file" && assert_out "$m:f.dat: cloud access key"
+    assert_out "body.md:1: GitHub token" && assert_not_out "AKIAQQQQ"
+}
+
+t84_a_key_an_octopus_merge_adds_to_a_binary_file_is_caught() {
+    # A file --cc shows only as binary is read against every parent in turn, however many there are.
+    local k n short
+    k="AKIA$(rep Q 16)"
+    new_repo t84
+    printf 'f.dat -diff\n' > .gitattributes && printf 'one\ntwo\nthree\n' > f.dat
+    git add -A && git commit -q -m "fixtures"
+    for n in 1 2 3; do
+        git switch -q -c "side$n" feat/x && echo "$n" > "side$n.txt" && git add "side$n.txt" && git commit -q -m "side $n"
+    done
+    git switch -q feat/x && git merge -q --no-ff --no-commit side1 side2 side3 > /dev/null
+    printf 'one\ntwo\nthree = %s\n' "$k" > f.dat && git add f.dat && git commit -q -m "merge three sides, with a key"
+    assert_eq "$(git log -1 --format=%P | wc -w | tr -d ' ')" 4 "parents of the octopus merge"
+    short=$(short_hash)
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$short:f.dat: cloud access key" && assert_out "    three = ****" && assert_not_out "AKIAQQQQ"
+}
+
+t85_a_key_a_merge_adds_to_a_binary_file_it_renames_is_caught() {
+    # --cc names a binary file the merge renames by its new path, and so does the per-parent reading
+    # (+++ b/new.raw), so the file is still read again.
+    local k short
+    k="AKIA$(rep Q 16)"
+    new_repo t85
+    printf 'one\nt\0wo\nthree\nfour\nfive\nsix\nseven\neight\n' > old.raw
+    git add -A && git commit -q -m "fixtures"
+    git switch -q -c side && echo 1 > side.txt && git add side.txt && git commit -q -m "side"
+    git switch -q feat/x && git merge -q --no-ff --no-commit side > /dev/null
+    git mv old.raw new.raw && printf 'one\nt\0wo\nthree = %s\nfour\nfive\nsix\nseven\neight\n' "$k" > new.raw
+    git add new.raw && git commit -q -m "merge side, renaming old.raw, with a key"
+    short=$(short_hash)
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$short:new.raw: cloud access key" && assert_out "    three = ****" && assert_not_out "AKIAQQQQ"
+}
+
 t22_resume_takes_the_host_from_the_command_line() {
     new_repo t22
     scenario "state:running:plan commit:a.txt" "state:done:ship commit:b.txt pr-body"
@@ -1542,7 +1679,10 @@ t66_a_grep_that_fails_fails_the_scan t67_a_hit_line_holding_a_nul_byte_is_labell
 t70_a_push_target_whose_branches_git_reads_elsewhere_stops_the_run
 t71_a_credential_helper_the_user_sets_up_is_accepted_through_the_record t72_a_replace_ref_does_not_hide_what_the_push_sends
 t73_a_remote_named_like_the_runners_helper_does_not_move_the_push_target
-t74_outgoing_commits_refuses_a_url_whose_branches_git_reads_elsewhere t75_a_legacy_remote_file_named_after_the_push_url_stops_it"
+t74_outgoing_commits_refuses_a_url_whose_branches_git_reads_elsewhere t75_a_legacy_remote_file_named_after_the_push_url_stops_it
+t80_a_hit_the_locales_sed_misses_is_masked_byte_by_byte t81_a_name_that_prints_like_a_binary_files_is_not_read_with_it
+t82_the_scanners_help_prints_its_whole_header t83_a_scan_from_a_subdirectory_reads_the_whole_repository
+t84_a_key_an_octopus_merge_adds_to_a_binary_file_is_caught t85_a_key_a_merge_adds_to_a_binary_file_it_renames_is_caught"
 
 SELECTED="${*:-$ALL}"
 PASSED=0 FAILED=0
