@@ -219,6 +219,15 @@ class DriftGateAgentCount(unittest.TestCase):
         self.assertIn("still lists an agent count", out)
 
 
+class DriftGateHero(unittest.TestCase):
+    """The README's animated hero bakes its numbers into a GIF, so the gate reads the hero's source."""
+
+    def test_a_wrong_skill_count_in_the_hero_source_fails(self):
+        code, out = run_drift_with("docs/images/hero/hero.html", "\n<!-- 54 skills -->\n")
+        self.assertNotEqual(code, 0, out)
+        self.assertIn("docs/images/hero/hero.html: claims 54 skills", out)
+
+
 # Lines the v4 rewrite removed from README.md and index.html, verbatim.
 REMOVED_ADOPTION_LINES = (
     ("README.md", "Before committing to any tool, it helps to understand the landscape. We've analyzed "

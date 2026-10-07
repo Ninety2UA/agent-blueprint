@@ -300,6 +300,21 @@ if promo is not None:
             failures.append("%s stat card '%s': expected %d, found %s — promo GIF source drifted"
                             % (promo_rel, lab, GT[key], num))
 
+# docs/images/hero/hero.html — source of the README's animated hero.gif (rendered by
+# scripts/record-hero.js). The GIF bakes its skill count in, so every count in the source
+# must match the tree.
+hero_rel = "docs/images/hero/hero.html"
+hero = rd(hero_rel)
+if hero is not None:
+    hero_counts = re.findall(r"\b(\d+) skills\b", hero)
+    if not hero_counts:
+        failures.append("%s: no 'N skills' claim found — anchor text changed, re-point the gate" % hero_rel)
+    for num in hero_counts:
+        if int(num) != SK:
+            failures.append("%s: claims %s skills, the tree ships %d — fix it, then re-render "
+                            "docs/images/hero.gif" % (hero_rel, num, SK))
+    no_agent_count("hero.html", hero_rel, hero)
+
 claude_md = rd("AGENTS.md")  # canonical; CLAUDE.md is a symlink to it
 check_single("AGENTS.md layout", "AGENTS.md", claude_md, r"(\d+) skills, each a folder", "skills")
 no_agent_count("AGENTS.md", "AGENTS.md", claude_md)
