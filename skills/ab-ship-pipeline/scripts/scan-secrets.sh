@@ -36,6 +36,18 @@ export GIT_NO_REPLACE_OBJECTS=1
 usage() { sed -n -- '1d; /^#/!q; s/^# \{0,1\}//p' "$0"; }
 die() { echo "scan-secrets: $1" >&2; exit 2; }
 
+# git reads a relative path in these variables from the directory it starts in, and the passes that
+# list paths start at the top of the work tree (git -C "$TOP" below), where the path would name another
+# directory, so a scan started in a subdirectory would read less, or nothing, and pass. Each one is made
+# absolute first, against the directory the scan starts in.
+for var in GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR; do
+    case "${!var:-}" in
+        ''|/*) ;;
+        *) start=$(pwd -P) || die "cannot tell the directory the scan starts in, from which $var counts"
+           export "$var=$start/${!var}" ;;
+    esac
+done
+
 # Case-sensitive, key-shaped tokens, one per line as PATTERN<tab>LABEL (the \t below become
 # tabs). Written so that no literal in this file looks like a key.
 STRICT_TABLE=$(printf '%b' '(A3T[A-Z0-9]|AKIA|ASIA|ABIA|ACCA)[A-Z0-9]{16}\tcloud access key

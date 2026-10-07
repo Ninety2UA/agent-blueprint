@@ -139,20 +139,29 @@ now_utc() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 # the file it comes from: the global files (GIT_CONFIG_GLOBAL, or $XDG_CONFIG_HOME/git/config and
 # ~/.gitconfig), the system file, .git/config, .git/config.worktree and every file they include.
 # A session that writes one can redirect the push (url.<base>.pushInsteadOf) or run code during it
-# (core.sshCommand). `git config --global --list` would read only one of the two global files.
+# (core.sshCommand). `git config --global --list` would read only one of the two global files. It is
+# taken as the push reads the configuration, with the recorded push URL on a remote defined on the
+# command line: a file that an includeIf "hasconfig:remote.*.url:..." pattern pulls in for that URL alone
+# applies to the push, so it is fingerprinted too. The remote's name is fixed, so the fingerprint stays
+# the same whatever name push_remote picks; only the URL decides which of those files git reads.
 global_config_hash() {
-    { git config --list --show-origin --includes -z 2>/dev/null || true; } | sha256_stdin
+    { git -c "remote.agent-blueprint-push.url=$REC_push_url" config --list --show-origin --includes -z 2>/dev/null || true; } | sha256_stdin
 }
 global_config_files() {   # the global files as git finds them, for messages
     if [ -n "${GIT_CONFIG_GLOBAL:-}" ]; then echo "$GIT_CONFIG_GLOBAL"
     else echo "${XDG_CONFIG_HOME:-$HOME/.config}/git/config, $HOME/.gitconfig"; fi
 }
-# push_remote: the name of the remote that push_target and the push define on the command line, one no
-# configuration file uses: an existing remote of that name would bring its own URLs, and its pushurl
-# would stand in for the push target.
+# push_remote URL: the name of the remote that push_target and the push define on the command line with
+# URL, one no configuration uses: an existing remote of that name would bring its own settings, its URLs
+# and pushurl standing in for the push target, its receivepack or vcs running during the push. The
+# configuration is read as the push reads it, with a remote of another name carrying URL, so a
+# remote.<name>.* entry in a file that an includeIf "hasconfig:remote.*.url:..." pattern pulls in for URL
+# alone counts as well.
 push_remote() {
     local name=agent-blueprint-push
-    while git config --get-regexp "^remote\\.$name\\." >/dev/null 2>&1; do name="agent-blueprint-push-$RANDOM$RANDOM"; done
+    while git -c "remote.agent-blueprint-probe.url=$1" config --includes --get-regexp "^remote\\.$name\\." >/dev/null 2>&1; do
+        name="agent-blueprint-push-$RANDOM$RANDOM"
+    done
     printf '%s\n' "$name"
 }
 # push_target URL: where `git push URL` goes once the url.<base>.pushInsteadOf and insteadOf rules of
@@ -163,7 +172,7 @@ push_remote() {
 # push further on.
 push_target() {
     local name t
-    name=$(push_remote)
+    name=$(push_remote "$1")
     t=$(git -c "remote.$name.url=$1" remote -v 2>/dev/null | sed -n "s/^${name}[[:space:]]\\(.*\\) (push)\$/\\1/p")
     case "$t" in ''|*$'\n'*) return 1 ;; esac
     printf '%s\n' "$t"
@@ -173,8 +182,11 @@ no_push_target() { error "Cannot tell where a push to $(mask_url "$1") goes: git
 # listed_url TARGET: the URL whose branches outgoing-commits.sh reads for TARGET. Its git ls-remote and
 # git fetch would apply the insteadOf rules to TARGET once more, or take it for the name of a remote, so
 # they run with the rule url.TARGET.insteadOf=TARGET, as here: its prefix is the whole URL, the longest
-# a rule can have, so only a rule in a configuration file for that exact URL (which wins the tie) or a
-# remote of that name can still send them elsewhere.
+# a rule can have, so only a remote of that name, or a rule in a configuration file for that exact URL,
+# can still send them elsewhere. On that tie git takes the rule whose base (the URL a rule rewrites to)
+# it read first, and it reads the command line last. The file's rule wins, unless a file rule with TARGET
+# as its base comes before every rule with the other base: the command-line rule then joins that rule,
+# and git reads TARGET itself.
 listed_url() { git -c "url.$1.insteadOf=$1" ls-remote --get-url -- "$1" 2>/dev/null; }
 # remote_file NAME...: prints the first file under the remotes/ or branches/ git path named after one
 # of the NAMEs. git push, git ls-remote and git fetch take a name with no slash in it for a remote
@@ -739,9 +751,13 @@ publish() {
     # a remote defined on the command line as push_target defines it: the push follows exactly the rules
     # the push target was resolved with, and a remote named after the push URL, which `git push URL`
     # would take first, plays no part. That remote has no fetch refspec, so no tracking ref is written.
+    # --no-follow-tags: push.followTags would also publish every annotated tag that points into the
+    # pushed history, and the scan never reads a tag's message. --no-recurse-submodules:
+    # push.recurseSubmodules or submodule.recurse would first push the submodule commits that history
+    # records, through this same remote, and the scan never reads a submodule's commits.
     push_guard
-    push_name=$(push_remote)
-    if ! out=$(git -c core.hooksPath=/dev/null -c "remote.$push_name.url=$REC_push_url" push "$push_name" "$head:refs/heads/$REC_branch" 2>&1); then
+    push_name=$(push_remote "$REC_push_url")
+    if ! out=$(git -c core.hooksPath=/dev/null -c "remote.$push_name.url=$REC_push_url" push --no-follow-tags --no-recurse-submodules "$push_name" "$head:refs/heads/$REC_branch" 2>&1); then
         printf '%s\n' "$out" | tail -5 | sed 's/^/      /'
         case "$out" in
             *rotected*branch*|*GH006*)   needs_human "the remote refused the push: branch protection on $REC_branch" "push through a reviewer or adjust the protection rule, then re-run" ;;

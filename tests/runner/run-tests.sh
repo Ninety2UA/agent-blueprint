@@ -130,6 +130,17 @@ own_global_config() {   # points git's global configuration at a copy under $D, 
     export GIT_CONFIG_GLOBAL="$D/global.gitconfig"
     cp "$HOME/.gitconfig" "$GIT_CONFIG_GLOBAL"
 }
+push_url_include() {   # NAME: origin pushes to file://<remote.git>, a URL that alone pulls in $D/push.inc; 1 before git 2.36 (no hasconfig)
+    new_repo "$1"
+    own_global_config
+    git config remote.origin.pushurl "file://$REMOTE"
+    git config -f "$D/push.inc" ab.probe yes
+    git config --global "includeIf.hasconfig:remote.*.url:file://$REMOTE.path" "$D/push.inc"
+    [ "$(git -c "remote.ab-probe.url=file://$REMOTE" config --get ab.probe || true)" = yes ] || return 1
+    # hasconfig reads remote.*.url, not pushurl: no configured remote pulls the file in.
+    [ -z "$(git config --get ab.probe || true)" ] || fail "$D/push.inc applies without the push URL"
+    git config -f "$D/push.inc" --unset ab.probe
+}
 after_scan_shim() {   # CMD: writes $D/shim/bash, which runs CMD once the secret scan has run
     local real
     real=$(command -v bash)
@@ -1399,7 +1410,7 @@ t73_a_remote_named_like_the_runners_helper_does_not_move_the_push_target() {
     # that name in the configuration, with a pushurl of its own, must not answer for it: the commits
     # would be listed against the pushurl's repository (here one that holds the branch's earlier commit
     # with a key) while git push still sends them to the recorded URL.
-    new_repo t73
+    new_repo t73a
     printf 'key = AKIA%s\n' "$(rep Q 16)" > k.txt && git add k.txt && git commit -q -m "chore: key"
     git clone -q --bare "$D/work" "$D/elsewhere.git"
     git config remote.agent-blueprint-push.pushurl "$D/elsewhere.git"
@@ -1407,6 +1418,16 @@ t73_a_remote_named_like_the_runners_helper_does_not_move_the_push_target() {
     run_runner --host fake "feature"
     assert_rc 3 && assert_out "k.txt: cloud access key" && assert_not_out "which git sends to"
     ! remote_has_branch feat/x || fail "pushed a key that the helper remote's pushurl hid from the scan"
+    # With nothing to stop it, the push itself goes through a helper of another name: it reaches the
+    # recorded URL, and nothing reaches the pushurl's repository.
+    new_repo t73b
+    git init -q --bare "$D/elsewhere.git"
+    git config remote.agent-blueprint-push.pushurl "$D/elsewhere.git"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 0 && assert_out "Pushed feat/x to $REMOTE" && assert_not_out "which git sends to"
+    remote_has_branch feat/x || fail "the push did not reach the recorded URL"
+    assert_eq "$(git --git-dir="$D/elsewhere.git" for-each-ref)" "" "refs in the helper remote's pushurl repository"
 }
 
 t74_outgoing_commits_refuses_a_url_whose_branches_git_reads_elsewhere() {
@@ -1507,6 +1528,11 @@ t76_prefix_rules_for_fetching_do_not_move_the_listing() {
     git config url."$D/origin/".pushInsteadOf "$D/origin/"
     git remote set-url origin "$D/origin/remote.git"
     echo c > c.txt && git add c.txt && git commit -q -m "feat: c"
+    # The origin holds a branch tip this clone lacks, which the list fetches first, from the origin too:
+    # the mirror lacks it, so a fetch the mirror rule sent there would fail and list nothing.
+    (cd "$D" && git clone -q "$REMOTE" other)
+    (cd "$D/other" && git switch -q -c extra && echo e > e.txt && git add e.txt && git commit -q -m "e" && git push -q origin extra)
+    git cat-file -e "$(git --git-dir="$REMOTE" rev-parse extra)" 2>/dev/null && fail "the clone already has the origin's extra branch; the case needs a tip it never fetched"
     RC=0; bash "$lister" "$(git remote get-url --push origin)" "$(git merge-base HEAD main)" > "$OUT" 2>&1 || RC=$?
     assert_rc 0 && assert_eq "$(cat "$OUT")" "$(git rev-list --reverse main..HEAD)" "the commits listed from the origin, not the mirror"
     scenario "state:done:ship commit:a.txt pr-body"
@@ -1695,6 +1721,137 @@ t85_a_key_a_merge_adds_to_a_binary_file_it_renames_is_caught() {
     assert_rc 1 && assert_out "$short:new.raw: cloud access key" && assert_out "    three = ****" && assert_not_out "AKIAQQQQ"
 }
 
+t86_a_file_included_for_the_push_url_alone_is_fingerprinted() {
+    # An includeIf "hasconfig:remote.*.url:..." pattern that matches the push URL, and no configured
+    # remote's URL, pulls its file in for the runner's push alone, which defines a remote with that URL.
+    # The fingerprint, taken without one, never read the file, so a core.sshCommand the session added
+    # there would have run during the push unseen.
+    push_url_include t86 || { echo "skip: this git has no includeIf hasconfig:remote.*.url"; return 0; }
+    scenario "state:done:ship commit:a.txt pr-body config-file:$D/push.inc"
+    run_runner --host fake "feature"
+    assert_rc 3 && assert_out "configuration outside .git/config changed" && assert_out "nothing is pushed" && assert_not_out "Scanning the"
+    ! remote_has_branch feat/x || fail "pushed after a file included for the push URL changed"
+}
+
+t87_a_helper_remote_a_file_included_for_the_push_url_defines_does_not_take_the_push() {
+    # Such a file can define the runner's helper remote too: its pushurl moved the push target and the
+    # push to another repository, and its receivepack ran during the push. The collision check reads
+    # the configuration with the push URL on a remote, so the helper takes another name.
+    push_url_include t87 || { echo "skip: this git has no includeIf hasconfig:remote.*.url"; return 0; }
+    git init -q --bare "$D/elsewhere.git"
+    printf '#!/bin/sh\ntouch "%s"\nexec git receive-pack "$@"\n' "$D/receivepack-ran" > "$D/receivepack.sh" && chmod +x "$D/receivepack.sh"
+    git config -f "$D/push.inc" remote.agent-blueprint-push.pushurl "$D/elsewhere.git"
+    git config -f "$D/push.inc" remote.agent-blueprint-push.receivepack "$D/receivepack.sh"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 0 && assert_out "Pushed feat/x to file://$REMOTE" && assert_not_out "which git sends to"
+    remote_has_branch feat/x || fail "the push did not reach the push URL"
+    ! remote_has_branch feat/x "$D/elsewhere.git" || fail "pushed where the included helper remote's pushurl points"
+    assert_no_file "$D/receivepack-ran"
+}
+
+t88_a_scan_with_relative_git_paths_reads_the_whole_repository() {
+    # git -C "$TOP" read a relative GIT_WORK_TREE or GIT_DIR from the top of the work tree, not from the
+    # directory the scan started in: from sub/ with GIT_WORK_TREE=.., the work tree moved one level up,
+    # every pass that lists paths read nothing, and the scan passed.
+    local short gd
+    new_repo t88
+    mkdir -p sub && printf 'key = AKIA%s\n' "$(rep Q 16)" > k.txt && printf 'key = AKIA%s\n' "$(rep Q 16)" > sub/k.txt && echo X=1 > .env
+    git add -A && git commit -q -m "feat: keys at the top and in sub, and a .env"
+    short=$(short_hash)
+    cd sub
+    for gd in "$D/work/.git" ../.git; do
+        RC=0; git rev-parse HEAD | GIT_DIR="$gd" GIT_WORK_TREE=.. bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+        assert_rc 1 && assert_out "$short:k.txt: cloud access key" && assert_out "$short:sub/k.txt: cloud access key" && assert_out "$short:.env: .env file"
+        assert_not_out "AKIAQQQQ"
+    done
+}
+
+t89_a_key_a_merge_adds_to_a_binary_file_named_with_a_space_is_caught() {
+    # The per-parent reading prints "+++ b/my file.raw" with a tab after a name that holds a space,
+    # while --cc's "diff --cc my file.raw" has none, so the file is kept only once printed() drops it.
+    # The NUL byte keeps the file binary.
+    local short
+    new_repo t89
+    printf 'one\nt\0wo\nthree\n' > 'my file.raw' && git add -A && git commit -q -m "fixtures"
+    git switch -q -c side && echo 1 > side.txt && git add side.txt && git commit -q -m "side"
+    git switch -q feat/x && git merge -q --no-ff --no-commit side > /dev/null
+    printf 'one\nt\0wo\nthree = AKIA%s\n' "$(rep Q 16)" > 'my file.raw' && git add -A && git commit -q -m "merge side, with a key"
+    short=$(short_hash)
+    RC=0; git rev-parse HEAD | bash "$SCAN" --commits - > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "$short:my file.raw: cloud access key" && assert_out "    three = ****" && assert_not_out "AKIAQQQQ"
+}
+
+t90_the_push_publishes_no_tag() {
+    # With push.followTags set, git push also sends every annotated tag that points into the pushed
+    # history, and the scan never reads a tag's message.
+    new_repo t90
+    git config push.followTags true
+    echo t > t.txt && git add t.txt && git commit -q -m "feat: tagged"
+    git tag -a v1 -m "v1, deploy token ghp_$(rep T 36)"
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 0 && assert_out "Opened pull request"
+    remote_has_branch feat/x || fail "feat/x was not pushed"
+    ! git --git-dir="$REMOTE" show-ref -q --verify refs/tags/v1 || fail "the push published the annotated tag v1"
+}
+
+t91_a_push_target_already_the_base_of_a_rule_is_listed_from_itself() {
+    # The list's own rule for the push target ties with a rule in a configuration file for that exact
+    # URL, and git takes the rule whose base it read first. The command line comes last, so the file's
+    # rule wins (t70, t74), unless a file rule with the push target as its base comes first: the list's
+    # rule joins that one, and git reads the push target itself.
+    local lister="$REPO/skills/ab-ship-pipeline/scripts/outgoing-commits.sh"
+    new_repo t91
+    git init -q --bare "$D/c.git"
+    echo c > c.txt && git add c.txt && git commit -q -m "feat: c"
+    git config url."$REMOTE".insteadOf ab-old:
+    git config url."$D/c.git".insteadOf "$REMOTE"
+    RC=0; bash "$lister" "$REMOTE" "$(git merge-base HEAD main)" > "$OUT" 2>&1 || RC=$?
+    assert_rc 0 && assert_eq "$(cat "$OUT")" "$(git rev-list --reverse main..HEAD)" "the commits listed from the push target itself"
+    # The other way round, the file's rule comes first and wins the tie: nothing is listed.
+    git config --remove-section url."$REMOTE"
+    git config url."$REMOTE".insteadOf ab-old:
+    RC=0; bash "$lister" "$REMOTE" "$(git merge-base HEAD main)" > "$OUT" 2>&1 || RC=$?
+    assert_rc 1 && assert_out "git reads the branches of $REMOTE from $D/c.git"
+}
+
+t92_the_push_takes_no_part_in_submodules() {
+    # push.recurseSubmodules=on-demand or submodule.recurse=true makes git push first push the submodule
+    # commits the pushed history records, and the scan never reads a submodule's commits. git passes the
+    # push's own remote and refspec on: it refused the runner's commit as a source and the publish failed,
+    # unless the submodule had a branch named after the pushed commit, which the session can create, and
+    # then the submodule's commit, key and all, went to the push target.
+    local sub
+    sub_repo() {   # NAME: feat/x adds a submodule and bumps it to a commit with a key, which its remote lacks
+        new_repo "$1"
+        git init -q "$D/sub-work"
+        (cd "$D/sub-work" && echo s > s.txt && git add s.txt && git commit -q -m "sub: published")
+        git clone -q --bare "$D/sub-work" "$D/sub-remote.git"
+        git -c protocol.file.allow=always submodule add -q "$D/sub-remote.git" sub
+        git commit -q -m "chore: add a submodule"
+        (cd sub && printf 'key = AKIA%s\n' "$(rep Q 16)" > k.txt && git add k.txt && git commit -q -m "sub: a key")
+        git add sub && git commit -q -m "chore: bump the submodule"
+        sub=$(git -C sub rev-parse HEAD)
+    }
+    sub_repo t92a
+    git config push.recurseSubmodules on-demand
+    scenario "state:done:ship commit:a.txt pr-body sub-branch:sub"
+    run_runner --host fake "feature"
+    assert_rc 0 && assert_out "Opened pull request"
+    assert_eq "$(git --git-dir="$REMOTE" rev-parse -q --verify feat/x || true)" "$(git rev-parse HEAD)" "feat/x on the push target"
+    ! git --git-dir="$REMOTE" cat-file -e "$sub" 2>/dev/null || fail "the push published the submodule's commit to the push target"
+    ! git --git-dir="$D/sub-remote.git" cat-file -e "$sub" 2>/dev/null || fail "the push published the submodule's commit to its remote"
+    sub_repo t92b
+    own_global_config
+    git config --global submodule.recurse true
+    scenario "state:done:ship commit:a.txt pr-body"
+    run_runner --host fake "feature"
+    assert_rc 0 && assert_out "Opened pull request"
+    assert_eq "$(git --git-dir="$REMOTE" rev-parse -q --verify feat/x || true)" "$(git rev-parse HEAD)" "feat/x on the push target"
+    ! git --git-dir="$D/sub-remote.git" cat-file -e "$sub" 2>/dev/null || fail "the push published the submodule's commit to its remote"
+}
+
 t22_resume_takes_the_host_from_the_command_line() {
     new_repo t22
     scenario "state:running:plan commit:a.txt" "state:done:ship commit:b.txt pr-body"
@@ -1793,7 +1950,12 @@ t76_prefix_rules_for_fetching_do_not_move_the_listing t77_a_remote_named_after_t
 t78_the_ci_check_reads_a_root_commit_whatever_log_showroot_says t79_a_push_url_holding_an_equals_sign_is_refused
 t80_a_hit_the_locales_sed_misses_is_masked_byte_by_byte t81_a_name_that_prints_like_a_binary_files_is_not_read_with_it
 t82_the_scanners_help_prints_its_whole_header t83_a_scan_from_a_subdirectory_reads_the_whole_repository
-t84_a_key_an_octopus_merge_adds_to_a_binary_file_is_caught t85_a_key_a_merge_adds_to_a_binary_file_it_renames_is_caught"
+t84_a_key_an_octopus_merge_adds_to_a_binary_file_is_caught t85_a_key_a_merge_adds_to_a_binary_file_it_renames_is_caught
+t86_a_file_included_for_the_push_url_alone_is_fingerprinted
+t87_a_helper_remote_a_file_included_for_the_push_url_defines_does_not_take_the_push
+t88_a_scan_with_relative_git_paths_reads_the_whole_repository
+t89_a_key_a_merge_adds_to_a_binary_file_named_with_a_space_is_caught t90_the_push_publishes_no_tag
+t91_a_push_target_already_the_base_of_a_rule_is_listed_from_itself t92_the_push_takes_no_part_in_submodules"
 
 SELECTED="${*:-$ALL}"
 PASSED=0 FAILED=0

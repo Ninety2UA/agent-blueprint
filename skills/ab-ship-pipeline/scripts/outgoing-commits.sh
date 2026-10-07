@@ -18,11 +18,14 @@
 # fetch count as published. git ls-remote and git fetch apply url.<base>.insteadOf rules to the URL
 # they are given, or take it for the name of a remote, so both run with a rule on the command line that
 # rewrites PUSH_URL to itself: its prefix is the whole URL, the longest a rule can have, so no prefix
-# rule (a fetch mirror, or fetching over https while pushes go over ssh) sends them elsewhere. When git
-# would still read the branches of PUSH_URL from another URL (a rule in a configuration file for that
-# exact URL wins the tie, as does a remote of that name), nothing is listed, since that URL's branches
-# say nothing about what a push to PUSH_URL publishes. Nor is anything listed for a PUSH_URL holding
-# '=', which git -c cannot take in that rule's name.
+# rule (a fetch mirror, or fetching over https while pushes go over ssh) sends them elsewhere. A rule in
+# a configuration file for that exact URL ties with it, and git takes the rule whose base (the URL a rule
+# rewrites to) it read first, reading the command line last: the file's rule wins, unless a file rule
+# with PUSH_URL as its base comes before every rule with the other base, which the command-line rule then
+# joins, so git reads PUSH_URL itself. When git would still read the branches of PUSH_URL from another
+# URL (the file's rule won the tie, or a remote has that name), nothing is listed, since that URL's
+# branches say nothing about what a push to PUSH_URL publishes. Nor is anything listed for a PUSH_URL
+# holding '=', which git -c cannot take in that rule's name.
 #
 # Exit: 0 = listed · 1 = PUSH_URL could not be read, or git reads its branches elsewhere · 2 = usage or git error
 
