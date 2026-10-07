@@ -58,7 +58,7 @@ class Installer(unittest.TestCase):
         self.assertIn("ab-migrate", out)
 
     def test_native_routes_and_one_shared_copy(self):
-        for tool in ("claude", "agy", "codex", "cursor-agent", "amp"):
+        for tool in ("claude", "agy", "codex", "grok"):
             self.fake_tool(tool)
         code, out = self.run_install()
         self.assertEqual(code, 0, out)
@@ -69,9 +69,46 @@ class Installer(unittest.TestCase):
         copy = os.path.join(self.home, ".agents", "skills")
         self.assertEqual(sorted(d for d in os.listdir(copy) if d.startswith("ab-")), SKILLS)
         self.assertIn("codex: covered by the copy", out)
-        self.assertIn("cursor-agent: covered by the copy", out)
-        self.assertIn("Amp: covered by the Claude Code install", out)
+        self.assertIn("grok: covered by the copy", out)
         self.assertNotIn("agy: covered by the copy", out)   # Antigravity is never covered by the shared copy
+
+    def ab_skills(self, *parts):
+        path = os.path.join(self.home, *parts)
+        return sorted(d for d in os.listdir(path) if d.startswith("ab-")) if os.path.isdir(path) else []
+
+    def test_cursor_or_amp_beside_claude_code_sees_each_skill_once(self):
+        # Cursor CLI and Amp read Claude Code's plugin as well as ~/.agents/skills, so with the
+        # plugin installed a shared copy would list every skill twice there: each other host gets
+        # its own route instead.
+        for tool in ("claude", "codex", "grok", "pi", "hermes", "cursor-agent", "amp"):
+            self.fake_tool(tool)
+        code, out = self.run_install()
+        self.assertEqual(code, 0, out)
+        calls = self.calls()
+        self.assertEqual(self.ab_skills(".agents", "skills"), [])
+        self.assertIn("codex plugin marketplace add %s" % REPO, calls)
+        self.assertIn("codex plugin add agent-blueprint@agent-blueprint", calls)
+        self.assertEqual(self.ab_skills(".grok", "skills"), SKILLS)
+        self.assertEqual(self.ab_skills(".pi", "agent", "skills"), SKILLS)
+        self.assertEqual(self.ab_skills(".hermes", "skills"), SKILLS)
+        self.assertIn("Cursor CLI: covered by the Claude Code plugin", out)
+        self.assertIn("Amp: covered by the Claude Code plugin", out)
+        self.assertNotIn("lists every skill twice", out)
+
+    def test_a_shared_copy_left_by_an_earlier_install_goes_when_cursor_sits_beside_claude_code(self):
+        copy = os.path.join(self.home, ".agents", "skills")
+        for name in ("ab-quick-fix", "my-own-skill"):
+            os.makedirs(os.path.join(copy, name))
+        with open(os.path.join(copy, ".agent-blueprint-install.json"), "w") as fh:
+            json.dump({"plugin": "agent-blueprint", "version": "4.0.0", "skills": ["ab-quick-fix"]}, fh)
+        for tool in ("claude", "cursor-agent"):
+            self.fake_tool(tool)
+        code, out = self.run_install()
+        self.assertEqual(code, 0, out)
+        self.assertFalse(os.path.exists(os.path.join(copy, "ab-quick-fix")))
+        self.assertFalse(os.path.exists(os.path.join(copy, ".agent-blueprint-install.json")))
+        self.assertTrue(os.path.isdir(os.path.join(copy, "my-own-skill")))   # never the user's own skills
+        self.assertIn("Removed the earlier shared copy", out)
 
     def test_amp_alone_gets_the_copy(self):
         self.fake_tool("amp")

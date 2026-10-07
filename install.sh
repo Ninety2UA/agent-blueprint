@@ -11,6 +11,8 @@
 #                 one copy of skills/ into ~/.agents/skills, which all five scan (Amp also
 #                 reads Claude Code's plugin cache, so a Claude Code install already covers it)
 #   Hermes        the same copy, listed under skills.external_dirs in ~/.hermes/config.yaml
+#   Beside Claude Code, Cursor CLI and Amp read its plugin too, so then nothing goes into ~/.agents/skills:
+#                 Codex gets its own plugin, and Grok Build, Pi and Hermes a copy in their own skills folders
 # Copy installs keep an install record, so a re-run removes skills that were renamed or
 # deleted since and leaves every other skill in that folder alone.
 #
@@ -68,7 +70,7 @@ while [ $# -gt 0 ]; do
             echo "  project with the ab-migrate skill." >&2
             exit 2 ;;
         --local|--force|--no-overwrite) shift ;;
-        -h|--help)      sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help)      sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         -*)             error "Unknown option: $1"; exit 2 ;;
         *)              PROJECT_DIR="$1"; shift ;;
     esac
@@ -166,45 +168,45 @@ if listed agy; then
     success "Antigravity: agent-blueprint"
 fi
 
-# ─── One copy for the hosts that scan ~/.agents/skills ────────
-copy_reasons=()
-for h in "${COPY_HOSTS[@]}"; do
-    listed "$h" || continue
-    if [ "$h" = amp ] && listed claude; then
-        info "Amp: covered by the Claude Code install (Amp reads Claude Code's plugin cache); no copy needed for it"
-        continue
-    fi
-    copy_reasons+=("$h")
-done
-if listed hermes; then copy_reasons+=(hermes); fi
-[ "$COPY_DIR_SET" = true ] && copy_reasons+=("--copy-dir")
+# ─── Skills for the hosts that read a plain skills folder ─────
+# Cursor CLI and Amp read Claude Code's plugin as well as ~/.agents/skills, so beside that plugin a
+# shared copy would show them every skill twice. Then they use the Claude Code plugin, Codex gets a
+# plugin of its own, and Grok Build, Pi and Hermes each get a copy in a folder only they read.
+# Otherwise one shared copy covers every host that scans it.
+SPLIT=false
+if listed claude && { listed cursor-agent || listed amp; } && [ "$COPY_DIR_SET" = false ]; then
+    SPLIT=true
+fi
 
-RECORD="$COPY_DIR/.agent-blueprint-install.json"
+# copy_skills DEST HOST...: copies every skill into DEST and keeps an install record there, so a
+# re-run removes skills renamed or deleted since and leaves every other skill in DEST alone.
 copy_skills() {
-    info "Copying ${SKILL_COUNT} skills into $COPY_DIR (one copy covers: ${copy_reasons[*]})"
+    local dest_dir="$1"; shift
+    local record="$dest_dir/.agent-blueprint-install.json"
+    info "Copying ${SKILL_COUNT} skills into $dest_dir (for: $*)"
     local previous=() name src dest src_real copy_real
     # The copy replaces each skill folder, so a destination that is the source itself (the path,
     # or a symlink to it) would delete the checkout's skills before copying them.
     src_real=$(cd "$SOURCE_DIR/skills" && pwd -P)
     copy_real=""
-    if [ -d "$COPY_DIR" ]; then copy_real=$(cd "$COPY_DIR" && pwd -P); fi
+    if [ -d "$dest_dir" ]; then copy_real=$(cd "$dest_dir" && pwd -P); fi
     case "$copy_real/" in
         "$src_real"/*)
             error "--copy-dir points into this checkout's own skills folder ($src_real); choose another directory"
             exit 2 ;;
     esac
-    if [ -f "$RECORD" ]; then
-        while IFS= read -r name; do previous+=("$name"); done < <(sed -n 's/^ *"\(ab-[a-z0-9-]*\)".*/\1/p' "$RECORD")
+    if [ -f "$record" ]; then
+        while IFS= read -r name; do previous+=("$name"); done < <(sed -n 's/^ *"\(ab-[a-z0-9-]*\)".*/\1/p' "$record")
     fi
     local current=()
     for src in "$SOURCE_DIR"/skills/*/; do
         name=$(basename "$src")
         current+=("$name")
-        dest="$COPY_DIR/$name"
+        dest="$dest_dir/$name"
         if [ "$DRY_RUN" = true ]; then
             echo -e "    ${DIM}copy  $name${NC}"
         else
-            mkdir -p "$COPY_DIR"
+            mkdir -p "$dest_dir"
             # Copy next to the destination first, then swap, so a failed copy leaves the old skill in place.
             rm -rf "${dest:?}.new"
             cp -R "$src" "$dest.new"
@@ -218,8 +220,8 @@ copy_skills() {
         case " ${current[*]} " in *" $name "*) continue ;; esac
         if [ "$DRY_RUN" = true ]; then
             echo -e "    ${DIM}remove $name (no longer shipped)${NC}"
-        elif [ -d "$COPY_DIR/$name" ]; then
-            rm -rf "${COPY_DIR:?}/$name"
+        elif [ -d "$dest_dir/$name" ]; then
+            rm -rf "${dest_dir:?}/$name"
             info "Removed $name: it is no longer shipped"
         fi
     done
@@ -237,30 +239,73 @@ copy_skills() {
             done
             echo "  ]"
             echo "}"
-        } > "$RECORD"
+        } > "$record"
     fi
-    success "Skills copied to $COPY_DIR"
-    for h in "${copy_reasons[@]}"; do
-        case "$h" in
-            hermes)
-                if [ -f "$HOME/.hermes/config.yaml" ] && grep -q -F "$COPY_DIR" "$HOME/.hermes/config.yaml"; then
-                    success "Hermes: $COPY_DIR is already under skills.external_dirs"
-                else
-                    warn "Hermes: add this to ~/.hermes/config.yaml so it indexes the copy (bare skill names, slash commands):"
-                    echo "      skills:"
-                    echo "        external_dirs:"
-                    echo "          - $COPY_DIR"
-                fi ;;
-            --copy-dir) ;;
-            *) success "$h: covered by the copy in $COPY_DIR" ;;
-        esac
-    done
-    if listed cursor-agent && listed claude; then
-        warn "Cursor CLI can also import Claude Code plugins; keep one route or it lists every skill twice."
-    fi
+    success "Skills copied to $dest_dir"
 }
-if [ ${#copy_reasons[@]} -gt 0 ]; then
-    copy_skills
+
+# remove_recorded_copy DIR: removes the skills an earlier copy install recorded in DIR, and its
+# record; every other folder in DIR stays.
+remove_recorded_copy() {
+    local dir="$1" record="$1/.agent-blueprint-install.json" name
+    [ -f "$record" ] || return 0
+    while IFS= read -r name; do
+        if [ "$DRY_RUN" = true ]; then
+            echo -e "    ${DIM}remove $name${NC}"
+        else
+            rm -rf "${dir:?}/$name"
+        fi
+    done < <(grep -o '"ab-[a-z0-9-]*"' "$record" | tr -d '"')
+    if [ "$DRY_RUN" = false ]; then rm -f "$record"; fi
+    info "Removed the earlier shared copy in $dir: Cursor CLI and Amp would list its skills a second time"
+}
+
+if [ "$SPLIT" = true ]; then
+    if listed cursor-agent; then success "Cursor CLI: covered by the Claude Code plugin (it imports Claude Code plugins)"; fi
+    if listed amp; then success "Amp: covered by the Claude Code plugin (it reads Claude Code's plugin cache)"; fi
+    if listed codex; then
+        info "Codex: plugin install through its marketplace commands (a shared copy would reach Cursor CLI and Amp too)"
+        run codex plugin marketplace add "$SOURCE_DIR"
+        run codex plugin add agent-blueprint@agent-blueprint
+        success "Codex: agent-blueprint@agent-blueprint"
+    fi
+    if listed grok; then copy_skills "$HOME/.grok/skills" grok; fi
+    if listed pi; then copy_skills "$HOME/.pi/agent/skills" pi; fi
+    if listed hermes; then copy_skills "$HOME/.hermes/skills" hermes; fi
+    remove_recorded_copy "$COPY_DIR"
+else
+    copy_reasons=()
+    for h in "${COPY_HOSTS[@]}"; do
+        listed "$h" || continue
+        if [ "$h" = amp ] && listed claude; then
+            info "Amp: covered by the Claude Code install (Amp reads Claude Code's plugin cache); no copy needed for it"
+            continue
+        fi
+        copy_reasons+=("$h")
+    done
+    if listed hermes; then copy_reasons+=(hermes); fi
+    [ "$COPY_DIR_SET" = true ] && copy_reasons+=("--copy-dir")
+    if [ ${#copy_reasons[@]} -gt 0 ]; then
+        copy_skills "$COPY_DIR" "${copy_reasons[@]}"
+        for h in "${copy_reasons[@]}"; do
+            case "$h" in
+                hermes)
+                    if [ -f "$HOME/.hermes/config.yaml" ] && grep -q -F "$COPY_DIR" "$HOME/.hermes/config.yaml"; then
+                        success "Hermes: $COPY_DIR is already under skills.external_dirs"
+                    else
+                        warn "Hermes: add this to ~/.hermes/config.yaml so it indexes the copy (bare skill names, slash commands):"
+                        echo "      skills:"
+                        echo "        external_dirs:"
+                        echo "          - $COPY_DIR"
+                    fi ;;
+                --copy-dir) ;;
+                *) success "$h: covered by the copy in $COPY_DIR" ;;
+            esac
+        done
+        if listed cursor-agent && listed claude; then
+            warn "Cursor CLI can also import Claude Code plugins; keep one route or it lists every skill twice."
+        fi
+    fi
 fi
 
 # ─── Optional project scaffold ────────────────────────────────

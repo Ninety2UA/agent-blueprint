@@ -4,7 +4,7 @@ Binary `grok`; facts checked against Grok Build 1.0.34 on 2026-09-30.
 
 ## Install
 
-One route: one copy of `skills/` in `~/.agents/skills`, which Grok scans. `bash install.sh` writes it, and the same copy serves Codex, Pi, Cursor CLI and Amp:
+One route: one copy of `skills/` in `~/.agents/skills`, which Grok scans. `bash install.sh` writes it, and the same copy serves Codex, Pi, Cursor CLI and Amp. On a machine with Claude Code and Cursor CLI or Amp, it copies the skills into `~/.grok/skills` instead, which only Grok reads:
 
 ```bash
 git clone https://github.com/Ninety2UA/agent-blueprint.git
