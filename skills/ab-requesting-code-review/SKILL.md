@@ -2,7 +2,7 @@
 name: ab-requesting-code-review
 description: "Runs a fast single-reviewer code review: picks a guarded review range (one task's commit, a whole branch from its merge base, or the working tree in no-commit mode), hands it with the plan to the code-reviewer helper, and acts on the Critical, Important and Suggestion findings it returns. Use when a task or bug fix is finished, before committing or merging, when stuck, or when the user asks to review or check recent changes. Not for a multi-perspective or thorough review, or a change that could fail silently or touches auth, money, data or a public contract (ab-review-swarm)."
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Requesting Code Review
@@ -11,7 +11,7 @@ The outcome is one well-defined range of changes reviewed by the code-reviewer h
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. Before that, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-requesting-code-review", "version": "4.0.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-requesting-code-review.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## When to review
 
@@ -41,7 +41,7 @@ Here that means: set `BASE_SHA=$(git merge-base origin/main HEAD)` and `HEAD_SHA
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Prompt: `references/agents/code-reviewer.md` (the helper's instructions). Inputs: the review request, which is `review-request.md` in this skill's folder with its placeholders filled in:
+Prompt: `references/agents/code-reviewer.md` (the helper's instructions). Inputs: the review request, which is `assets/review-request.md` with its placeholders filled in:
 
 - `{WHAT_WAS_IMPLEMENTED}`: what you just built
 - `{PLAN_OR_REQUIREMENTS}` and `{PLAN_REFERENCE}`: what it should do (the plan task or the requirements)
@@ -56,9 +56,3 @@ A worked example: `references/example.md` § Example.
 - Note Suggestions for later.
 - When the reviewer is wrong, push back with technical reasoning: show the code or tests that prove it works, or ask the reviewer to clarify. Valid technical feedback gets fixed, not argued with.
 - Skip no review because the change "is simple"; simple changes are where unchecked assumptions hide.
-
-## In workflows
-
-- **Subagent-driven development:** review after each task and fix before the next one, so issues do not compound.
-- **Executing plans:** review after each batch (3 tasks), apply the feedback, continue.
-- **Ad-hoc work:** review before merge, and when stuck.

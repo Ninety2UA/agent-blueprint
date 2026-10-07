@@ -1,26 +1,22 @@
 ---
 name: ab-systematic-debugging
-description: "Finds a bug's root cause before any fix: classifies the error, reproduces it, traces the bad value to its source, tests one hypothesis at a time against evidence tiers, fixes test-first, and questions the design after three failed fixes. Use when there is a bug, error, test failure, crash, regression, flaky test or unexpected behavior, even when the user wants to jump straight to a fix or says 'just change X to Y' without knowing why it broke. Not for new features (use ab-brainstorming) or tests for working code (use ab-add-tests)."
+description: "Finds a bug's root cause before any fix: classifies the error, reproduces it, traces the bad value to its source, tests one hypothesis at a time against evidence tiers, fixes test-first, and questions the design after three failed fixes. Use when there is a bug, error, test failure, crash, regression, flaky test or unexpected behavior, even when the user wants to jump straight to a fix without knowing why it broke. Not for new features (use ab-brainstorming) or tests for working code (use ab-add-tests)."
 argument-hint: "[describe the issue]"
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Systematic Debugging
 
-A finished run names the root cause with evidence, fixes it at the source, and adds a regression test that failed before the fix and passes after, with the suite green. A patched symptom hides the fault and tends to add a new one.
+A finished run names the root cause with evidence, fixes it at the source, and adds a regression test that failed before the fix and passes after, with the suite green. A patched symptom hides the fault and adds another.
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. Before that, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-systematic-debugging", "version": "4.0.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-systematic-debugging.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## The Iron Law
 
-```
-NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
-```
-
-Propose no fix before Phase 1 is done, unless Step 0 gives a fast path. A fix proposed before tracing the data flow, "one more fix" after two failures, or a user saying "stop guessing" means: back to Phase 1. More red flags: `references/discipline.md`.
+**No fixes without root cause investigation first.** Propose no fix before Phase 1 is done, unless Step 0 gives a fast path. A fix proposed before tracing the data flow, "one more fix" after two failures, or a user saying "stop guessing" means: back to Phase 1. More red flags: `references/discipline.md`.
 
 ## Step 0: Classify the Error
 
@@ -39,7 +35,7 @@ Signs per class: `references/classification.md` § Classification table.
 2. **Reproduce it reliably**; if it will not reproduce, gather data rather than guess. If the repro is disputed or intermittent, confirm it independently first.
 3. **Check recent changes**: diff, commits, dependencies, config, environment.
 4. **Multi-component systems**: log what crosses each boundary and run once to see where it breaks (`references/deep-dive.md` § Multi-component evidence).
-5. **Trace a deep error back** to where the bad value originates and fix there (`root-cause-tracing.md` in this skill's folder).
+5. **Trace a deep error back** to where the bad value originates and fix there (`references/root-cause-tracing.md`; when a test leaves files or state behind, it runs `scripts/find-polluter.sh` to bisect the suite).
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
@@ -62,7 +58,7 @@ Find similar working code, read any reference implementation completely, and lis
 ### Phase 4: Implementation
 
 1. **Failing test first**: the simplest repro, automated if possible, else a one-off script (the ab-test-driven-development skill). It proves the fix.
-2. **One fix** at the root cause, nothing bundled, so a failure points at one change. After it, `defense-in-depth.md` adds checks at each layer; `condition-based-waiting.md` replaces fixed timeouts.
+2. **One fix** at the root cause, nothing bundled, so a failure points at one change. After it, `references/defense-in-depth.md` adds checks at each layer; `references/condition-based-waiting.md` replaces fixed timeouts.
 3. **Verify** (the ab-verification-before-completion skill): the test passes, nothing else broke, the issue is gone. For intermittent bugs, disputed repros, shared state or long sessions, repeat the Phase 1 helper check with the fix. Then commit the fix and its test together.
 4. **If the fix fails**: under 3 tries, back to Phase 1 with what you learned; at 3, step 5.
 5. **After 3 failed fixes, question the architecture.** When each fix exposes new coupling or symptoms elsewhere, or needs a large refactor, the design is wrong, not the hypothesis. Ask before any further fix.
@@ -75,10 +71,10 @@ It applies to the commit in step 3.
 
 Options: refactor the design (plan it with the ab-brainstorming skill), try one more hypothesis the evidence supports, or stop. Default when nobody answers: no further fix; record the cause, the failed fixes and the design question in the debug notes and report that a design decision is needed.
 
-## When Process Reveals "No Root Cause"
+## No root cause found
 
-If the cause is truly environmental, timing-dependent or external, record what you investigated and add handling (retry, timeout, clear error) and logging or monitoring. Most such cases are unfinished investigations.
+If the cause is truly environmental, timing-dependent or external, record what was investigated and add handling (retry, timeout, clear error) plus logging; most such cases are unfinished investigations.
 
-## Persistent Debug Sessions (Long Bugs)
+## Long bugs
 
-When a bug outlasts a session (cycle 3+, compressed context, a resumed bug, evidence spanning sessions), keep `.agent-blueprint/debug/<slug>.md` per `references/deep-dive.md` § Persistent Debug Sessions. Fast-path bugs get none.
+When a bug outlasts a session (cycle 3+, compressed context, a resumed bug), keep `.agent-blueprint/debug/<slug>.md` per `references/deep-dive.md` § Persistent Debug Sessions; fast-path bugs get none.

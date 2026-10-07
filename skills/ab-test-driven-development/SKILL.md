@@ -2,7 +2,7 @@
 name: ab-test-driven-development
 description: "Drives new code from tests with red-green-refactor: write one failing test, watch it fail for the expected reason, write the least code that passes, run the whole suite, then refactor while green. Code written before its test is deleted and rewritten from the test. Use when implementing a feature, fixing a bug, refactoring or changing behavior, before any implementation code and whether or not the user mentions tests. Not for backfilling tests on existing code that is not being changed (use ab-add-tests)."
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Test-Driven Development (TDD)
@@ -13,7 +13,7 @@ Write the test first. Watch it fail. Write minimal code to pass. The skill is do
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. Before that, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-test-driven-development", "version": "4.0.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-test-driven-development.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## When to Use
 
@@ -121,11 +121,7 @@ Bug found? Write failing test reproducing it. Follow TDD cycle. Test proves fix 
 
 ## Testing Anti-Patterns
 
-When adding mocks or test utilities, read `testing-anti-patterns.md` in this skill's folder to avoid common pitfalls:
+When adding mocks or test utilities, read `references/testing-anti-patterns.md` to avoid common pitfalls:
 - Testing mock behavior instead of real behavior
 - Adding test-only methods to production classes
 - Mocking without understanding dependencies
-
-## Final Rule
-
-Production code → test exists and failed first. Otherwise → not TDD. The only exceptions are the ones the user grants under When to Use.

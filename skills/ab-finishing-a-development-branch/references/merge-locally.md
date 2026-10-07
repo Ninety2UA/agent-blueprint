@@ -19,7 +19,7 @@ git worktree remove <worktree-path>   # skip when the branch had no worktree
 git branch -d <feature-branch>
 ```
 
-If the tests fail on the merged result, stop before the cleanup lines: keep the worktree and the branch, and report the failures. Then confirm the cleanup (SKILL.md Step 6). If `git worktree remove` refuses, keep the worktree and the branch and report the dirty state (Option 3 behaviour).
+If the tests fail on the merged result, stop before the cleanup lines: keep the worktree and the branch, and report the failures. Then confirm the cleanup (SKILL.md Step 6, which also owns a refused removal).
 
 ## Confirm the cleanup
 

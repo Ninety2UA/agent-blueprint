@@ -95,24 +95,13 @@ When the ab-pause-checkpoint skill runs, or you need to save state:
 
 2. **Update STATE.md** with current progress, decisions and next steps, and stamp `last-updated:` and `head:` (the sha from `git rev-parse HEAD`) in its frontmatter, the stamp the ab-resume-session skill checks for freshness.
 
-3. **Refresh Session Continuity** in `docs/context/STATUS.md` with a one-line summary.
+3. **Refresh Session Continuity** in `docs/context/STATUS.md`: a one-line summary of where work stands, and the Start here line rewritten to the same next action STATE.md now lists first, because the ab-resume-session skill continues from Start here before it reads STATE.md, and a stale Start here repeats finished work. Keep the section's other lines (what was done, what's remaining) in place.
 
 4. **Confirm to the user:** "State saved. Resume with ab-resume-session in a new session."
 
 ## Process: Resuming Work
 
-When the ab-resume-session skill runs:
-
-1. **Read STATE.md**: full state including wave progress, blockers, next steps.
-2. **Read the Session Continuity section of `docs/context/STATUS.md`**: summary and "start here" instruction.
-3. **Check git state**: branch, uncommitted changes, stashes.
-4. **Verify the plan file**: is it still current? Were any tasks completed outside this session?
-5. **Present orientation**: a summary of where things stand and what's next.
-6. **Ask** whether to continue from the next step.
-
-**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
-
-Options: 1. Continue from [next step]. 2. Work on something else. Default when nobody answers: continue from the first of STATE.md's Next Steps, or from the "Start here" step in STATUS.md when it lists none; if neither names a step, stop after the orientation.
+The ab-resume-session skill owns this: it reads STATE.md and the Session Continuity section of `docs/context/STATUS.md`, checks the git state, verifies the plan file is current, presents the orientation and asks whether to continue, with its own headless default. Keep both files in the shapes above and that skill finds what it needs.
 
 ## Process: Handing Off Between Sessions
 

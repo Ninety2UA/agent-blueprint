@@ -1,6 +1,6 @@
 # Capability snippets
 
-The steps that depend on what the host can do, or that every tool must do the same way, each worded once. The paragraph right under each heading is the snippet. A skill pastes it as a paragraph of its own, byte for byte, and puts anything specific to its site (which prompt file, which inputs, which default) in the next paragraph. `python3 scripts/sync-shared.py` rewrites every copy from this file, and the portability gate fails on a copy that differs, so edit a snippet here and never in a copy.
+The steps that depend on what the host can do, or that every tool must do the same way, each worded once. The paragraph right under each heading is the snippet. A skill pastes it as a paragraph of its own, byte for byte (a `{{name}}` or `{{version}}` in it stands for the skill's own frontmatter value), and puts anything specific to its site (which prompt file, which inputs, which default) in the next paragraph. `python3 scripts/sync-shared.py` rewrites every copy from this file, and the portability gate fails on a copy that differs, so edit a snippet here and never in a copy.
 
 ## helper-step
 
@@ -38,9 +38,9 @@ Paste it at the first step that writes under `.agent-blueprint/`.
 
 ## provenance-record
 
-**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. Before that, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "{{name}}", "version": "{{version}}", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/{{name}}.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
-Paste it as the first step of every pipeline skill, which also carries `metadata.version` in its frontmatter. The fields are defined in the ab-ship-pipeline skill's run-state reference.
+Paste it right after the Working folder snippet in every pipeline skill, which also carries `metadata.version` in its frontmatter. The sync tool fills that skill's `name` and `metadata.version` into `{{name}}` and `{{version}}`, so a version change needs a sync as well. The command lets the shell write the time: a model asked to compose the file by hand has skipped it as bookkeeping, and has once written an unevaluated shell expression as the time. The fields are defined in the ab-ship-pipeline skill's run-state reference.
 
 ## no-commit-mode
 

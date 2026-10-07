@@ -1,0 +1,1 @@
+{{SKILL_REF}} The test suite fails: run `python3 -m unittest discover -s tests`, find the root cause of the failing test, and fix it in the code, not in the test. Keep the failing test as the regression test, run the suite until it passes, and commit the fix.

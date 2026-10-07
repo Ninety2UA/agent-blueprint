@@ -17,13 +17,13 @@ Say at the start: "Checking this project for Agent Blueprint v3 traces."
 
 Run `scripts/detect-v3.sh <project directory>`. It reports one line per trace and changes nothing:
 
-- `remove` lines: the blueprint's own copies (v3 skill names from `references/v4-skill-names.tsv`, the v3 agent and hook file names, the blueprint's `scripts/ship.sh`, a `.claude-plugin/plugin.json` named `claude-code-blueprint`);
-- `unsure` lines: files with a v3 name in a project that shows no other sign of a blueprint install. Other skill packs use some of the same names, so the script leaves these alone; show them to the user and remove one only when they confirm it is the blueprint's;
+- `remove` lines: the blueprint's own copies (files with a v3 skill, command, agent or hook name, from `references/v4-skill-names.tsv` and the script, whose content, line endings aside, is a file the blueprint shipped, by its checksum in `references/v3-file-sums.txt`; the blueprint's `scripts/ship.sh`; a `.claude-plugin/plugin.json` named `claude-code-blueprint`);
+- `unsure` lines: files with a v3 name that the script cannot show are the blueprint's, because the project shows no other sign of a blueprint install or the file is not a version the blueprint shipped (another skill pack's file of the same name, or a copy someone edited). A skill folder stays whole and is `unsure` when any file in it is not one the blueprint shipped, or it holds a symlink; its line names that file. The script leaves these alone; show them to the user and remove one only when they confirm it is the blueprint's;
 - `aside` lines: v3 run state files (`.claude/ship-*.local.md`, `team-active.local.md`) that move to `.agent-blueprint/run/v3/`;
 - a `rename` line when `CLAUDE.md` is a regular file and no `AGENTS.md` exists;
 - a `plugin` line when the v3 plugin is still installed in Claude Code.
 
-If it prints `nothing to migrate`, say so and stop: there is nothing to do.
+If it prints `nothing to migrate` (its exit code is then 3, not an error), say so and stop: there is nothing to do. If it prints `nothing to remove automatically` (exit code 4, not an error either), every line is `unsure`: do not stop, go on to step 2 and ask about them.
 
 ## Step 2: Show the list and ask once
 
@@ -33,11 +33,15 @@ Show the report as it is. Then check that v4 is installed (the ab-project-start 
 
 Options: apply the list, apply it but keep `CLAUDE.md` as it is, or stop. Default when nobody answers: stop, change nothing, and set the run state to `needs-human` if there is one, because deleting files is the user's call and a wrong deletion cannot be undone.
 
+When every line is `unsure` (exit code 4), offer instead: remove the items the user names as the blueprint's, or leave them all. Default when nobody answers: leave them all and change nothing, for the same reason.
+
 ## Step 3: Back up, then apply
 
 If the project is a git repository with uncommitted changes, ask the user to commit or stash them first and stop; the backup below only protects committed work. If it is not a git repository there is no backup at all: say so when you ask, and treat an unanswered question as stop. Otherwise create the branch `blueprint-v3-backup` at the current commit when it does not exist yet, so every removed file stays one checkout away.
 
-Run `scripts/detect-v3.sh --apply <project directory>`; the script removes only what its report listed. When the user chose to keep `CLAUDE.md`, add `--keep-instructions`, which leaves `CLAUDE.md` and any `AGENTS.md` exactly as they are.
+Run `scripts/detect-v3.sh --apply <project directory>`; the script removes only what its report listed. When the user chose to keep `CLAUDE.md`, add `--keep-instructions`, which leaves `CLAUDE.md` and any `AGENTS.md` exactly as they are. Skip this run when every line was `unsure`, since it would change nothing.
+
+Then remove each `unsure` item the user named as the blueprint's, at the path its line gives, and nothing else.
 
 ## Step 4: Finish
 

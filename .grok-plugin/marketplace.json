@@ -9,7 +9,7 @@
       "name": "agent-blueprint",
       "description": "Skills, helper prompts and pipelines for AI-assisted engineering, portable across eight coding CLIs.",
       "category": "productivity",
-      "version": "3.8.0",
+      "version": "4.0.0",
       "source": {
         "source": "url",
         "url": "https://github.com/Ninety2UA/agent-blueprint.git"

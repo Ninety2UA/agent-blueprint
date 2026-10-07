@@ -42,15 +42,7 @@ Write down exactly three things:
 **Success criteria:** [What constitutes a sufficient answer — doesn't need to be "yes it works"]
 ```
 
-Examples of good spike questions:
-- "Can we render 10K rows in the table without virtual scrolling?"
-- "Does the Stripe API support partial captures for our use case?"
-- "Is SQLite fast enough for our expected write throughput?"
-- "Can we run the ML model in the browser with acceptable latency?"
-
-Examples of bad spike questions:
-- "How should we build the payments system?" (too broad — narrow to a specific uncertainty)
-- "Is React good?" (subjective — reframe as measurable: "Can React Server Components reduce our bundle by 40%?")
+A good question is specific and measurable: "Can we render 10K rows in the table without virtual scrolling?" A bad one is too broad ("How should we build the payments system?") or subjective ("Is React good?"): narrow it to one uncertainty with a measurable answer, such as "Can React Server Components reduce our bundle by 40%?"
 
 ### Step 2: Explore
 

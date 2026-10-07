@@ -175,11 +175,10 @@ git commit -m "docs: session wrap-up YYYY-MM-DD — [summary]. ADR-NNN: [decisio
 
 ## Constraints
 
-- Change no source code, tests, configs, or infrastructure: this is documentation only, and a code change made during a wrap ships unreviewed
+Besides the documentation-only and ground-truth rules in SKILL.md:
+
 - Create no new documentation file except an ADR (Step 12) or a missing LEARNINGS.md (Step 5)
 - Keep all updates factual and concise — no filler
 - Preserve existing formatting and structure of each file
 - If nothing changed in a file's domain, skip it — don't update for the sake of updating
-- Never fabricate or assume what was done — git history is the ground truth
 - Put anything ambiguous to the user in the Step 3 question rather than guessing; a headless run records it as an open question under Remaining Work
-- Modify no file before the Step 3 answer (or, in a headless run, its default)

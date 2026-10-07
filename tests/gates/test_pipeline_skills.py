@@ -6,9 +6,13 @@ default after every question, a description that leads with what the skill
 does, and, for ab-ship-pipeline, the run-state contract instead of the DONE
 sentinel.
 """
+import datetime
 import json
 import os
 import re
+import shutil
+import subprocess
+import tempfile
 import unittest
 
 from gate_helpers import (REPO, USE_WHEN, questions_without_default, read, skill_description,
@@ -42,6 +46,26 @@ class PipelineSkills(unittest.TestCase):
     def test_each_writes_its_provenance_record(self):
         for name in PIPELINE:
             self.assertIn("**Provenance record.**", skill_md(name), name)
+
+    def test_provenance_command_writes_the_record_run_state_defines(self):
+        """Run each skill's command as a model would, in every shell present, and read the record back."""
+        version = release_version()
+        shells = [s for s in ("bash", "sh", "zsh") if shutil.which(s)]
+        for name in PIPELINE:
+            m = re.search(r"^\*\*Provenance record\.\*\*[^`]*`([^`]+)`", skill_md(name), re.MULTILINE)
+            self.assertTrue(m, name)
+            for shell in shells:
+                with tempfile.TemporaryDirectory() as work:
+                    before = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+                    subprocess.run([shell, "-c", m.group(1)], cwd=work, check=True)
+                    path = os.path.join(work, ".agent-blueprint", "run", "provenance", name + ".json")
+                    record = json.loads(read(path))
+                    self.assertEqual(sorted(record), ["helper_steps", "skill", "started_at", "version"], name)
+                    self.assertEqual((record["skill"], record["version"], record["helper_steps"]),
+                                     (name, version, []), "%s under %s" % (name, shell))
+                    started = datetime.datetime.strptime(record["started_at"], "%Y-%m-%dT%H:%M:%SZ")
+                    started = started.replace(tzinfo=datetime.timezone.utc)
+                    self.assertLessEqual(abs((started - before).total_seconds()), 120, "%s under %s" % (name, shell))
 
     def test_each_that_commits_or_reviews_has_no_commit_mode(self):
         for name in COMMITS_OR_REVIEWS:

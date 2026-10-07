@@ -112,17 +112,7 @@ After all three passes, present a consolidated review:
 ### Verdict: APPROVED / REVISIONS NEEDED / REWORK NEEDED
 ```
 
-## Quick Reference
-
-| Pass | Focus | Ignore |
-|------|-------|--------|
-| 1. Accuracy | Is it correct? | Style, completeness |
-| 2. Clarity | Is it understandable? | Accuracy (done), completeness |
-| 3. Completeness | Is anything missing? | Accuracy, clarity (done) |
-
 ## Common Mistakes
-
-**Mixing passes** — Don't flag a missing section while checking accuracy. Stay in the lane for each pass.
 
 **Too many nits** — A review with 30 findings overwhelms the author. Prioritize the top 5-10 that matter most.
 

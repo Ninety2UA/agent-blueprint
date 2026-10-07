@@ -28,12 +28,12 @@ digraph when_flowchart {
 - Linear instructions → Numbered lists
 - Labels without semantic meaning (step1, helper2)
 
-See `graphviz-conventions.dot` in the skill directory (one level up) for graphviz style rules.
+See `assets/graphviz-conventions.dot` (from this skill's directory) for graphviz style rules.
 
-**Visualizing for your human partner:** Use `render-graphs.js` in the skill directory (one level up) to render a skill's flowcharts to SVG:
+**Visualizing for your human partner:** `scripts/render-graphs.js` (from this skill's directory) renders a skill's flowcharts to SVG; run it with `node`:
 ```bash
-./render-graphs.js ../some-skill           # Each diagram separately
-./render-graphs.js ../some-skill --combine # All diagrams in one SVG
+node scripts/render-graphs.js <skill folder>           # Each diagram separately
+node scripts/render-graphs.js <skill folder> --combine # All diagrams in one SVG
 ```
 
 ## Code Examples

@@ -32,8 +32,18 @@
 #   merge-secret           a key introduced by a merge commit's own resolution
 #   msg-secret             a key in a commit message
 #   symlink:PATH:TARGET    plant PATH as a symlink to TARGET
+#   push:BRANCH            push HEAD to BRANCH on origin, as a session that publishes its own work
+#   ff:BRANCH              fetch BRANCH from origin and fast-forward onto it
 #   block-commit           leave .git/index.lock behind, so the runner's own commit fails
-#   bigmsg                 end with one 100,000-character line (put it last)
+#   global-config          set core.sshCommand with git config --global (GIT_CONFIG_GLOBAL or ~/.gitconfig)
+#   xdg-config             append a core.sshCommand to $XDG_CONFIG_HOME/git/config
+#   config-file:FILE       append a core.sshCommand to FILE (a file another configuration file includes)
+#   worktree-config:KEY=VALUE  git config --worktree KEY VALUE (.git/config.worktree, outside the .git/config hash)
+#   replace-head           git replace HEAD with a clean commit (its parent's tree) and match the index to it
+#   remotes-file:PATH      a legacy .git/remotes file named after origin's push URL, which sends a push to that URL to PATH
+#   sub-branch:PATH        in the submodule at PATH, a branch named after HEAD's commit, at the submodule's HEAD
+#   bigmsg                 a 100,000-character final message whose 160th byte is inside a
+#                          multibyte character, plus one such line after the JSON (put it last)
 #
 # The probe prompt (it names agent-blueprint-probe) is answered without consuming a scenario line.
 
@@ -158,7 +168,24 @@ for step in $LINE; do
             mkdir -p "$(dirname "$link")"
             rm -rf "$link"
             ln -s "$target" "$link" ;;
+        push:*)          git push -q origin "HEAD:refs/heads/$arg" ;;
+        ff:*)            git fetch -q origin "$arg" && git merge -q --ff-only FETCH_HEAD ;;
         block-commit)    : > "$(git rev-parse --git-dir)/index.lock" ;;
+        global-config)   git config --global core.sshCommand "ssh -o ProxyCommand=planted-by-the-session" ;;
+        xdg-config)
+            mkdir -p "${XDG_CONFIG_HOME:?}/git"
+            printf '[core]\n\tsshCommand = ssh -o ProxyCommand=planted-by-the-session\n' >> "$XDG_CONFIG_HOME/git/config" ;;
+        config-file:*)   printf '[core]\n\tsshCommand = ssh -o ProxyCommand=planted-by-the-session\n' >> "$arg" ;;
+        worktree-config:*) git config --worktree "${arg%%=*}" "${arg#*=}" ;;
+        replace-head)
+            # git log now reads the clean commit in place of HEAD, and the index matches it, so the tree
+            # looks committed; git push still sends HEAD as it is.
+            git replace HEAD "$(git commit-tree 'HEAD^^{tree}' -p HEAD^ -m "clean")"
+            git read-tree HEAD ;;
+        remotes-file:*)
+            mkdir -p "$(git rev-parse --git-path remotes)"
+            printf 'URL: %s\n' "$arg" > "$(git rev-parse --git-path remotes)/$(git remote get-url --push origin)" ;;
+        sub-branch:*)    git -C "$arg" update-ref "refs/heads/$(git rev-parse HEAD)" "$(git -C "$arg" rev-parse HEAD)" ;;
         bigmsg)          BIGMSG=1 ;;
         gh-unauth)       touch "${AGENT_BLUEPRINT_FAKE_GH_DIR:?}/unauth" ;;
         stop-hook)
@@ -183,6 +210,11 @@ for step in $LINE; do
     esac
 done
 
-echo '{"result": "fake host finished call '"$N"'"}'
-if [ "$BIGMSG" = 1 ]; then head -c 100000 /dev/zero | tr '\0' 'x'; echo; fi
+if [ "$BIGMSG" = 1 ]; then
+    big=$(head -c 159 /dev/zero | tr '\0' 'x'; printf '\342\200\224'; head -c 100000 /dev/zero | tr '\0' 'x')
+    echo '{"result": "fake host finished call '"$N"': '"$big"'"}'
+    echo "$big"
+else
+    echo '{"result": "fake host finished call '"$N"'"}'
+fi
 exit "$EXIT_CODE"

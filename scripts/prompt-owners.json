@@ -18,6 +18,15 @@
       ]
     },
     {
+      "owner": "skills/ab-review-swarm/references/agents/code-reviewer-catalogs.md",
+      "copies": [
+        "skills/ab-requesting-code-review/references/agents/code-reviewer-catalogs.md",
+        "skills/ab-finishing-a-development-branch/references/agents/code-reviewer-catalogs.md",
+        "skills/ab-subagent-driven-development/references/agents/code-reviewer-catalogs.md",
+        "skills/ab-wave-orchestration/references/agents/code-reviewer-catalogs.md"
+      ]
+    },
+    {
       "owner": "skills/ab-deep-research/references/agents/codebase-context-mapper.md",
       "copies": [
         "skills/ab-deepen-plan/references/agents/codebase-context-mapper.md",

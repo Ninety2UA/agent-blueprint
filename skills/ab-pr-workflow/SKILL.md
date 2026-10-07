@@ -91,4 +91,4 @@ Reply in each comment thread with how it was addressed. In a runner-driven run, 
 
 After approval, follow `references/merging.md`. It merges only onto a base branch whose CI is green, because a red base hides whether your change broke anything.
 
-See `references/summary.md` for the quick reference and common mistakes.
+Before a push, or when unsure which step a situation calls for, read `references/summary.md` (quick reference and common mistakes).

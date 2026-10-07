@@ -38,7 +38,7 @@ The user's own model and effort choice drives every step; skills only mark steps
 
 ### Problem Frame
 
-The blueprint works only in Claude Code, and its own docs say so on purpose: the README and `docs/learnings/2026-09-11-ecosystem-import-verdicts.md:73` put multi-harness work "outside the single-harness, zero-dependency scope".
+The blueprint works only in Claude Code, and its own docs say so on purpose: the README put multi-harness work "outside the single-harness, zero-dependency scope".
 The people who want it now include the maintainer switching between Claude Code and Codex, teams where some members use Cursor or Pi, and public users who find the repo and run other tools.
 
 Several parts block them today.
@@ -67,7 +67,7 @@ The project name ties it to one vendor.
 - **New name: Agent Blueprint.** Governs R24. (session-settled: user-directed — chosen over a new name (Shipwright, Plumbline, Keel, Groundwork were offered) and over plain "Blueprint".)
 - **`ab-` prefix on every skill.** Shared skill folders in most tools would otherwise collide with other packs using names like `brainstorming`. Governs R9. (session-settled: user-directed — chosen over `bp-` (the recommendation), `bp-` with one short exception, and plain names.)
 - **The user chooses model and effort; the blueprint never prescribes one.** Governs R12, R13. (session-settled: user-directed — the maintainer rejected recommending a fixed level such as `/effort high` and rejected fixed agent effort tiers.)
-- **A native manifest per tool, no converter.** Tools without a plugin system get an installer that copies the shared skills into their skills location. Governs R1, R2. (session-settled: user-approved — chosen over a build step that generates per-tool copies: compound-engineering dropped its converter because every host format change broke it.)
+- **A native manifest per tool, no converter.** Tools without a plugin system get an installer that copies the shared skills into their skills location. Governs R1, R2. (session-settled: user-approved — chosen over a build step that generates per-tool copies, because a converter breaks every time a host changes its format.)
 - **Proof by a local scripted smoke test.** Governs R21. (session-settled: user-approved — chosen over a manual checklist and over running the tools in CI on every PR: most tools need paid accounts and secrets.)
 - **The docs record the reversal of the single-harness decision.** Governs R26. (session-settled: user-directed.)
 - **A tool broken by its vendor's bug is marked degraded, not release-blocking.** Governs R28. (session-settled: user-approved — chosen over always blocking the release and over blocking only v4.0: one vendor's bug should never hold back the other seven.)
@@ -212,9 +212,9 @@ flowchart TB
 ### Sources / Research
 
 - `.claude/handoff-2026-09-27-portability/HANDOFF.md`: goals, recommended architecture, and consequences for the blueprint.
-- `.claude/handoff-2026-09-27-portability/research/compound-engineering-report.md`: per-host manifests, portability rules, size caps and gates (compound-engineering v3.29.0, commit `a763b39`).
+- `.claude/handoff-2026-09-27-portability/research/`: per-host manifests, portability rules, size caps and gates.
 - `.claude/handoff-2026-09-27-portability/research/codex-report.md` and `research/codex-docs/`: Codex skills, agents, hooks, `AGENTS.md` limits, and the GPT-6 Astra guidance (`codex-docs/blog_rethinking.md`).
-- `.claude/handoff-2026-09-27-portability/research/articles/`: Claude context-engineering, Addy Osmani's agent-file audit, effort spending, Opus 5.5 guidance.
+- `.claude/handoff-2026-09-27-portability/research/articles/`: Claude context-engineering, an agent-file audit, effort spending, Opus 5.5 guidance.
 - `.claude/handoff-2026-09-27-portability/research/planning-2026-09-28/`: planning research. `repo-research.md` (dispatch map, rename hotspots, drift-gate locations), `docs-cc-codex-spec.md` (Claude Code, Codex and agentskills facts, tested), `web-agy-grok-pi-ce.md` and `web-cursor-hermes-amp.md` (per-tool install, headless, hooks), `web-team-features.md` (team features per tool), `agent-native.md` and `spec-flow.md` (dispatch contract, runner states, edge cases), `learnings.md` (past decisions and gotchas), `agy-headless-check.md` (local test).
 - `.claude/repo-watch/reports/2026-09-27-repo-report.md` §4 and `.claude/cli-watch/reports/2026-09-27-cli-report.md`: portability findings routed here; Opus 5.5 effort default; headless `rm` denial.
 - agentskills specification: <https://github.com/agentskills/agentskills>
@@ -363,7 +363,6 @@ flowchart TB
 - History-preserving moves (`git mv`) for every relocation in U1, U2, U5, U10 and U14, so blame survives the flatten and rename.
 - Scripted multi-file edits run under zsh on the maintainer's machine: pass file lists as arrays, never unquoted `$VAR`, and read exit codes from `$?` (`project_zsh_shell_gotchas` in the maintainer's memory).
 - Size cuts reuse the v3.7.1 mover method: move line ranges to `references/`, assert every original non-blank line survives in SKILL.md or a reference, and check each pointer resolves to a real heading.
-- Ideas from compound-engineering, superpowers and other packs are re-implemented in the blueprint's own words; no source text is copied.
 - `docs/learnings/` and `docs/plans/` keep the old name; they are historical records.
 
 ### Sequencing and Phased Delivery

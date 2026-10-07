@@ -175,7 +175,7 @@ Different skill types need different test approaches:
 Before relying on it:
 
 - **It bills real calls:** cases × runs × two arms, plus judge calls for each `llm` or `baseline` grader per run.
-- **Its case format is its own.** skill-creator's `evals/evals.json` is not interchangeable.
+- **Its case format is its own.** Eval files written for other tools do not carry over.
 - **Keep suites out of the installed tree's skill folders.** The whole Agent Blueprint repository installs as the plugin, so an eval suite ships to every user wherever it sits; keep it under `tests/`, and never name a fixture `SKILL.md`, or recursive installers pick it up as a skill.
 
 The fresh process per run gives it cleaner isolation than subagent-based testing, which inherits the tester's session context. It doesn't replace the scenario design above (pressure types, the 20-query trigger sets, why one run misleads); it runs those scenarios reproducibly. The blueprint ships no suite and no CI gate, because a gate would bill every push and need an API-key secret in a public repository.

@@ -12,16 +12,6 @@ If you make five or more read-only operations in a row (reading files, searching
 
 Reading code is preparation. Writing code is progress. Don't confuse the two.
 
-## Remember
-- Review plan critically first
-- Follow plan steps exactly
-- Don't skip verifications
-- Reference skills when plan says to
-- Between batches: just report and wait
-- Stop when blocked, don't guess
-- Don't start implementation on main/master without the user's consent: branch first, since every task commits
-- Document interpretive decisions in the plan's Assumptions section (`references/assumption-tracking.md`)
-
 ## Common Rationalizations
 
 | Rationalization | Reality |

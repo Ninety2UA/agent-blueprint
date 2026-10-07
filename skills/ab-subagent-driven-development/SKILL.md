@@ -2,20 +2,20 @@
 name: ab-subagent-driven-development
 description: "Runs a written plan in this session one task at a time: a fresh helper implements each task from its full text, a spec-compliance reviewer and then a code-quality reviewer check it, fix rounds repeat until both pass, and a final review covers the whole implementation. Use when a plan's tasks are mostly independent and you want clean context per task without leaving this session; usually invoked by another skill. Not for tightly coupled tasks that share state (execute those in order yourself), a separate session with human checkpoints (ab-executing-plans), or parallel team work (ab-orchestrate)."
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Subagent-Driven Development
 
 Run a plan in this session one task at a time: a fresh helper implements each task, a spec-compliance reviewer checks it built what the task asked (nothing missing, nothing extra), and only then a code-quality reviewer checks how well it is built. The run is done when every task's box is ticked, the final review approves, and the ab-finishing-a-development-branch skill has the branch. A fresh helper per task keeps its context clean; the review order keeps quality review off code that may still change for the spec.
 
-Diagrams: `references/flowcharts.md`. Comparison with ab-executing-plans: `references/advantages.md`. A worked run: `references/example-workflow.md`. What never to do: `references/red-flags.md`.
+Weighing this against ab-executing-plans: `references/advantages.md`. The loop as a diagram or a worked run: `references/flowcharts.md`, `references/example-workflow.md`. When a helper asks or fails, a reviewer finds issues, or a step seems skippable: `references/red-flags.md`.
 
 ## 1. Start
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. Before that, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-subagent-driven-development", "version": "4.0.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-subagent-driven-development.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 Work in an isolated workspace (the ab-using-git-worktrees skill). On main or master, branch first unless the user said to work there, since every task commits.
 
@@ -60,5 +60,3 @@ Fix its findings as in the fix rounds until it approves. Then delete the progres
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
 An implementer's question: its options. Default when nobody answers: the conservative one, recorded under the plan's `### Assumptions` and sent back. A blocked task: guidance and retry, skip it and go on with tasks that do not need it, or stop. Default when nobody answers: stop and report the task with its open findings.
-
-ab-writing-plans writes the plan; implementers follow ab-test-driven-development; reviewers follow ab-requesting-code-review.

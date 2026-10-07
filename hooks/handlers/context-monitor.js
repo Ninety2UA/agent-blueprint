@@ -5,7 +5,9 @@
  * Tracks tool calls and warns the agent when context is running low or when
  * consecutive read-only operations indicate analysis paralysis.
  *
- * Refinements over the prior version (imported from gsd-build/get-shit-done):
+ * License notice: THIRD_PARTY_NOTICES.md.
+ *
+ * Refinements over the prior version:
  *   - Severity escalation: NONE → WARNING → CRITICAL. State stores last severity
  *     so we can detect transitions.
  *   - Debounce: a warning at the same severity is suppressed unless 5 tool calls

@@ -1,6 +1,6 @@
 # Dispatch notes
 
-Loaded on demand from SKILL.md when preparing reviewer inputs (Step 3), starting the reviewers (Step 4), or validating and synthesizing their findings (Step 5).
+Loaded on demand from SKILL.md when preparing reviewer inputs (Step 3), starting the reviewers (Step 4), or validating their findings (Step 5).
 
 ## Reviewer inputs
 
@@ -22,17 +22,6 @@ Start all reviewers at once where the host allows it: they are independent, and 
 
 For example, Claude Code no longer caps subagents per session (the 200-subagent total was removed in CLI 2.1.224). What applies now is a concurrency cap of 20 subagents by default (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`, 2.1.217) and a nesting depth of 3 by default (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`, 2.1.219). A single swarm (6-10 reviewers plus the optional validator and synthesizer) stays within the concurrency cap, and running many swarms in one session no longer accumulates against a total.
 
-## What the synthesizer does
-
-The synthesizer will:
-- De-duplicate overlapping findings (cross-reviewer fingerprint match)
-- Collapse same-persona redundancy (one reviewer flooding with variants)
-- Apply premise-dependency chain linking (root + dependents)
-- Resolve contradictions (combined finding presenting both perspectives)
-- Apply deterministic recommended-action tie-break (Skip > Defer > Apply)
-- Read artifact files for detail-tier fields when surfaces need them
-- Recommend fix order
-
 ## Validation details
 
-The findings-validator re-checks each surviving finding with three questions: is it real in the current code, was it introduced by this diff, and is it not handled elsewhere? It returns validated, rejected or unresolved per finding, with a reason. Its bias is conservative (when in doubt, reject), except on protected subjects (auth, injection, data loss, secrets), where a rejection must quote the refuting line. It is a false-positive backstop, and it is skipped at five findings or fewer because its overhead then exceeds the benefit.
+The findings-validator re-checks each surviving finding with three questions: is it real in the current code, was it introduced by this diff, and is it not handled elsewhere? It returns validated, rejected or unresolved per finding, with a reason. Its bias is conservative (when in doubt, reject), except on protected subjects (auth, injection, data loss, secrets), where a rejection must quote the refuting line. It is a false-positive backstop.

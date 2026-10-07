@@ -8,13 +8,6 @@ argument-hint: "[optional: focus area or module name]"
 
 Map an unfamiliar codebase, or one area of it, into structured documentation before making any changes. The map becomes the shared context for all subsequent development work. The run is done when the map is saved under `docs/context/` and its key findings are presented to the user.
 
-## When to Use
-
-- Joining a new project for the first time
-- Before modifying a module you haven't worked in before
-- When onboarding new team members who need codebase orientation
-- After a major refactor to update the team's mental model
-
 ## The Iron Law
 
 Change no source code, tests or configuration until the map is complete and saved. Mapping is read-only, because an edit made mid-map changes the thing being mapped and mixes two tasks that should be reviewed apart. When you find something that needs fixing, add it to the map's Concerns section instead of fixing it inline.
@@ -62,20 +55,3 @@ Present the key findings to the user:
 - Architecture pattern and primary data flow
 - Top concerns (ordered by severity)
 - Recommended areas to investigate further
-
-## Quick Reference
-
-| Input | Output |
-|-------|--------|
-| Full project | `docs/context/CODEBASE-MAP.md` |
-| Specific module | `docs/context/MAP-[module].md` |
-| Conventions found | Update `docs/context/CONVENTIONS.md` |
-| Concerns found | List in map + add critical ones to `BACKLOG.md` |
-
-## Common Mistakes
-
-**Mapping too deep too early** — Start with the top 3 directory levels. Go deeper only in areas the user needs to modify. A complete map of a large codebase is a project, not a task.
-
-**Modifying code while mapping** — The map must be done before changes start. If you find a bug, note it. Don't fix it mid-map.
-
-**Mapping without a focus** — If the user says "map the auth module," don't map the entire codebase. Stay focused on what's needed for the current task.

@@ -3,7 +3,7 @@ name: ab-deep-research
 description: "Researches a topic before planning: five helpers run in parallel (past learnings in docs/solutions/ and docs/research/, framework docs for the installed versions, industry best practices, git history, and a map of the code the change touches), and a synthesizer merges them into one brief in docs/research/ with consensus, unique insights, contradictions, gaps and a recommended approach. Use when planning or building in unfamiliar code or technology, before an architectural decision, major refactor or migration, when onboarding to an area of the codebase, or when the user asks to research, investigate or learn best practices before building. Not for a small, well-understood change (ab-quick-fix), debugging a failure (ab-systematic-debugging) or enriching an existing plan (ab-deepen-plan)."
 argument-hint: "<topic or feature to research>"
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Deep Research — Multi-Agent Parallel Research
@@ -14,7 +14,7 @@ Five research helpers work in parallel, a synthesizer merges what they find, and
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. Before that, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-deep-research", "version": "4.0.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-deep-research.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## Step 0: Load Project Configuration
 
@@ -69,17 +69,3 @@ Present to the user:
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
 Ask "Research complete. Ready to start brainstorming based on these findings?" Options: start brainstorming (the ab-brainstorming skill picks up the brief from `docs/research/`), or stop here. Default when nobody answers: stop here, with the brief's path in the output.
-
-## When to Use
-
-- Before planning any feature that touches unfamiliar code
-- Before making architectural decisions
-- When the user says "I want to understand X before building"
-- When onboarding to a new area of the codebase
-- Before a major refactor or migration
-
-## When NOT to Use
-
-- For small, well-understood changes (use the ab-quick-fix skill instead)
-- When you already have a clear plan (go straight to the ab-brainstorming skill)
-- For debugging (use the ab-systematic-debugging skill instead)

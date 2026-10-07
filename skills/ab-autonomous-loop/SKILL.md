@@ -2,7 +2,7 @@
 name: ab-autonomous-loop
 description: "Runs a plan's tasks one after another with no human checkpoints: do the next unchecked task, verify it, tick it and commit, retry failures after a written reflection, and stop on a fatal error, a circuit breaker, a risk score or a hard cap. Often started by the pipeline skills. Use when a plan of mostly sequential tasks should run to the end unattended, or the user says to keep going until all of it is done. Not for review checkpoints between batches (ab-executing-plans) or tasks that can run in parallel (ab-orchestrate)."
 metadata:
-  version: "3.8.0"
+  version: "4.0.0"
 ---
 
 # Autonomous Loop
@@ -11,7 +11,7 @@ The run ends with every plan task ticked, verified and committed plus a final re
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. Before that, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-autonomous-loop", "version": "4.0.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-autonomous-loop.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 **Verify after every task, not at the end.** A chain of unverified changes is a chain of compounding bugs, and the stop signals below mean something only when each task was checked on its own.
 
@@ -66,4 +66,4 @@ When every task is ticked:
 2. Deslop every file this session changed (hedging, filler transitions, comments that restate the code, redundant type annotations; checklist: the deslop pass, Step 0.5, of the ab-iterative-refinement skill), then rerun the tests.
 3. Report in `references/final-report.md` § Final report: verification results, the run's numbers (tasks, retries, escalations, blocked tasks and why) and the changes.
 
-In `references/loop-details.md`: when not to use this skill (§ When Not to Use), limits and overrides (§ Quick Reference), next skills (§ Integration with Other Skills) and common mistakes (§ Common Mistakes).
+In `references/loop-details.md`: when not to use this skill (§ When Not to Use), limits and overrides (§ Quick Reference) and next skills (§ Integration with Other Skills).

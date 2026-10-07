@@ -1,0 +1,29 @@
+{
+  "description": "Blueprint lifecycle hooks",
+  "hooks": {
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/handlers/task-completed.js"],
+            "timeout": 60000
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/handlers/teammate-idle.js"],
+            "timeout": 60000
+          }
+        ]
+      }
+    ]
+  }
+}

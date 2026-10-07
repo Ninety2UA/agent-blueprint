@@ -5,7 +5,7 @@ description: "Runs a project health check across eight areas (build, tests, lint
 
 # Health Check — Project Health Assessment
 
-Run a comprehensive health assessment across all project dimensions. Report findings and flag items that need attention.
+Run a comprehensive health assessment across all project dimensions. Report findings and flag items that need attention. Done when the report below is presented, every row carrying a status, and the offer to act on it is answered or defaulted.
 
 ## Checks (run as many in parallel as possible)
 
@@ -76,7 +76,7 @@ git status --short
 # Unpushed commits
 git log @{u}..HEAD --oneline 2>/dev/null
 
-# Stale branches
+# Stale branches (master, or the remote's default, where the project has no main)
 git branch --merged main | grep -v main | grep -v '*'
 ```
 

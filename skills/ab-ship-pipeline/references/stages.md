@@ -106,7 +106,16 @@ Prompt: `references/agents/deployment-verifier.md`. Inputs: Verify deployment re
 
 With `driver` `interactive` this session publishes, after the secret scan the runner would make. With `driver` `runner`, skip this section: the runner publishes.
 
+**Bundled scripts.** Paths such as `scripts/run.sh` are relative to this skill's own folder, the one holding its SKILL.md, not to the project. Run a script through its interpreter (`bash` for `.sh`; `python3`, or `python` if that is missing, for `.py`) instead of relying on its executable bit, and if the interpreter is missing, say so and stop that step.
+
 1. In no-commit mode nothing is committed, so nothing can be pushed: set `needs-human`, with a `reason` saying the working tree and `commit-msg.md` wait for a commit.
-2. Scan the outgoing range (the merge base with the default branch to HEAD) and `pr-body.md` for secrets: private keys, cloud and API tokens, passwords, `.env` files. On a hit, publish nothing and set `needs-human`, naming the file and line in `reason` but never the value, since the reason is printed and may be shared.
-3. Push the branch and open the PR through the ab-pr-workflow skill, with `pr-body.md` as the body. If the push or the PR fails (no auth, branch protection), set `needs-human` with the fix in `reason`.
+2. Scan every commit the push would publish, and `pr-body.md`, for secrets with the runner's own scripts, so both paths scan the same commits:
+
+   ```bash
+   list=$(bash scripts/outgoing-commits.sh "$(git remote get-url --push <remote>)" "$(git merge-base HEAD <default branch>)") &&
+     printf '%s\n' "$list" | bash scripts/scan-secrets.sh --commits - --file .agent-blueprint/run/pr-body.md
+   ```
+
+   The list holds, oldest first, every commit since the merge base and every older one that no branch at the push URL has, read live from that URL. Any non-zero exit means publish nothing and set `needs-human`. Each hit is printed with where and what kind, never the value, and a `.env` file any listed commit added is a hit even if a later commit deleted it. Name the file and line in `reason`, never the value, since the reason is printed and may be shared. A non-zero exit with no hit printed means the list failed, most often because the push URL could not be read, or because git would read its branches from another URL (a `url.<base>.insteadOf` rule for that exact URL, or a remote of that name, sends it there; the error names both URLs), or because the push URL holds `=`; say so in `reason`. Prefix rules, such as fetching from a mirror or over https while pushing over ssh, do not move the list: it reads exactly the push URL.
+3. Push with `git push <remote> HEAD:refs/heads/<branch>`, naming the same `<remote>` whose push URL step 2 listed, never the URL itself: `git push <URL>` would apply the `insteadOf` rules to it once more, or take it for the name of a remote, and could reach a repository the list never read, which would publish commits the scan never saw. Then open the PR through the ab-pr-workflow skill, with `pr-body.md` as the body; the branch is already pushed. If the push or the PR fails (no auth, branch protection), set `needs-human` with the fix in `reason`.
 4. Set `status` to `done`.

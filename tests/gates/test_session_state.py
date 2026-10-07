@@ -26,7 +26,7 @@ class SessionState(unittest.TestCase):
     def test_no_skill_names_a_claude_working_folder(self):
         hits = []
         for path in glob.glob(os.path.join(SKILLS, "*", "**", "*.md"), recursive=True):
-            if "/ab-writing-skills/examples/" in path:   # examples of host skill folders, not working folders
+            if "/ab-writing-skills/references/examples/" in path:   # examples of host skill folders, not working folders
                 continue
             if "/ab-migrate/" in path:   # names the v3 files it cleans out of a project
                 continue

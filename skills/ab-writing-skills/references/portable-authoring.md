@@ -44,7 +44,7 @@ How to write a skill that loads and runs in any of the eight tools Agent Bluepri
 
 ## Prompt files
 
-Helpers get their instructions from prompt files in the dispatching skill's `references/agents/`. A prompt file has no frontmatter [frontmatter]. It opens with a short role header (what it may change, whether it is safe at lower effort, and that it never starts helpers of its own, since many hosts forbid nested helpers) and ends with an Output section, so a helper run and an inline run return the same shape. The main session coordinates; no prompt file dispatches.
+Helpers get their instructions from prompt files in the dispatching skill's `references/agents/`. A prompt file has no frontmatter [frontmatter]. It opens with a short role header (what it may change, whether it is safe at lower effort, and that it never starts helpers of its own, since many hosts forbid nested helpers) and ends with an Output section, so a helper run and an inline run return the same shape. The main session coordinates; no prompt file dispatches. A prompt may keep material it needs only in some runs (catalogs, long tables, worked examples) in a companion note named `<prompt>-<topic>.md` beside it, loaded at the point of use; the companion is a plain note, counted and checked as one by the gates, and a shared prompt's companion is registered with the same copies.
 
 ## Repository layout
 

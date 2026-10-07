@@ -7,7 +7,7 @@ Loaded on demand from `SKILL.md`; nothing here is needed on every invocation.
 ```markdown
 ---
 name: ab-<skill-name-with-hyphens>
-description: "[What the skill does, and how, in one clause.] Use when [specific triggering conditions and symptoms]."
+description: "[What the skill does, and how, in one clause.] Use when [specific triggering conditions and symptoms]. Not for [the near-neighbour case] (the ab-<sibling> skill)."
 ---
 
 # Skill Name
@@ -65,7 +65,7 @@ Concrete results
 **GREEN Phase - Write Minimal Skill:**
 - [ ] Name is `ab-` plus lowercase words joined by hyphens, equal to the folder name
 - [ ] Frontmatter uses only the agentskills keys plus `argument-hint` and `disable-model-invocation`; no `effort` or `model`
-- [ ] Description (at most 1,024 characters) names what the skill does first, then "Use when ..." with specific triggers and symptoms
+- [ ] Description (at most 1,024 characters) names what the skill does first, then "Use when ..." with specific triggers and symptoms, then "Not for ..." naming the sibling skill
 - [ ] Description written in third person
 - [ ] Host-dependent steps use the capability snippets, each as its own paragraph
 - [ ] Whole SKILL.md within 8,000 bytes; detail moved to `references/`

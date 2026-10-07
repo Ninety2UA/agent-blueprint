@@ -47,7 +47,7 @@ Pick the target by situation:
 
 **Option A: Update Session Continuity** (near the end of a session)
 
-Rewrite the Session Continuity section of `docs/context/STATUS.md`, at the top of the file, with the current state: update it in place when it already has content, and create it when it is missing. Write plain text with no HTML comments, because Hermes drops a context file that has one.
+Rewrite the Session Continuity section of `docs/context/STATUS.md`, at the top of the file, with the current state: update it in place when it already has content, and create it when it is missing. Keep its lines **What was done**, **What's remaining**, **Start here** (one instruction the next session can act on) and **Current state of the code**, because the ab-resume-session skill quotes those and continues from Start here. Write plain text with no HTML comments, because Hermes drops a context file that has one.
 
 **Option B: Create checkpoint file** (mid-session save points)
 

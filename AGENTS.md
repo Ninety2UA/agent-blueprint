@@ -23,7 +23,7 @@ AGENTS.md                                # This file; CLAUDE.md is a symlink to 
 install.sh                               # Installer and scaffold helper
 ```
 
-Helpers get their instructions from prompt files in the dispatching skill's `references/agents/`. A shared prompt file has one owner and byte-identical copies, registered in `scripts/prompt-owners.json`. Skills carry no `model` or `effort`: the session's model and effort are the user's choice, and helpers inherit them.
+Helpers get their instructions from prompt files in the dispatching skill's `references/agents/`. A shared prompt file has one owner and byte-identical copies, registered in `scripts/prompt-owners.json`. Skills carry no `model` or `effort`: the session's model and effort are the user's choice, and helpers inherit them. A prompt may keep material it needs only in some runs (catalogs, long tables, worked examples) in a companion note named `<prompt>-<topic>.md` beside it, loaded at the point of use; the companion is a plain note, counted and checked as one by the gates, and a shared prompt's companion is registered with the same copies.
 
 ## Gates
 
@@ -31,7 +31,7 @@ Run these before you push; CI runs the same set on every pull request.
 
 | Command | Checks |
 |---------|--------|
-| `bash scripts/check-drift.sh` | Count and version claims on every surface match the tree |
+| `bash scripts/check-drift.sh` | Count and version claims on every surface match the tree, and README.md and index.html say nothing about adopting ideas from other projects or analyzing them |
 | `python3 scripts/check-skill-collisions.py` | Frontmatter YAML, `references/` pointers and § headings resolve, no near-duplicate descriptions |
 | `python3 scripts/check-portability.py` | The portability rules for all eight hosts (see the ab-writing-skills skill's `references/portable-authoring.md`) |
 | `python3 scripts/check-manifests.py` | Every host manifest and every skill's `metadata.version` agree with the release |
@@ -51,7 +51,7 @@ The allowlist in `scripts/portability-allowlist.json` only shrinks: a fixed viol
 
 ## Releasing
 
-Bump the version in `.claude-plugin/plugin.json`, the marketplace entry and every skill's `metadata.version` together (the manifest gate holds them equal) whenever plugin content changes on the default branch. Installed plugin caches only re-sync when the version changes, so an unbumped release never reaches users.
+Bump the version in `.claude-plugin/plugin.json`, the marketplace entry and every skill's `metadata.version` together (the manifest gate holds them equal) whenever plugin content changes on the default branch, then run `python3 scripts/sync-shared.py`, which writes the new version into each pipeline skill's provenance command. Installed plugin caches only re-sync when the version changes, so an unbumped release never reaches users.
 
 ## How to work
 
@@ -78,4 +78,4 @@ Format: `type(scope): brief description`, with a body that says why. Types: `fea
 
 ## Learnings
 
-`docs/learnings/` holds one record per import or analysis cycle, with the verdicts and their reasons. Read the latest before repeating an analysis.
+`docs/learnings/` holds the decision records: what was decided, what was rejected, and why. Read the relevant one before reopening a decision.

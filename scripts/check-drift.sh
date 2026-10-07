@@ -7,6 +7,8 @@
 # then compared against every hardcoded claim in the manifests, docs, installer,
 # and website. Any mismatch prints "LOCATION: expected X, found Y" and the script
 # exits non-zero. This replaces manual count sweeps, which drifted three times.
+# It also fails README.md and index.html when they bring back adoption or
+# ecosystem wording (the ADOPTION denylist at the end).
 #
 # Usage: check-drift.sh [repo-root]
 #   repo-root defaults to the parent of this script's directory, so CI
@@ -66,8 +68,17 @@ fi
 
 # ── Derive ground truth from the filesystem ───────────────────
 SKILLS=$(find "$SKILLS_DIR" -type f -name 'SKILL.md' | wc -l | tr -d ' ')
-# Helper prompts: distinct file names, since a shared prompt has byte-identical copies.
-PROMPTS=$(find "$SKILLS_DIR" -path '*/references/agents/*.md' -type f | sed 's#.*/##' | sort -u | wc -l | tr -d ' ')
+# Helper prompts: distinct file names, since a shared prompt has byte-identical copies. A companion
+# note (<prompt>-<topic>.md beside <prompt>.md, loaded by the prompt at a point of use) is not a prompt.
+# The same rule is is_companion() in tests/gates/test_prompt_files.py; change both together.
+PROMPTS=$(find "$SKILLS_DIR" -path '*/references/agents/*.md' -type f | while IFS= read -r f; do
+    dir=${f%/*}; stem=${f##*/}; stem=${stem%.md}; prefix=$stem; companion=false
+    while [ "${prefix%-*}" != "$prefix" ]; do
+        prefix=${prefix%-*}
+        if [ -f "$dir/$prefix.md" ]; then companion=true; break; fi
+    done
+    if [ "$companion" = false ]; then printf '%s\n' "${f##*/}"; fi
+done | sort -u | wc -l | tr -d ' ')
 HOOKS=$(python3 - "$HOOKS_JSON" <<'PY'
 import json, sys
 try:
@@ -253,36 +264,8 @@ if idx_html is not None:
                 failures.append("index.html %s #%d: count badge says %d but %d items render under it"
                                 % (kind, (k + 1) // 2, declared, got))
 
-# Ecosystem repo count: the README table is ground truth; intro prose, the site
-# widget, and site prose must match it exactly (the "15+"/"16+" fossils understated
-# a growing table).
 readme = rd("README.md")
 if readme is not None:
-    m = re.search(r'\| Repo / Tool \| Stars \|[^\n]*\n\|[-| ]*\n((?:\|[^\n]*\n)+)', readme)
-    if not m:
-        failures.append("README.md ecosystem table: 'Repo / Tool | Stars' header not found "
-                        "— anchor changed, re-point the gate")
-    else:
-        repos = len(m.group(1).strip().splitlines())
-        claims = []
-        rm = re.search(r'analyzed \*\*(\d+) repos', readme)
-        if rm:
-            claims.append(("README.md intro 'analyzed **N repos'", int(rm.group(1))))
-        else:
-            failures.append("README.md: 'analyzed **N repos' intro claim not found "
-                            "— anchor changed, re-point the gate")
-        if idx_html is not None:
-            for wm in re.finditer(r'__number">(\d+)\+?</span>(?:(?!__number">).)*?>Repos Analyzed<',
-                                  prefix, re.DOTALL):
-                claims.append(("index.html 'Repos Analyzed' widget", int(wm.group(1))))
-            for pm2 in re.finditer(r'(\d+)\+? repos analyzed', prefix):
-                claims.append(("index.html 'repos analyzed' prose", int(pm2.group(1))))
-        if len(claims) < 3:
-            failures.append("ecosystem repo-count: expected >=3 claims (README intro + site widget "
-                            "+ site prose), found %d — anchor changed, re-point the gate" % len(claims))
-        for label, val in claims:
-            if val != repos:
-                failures.append("%s: claims %d repos, ecosystem table has %d rows" % (label, val, repos))
     # README Helper Prompts Reference table must enumerate every helper prompt — the old
     # agents table sat at 26 rows for three releases while 29 agents shipped.
     am = re.search(r'\| Helper \| Domain \| When it runs \|\n\|[-| ]*\n((?:\|[^\n]*\n)+)', readme)
@@ -316,6 +299,21 @@ if promo is not None:
         elif int(num) != GT[key]:
             failures.append("%s stat card '%s': expected %d, found %s — promo GIF source drifted"
                             % (promo_rel, lab, GT[key], num))
+
+# docs/images/hero/hero.html — source of the README's animated hero.gif (rendered by
+# scripts/record-hero.js). The GIF bakes its skill count in, so every count in the source
+# must match the tree.
+hero_rel = "docs/images/hero/hero.html"
+hero = rd(hero_rel)
+if hero is not None:
+    hero_counts = re.findall(r"\b(\d+) skills\b", hero)
+    if not hero_counts:
+        failures.append("%s: no 'N skills' claim found — anchor text changed, re-point the gate" % hero_rel)
+    for num in hero_counts:
+        if int(num) != SK:
+            failures.append("%s: claims %s skills, the tree ships %d — fix it, then re-render "
+                            "docs/images/hero.gif" % (hero_rel, num, SK))
+    no_agent_count("hero.html", hero_rel, hero)
 
 claude_md = rd("AGENTS.md")  # canonical; CLAUDE.md is a symlink to it
 check_single("AGENTS.md layout", "AGENTS.md", claude_md, r"(\d+) skills, each a folder", "skills")
@@ -374,21 +372,21 @@ else:
             pass  # count check already reported any shape problem
 
 # README navigation anchor: the nav's "What's New" link must point at the slug of
-# the FIRST "### What's New in v…" heading (the v3.2.1 sweep found this exact
+# the FIRST "## What's new in v…" heading (the v3.2.1 sweep found this exact
 # anchor stuck on an old version). Slug rule mirrors GitHub's: lowercase; drop
 # every character that is not a letter, digit, space, or hyphen; spaces become
-# hyphens (so "v3.5.2 — X" -> "v352--x", the double hyphen is kept). Older
-# What's-New headings are frozen history and stay ungated.
+# hyphens (so "v3.5.2 — X" -> "v352--x", the double hyphen is kept). Only the
+# first heading is gated; any later one is history.
 def gh_slug(heading):
     kept = "".join(c for c in heading.strip().lower() if c.isalnum() or c in " -")
     return kept.replace(" ", "-")
 
 readme = rd("README.md")
 if readme is not None:
-    hm = re.search(r"^### (What's New in v[^\n]*)$", readme, re.MULTILINE)
+    hm = re.search(r"^#{2,3} (What's new in v[^\n]*)$", readme, re.MULTILINE | re.IGNORECASE)
     nm = re.search(r'href="(#whats-new[^"]*)"', readme)
     if not hm:
-        failures.append("README.md: first '### What's New in v…' heading not found "
+        failures.append("README.md: first '## What's new in v…' heading not found "
                         "— anchor changed, re-point the gate")
     if not nm:
         failures.append("README.md nav: href=\"#whats-new…\" What's-New link not found "
@@ -398,6 +396,39 @@ if readme is not None:
         if nm.group(1) != expected:
             failures.append("README nav What's-New anchor: expected %s, found %s"
                             % (expected, nm.group(1)))
+
+# ── PUBLIC-SURFACE WORDING (README.md, index.html) ──
+# No adoption or ecosystem claims on the public surfaces: the README and the site say what
+# the blueprint does, not where its ideas came from. The phrases and project names below
+# belonged to the removed comparison and import sections; any of them coming back fails.
+# A space in a phrase matches any run of whitespace (line breaks included), &nbsp;, inline
+# tags and Markdown emphasis, so a soft wrap, <em>imported</em> from or what&nbsp;we took
+# still fails. A lone _ counts as a word edge (Markdown emphasis); a class like x__y does not.
+# The whole file is searched; a hit is reported at the line where it starts, once per line.
+ADOPTION_GAP = r"(?:\s|&(?:nbsp|#160|#x0*a0);|</?[a-z][^<>]*>|[*_`])+"
+ADOPTION_PHRASES = (
+    r"(?:patterns?|concepts?|ideas?) (?:absorbed|adopted|borrowed|grafted|imported|taken)",
+    r"(?:absorbed|adopted|borrowed|grafted|imported|incorporated) (?:[a-z0-9-]+ )?(?:patterns?|concepts?|ideas?)",
+    r"what we took", r"import nothing", r"(?:imported|adopted) from", r"how does this compare",
+    r"(?:repos|repositories) (?:were )?analy[sz]ed", r"analy[sz]ed \d+ (?:repos|repositories|projects|frameworks)",
+    r"watched (?:repos|repositories)",
+    r"ecosystem(?:-| )(?:wide|analysis|imports?|delta sweep|data|refresh|table|guide|repos?)",
+    r"gstack|superpowers|get-shit-done|gsd-core|gsd-2|oh-my-claudecode|claude-mem|claude-squad",
+    r"everything-claude-code|compound(?:-| )engineering|ralphy?",
+)
+ADOPTION = re.compile(r"(?<![a-z0-9])(?<!\w_)(?:%s)(?![a-z0-9])(?!_\w)"
+                      % "|".join(p.replace(" ", ADOPTION_GAP) for p in ADOPTION_PHRASES), re.IGNORECASE)
+for rel in ("README.md", "index.html"):
+    text = rd(rel)
+    if text is None:
+        continue
+    reported = set()
+    for hit in ADOPTION.finditer(text):
+        lineno = text.count("\n", 0, hit.start()) + 1
+        if lineno not in reported:
+            reported.add(lineno)
+            failures.append("%s:%d: adoption or ecosystem claim '%s'; the public docs describe the blueprint itself"
+                            % (rel, lineno, " ".join(hit.group(0).split())))
 
 # ── Report ──
 if failures:

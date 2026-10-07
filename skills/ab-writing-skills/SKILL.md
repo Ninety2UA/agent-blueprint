@@ -7,13 +7,11 @@ description: "Writes, edits and tests skills that load and run in every tool Age
 
 A finished skill is one any of the eight supported tools can discover and run, that states its outcome before its steps, and that was tested against a baseline: you watched an agent fail without it, then pass with it. Writing a skill is test-driven development applied to instructions.
 
-**Not for:** a project's own conventions (they go in the project instructions file) or a rule a script can check (write the check instead; save prose for judgment calls).
-
 ## Shape the skill
 
 1. **Outcome first.** Open with what the skill produces and how the reader knows it is done.
 2. **Then the smallest protocol.** Only the steps that must happen, in order.
-3. **Then judgment.** Say what to weigh and why, and let the model decide. Current models follow a stated outcome well and follow long rule lists too literally.
+3. **Then judgment.** Say what to weigh and why, and let the model decide.
 
 For each host-dependent step, name the capability, then what a finished step returns, then the fallback when the host lacks it; tool names appear only as examples. State rules as principles with reasons ("keep PRs small, because reviewers stop reading"), not bare ALWAYS or NEVER. Drop lines such as "think carefully". Where the skill must wait for the user, name the default an unattended run takes.
 
@@ -21,10 +19,10 @@ For each host-dependent step, name the capability, then what a finished step ret
 
 - Keys: the agentskills fields plus `argument-hint` and `disable-model-invocation`; pipeline skills add `metadata.version`, equal to the release. No `effort` or `model`: the user chooses both.
 - `name`: `ab-` plus lowercase words joined by hyphens, equal to the folder name.
-- `description`, at most 1,024 characters: lead with what the skill does and how, then "Use when ..." with the situations that call for it, then "Not for ..." naming the sibling skill for each excluded case. Tools that choose from a short catalog need the mechanism first. Keep it distinct from sibling skills; the repository's `scripts/check-skill-collisions.py` fails near-duplicates.
+- `description`, at most 1,024 characters: lead with what the skill does and how, then "Use when ..." with the situations that call for it, then "Not for ..." naming the sibling skill for each excluded case. Keep it distinct from sibling skills; the repository's `scripts/check-skill-collisions.py` fails near-duplicates.
 - A skill only the user should start is manual-only: `disable-model-invocation: true` plus `agents/openai.yaml` turning implicit invocation off, a narrow description, and no other skill naming it.
 
-Examples of good and weak descriptions: `references/cso-examples.md`.
+Examples of good and weak descriptions: `references/cso-examples.md`. Anthropic's full authoring guide, for the reasoning behind a rule here or a worked example of it: `references/anthropic-best-practices.md`.
 
 ## Write the body portably
 
@@ -45,7 +43,7 @@ A step that hands work to a helper uses the Helper step snippet and a prompt fil
 
 ## Keep SKILL.md under 8,000 bytes
 
-The whole file, frontmatter included, loads each time the skill runs, and Codex cuts it off at 8,000 bytes. Move phase procedures, flag tables and worked examples into `references/` files the skill loads when it reaches them. Keep inline what every run needs: always-executed steps and the action behind each menu option. Could an agent that skips the reference still finish the skill correctly? If not, that content stays inline. Layout rules, flowcharts and script-first design: `references/skill-architecture.md`.
+The whole file, frontmatter included, loads each time the skill runs, and Codex cuts it off at 8,000 bytes. Move phase procedures, flag tables and worked examples into `references/` files the skill loads when it reaches them. Keep inline what every run needs: always-executed steps and the action behind each menu option. Layout rules, flowcharts (styled by `assets/graphviz-conventions.dot`, rendered to SVG by `scripts/render-graphs.js`) and script-first design: `references/skill-architecture.md`.
 
 ## Test before you write
 
@@ -53,13 +51,13 @@ Watch a baseline fail first. Without seeing what an agent does with no skill, yo
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-No fixed prompt file here: the prompt is the pressure scenario you write following `testing-skills-with-subagents.md` in this skill's folder, its input is whether the skill under test is loaded, and it returns every choice and rationalization word for word. Without a helper the Red run proves nothing (you would test yourself): say so and leave the box unticked.
+No fixed prompt file here: the prompt is the pressure scenario you write following `references/testing-skills-with-subagents.md` (worked campaigns and scenario prompts in `references/examples/`), its input is whether the skill under test is loaded, and it returns every choice and rationalization word for word. Without a helper the Red run proves nothing (you would test yourself): say so and leave the box unticked.
 
 1. **Red.** Run the pressure scenarios without the skill. Record the choices and the rationalizations, word for word.
 2. **Green.** Write the smallest skill that answers those failures. Run the same scenarios with it; the agent now complies.
 3. **Refactor.** Each new rationalization gets a counter and a rerun, until the scenarios pass. Stop after three rounds and report what survives.
 
-Test shapes by skill type, bulletproofing a discipline skill, and the rationalizations people use to skip testing: `references/testing-and-bulletproofing.md`. To measure trigger reliability, a host's own evaluation runner helps where one exists (Claude Code: `claude plugin eval`; same reference, § Native runner).
+Test shapes by skill type, bulletproofing a discipline skill, and the rationalizations people use to skip testing: `references/testing-and-bulletproofing.md`; why a counter lands (authority, commitment, scarcity): `references/persuasion-principles.md`. To measure trigger reliability, a host's own evaluation runner helps where one exists (Claude Code: `claude plugin eval`; same reference, § Native runner).
 
 ## Finish one skill before the next
 

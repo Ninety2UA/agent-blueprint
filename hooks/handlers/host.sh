@@ -13,6 +13,16 @@ require_host() {
 }
 
 detect_host() {
+  local host
+  host=$(classify_host "$1")
+  # The smoke test's trace (U15): one line per handler run, so a run can prove which hooks fired.
+  if [ -n "${AGENT_BLUEPRINT_HOOK_TRACE:-}" ]; then
+    printf '%s\t%s\t%s\n' "$(basename "$0")" "$host" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$AGENT_BLUEPRINT_HOOK_TRACE" 2>/dev/null || true
+  fi
+  echo "$host"
+}
+
+classify_host() {
   local input="$1" transcript=""
   transcript=$(printf '%s' "$input" | sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
   case "$transcript" in

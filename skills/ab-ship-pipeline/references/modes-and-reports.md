@@ -6,7 +6,7 @@ Loaded on demand from `SKILL.md`; nothing here is needed on every invocation.
 
 | Flag | Effect |
 |------|--------|
-| `--swarm` | Run review and browser testing in parallel at Stage 5 (SLFG pattern); execution goes through ab-orchestrate in every mode |
+| `--swarm` | Run review and browser testing in parallel at Stage 5; execution goes through ab-orchestrate in every mode |
 | `--iterations N` | Set max review-improve iterations (default 3, max 10) |
 | `--convergence fast` | Exit review loop when P1 = 0 (default) |
 | `--convergence deep` | Exit review loop when P1 + P2 = 0 |
@@ -32,7 +32,7 @@ bash <this skill's folder>/scripts/run.sh --host <host> "<feature>" [--max N] [-
     [--swarm] [--deploy] [--iterations N] [--convergence MODE]
 ```
 
-`--host` is one of `claude`, `codex`, `agy`, `grok`, `pi`, `cursor-agent`, `hermes`, `amp`. It starts a **fresh headless session per iteration** (Ralph-style) in that tool, under the least-privileged posture that completes a run (`scripts/hosts.sh` holds the table), with `AGENT_BLUEPRINT_RUNNER=1` set, so each iteration gets a clean context window. State persists via git, plan files, and state.json. Best for large features that may exhaust context. `--max` caps the iterations below the skill's ceiling of 20; `--iterations-timeout` kills an iteration that runs past it; `--allow-unguarded` is required for a host whose posture has no guard (Pi, Amp, Antigravity); `--dry-run` runs the preflight checks and starts nothing.
+`--host` is one of `claude`, `codex`, `agy`, `grok`, `pi`, `cursor-agent`, `hermes`, `amp`. It starts a **fresh headless session per iteration** in that tool, under the least-privileged posture that completes a run (`scripts/hosts.sh` holds the table), with `AGENT_BLUEPRINT_RUNNER=1` set, so each iteration gets a clean context window. State persists via git, plan files, and state.json. Best for large features that may exhaust context. `--max` caps the iterations below the skill's ceiling of 20; `--iterations-timeout` kills an iteration that runs past it; `--allow-unguarded` is required for a host whose posture has no guard (Pi, Amp, Antigravity); `--dry-run` runs the preflight checks and starts nothing.
 
 The runner decides from state.json whether to start another iteration, stop, or publish. When the skill sets `done`, the runner scans the outgoing range and `pr-body.md` for secrets, pushes to the remote it recorded at the start, and opens or updates the PR. It is the only process that cleans up run files. `--resume` continues a stopped run from the iteration the runner recorded; the host and the opt-in flags always come from the command line. Passing `--external` to the skill has the same effect as the marker variable.
 

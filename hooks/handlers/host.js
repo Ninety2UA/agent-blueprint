@@ -16,9 +16,22 @@
  * payload fields (Cursor's payload has a model field too), then the other variables.
  */
 
+const fs = require('fs');
+const path = require('path');
+
 const CODEX_ENV = ['CODEX_SANDBOX', 'CODEX_SESSION_ID', 'CODEX_THREAD_ID', 'CODEX_CI', 'CODEX_SANDBOX_NETWORK_DISABLED'];
 
 function detectHost(input) {
+  const host = classifyHost(input);
+  // The smoke test's trace (U15): one line per handler run, so a run can prove which hooks fired.
+  if (process.env.AGENT_BLUEPRINT_HOOK_TRACE) {
+    const handler = path.basename(process.argv[1] || 'unknown');
+    try { fs.appendFileSync(process.env.AGENT_BLUEPRINT_HOOK_TRACE, handler + '\t' + host + '\t' + new Date().toISOString() + '\n'); } catch { /* ignore */ }
+  }
+  return host;
+}
+
+function classifyHost(input) {
   const env = process.env;
   // The transcript path is the host's own statement and wins over inherited variables: Claude Code
   // started from a Cursor or Grok terminal still carries their variables.

@@ -103,13 +103,18 @@ jobs:
         run: shellcheck install.sh
 
       - name: Run ShellCheck on the ship runner
-        run: shellcheck skills/ab-ship-pipeline/scripts/run.sh skills/ab-ship-pipeline/scripts/hosts.sh skills/ab-ship-pipeline/scripts/scan-secrets.sh
+        run: shellcheck skills/ab-ship-pipeline/scripts/run.sh skills/ab-ship-pipeline/scripts/hosts.sh skills/ab-ship-pipeline/scripts/scan-secrets.sh skills/ab-ship-pipeline/scripts/outgoing-commits.sh
 
       - name: Run ShellCheck on the runner and hook tests
         run: shellcheck tests/runner/run-tests.sh tests/runner/fake-host.sh tests/hooks/run-tests.sh
 
       - name: Run ShellCheck on skill scripts
         run: shellcheck skills/*/scripts/*.sh
+
+      # The smoke test itself never runs in CI (real hosts, real tokens); its scripts are linted here
+      # and its selftest runs under Runner Tests.
+      - name: Run ShellCheck on the smoke test
+        run: shellcheck tests/smoke/*.sh tests/smoke/scenarios/*/*.sh
 
       - name: Run ShellCheck on check-drift.sh
         run: shellcheck scripts/check-drift.sh
@@ -126,9 +131,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # t62 needs a tr_TR locale that keeps I apart from i, as glibc's does; the Ubuntu image ships
+      # none, and macOS's folds I as C does, so t62 skips there.
+      - name: Turkish locale for t62
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo locale-gen tr_TR.UTF-8
+
       # Every scenario drives the fake host in tests/runner/fake-host.sh; no real host runs.
       - name: Ship runner scenarios
         run: bash tests/runner/run-tests.sh
+
+      # The smoke harness against its own fake host (tests/smoke/fake-host.sh): no real host, no
+      # tokens; bash, git, python3 and pip's network access only. The eval part needs a v3 checkout
+      # and is skipped; markdownlint has its own job.
+      - name: Smoke harness selftest
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          SMOKE_SELFTEST_NO_LINT: "1"
+        run: bash tests/smoke/selftest.sh
 
   drift-gate:
     name: Drift Gate
