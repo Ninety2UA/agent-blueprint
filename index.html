@@ -758,10 +758,6 @@
       background: rgba(var(--purple-rgb), 0.22);
     }
 
-    .orch-card:hover .orch-card__img-wrap img {
-      transform: scale(1.05);
-    }
-
     .orch-card__cmd {
       display: inline-block;
       padding: 0.2rem 0.6rem;
@@ -789,23 +785,33 @@
       flex: 1;
     }
 
+    .orch-stack {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 480px) {
+      .orch-card { padding: 1.25rem; }
+      .orch-card__img-wrap { padding: 6px; }
+    }
+
     .orch-card__img-wrap {
       width: 100%;
-      aspect-ratio: 16 / 10;
       border-radius: 8px;
       border: 1px solid var(--term-border);
       overflow: hidden;
-      background: #f8f9fb;
-      margin-top: auto;
+      background: #fff;
+      padding: clamp(8px, 1.5vw, 16px);
+      margin-top: 1.25rem;
     }
 
     .orch-card__img-wrap img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: top center;
+      height: auto;
       display: block;
-      transition: transform 0.4s var(--ease-out);
     }
 
     /* ===== UNATTENDED RUNS ===== */
@@ -1939,7 +1945,7 @@
       .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     }
     /* Native features section: responsive diagram grid */
-    .platform-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    .platform-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; max-width: 1000px; margin: 0 auto; }
     @media (max-width: 768px) { .platform-grid { grid-template-columns: 1fr; } }
 
     /* ===== INLINE CODE ===== */
@@ -2062,17 +2068,16 @@
         Blueprint
       </a>
       <ul class="nav__links" id="nav-links">
-        <li><a href="#whats-new">What's new</a></li>
         <li><a href="#install">Install</a></li>
         <li><a href="#quick-start">Quick start</a></li>
         <li><a href="#unattended-runs">Unattended runs</a></li>
-        <li><a href="#upgrade-from-v3">Upgrade</a></li>
         <li><a href="#workflow">Workflow</a></li>
         <li><a href="#team-work">Team work</a></li>
         <li><a href="#model-and-effort">Model and effort</a></li>
-        <li><a href="#skills-reference">Skills</a></li>
         <li><a href="#helpers">Helpers</a></li>
+        <li><a href="#skills-reference">Skills</a></li>
         <li><a href="#tested-in-each-tool">Tested</a></li>
+        <li><a href="#whats-new">What's new</a></li>
         <li><a href="#faq">FAQ</a></li>
       </ul>
       <button class="nav__hamburger" id="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">
@@ -2545,52 +2550,6 @@
     </div>
   </section>
 
-  <!-- ===== UPGRADE FROM V3 ===== -->
-  <section class="upgrade" id="upgrade-from-v3">
-    <div class="container">
-      <div class="section-header reveal">
-        <h2>Upgrade from v3</h2>
-        <p>Moving a project from claude-code-blueprint v3.8.0 to Agent Blueprint v4.0.0</p>
-      </div>
-      <div class="guide">
-        <div class="guide__step reveal">
-          <h3><span class="install__step-num">1</span>Install v4 for your tools</h3>
-          <p>Follow the steps under <a href="#install">Install</a>. In Claude Code the new plugin is <code>agent-blueprint@agent-blueprint</code>; the old <code>claude-code-blueprint@claude-code-blueprint</code> stays installed until step 3, and the v4 session-start hook reminds you until then. <code>install.sh --legacy</code>, which copied v3 into a project's <code>.claude/</code>, is retired and points you at <code>ab-migrate</code>.</p>
-        </div>
-        <div class="guide__step reveal">
-          <h3><span class="install__step-num">2</span>Clean each project with ab-migrate</h3>
-          <p>Open a session in a project that used v3 and name the skill (it is manual-only). It lists what v3 left there: in-project copies of skills, agents and hooks, <code>scripts/ship.sh</code>, ship state under <code>.claude/</code>, and a <code>CLAUDE.md</code> that should become <code>AGENTS.md</code>. It asks once, removes only the files the blueprint installed, behind a <code>blueprint-v3-backup</code> branch, and makes no commit, so you review the diff and commit it yourself.</p>
-        </div>
-        <div class="guide__step reveal">
-          <h3><span class="install__step-num">3</span>Remove the v3 plugin once no project needs the old skills</h3>
-          <div class="code-block">
-            <div class="code-block__header">
-              <div class="code-block__dots">
-                <span class="code-block__dot" style="background:#ff5f57"></span>
-                <span class="code-block__dot" style="background:#febc2e"></span>
-                <span class="code-block__dot" style="background:#28c840"></span>
-              </div>
-              <span class="code-block__title">terminal</span>
-              <button class="code-block__copy" data-copy="claude plugin uninstall claude-code-blueprint@claude-code-blueprint&#10;claude plugin marketplace remove claude-code-blueprint">Copy</button>
-            </div>
-            <div class="code-block__body">
-              <span class="term__line"><span class="str">claude</span> plugin uninstall claude-code-blueprint@claude-code-blueprint</span>
-              <span class="term__line"><span class="str">claude</span> plugin marketplace remove claude-code-blueprint</span>
-            </div>
-          </div>
-        </div>
-        <div class="guide__step reveal">
-          <h3><span class="install__step-num">4</span>Refresh the project files</h3>
-          <p>Run <code>ab-project-start</code> in the migrated project. It adds the v4 files the project lacks and keeps every section your <code>AGENTS.md</code> already has.</p>
-        </div>
-        <div class="guide__step reveal">
-          <h3><span class="install__step-num">5</span>Use the new names</h3>
-          <p><code>/build-pipeline</code> is now <code>ab-build-pipeline</code>, and every other skill gained the same prefix. The full map, the folder changes and what happened to each v3 instruction rule are in <a href="https://github.com/Ninety2UA/agent-blueprint/blob/main/docs/upgrade/v4.md" target="_blank" rel="noopener">docs/upgrade/v4.md</a>.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- ===== UPDATE ===== -->
   <section class="update" id="update">
     <div class="container">
@@ -2770,30 +2729,30 @@
         <h2>Team work and swarms</h2>
         <p>Helpers run one at a time or in coordinated groups. A helper runs where the tool has subagents, and the session does the work itself where it does not.</p>
       </div>
-      <div class="grid-4 reveal reveal-stagger">
+      <div class="orch-stack reveal reveal-stagger">
         <div class="orch-card">
           <span class="orch-card__cmd">ab-review-swarm</span>
           <h3>Review swarm</h3>
           <p>Specialized reviewers in parallel: quality, simplicity and tests every time; security, performance, conventions, frontend, architecture, data and schema when the diff calls for them. A validator re-checks the findings, and a synthesizer merges them into one prioritized P1/P2/P3 report.</p>
-          <div class="orch-card__img-wrap"><img src="docs/images/review-swarm.png" alt="Review swarm: parallel reviewers, a validator and a findings synthesizer" width="1760" height="1372" loading="lazy"></div>
+          <div class="orch-card__img-wrap"><a href="docs/images/review-swarm.png" target="_blank" rel="noopener" title="Open the diagram full size"><img src="docs/images/review-swarm.png" alt="Review swarm: parallel reviewers, a validator and a findings synthesizer" width="1760" height="1372" loading="lazy"></a></div>
         </div>
         <div class="orch-card">
           <span class="orch-card__cmd">ab-deep-research</span>
           <h3>Research swarm</h3>
           <p>Five helpers research a topic in parallel before planning: past learnings, framework docs for the installed versions, industry practice, git history, and a map of the code the change touches. A synthesizer turns their findings into one brief.</p>
-          <div class="orch-card__img-wrap"><img src="docs/images/research-swarm.png" alt="Research swarm: five parallel researchers and a research synthesizer" width="1760" height="1026" loading="lazy"></div>
+          <div class="orch-card__img-wrap"><a href="docs/images/research-swarm.png" target="_blank" rel="noopener" title="Open the diagram full size"><img src="docs/images/research-swarm.png" alt="Research swarm: five parallel researchers and a research synthesizer" width="1760" height="1026" loading="lazy"></a></div>
         </div>
         <div class="orch-card">
           <span class="orch-card__cmd">ab-orchestrate</span>
           <h3>Team work</h3>
           <p>Your session is the lead. It keeps a task ledger in <code>.agent-blueprint/team/&lt;run&gt;/</code>, groups the tasks into waves by dependency (tasks that share a file never share a wave), and starts one helper per task. Only the lead commits, and it runs an integration check between waves.</p>
-          <div class="orch-card__img-wrap"><img src="docs/images/wave-orchestration.png" alt="Wave orchestration: dependency-ordered waves with an integration check between them" width="1760" height="1268" loading="lazy"></div>
+          <div class="orch-card__img-wrap"><a href="docs/images/wave-orchestration.png" target="_blank" rel="noopener" title="Open the diagram full size"><img src="docs/images/wave-orchestration.png" alt="Wave orchestration: dependency-ordered waves with an integration check between them" width="1760" height="1268" loading="lazy"></a></div>
         </div>
         <div class="orch-card">
           <span class="orch-card__cmd">ab-orchestrate</span>
           <h3>Native team features</h3>
           <p>If you have switched one on, the lead uses Claude Code Agent Teams (interactive sessions only) or Codex <code>multi_agent_v2</code> (long-lived helpers that take follow-up tasks) on top of the ledger. The ledger stays the task list either way.</p>
-          <div class="orch-card__img-wrap"><img src="docs/images/agent-teams.png" alt="Optional native team features on top of the ledger: your session leads backend, frontend and test teammates that each own their files, and only the lead commits" width="1760" height="810" loading="lazy"></div>
+          <div class="orch-card__img-wrap"><a href="docs/images/agent-teams.png" target="_blank" rel="noopener" title="Open the diagram full size"><img src="docs/images/agent-teams.png" alt="Optional native team features on top of the ledger: your session leads backend, frontend and test teammates that each own their files, and only the lead commits" width="1760" height="810" loading="lazy"></a></div>
         </div>
       </div>
       <p class="workflow__desc reveal" style="margin-top: 2.5rem;">
@@ -3575,7 +3534,7 @@
         <p><code>claude-code-blueprint</code> v3.8.0 is now Agent Blueprint v4.0.0. Version 3 was a Claude Code plugin. Version 4 is one set of skills that installs natively in eight coding CLIs. The repository is renamed <code>agent-blueprint</code>, and GitHub forwards links that use the old name.</p>
       </div>
       <p class="workflow__desc reveal" style="margin-bottom: 2.5rem;">
-        This is a clean break. Skill names, the instructions file and the working folders all changed, so a project that used v3 needs one migration step, described in <a href="#upgrade-from-v3">Upgrade from v3</a>.
+        This is a clean break. Skill names, the instructions file and the working folders all changed, so a project that used v3 needs one migration step, described in <a href="https://github.com/Ninety2UA/agent-blueprint/blob/main/docs/upgrade/v4.md" target="_blank" rel="noopener">the upgrade guide</a>.
       </p>
       <div class="grid-3 reveal reveal-stagger">
         <div class="new-card">
@@ -3757,7 +3716,7 @@
             <svg class="faq__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="faq__answer"><div class="faq__answer-inner">
-            Follow <a href="#upgrade-from-v3">Upgrade from v3</a>: install v4, run <code>ab-migrate</code> in each project, remove the v3 plugin, refresh the project files with <code>ab-project-start</code>. The name map and the folder changes are in <a href="https://github.com/Ninety2UA/agent-blueprint/blob/main/docs/upgrade/v4.md" target="_blank" rel="noopener">docs/upgrade/v4.md</a>.
+            Follow <a href="https://github.com/Ninety2UA/agent-blueprint/blob/main/docs/upgrade/v4.md" target="_blank" rel="noopener">the upgrade guide</a>: install v4, run <code>ab-migrate</code> in each project, remove the v3 plugin, refresh the project files with <code>ab-project-start</code>. The name map and the folder changes are in <a href="https://github.com/Ninety2UA/agent-blueprint/blob/main/docs/upgrade/v4.md" target="_blank" rel="noopener">docs/upgrade/v4.md</a>.
           </div></div>
         </div>
         <div class="faq__item">
@@ -3837,11 +3796,11 @@
         <div>
           <h3 class="footer__heading">Product</h3>
           <ul class="footer__links">
-            <li><a href="#whats-new">What's new</a></li>
             <li><a href="#install">Install</a></li>
             <li><a href="#quick-start">Quick start</a></li>
             <li><a href="#unattended-runs">Unattended runs</a></li>
             <li><a href="#skills-reference">Skills</a></li>
+            <li><a href="#whats-new">What's new</a></li>
             <li><a href="#faq">FAQ</a></li>
           </ul>
         </div>
