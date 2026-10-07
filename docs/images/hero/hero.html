@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Agent Blueprint hero</title>
+<!-- Source of docs/images/hero.gif, the README's animated hero: one 10-second loop at 1280x512.
+     Render it with `node scripts/record-hero.js` (needs Playwright and ffmpeg), and open
+     hero.html?play in a browser to watch it live. The skill count below is checked by
+     scripts/check-drift.sh, so re-render the GIF whenever it changes. hero-bg.jpg and
+     hero-hub.png were made with OpenAI's image model through the Codex CLI. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@500&display=block" rel="stylesheet">
+<style>
+  :root {
+    --navy-deep: #0f1729;
+    --gold: #f0a875;
+    --gold-light: #f5c9a8;
+    --text: #f0f2f8;
+    --text-2: #b0b8cc;
+    --muted: #7a86a0;
+    --green: #6ee7b7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--navy-deep); }
+  #stage {
+    position: relative; width: 1280px; height: 512px; overflow: hidden;
+    background: var(--navy-deep) url(hero-bg.jpg) center / cover no-repeat;
+    font-family: Inter, -apple-system, sans-serif;
+  }
+  #shade {
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(15,23,41,.86) 0%, rgba(15,23,41,.6) 40%, rgba(15,23,41,0) 60%);
+  }
+  #copy { position: absolute; left: 72px; top: 112px; width: 600px; }
+  .eyebrow {
+    font: 500 14px/1 'JetBrains Mono', monospace; letter-spacing: .2em;
+    text-transform: uppercase; color: var(--gold);
+  }
+  .title {
+    position: relative; margin-top: 20px;
+    font: 800 74px/1 Inter, sans-serif; letter-spacing: -.03em; color: var(--text);
+  }
+  .title .shine {
+    position: absolute; inset: 0; color: transparent; opacity: 0;
+    background: linear-gradient(100deg, rgba(240,168,117,0) 41%, rgba(245,201,168,.95) 48%, #f0a875 50%, rgba(245,201,168,.95) 52%, rgba(240,168,117,0) 59%) 100% 0 / 300% 100% no-repeat;
+    -webkit-background-clip: text; background-clip: text;
+  }
+  .sub { margin-top: 22px; max-width: 540px; font: 400 24px/1.42 Inter, sans-serif; color: var(--text-2); }
+  .sub b { font-weight: 600; color: var(--gold-light); }
+  #pipe { position: absolute; left: 72px; top: 362px; height: 32px; display: flex; gap: 14px; align-items: center; }
+  #pipe .rail, #pipe .lit { position: absolute; z-index: 0; top: 50%; height: 1px; left: 0; }
+  #pipe .rail { right: 0; background: rgba(176,184,204,.22); }
+  #pipe .lit { width: 0; background: linear-gradient(90deg, rgba(240,168,117,.2), var(--gold)); }
+  .stage {
+    position: relative; z-index: 2; height: 32px; padding: 0 13px; border-radius: 16px;
+    display: flex; align-items: center; gap: 6px;
+    font: 500 15px/1 'JetBrains Mono', monospace; color: var(--muted);
+    background: #0f1729; border: 1px solid rgba(176,184,204,.28);
+  }
+  .stage .check { display: inline-block; width: 0; overflow: hidden; color: var(--green); }
+  #dot {
+    position: absolute; z-index: 1; top: 50%; left: 0; width: 10px; height: 10px; margin: -5px 0 0 -5px;
+    border-radius: 50%; background: #fff3e6; opacity: 0;
+    box-shadow: 0 0 6px 2px rgba(240,168,117,.9), 0 0 18px 6px rgba(240,168,117,.45);
+  }
+  #orbit { position: absolute; inset: 0; }
+  #hub { position: absolute; width: 200px; height: 200px; left: 830px; top: 156px; }
+  #hubglow {
+    position: absolute; width: 180px; height: 180px; left: 840px; top: 166px; border-radius: 50%; opacity: 0;
+    background: radial-gradient(circle, rgba(240,168,117,.55) 0%, rgba(240,168,117,.18) 35%, rgba(240,168,117,0) 70%);
+  }
+  .chip {
+    position: absolute; transform: translate(-50%, -50%); height: 34px; padding: 0 15px; border-radius: 17px;
+    display: flex; align-items: center; white-space: nowrap;
+    font: 500 17px/1 Inter, sans-serif; color: var(--text);
+    background: rgba(15,23,41,.94); border: 1px solid rgba(176,184,204,.32);
+  }
+  .twinkle {
+    position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; opacity: 0;
+    background: radial-gradient(circle, rgba(255,240,224,.95) 0%, rgba(240,168,117,.5) 35%, rgba(240,168,117,0) 70%);
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="shade"></div>
+  <svg id="orbit" width="1280" height="512" viewBox="0 0 1280 512" aria-hidden="true">
+    <defs>
+      <radialGradient id="pulse">
+        <stop offset="0" stop-color="#fff3e6"/>
+        <stop offset=".35" stop-color="#f0a875" stop-opacity=".9"/>
+        <stop offset="1" stop-color="#f0a875" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <circle id="ring" cx="930" cy="256" r="196" fill="none" stroke="rgba(176,184,204,.28)" stroke-width="1.2"/>
+    <g id="links" stroke="rgba(240,168,117,.32)" stroke-width="1"></g>
+    <g id="pulses"></g>
+  </svg>
+  <div id="hubglow"></div>
+  <img id="hub" src="hero-hub.png" alt="">
+  <div id="chips"></div>
+  <div id="twinkles"></div>
+  <div id="copy">
+    <div class="eyebrow">One way of working · eight coding CLIs</div>
+    <div class="title">Agent Blueprint<span class="shine" aria-hidden="true">Agent Blueprint</span></div>
+    <p class="sub"><b>53 skills</b> that take a coding agent from an idea to a reviewed pull request.</p>
+  </div>
+  <div id="pipe">
+    <div class="rail"></div><div class="lit"></div><div id="dot"></div>
+  </div>
+</div>
+<script>
+  // Everything moves as a pure function of time, so a frame at t always looks the same:
+  // renderAt(t) for t in [0, DURATION) draws one frame, and t = DURATION looks like t = 0.
+  const DURATION = 10;
+  const CX = 930, CY = 256, R = 196, STUB = 90;
+  const TOOLS = ['Claude Code', 'Codex', 'Antigravity', 'Grok Build', 'Pi', 'Cursor CLI', 'Hermes', 'Amp'];
+  const STAGES = ['idea', 'design', 'plan', 'build', 'review', 'pull request'];
+  const TWINKLES = [[1045, 152, 0.0], [1040, 366, 1.7], [1233, 256, 3.3], [803, 159, 5.1], [827, 136, 6.8], [802, 351, 8.4]];
+  const TRAVEL = [0.8, 4.4];     // the dot runs from the first stage to the last
+  const WAVE = 3.0;              // the hub sends a pulse to every tool when the run reaches build
+  const RESET = [8.2, 8.9];      // the run fades back to its idle look before the loop restarts
+
+  const ease = {
+    inOut: x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2,
+    out: x => 1 - Math.pow(1 - x, 3),
+    back: x => 1 + 2.70158 * Math.pow(x - 1, 3) + 1.70158 * Math.pow(x - 1, 2),
+  };
+  const clamp = x => Math.max(0, Math.min(1, x));
+  const span = (t, a, b, e = ease.inOut) => e(clamp((t - a) / (b - a)));
+  const mix = (a, b, k) => a + (b - a) * k;
+  const rgba = (rgb, a) => `rgba(${rgb},${a.toFixed(3)})`;
+
+  const svg = 'http://www.w3.org/2000/svg';
+  const links = document.getElementById('links'), pulsesG = document.getElementById('pulses');
+  const chips = [], pulses = [];
+  TOOLS.forEach((name, i) => {
+    const a = -Math.PI / 2 + i * Math.PI / 4, cos = Math.cos(a), sin = Math.sin(a);
+    const line = document.createElementNS(svg, 'line');
+    line.setAttribute('x1', CX + cos * STUB); line.setAttribute('y1', CY + sin * STUB);
+    line.setAttribute('x2', CX + cos * R); line.setAttribute('y2', CY + sin * R);
+    links.appendChild(line);
+    const p = document.createElementNS(svg, 'circle');
+    p.setAttribute('r', 10); p.setAttribute('fill', 'url(#pulse)'); p.setAttribute('opacity', 0);
+    pulsesG.appendChild(p);
+    pulses.push({ el: p, line, cos, sin });
+    const c = document.createElement('div');
+    c.className = 'chip'; c.textContent = name;
+    c.style.left = (CX + cos * R) + 'px'; c.style.top = (CY + sin * R) + 'px';
+    document.getElementById('chips').appendChild(c);
+    chips.push(c);
+  });
+  const twinkles = TWINKLES.map(([x, y, phase]) => {
+    const d = document.createElement('div');
+    d.className = 'twinkle'; d.style.left = x + 'px'; d.style.top = y + 'px';
+    document.getElementById('twinkles').appendChild(d);
+    return { el: d, phase };
+  });
+  const pipe = document.getElementById('pipe');
+  const stages = STAGES.map(name => {
+    const s = document.createElement('div');
+    s.className = 'stage';
+    s.innerHTML = name === 'pull request' ? '<span class="check">&#10003;</span>pull request' : name;
+    pipe.appendChild(s);
+    return s;
+  });
+  const lit = pipe.querySelector('.lit'), dot = document.getElementById('dot');
+  const shine = document.querySelector('.shine'), hubglow = document.getElementById('hubglow');
+  const ring = document.getElementById('ring');
+  // The ring's dash period divides an eighth of its circumference, so the 45-degree turn it
+  // makes in one loop lands on an identical pattern.
+  const PERIOD = (2 * Math.PI * R / 8) / 13;
+  ring.setAttribute('stroke-dasharray', `2 ${(PERIOD - 2).toFixed(4)}`);
+
+  let centres = [];
+  function measure() {
+    const base = pipe.getBoundingClientRect().left;
+    centres = stages.map(s => { const r = s.getBoundingClientRect(); return r.left - base + r.width / 2; });
+  }
+
+  function renderAt(t) {
+    t = ((t % DURATION) + DURATION) % DURATION;
+    const reset = 1 - span(t, RESET[0], RESET[1]);
+
+    // Title: one light sweep across the name.
+    const sweep = span(t, 0.25, 1.65);
+    shine.style.opacity = t > 0.25 && t < 1.65 ? 1 : 0;
+    shine.style.backgroundPosition = `${100 - sweep * 100}% 0`;
+
+    // Pipeline: a dot runs from idea to pull request and lights each stage it passes.
+    const run = span(t, TRAVEL[0], TRAVEL[1]);
+    const started = span(t, TRAVEL[0] - 0.3, TRAVEL[0], ease.out);
+    const x0 = centres[0], x1 = centres[centres.length - 1];
+    const x = mix(x0, x1, run);
+    dot.style.left = x + 'px';
+    dot.style.opacity = (started * (1 - span(t, TRAVEL[1], TRAVEL[1] + 0.35, ease.out))).toFixed(3);
+    lit.style.left = x0 + 'px';
+    lit.style.width = Math.max(0, x - x0) + 'px';
+    lit.style.opacity = reset.toFixed(3);
+    stages.forEach((s, i) => {
+      const reached = clamp((x - centres[i] + 8) / 16) * started * reset;
+      const last = i === stages.length - 1;
+      const done = last ? span(t, TRAVEL[1], TRAVEL[1] + 0.35, ease.out) * reset : 0;
+      const k = Math.max(reached, done);
+      const rgb = last && done > 0.5 ? '110,231,183' : '240,168,117';
+      s.style.borderColor = rgba(k > 0 ? rgb : '176,184,204', mix(.28, .9, k));
+      s.style.color = k > 0 ? rgba(last && done > 0.5 ? '110,231,183' : '245,201,168', mix(.55, 1, k)) : '#7a86a0';
+      s.style.background = k > 0 ? `linear-gradient(rgba(${rgb},${(0.12 * k).toFixed(3)}), rgba(${rgb},${(0.12 * k).toFixed(3)})), #0f1729` : '#0f1729';
+      s.style.boxShadow = k > 0 ? `0 0 ${(14 * k).toFixed(1)}px rgba(${rgb},${(0.35 * k).toFixed(3)})` : 'none';
+      if (last) {
+        const check = s.querySelector('.check');
+        const pop = span(t, TRAVEL[1] + 0.1, TRAVEL[1] + 0.55, ease.back) * reset;
+        check.style.width = (12 * clamp(pop)).toFixed(2) + 'px';
+        check.style.transform = `scale(${pop.toFixed(3)})`;
+      }
+    });
+
+    // Hub: when the run reaches build, it pulses and sends one signal to every tool.
+    const glow = span(t, WAVE - 0.15, WAVE + 0.15, ease.out) * (1 - span(t, WAVE + 0.2, WAVE + 1.2, ease.out));
+    hubglow.style.opacity = glow.toFixed(3);
+    hubglow.style.transform = `scale(${mix(0.85, 1.15, glow).toFixed(3)})`;
+    pulses.forEach((p, i) => {
+      const start = WAVE + i * 0.07, travel = span(t, start, start + 0.55);
+      const visible = t > start && t < start + 0.62;
+      const r = mix(STUB, R - 4, travel);
+      p.el.setAttribute('cx', (CX + p.cos * r).toFixed(2));
+      p.el.setAttribute('cy', (CY + p.sin * r).toFixed(2));
+      p.el.setAttribute('opacity', visible ? (1 - span(t, start + 0.5, start + 0.62, ease.out)).toFixed(3) : 0);
+      const arrive = start + 0.55;
+      const flash = span(t, arrive - 0.06, arrive + 0.08, ease.out) * (1 - span(t, arrive + 0.1, arrive + 0.9, ease.out));
+      const c = chips[i];
+      c.style.borderColor = rgba(flash > 0 ? '240,168,117' : '176,184,204', mix(.32, .95, flash));
+      c.style.boxShadow = flash > 0 ? `0 0 ${(18 * flash).toFixed(1)}px rgba(240,168,117,${(0.5 * flash).toFixed(3)})` : 'none';
+      c.style.color = flash > 0.05 ? rgba('245,201,168', mix(.9, 1, flash)) : '#f0f2f8';
+      c.style.transform = `translate(-50%, -50%) scale(${mix(1, 1.06, flash).toFixed(3)})`;
+      const carry = visible ? Math.sin(Math.PI * travel) : 0;
+      p.line.setAttribute('stroke', rgba('240,168,117', mix(.32, .85, Math.max(carry, flash))));
+    });
+
+    // Ambient: the dashed ring turns 45 degrees per loop and a few gold points twinkle.
+    ring.setAttribute('transform', `rotate(${(45 * t / DURATION).toFixed(3)} ${CX} ${CY})`);
+    twinkles.forEach(w => {
+      const local = ((t - w.phase) % DURATION + DURATION) % DURATION;
+      const k = local < 1.6 ? Math.sin(Math.PI * local / 1.6) : 0;
+      w.el.style.opacity = (0.85 * k).toFixed(3);
+      w.el.style.transform = `scale(${mix(0.6, 1.25, k).toFixed(3)})`;
+    });
+  }
+
+  window.DURATION = DURATION;
+  window.renderAt = renderAt;
+  window.heroReady = document.fonts.ready.then(() => { measure(); renderAt(0); });
+  if (location.search.includes('play')) {
+    window.heroReady.then(() => {
+      const t0 = performance.now();
+      const tick = now => { renderAt((now - t0) / 1000); requestAnimationFrame(tick); };
+      requestAnimationFrame(tick);
+    });
+  }
+</script>
+</body>
+</html>

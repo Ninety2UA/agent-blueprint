@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/hero-banner.svg" alt="Agent Blueprint" width="100%">
+  <img src="docs/images/hero.gif" alt="Agent Blueprint: 53 skills that take a coding agent from an idea to a reviewed pull request, in eight coding CLIs" width="100%">
 </p>
 
 <p align="center">
