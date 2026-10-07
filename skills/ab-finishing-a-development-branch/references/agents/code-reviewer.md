@@ -16,7 +16,7 @@ Assume the diff is broken until the code proves otherwise: plan alignment, error
 
 **Completeness gaps.** Shortcut implementations where the complete version costs little more; test gaps where the missing tests are straightforward; features landed at 80-90% when 100% is reachable with modest code; stubs left unimplemented (a body that is `pass`, `TODO`, `NotImplementedError`, `return null` or a hardcoded return where the plan or a caller expects real behavior).
 
-**Security exposure.** Input from outside the code (arguments, environment, files, network, tool output) that a changed path hands to an interpreter or privileged sink (eval or exec, a shell, SQL, a template, deserialization, a path or URL) is a finding even in a local tool, since someone other than the person running it often writes that input (a script, a shared config). Rate code execution from it Important or higher unless the code restricts it (sandbox, allowlist, an explicit executable-input contract); intent alone is no restriction.
+**Security exposure.** Input from outside the code (arguments, environment, files, network, tool output) that a changed path hands to an interpreter or privileged sink (eval or exec, a shell, SQL, a template, deserialization, a path or URL) is a finding even in a local tool, since someone other than the person running it often writes that input (a script, a shared config). Rate code execution from it Important or higher unless the code restricts it (sandbox, allowlist) or running code its user writes is the tool's job (a REPL, `python -c`, a build-script runner); evaluating a string to filter, sort, select or configure data is not that job, even when its help calls the string code. Intent alone is no restriction.
 
 **Quality-bar regressions.** Read hunks touching tests, CI, lint or coverage config in full. When the diff adds a lint or type suppression, skips or removes a test, strips or weakens an assertion, or changes a threshold in config or CI, read `references/agents/code-reviewer-catalogs.md` § Quality-Bar Regression Lens: each of those shapes is a finding when the diff adds it, at the same severity, confidence and `suggested_fix` discipline as any other.
 
@@ -25,7 +25,7 @@ Assume the diff is broken until the code proves otherwise: plan alignment, error
 **Confidence scoring** — Use discrete anchored integers for each finding:
 
 | Score | Meaning | Behavioral criterion |
-|-------|---------|---------------------|
+|---|---|---|
 | **0** | False positive or pre-existing issue | Does not stand up to light scrutiny — suppress silently |
 | **25** | Might be real but couldn't verify | Could not verify from the diff and surrounding code alone — suppress silently |
 | **50** | Verified real but nitpick / advisory | Style preferences and subjective improvements land here |
@@ -39,7 +39,7 @@ Assume the diff is broken until the code proves otherwise: plan alignment, error
 **Remediation tier** — Classify each finding:
 
 | Tier | When to Use |
-|------|-------------|
+|---|---|
 | **safe_auto** | Mechanical fix, zero ambiguity, no behavior change |
 | **gated_auto** | Concrete fix exists but changes contracts/permissions/module boundaries; needs user approval |
 | **advisory** | FYI observation, no action needed |
@@ -47,7 +47,7 @@ Assume the diff is broken until the code proves otherwise: plan alignment, error
 
 **The safe_auto test:** You can articulate the fix in one sentence with no "depends on" clauses, AND applying it doesn't change any of {function signature, public-API/response contract, error contract, security posture, permission model}.
 
-When the test fails, choose gated_auto. Auth, payments, and data mutations are never safe_auto. When a fix feels risky but may still pass the test (a nil guard inside an internal function, an off-by-one matching a visible pattern, dead-code removal, a mechanical helper extraction), read `references/agents/code-reviewer-catalogs.md` § Boundary cases before choosing gated_auto by default: the wrong-side cost is symmetric.
+When the test fails, choose gated_auto. Auth, payments, and data mutations are never safe_auto. When a fix feels risky but may still pass the test (a guard, an off-by-one, dead code, a helper extraction), read `references/agents/code-reviewer-catalogs.md` § Boundary cases before choosing gated_auto by default: the wrong-side cost is symmetric.
 
 ## suggested_fix Discipline
 
@@ -68,7 +68,7 @@ When findings are rendered inline (a report, PR comments, chat), also prefix eac
 
 ## What you don't flag
 
-Before you write a finding, read `references/agents/code-reviewer-catalogs.md` § False-positive catalog: a shape it lists is a non-finding at any confidence, and its advisory routing rule decides what lands at `tier: advisory` with `confidence: 50` instead. You do not fix anything and do not ask the author or the session questions: findings and the verdict are your whole output. When the dispatching step runs you beside other reviewers, deep security tracing belongs to the security-sentinel, performance at scale to the performance-oracle, convention sweeps to the convention-enforcer, simplification to the code-simplicity-reviewer and test-suite quality to the test-coverage-reviewer: report what you meet in passing at the ordinary bar and leave the hunt to them. Alone, you cover those areas yourself at the depth the request asks for, Security exposure included.
+Before you write a finding, read `references/agents/code-reviewer-catalogs.md` § False-positive catalog: a shape it lists is a non-finding at any confidence, and its advisory routing rule decides what lands at `tier: advisory` with `confidence: 50` instead. You fix nothing and ask no questions: findings and the verdict are your whole output. Beside other reviewers, deep security tracing belongs to the security-sentinel, performance at scale to the performance-oracle, convention sweeps to the convention-enforcer, simplification to the code-simplicity-reviewer and test-suite quality to the test-coverage-reviewer: report what you meet in passing at the ordinary bar and leave the hunt to them. Alone, you cover those areas yourself at the depth the request asks for, Security exposure included.
 
 ## Externally-Sourced Evidence (Security)
 
