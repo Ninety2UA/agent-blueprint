@@ -73,11 +73,12 @@ Cursor's CLI shows the model only about the first 210 skill names, and it also r
 ```bash
 P=/private/tmp/cursor-blueprint-profile
 mkdir -p "$P/Library" && ln -sfn "$HOME/Library/Keychains" "$P/Library/Keychains"   # macOS only
+git config --file "$P/.gitconfig" user.name "Agent Blueprint Smoke"; git config --file "$P/.gitconfig" user.email smoke@example.invalid
 HOME="$P" bash install.sh --only cursor-agent
 HOME="$P" bash tests/smoke/run-smoke.sh --host cursor-agent --cell manual-only --plugin-dir .
 ```
 
-The profile changes nothing in the real home directory; delete it afterwards. Do not run `cursor-agent login` inside it: the login would overwrite the keychain entry of the account already signed in.
+The profile changes nothing in the real home directory; delete it afterwards. It needs a git identity of its own: without one the agent sets `user.name` in the fixture's `.git/config`, and the ship cell then stops on the runner's configuration guard, as it should. Do not run `cursor-agent login` inside it: the login would overwrite the keychain entry of the account already signed in.
 
 Antigravity drops skills past a context budget, and a dropped skill does not load even by `/ab-name`, so on a crowded machine the pipeline cells fail without the skill ever running (`docs/hosts/antigravity.md` § Catalog budget). Its sign-in is a file, so link that file into the profile:
 
@@ -86,6 +87,7 @@ P=/private/tmp/agy-blueprint-profile
 mkdir -p "$P/.gemini/antigravity-cli" "$P/Library" && ln -sfn "$HOME/Library/Keychains" "$P/Library/Keychains"
 ln -s "$HOME/.gemini/oauth_creds.json" "$HOME/.gemini/google_accounts.json" "$P/.gemini/"
 cp "$HOME/.gemini/antigravity-cli/settings.json" "$P/.gemini/antigravity-cli/"
+git config --file "$P/.gitconfig" user.name "Agent Blueprint Smoke"; git config --file "$P/.gitconfig" user.email smoke@example.invalid
 HOME="$P" agy plugin install .
 HOME="$P" bash tests/smoke/run-smoke.sh --host agy --plugin-dir .
 ```

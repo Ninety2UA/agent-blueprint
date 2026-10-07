@@ -34,7 +34,7 @@ Check: `agy plugin list` shows `agent-blueprint` with its components; `agy plugi
 - Hooks: none. The blueprint ships no `hooks.json` for Antigravity, so the five hook effects are absent: the session-start pointer to `docs/context/STATUS.md` (Antigravity has no session-start event in any case), the injection scanner on writes, the commit-message check, the ship-pipeline Stop guard and the Agent Teams gates. Nothing else depends on them. Per a third-party report, `PreToolUse` hooks do not fire under `--dangerously-skip-permissions` anyway.
 - Helpers: `invoke_subagent`, asynchronous and parallel, started fresh without the parent's history; a helper's workspace can be a git worktree (`branch` mode). No documented cap.
 - Team work: no cap in `host-limits.tsv`; worktree isolation. Antigravity's Teamwork mode (`/teamwork-preview`) is paid, in preview and opens with a user interview, so no skill drives it.
-- Catalog budget: Antigravity lists skills to the model only up to a context budget and names the ones it left out. On the build machine, with 237 skills from other plugins and `~/.gemini/config/skills` installed, 1.3.0 left out 48 of the 53 `ab-` skills (2026-10-06). A left-out skill does not load even by name: a headless `/ab-build-pipeline` reached the model as plain text, and Gemini built the feature without the pipeline or its provenance record, which is why the smoke test's build and debug cells failed on that machine. With only the blueprint installed, both cells load the skill and write the record (verified 2026-10-06 in a clean profile; `tests/smoke/README.md` § A clean profile for a capped catalog). If `ab-` skills are missing, keep fewer skills in `~/.gemini/config/skills` and fewer plugins enabled (`agy plugin disable <name>`; whether a disabled plugin stops counting is not verified).
+- Catalog budget: Antigravity lists skills to the model only up to a context budget and names the ones it left out. On the build machine, with 237 skills from other plugins and `~/.gemini/config/skills` installed, 1.3.0 left out 48 of the 53 `ab-` skills (2026-10-06). A left-out skill does not load even by name: a headless `/ab-build-pipeline` reached the model as plain text, and Gemini built the feature without the pipeline or its provenance record, which is why the smoke test's build and debug cells failed on that machine. With only the blueprint installed, every cell that applies passes on 1.3.0, build and debug included (verified 2026-10-07 on the release commit in a clean profile; `tests/smoke/README.md` § A clean profile for a capped catalog). If `ab-` skills are missing, keep fewer skills in `~/.gemini/config/skills` and fewer plugins enabled (`agy plugin disable <name>`; whether a disabled plugin stops counting is not verified).
 - Questions: `ask_question`, a blocking question tool (not in the vendor docs; not verified); a headless run takes the documented default.
 - Task tracking: the plan file's checkboxes; `/tasks` is a user command, and a model-callable todo tool is not verified.
 - Instructions: Antigravity reads `GEMINI.md` and `AGENTS.md` at the workspace root; per a third-party report `GEMINI.md` wins on conflict and `CLAUDE.md` is not read.
@@ -63,21 +63,19 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 1.2.16, last cell 2026-10-04.
+From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 1.3.0, last cell 2026-10-07.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | pass | 12s | 53 ab- skills once each in 13 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 10s | final message names HARBOR-19 |
+| `discovery` | pass | 11s | 53 ab- skills once each in 1 location(s); the answer names ab-ship-pipeline |
+| `canary` | pass | 8s | final message names HARBOR-19 |
 | `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
-| `manual-only` | pass | 1m05s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
-| `build` | fail | 1m43s | no provenance record for ab-build-pipeline; acceptance test passes (deps: tabulate); 1 commit(s) after the base |
+| `manual-only` | pass | 14s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `build` | pass | 2m19s | acceptance test passes (deps: tabulate); 1 commit(s) after the base |
 | `helpers-off` | n/a | 0s | no helper switch on agy |
 | `effort` | n/a | 0s | no per-dispatch effort metadata on agy |
-| `review` | degraded-pass (inline) | 2m05s | the review reports eval in cli.py as a finding (security: arbitrary) · helper steps: inline |
-| `debug` | fail | 59s | no provenance record for ab-systematic-debugging; suite passes; store.py fixed; regression test present |
-| `ship` | pass | 2m18s | published; pr create recorded; acceptance test passes (deps: tabulate) on the pushed branch |
-| `team` | pass | 4m19s | ledger done; 3 commits; tests pass |
+| `review` | degraded-pass (inline) | 2m02s | the review reports eval in cli.py as a finding (security: arbitrary) · helper steps: inline |
+| `debug` | pass | 57s | suite passes; store.py fixed; regression test present |
+| `ship` | pass | 2m31s | published; pr create recorded; acceptance test passes (deps: tabulate) on the pushed branch |
+| `team` | pass | 3m39s | ledger done; 3 commits; tests pass |
 | `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |
-
-A `fail` cell blocks the release until it passes or is confirmed as a vendor bug (then it renders `degraded (vendor bug)` with the upstream link; see `docs/releases/v4.0.0-checklist.md`).

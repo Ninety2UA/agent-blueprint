@@ -51,6 +51,7 @@ Codex truncates skill text at 8,000 bytes, silently; every SKILL.md stays under 
 - Task tracking: the plan file's checkboxes; Codex has no shared task board.
 - `.git` under `workspace-write`: the sandbox keeps `.git` read-only, so skills run in no-commit mode there and the runner commits.
 - Instructions: Codex reads `AGENTS.md` (32 KiB combined budget) and never `CLAUDE.md`; a project's `AGENTS.md`, `.codex/` config and hooks are skipped until you trust the project.
+- Code review of an `eval` behind a documented code option: in the smoke test's review (a `--filter` option whose help text calls its argument "this Python expression"), Codex flags the `eval` in some runs and in others treats that help text as the explicit executable-input contract the shared code-reviewer prompt exempts, so it does not rate it (2026-10-07; `docs/releases/v4.0.0-checklist.md` holds the decision).
 
 ## Unattended runs
 
@@ -75,19 +76,21 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version codex-cli 0.155.1, last cell 2026-10-04.
+From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version codex-cli 0.160.0, last cell 2026-10-07.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
 | `discovery` | pass | 11s | 53 ab- skills once each in 10 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 9s | final message names HARBOR-19 |
+| `canary` | pass | 8s | final message names HARBOR-19 |
 | `hooks` | n/a | 0s | plugin hooks run only after trust on codex; the review cell covers the untrusted path (AE1) |
-| `manual-only` | pass | 14s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
-| `build` | pass | 11m50s | acceptance test passes (deps: tabulate>=0.9,<0.10); no-commit mode (7 changed files in the tree, commit-msg.md written) · helper steps: helper,helper,helper,helper |
+| `manual-only` | pass | 8s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `build` | pass | 7m40s | acceptance test passes (deps: tabulate>=0.9); no-commit mode (8 changed files in the tree, commit-msg.md written) · helper steps: helper,helper,helper,helper |
 | `helpers-off` | n/a | 0s | no helper switch on codex |
 | `effort` | n/a | 0s | no per-dispatch effort metadata on codex |
-| `review` | pass | 6m18s | the review reports eval in cli.py as a finding (security: code execution) · helper steps: helper |
-| `debug` | pass | 2m05s | suite passes; store.py fixed; regression test present · helper steps: helper |
-| `ship` | pass | 13m28s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9.0) on the pushed branch |
-| `team` | pass | 5m49s | ledger done; no-commit mode (4 changed files in the tree, commit-msg.md written); tests pass · helper steps: helper,helper,helper,helper,helper |
+| `review` | fail | 5m35s | the review output does not name: eval |
+| `debug` | pass | 1m20s | suite passes; store.py fixed; regression test present · helper steps: helper |
+| `ship` | pass | 12m24s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch |
+| `team` | pass | 4m15s | ledger done; no-commit mode (4 changed files in the tree, commit-msg.md written); tests pass · helper steps: helper,helper,helper,helper,helper |
 | `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |
+
+A `fail` cell blocks the release until it passes or is confirmed as a vendor bug (then it renders `degraded (vendor bug)` with the upstream link; see `docs/releases/v4.0.0-checklist.md`).

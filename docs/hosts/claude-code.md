@@ -68,19 +68,19 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 2.1.289 (Claude Code), last cell 2026-10-04.
+From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 2.1.291 (Claude Code), last cell 2026-10-07.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
 | `discovery` | pass | 8s | 53 ab- skills once each in 7 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 7s | final message names HARBOR-19 |
+| `canary` | pass | 6s | final message names HARBOR-19 |
 | `hooks` | pass | 0s | handlers wrote the trace: session-start.js x1, ship-loop.sh x1 (from the canary run) |
-| `manual-only` | pass | 10s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
-| `build` | pass | 30m09s | acceptance test passes (deps: tabulate>=0.9); 7 commit(s) after the base · helper steps: helper,helper,helper,helper |
-| `helpers-off` | degraded-pass (inline) | 10m19s | acceptance test passes (deps: tabulate>=0.9); 6 commit(s) after the base · helper steps: inline,inline,inline,inline |
-| `effort` | pass | 0s | session effort xhigh; 13 helper transcript(s) at the same effort |
-| `review` | pass | 3m16s | the review reports eval in cli.py as a finding (security: code execution) · helper steps: helper |
-| `debug` | pass | 2m42s | suite passes; store.py fixed; regression test present · helper steps: helper |
-| `ship` | pass | 63m42s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch |
-| `team` | pass | 8m58s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper,helper |
+| `manual-only` | pass | 13s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `build` | pass | 36m44s | acceptance test passes (deps: tabulate>=0.9); 12 commit(s) after the base · helper steps: helper,helper,helper,helper,helper |
+| `helpers-off` | degraded-pass (inline) | 9m03s | acceptance test passes (deps: tabulate); 4 commit(s) after the base · helper steps: inline,inline,inline,inline |
+| `effort` | pass | 0s | session effort xhigh; 14 helper transcript(s) at the same effort |
+| `review` | pass | 6m51s | the review reports eval in cli.py as a finding (rated critical) · helper steps: helper |
+| `debug` | pass | 1m47s | suite passes; store.py fixed; regression test present · helper steps: helper |
+| `ship` | pass | 49m43s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch |
+| `team` | pass | 5m20s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |
 | `upgrade` | pass | 3s | 14 checks passed: both plugin ids listed, detect-v3.sh reported and removed the v3 traces, the session-start warning names the v3 plugin |

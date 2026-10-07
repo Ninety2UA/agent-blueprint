@@ -36,7 +36,7 @@ Check: `cursor-agent plugin marketplace list` for marketplaces and `/plugin` in 
 - Task tracking: the plan file's checkboxes; a Cursor todo tool is not verified.
 - `.git` writes: the sandbox protects `.git/hooks`; the runner's preflight probe decides whether `.git` is writable, and a read-only answer puts the skills in no-commit mode, with the runner committing.
 - Binary: Grok Build installs `~/.grok/bin/agent`, which can shadow Cursor's `agent` on the PATH; the blueprint and the runner always call `cursor-agent`.
-- Catalog cap: Cursor hands the model a list of about 210 skill names and says how many more it left out (128 of 339 on the build machine, which also holds the skills of other tools, since the CLI reads `~/.claude/skills` and `~/.codex/skills` too; the app's "Include third-party Plugins, Skills, and other configs" setting does not reach the CLI). Where every `ab-` skill falls past the cap, the model cannot choose one on its own, but naming it (`/ab-pr-workflow`) still loads it. With only the blueprint installed the manual-only cell passes: `ab-plugin-update` is absent from the list while `ab-pr-workflow` and `ab-project-start` are in it (verified 2026-10-04 in a clean profile; `tests/smoke/README.md` § A clean profile for a capped catalog).
+- Catalog cap: Cursor hands the model a list of about 210 skill names and says how many more it left out (128 of 339 on the build machine, which also holds the skills of other tools, since the CLI reads `~/.claude/skills` and `~/.codex/skills` too; the app's "Include third-party Plugins, Skills, and other configs" setting does not reach the CLI). Where every `ab-` skill falls past the cap, the model cannot choose one on its own, but naming it (`/ab-pr-workflow`) still loads it. With only the blueprint installed every cell that applies passes, manual-only included: `ab-plugin-update` is absent from the list while `ab-pr-workflow` and `ab-project-start` are in it (verified 2026-10-07 on the release commit in a clean profile; `tests/smoke/README.md` § A clean profile for a capped catalog). A machine with both the Claude Code plugin and the shared copy installed shows Cursor every skill twice, which is why the installer says to keep one route.
 - Instructions: the CLI reads both `AGENTS.md` and `CLAUDE.md` at the project root, which is why the scaffold's `CLAUDE.md` is the single line `@AGENTS.md` rather than a copy.
 
 ## Unattended runs
@@ -62,19 +62,19 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 2026.10.01-14929f9, last cell 2026-10-04.
+From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 2026.10.01-14929f9, last cell 2026-10-07.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | pass | 21s | 53 ab- skills once each in 8 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 8s | final message names HARBOR-19 |
-| `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
-| `manual-only` | pass | 15s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
-| `build` | pass | 32m42s | acceptance test passes (deps: tabulate>=0.9.0); 5 commit(s) after the base · helper steps: helper,helper,helper,helper |
+| `discovery` | pass | 19s | 53 ab- skills once each in 1 location(s); the answer names ab-ship-pipeline |
+| `canary` | pass | 6s | final message names HARBOR-19 |
+| `hooks` | pass | 1s | no blueprint hook fired (from the canary run) |
+| `manual-only` | pass | 12s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `build` | pass | 15m11s | acceptance test passes (deps: tabulate); 6 commit(s) after the base · helper steps: helper,helper,helper,helper,inline,helper,helper,helper,helper,helper,inline,? |
 | `helpers-off` | n/a | 0s | no helper switch on cursor-agent |
 | `effort` | n/a | 0s | no per-dispatch effort metadata on cursor-agent |
-| `review` | pass | 9m20s | the review reports eval in cli.py as a finding (security: arbitrary) · helper steps: helper |
-| `debug` | pass | 38s | suite passes; store.py fixed; regression test present · helper steps: helper |
-| `ship` | pass | 44m25s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9,<0.10) on the pushed branch |
-| `team` | pass | 10m27s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |
+| `review` | pass | 2m15s | the review reports eval in cli.py as a finding (security: arbitrary) · helper steps: helper |
+| `debug` | pass | 1m37s | suite passes; store.py fixed; regression test present · helper steps: helper |
+| `ship` | pass | 18m34s | published; pr create recorded; acceptance test passes (deps: tabulate==0.9.0) on the pushed branch |
+| `team` | pass | 5m25s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |
 | `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |
