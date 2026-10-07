@@ -1,434 +1,278 @@
 #!/usr/bin/env bash
+# install.sh — Agent Blueprint installer for the eight supported coding CLIs.
+#
+# Run it from a checkout of the repository:
+#   git clone https://github.com/Ninety2UA/agent-blueprint.git && bash agent-blueprint/install.sh
+#
+# It detects the installed tools and gives each one its single install route:
+#   Claude Code   claude plugin marketplace add <checkout>; claude plugin install agent-blueprint@agent-blueprint
+#   Antigravity   agy plugin install <checkout>
+#   Codex, Grok Build, Pi, Cursor CLI, Amp
+#                 one copy of skills/ into ~/.agents/skills, which all five scan (Amp also
+#                 reads Claude Code's plugin cache, so a Claude Code install already covers it)
+#   Hermes        the same copy, listed under skills.external_dirs in ~/.hermes/config.yaml
+# Copy installs keep an install record, so a re-run removes skills that were renamed or
+# deleted since and leaves every other skill in that folder alone.
+#
+# Usage: bash install.sh [options] [PROJECT_DIR]
+#   --dry-run          Print what would run or be copied; change nothing
+#   --only HOSTS       Comma-separated hosts to install for (claude,codex,agy,grok,pi,cursor-agent,hermes,amp);
+#                      the default is every installed tool
+#   --copy-dir DIR     Copy the skills into DIR instead of ~/.agents/skills (a machine with no tools can
+#                      still copy-install this way)
+#   --scaffold DIR     Only scaffold the project files into DIR, through skills/ab-project-start/scripts/scaffold.py
+#   PROJECT_DIR        After installing, scaffold this project too
+#   --legacy           Retired in v4: the flat copy into a project's .claude/ is gone; see the message it prints
+#   --local, --force, --no-overwrite   Accepted for v3 compatibility and ignored: the script always installs from
+#                      its own checkout, and the scaffold merges instead of overwriting
+
 set -euo pipefail
 
-# ╔══════════════════════════════════════════════════════════════╗
-# ║  Agent Blueprint — Plugin Installer                    ║
-# ║  Installs the blueprint as a Claude Code plugin              ║
-# ╚══════════════════════════════════════════════════════════════╝
-
-REPO_URL="https://github.com/Ninety2UA/agent-blueprint"
-TEMP_DIR=""
-VERSION="3.8.0"
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-DIM='\033[2m'
-BOLD='\033[1m'
-NC='\033[0m'
-
-print_banner() {
-    echo ""
-    echo -e "${BOLD}  Agent Blueprint${NC} ${DIM}v${VERSION}${NC}"
-    echo -e "${DIM}  Production-grade AI-assisted development toolkit${NC}"
-    echo ""
-}
-
+if [ -t 1 ]; then
+    GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BLUE='\033[0;34m'; DIM='\033[2m'; BOLD='\033[1m'; NC='\033[0m'
+else
+    GREEN=''; YELLOW=''; RED=''; BLUE=''; DIM=''; BOLD=''; NC=''
+fi
 info()    { echo -e "  ${BLUE}▸${NC} $1"; }
 success() { echo -e "  ${GREEN}✓${NC} $1"; }
 warn()    { echo -e "  ${YELLOW}!${NC} $1"; }
-error()   { echo -e "  ${RED}✗${NC} $1"; }
+error()   { echo -e "  ${RED}✗${NC} $1" >&2; }
+plan()    { echo -e "  ${DIM}would run:${NC} $1"; }
 
-cleanup() {
-    if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
-        rm -rf "$TEMP_DIR"
-    fi
-}
-trap cleanup EXIT
-
-usage() {
-    echo "Usage: $0 [OPTIONS] [TARGET_DIR]"
-    echo ""
-    echo "Install the Agent Blueprint plugin and optionally scaffold a project."
-    echo ""
-    echo "Arguments:"
-    echo "  TARGET_DIR          Project directory to scaffold (optional)"
-    echo ""
-    echo "Options:"
-    echo "  --scaffold          Scaffold project files only (plugin already installed)"
-    echo "  --legacy            Legacy mode: copy all files into project (no plugin)"
-    echo "  --no-overwrite      Skip files that already exist"
-    echo "  --local             Install from local repo (for development)"
-    echo "  --force             Overwrite all existing files without prompting"
-    echo "  --dry-run           Show what would be installed without making changes"
-    echo "  -v, --version       Show version and exit"
-    echo "  -h, --help          Show this help message"
-    echo ""
-    echo "Examples:"
-    echo "  $0                              # Install plugin (user-wide)"
-    echo "  $0 ~/projects/my-app            # Install plugin + scaffold project"
-    echo "  $0 --scaffold ~/projects/my-app # Scaffold only (plugin already installed)"
-    echo "  $0 --legacy ~/projects/my-app   # Legacy: copy everything into project"
-    echo ""
-}
-
-# Parse arguments
-TARGET_DIR=""
-SCAFFOLD_ONLY=false
-LEGACY=false
-LOCAL_SOURCE=false
-NO_OVERWRITE=false
-FORCE=false
+SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# The host list is the ship runner's adapter table (AB_HOSTS), so the two never drift.
+# shellcheck source=skills/ab-ship-pipeline/scripts/hosts.sh disable=SC1091
+. "$SOURCE_DIR/skills/ab-ship-pipeline/scripts/hosts.sh"
+# shellcheck disable=SC2153   # AB_HOSTS comes from hosts.sh, sourced above
+read -r -a ALL_HOSTS <<< "$AB_HOSTS"
+COPY_HOSTS=(codex grok pi cursor-agent amp)      # scan ~/.agents/skills
 DRY_RUN=false
+ONLY=""
+COPY_DIR="${AGENT_BLUEPRINT_COPY_DIR:-$HOME/.agents/skills}"
+COPY_DIR_SET=false
+SCAFFOLD_ONLY=""
+PROJECT_DIR=""
 
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --scaffold)     SCAFFOLD_ONLY=true; shift ;;
-        --legacy)       LEGACY=true; shift ;;
-        --local)        LOCAL_SOURCE=true; shift ;;
-        --no-overwrite) NO_OVERWRITE=true; shift ;;
-        --force)        FORCE=true; shift ;;
+while [ $# -gt 0 ]; do
+    case "$1" in
         --dry-run)      DRY_RUN=true; shift ;;
-        -v|--version)   echo "agent-blueprint v${VERSION}"; exit 0 ;;
-        -h|--help)      usage; exit 0 ;;
-        -*)             error "Unknown option: $1"; usage; exit 1 ;;
-        *)              TARGET_DIR="$1"; shift ;;
+        --only)         ONLY="$2"; shift 2 ;;
+        --only=*)       ONLY="${1#--only=}"; shift ;;
+        --copy-dir)     COPY_DIR="$2"; COPY_DIR_SET=true; shift 2 ;;
+        --copy-dir=*)   COPY_DIR="${1#--copy-dir=}"; COPY_DIR_SET=true; shift ;;
+        --scaffold)     SCAFFOLD_ONLY="$2"; shift 2 ;;
+        --scaffold=*)   SCAFFOLD_ONLY="${1#--scaffold=}"; shift ;;
+        --legacy)
+            error "--legacy is retired in v4: the plugin no longer copies itself into a project's .claude/."
+            echo "  Install the plugin for your tool with this script, then clean an old copy out of the" >&2
+            echo "  project with the ab-migrate skill." >&2
+            exit 2 ;;
+        --local|--force|--no-overwrite) shift ;;
+        -h|--help)      sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -*)             error "Unknown option: $1"; exit 2 ;;
+        *)              PROJECT_DIR="$1"; shift ;;
     esac
 done
 
-print_banner
-
-# Validate
-if [ "$SCAFFOLD_ONLY" = true ] && [ "$LEGACY" = true ]; then
-    error "--scaffold and --legacy are mutually exclusive"
-    exit 1
-fi
-
-# Resolve source
-if [ "$LOCAL_SOURCE" = true ]; then
-    # Use the directory containing this script as the source
-    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-    SOURCE_DIR="$SCRIPT_DIR"
-    info "Using local source: $SOURCE_DIR"
-else
-    info "Downloading blueprint..."
-    TEMP_DIR=$(mktemp -d)
-
-    if command -v git &>/dev/null; then
-        git clone --depth 1 --quiet "$REPO_URL" "$TEMP_DIR/template" 2>/dev/null || {
-            error "Failed to clone repository. Check your internet connection."
-            exit 1
-        }
-    else
-        error "git is required. Please install git and try again."
+# ─── Checkout sanity ──────────────────────────────────────────
+for required in skills .claude-plugin/plugin.json skills/ab-project-start/scripts/scaffold.py; do
+    if [ ! -e "$SOURCE_DIR/$required" ]; then
+        error "$SOURCE_DIR is not an Agent Blueprint checkout (missing $required)"
         exit 1
     fi
+done
+VERSION=$(sed -n 's/^ *"version": *"\([^"]*\)".*/\1/p' "$SOURCE_DIR/.claude-plugin/plugin.json" | head -1)
+SKILL_COUNT=$(find "$SOURCE_DIR/skills" -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')
 
-    SOURCE_DIR="$TEMP_DIR/template"
-fi
+echo ""
+echo -e "  ${BOLD}Agent Blueprint ${VERSION}${NC} — ${SKILL_COUNT} skills, from ${SOURCE_DIR}"
+[ "$DRY_RUN" = true ] && info "Dry run: nothing is changed."
 
-# The repository root is the plugin root.
-PLUGIN_DIR="$SOURCE_DIR"
-# Scripts that ship with the plugin (scripts/ also holds repo-only CI gates).
-PLUGIN_SCRIPTS=(ship.sh)
-
-# ─── Project scaffold (ab-project-start's assets, merged, never overwritten) ──
+# ─── Scaffold (merges into an existing project, never overwrites) ──
 scaffold_project() {
-    local py
+    local target="$1" py
     py="$(command -v python3 || command -v python || true)"
     if [ -z "$py" ]; then
         error "Scaffolding needs python3 (or python) to merge the project files"
         exit 1
     fi
-    local args=("$PLUGIN_DIR/skills/ab-project-start/scripts/scaffold.py" "$TARGET_DIR")
-    if [ "$DRY_RUN" = true ]; then
-        args+=(--dry-run)
-    fi
+    local args=("$SOURCE_DIR/skills/ab-project-start/scripts/scaffold.py" "$target")
+    [ "$DRY_RUN" = true ] && args+=(--dry-run)
     "$py" "${args[@]}" | sed 's/^/    /'
 }
 
-# ─── Copy function with conflict handling ─────────────────────
-copy_item() {
-    local src="$1"
-    local dest="$2"
-    local rel_path="${dest#"$TARGET_DIR"/}"
-
-    if [ -d "$src" ]; then
-        if [ "$DRY_RUN" = true ]; then
-            echo -e "  ${DIM}  mkdir $rel_path/${NC}"
-        else
-            mkdir -p "$dest"
-        fi
-        return
-    fi
-
-    if [ -f "$dest" ]; then
-        if [ "$NO_OVERWRITE" = true ]; then
-            echo -e "  ${DIM}  skip  $rel_path (exists)${NC}"
-            return
-        fi
-        if [ "$FORCE" = false ] && [ "$DRY_RUN" = false ]; then
-            case "$rel_path" in
-                CLAUDE.md|BACKLOG.md|docs/context/*)
-                    warn "$rel_path already exists"
-                    read -p "    Overwrite? [y/N] " -n 1 -r </dev/tty
-                    echo
-                    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                        echo -e "  ${DIM}  skip  $rel_path${NC}"
-                        return
-                    fi
-                    ;;
-            esac
-        fi
-    fi
-
-    if [ "$DRY_RUN" = true ]; then
-        echo -e "  ${DIM}  copy  $rel_path${NC}"
-    else
-        mkdir -p "$(dirname "$dest")"
-        cp "$src" "$dest"
-    fi
-}
-
-# ─── Legacy mode: copy everything into the project ───────────
-if [ "$LEGACY" = true ]; then
-    if [ -z "$TARGET_DIR" ]; then
-        TARGET_DIR="."
-    fi
-    TARGET_DIR="$(cd "$TARGET_DIR" 2>/dev/null && pwd || echo "$TARGET_DIR")"
-
-    if [ ! -d "$TARGET_DIR" ]; then
-        info "Creating target directory: $TARGET_DIR"
-        if [ "$DRY_RUN" = false ]; then
-            mkdir -p "$TARGET_DIR"
-        fi
-    fi
-
-    info "Legacy mode — installing all files into ${BOLD}$TARGET_DIR${NC}"
-    echo ""
-
-    # Install engine files (skills; their helper prompts ride inside them)
-    if [ -d "$PLUGIN_DIR/skills" ]; then
-        find "$PLUGIN_DIR/skills" -type f | while read -r file; do
-            rel="${file#"$PLUGIN_DIR"/}"
-            copy_item "$file" "$TARGET_DIR/.claude/$rel"
-        done
-        success ".claude/skills/ installed"
-    fi
-
-    # Hook handlers
-    if [ -d "$PLUGIN_DIR/hooks/handlers" ]; then
-        find "$PLUGIN_DIR/hooks/handlers" -type f | while read -r file; do
-            rel="${file#"$PLUGIN_DIR/hooks/handlers"/}"
-            copy_item "$file" "$TARGET_DIR/.claude/hooks/$rel"
-        done
-        success ".claude/hooks/ installed"
-    fi
-
-    # hooks.json, plugin manifest, scripts
-    if [ -d "$PLUGIN_DIR/hooks" ]; then
-        copy_item "$PLUGIN_DIR/hooks/hooks.json" "$TARGET_DIR/hooks/hooks.json"
-        success "hooks/ installed"
-    fi
-    # The repo root is the plugin root, so its .claude-plugin/ and scripts/ also
-    # hold repo-only files (marketplace manifest, CI gates); copy only what ships.
-    if [ -f "$PLUGIN_DIR/.claude-plugin/plugin.json" ]; then
-        copy_item "$PLUGIN_DIR/.claude-plugin/plugin.json" "$TARGET_DIR/.claude-plugin/plugin.json"
-        success ".claude-plugin/ installed"
-    fi
-    for script in "${PLUGIN_SCRIPTS[@]}"; do
-        if [ -f "$PLUGIN_DIR/scripts/$script" ]; then
-            copy_item "$PLUGIN_DIR/scripts/$script" "$TARGET_DIR/scripts/$script"
-        fi
-    done
-    if [ "$DRY_RUN" = false ] && [ -d "$TARGET_DIR/scripts" ]; then
-        find "$TARGET_DIR/scripts" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
-    fi
-    success "scripts/ installed"
-
-    # Template/project files
-    scaffold_project
-    success "Project files installed (AGENTS.md, CLAUDE.md, docs/, etc.)"
-
-    # Settings
-    if [ -f "$PLUGIN_DIR/.claude/settings.json" ]; then
-        copy_item "$PLUGIN_DIR/.claude/settings.json" "$TARGET_DIR/.claude/settings.json"
-    fi
-
-    # Placeholder directories
-    if [ "$DRY_RUN" = false ]; then
-        for dir in src tests infra; do
-            mkdir -p "$TARGET_DIR/$dir"
-            if [ ! -f "$TARGET_DIR/$dir/.gitkeep" ]; then
-                touch "$TARGET_DIR/$dir/.gitkeep"
-            fi
-        done
-    fi
-
-    echo ""
-    if [ "$DRY_RUN" = true ]; then
-        info "Dry run complete. No files were modified."
-    else
-        echo -e "  ${GREEN}${BOLD}Installation complete!${NC} (legacy mode)"
-        echo ""
-        echo -e "  ${BOLD}Next steps:${NC}"
-        echo -e "  ${DIM}1.${NC} cd $TARGET_DIR"
-        echo -e "  ${DIM}2.${NC} claude"
-        echo -e "  ${DIM}3.${NC} /ab-project-start ${DIM}← interactive project setup${NC}"
-    fi
-    echo ""
+if [ -n "$SCAFFOLD_ONLY" ]; then
+    info "Scaffolding project files into $SCAFFOLD_ONLY"
+    scaffold_project "$SCAFFOLD_ONLY"
+    success "Project scaffolded"
     exit 0
 fi
 
-# ─── Plugin mode (default) ────────────────────────────────────
-CLAUDE_DIR="$HOME/.claude"
-SETTINGS_FILE="$CLAUDE_DIR/settings.json"
-KNOWN_FILE="$CLAUDE_DIR/plugins/known_marketplaces.json"
-INSTALLED_FILE="$CLAUDE_DIR/plugins/installed_plugins.json"
-MARKETPLACE_NAME="agent-blueprint"
-PLUGIN_NAME="agent-blueprint"
-
-if [ "$SCAFFOLD_ONLY" = false ]; then
-    info "Installing as Claude Code plugin..."
-
-    # Ensure directories exist
-    mkdir -p "$CLAUDE_DIR/plugins/cache/$MARKETPLACE_NAME/$PLUGIN_NAME"
-
-    # Copy plugin to cache
-    CACHE_DIR="$CLAUDE_DIR/plugins/cache/$MARKETPLACE_NAME/$PLUGIN_NAME/$VERSION"
-    if [ -d "$CACHE_DIR" ]; then
-        rm -rf "$CACHE_DIR"
-    fi
-
-    if [ "$DRY_RUN" = false ]; then
-        mkdir -p "$CACHE_DIR"
-        # Copy the plugin engine files from the repository root
-        for dir in skills hooks; do
-            if [ -d "$PLUGIN_DIR/$dir" ]; then
-                cp -R "$PLUGIN_DIR/$dir" "$CACHE_DIR/$dir"
-            fi
-        done
-        mkdir -p "$CACHE_DIR/.claude-plugin" "$CACHE_DIR/scripts"
-        cp "$PLUGIN_DIR/.claude-plugin/plugin.json" "$CACHE_DIR/.claude-plugin/plugin.json"
-        for script in "${PLUGIN_SCRIPTS[@]}"; do
-            cp "$PLUGIN_DIR/scripts/$script" "$CACHE_DIR/scripts/$script"
-        done
-        # Make scripts executable
-        find "$CACHE_DIR" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
-        success "Plugin cached at $CACHE_DIR"
-    fi
-
-    # Register marketplace in known_marketplaces.json
-    if [ "$DRY_RUN" = false ]; then
-        if [ ! -f "$KNOWN_FILE" ]; then
-            echo '{}' > "$KNOWN_FILE"
-        fi
-
-        # Use Python to safely update JSON
-        python3 -c "
-import json, sys
-with open('$KNOWN_FILE', 'r') as f:
-    data = json.load(f)
-data['$MARKETPLACE_NAME'] = {
-    'source': {'source': 'github', 'repo': 'Ninety2UA/agent-blueprint'},
-    'installLocation': '$CACHE_DIR',
-    'lastUpdated': '$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")',
-    'autoUpdate': True
+# ─── Which hosts ──────────────────────────────────────────────
+have() { command -v "$1" >/dev/null 2>&1; }
+wanted() {   # host named in --only, or every host when --only is unset
+    [ -z "$ONLY" ] && return 0
+    case ",$ONLY," in *",$1,"*) return 0 ;; esac
+    return 1
 }
-with open('$KNOWN_FILE', 'w') as f:
-    json.dump(data, f, indent=2)
-    f.write('\n')
-" 2>/dev/null || warn "Could not update known_marketplaces.json — update manually"
-        success "Marketplace registered"
-    fi
-
-    # Register plugin in installed_plugins.json
-    if [ "$DRY_RUN" = false ]; then
-        if [ ! -f "$INSTALLED_FILE" ]; then
-            echo '{"version": 2, "plugins": {}}' > "$INSTALLED_FILE"
-        fi
-
-        python3 -c "
-import json
-with open('$INSTALLED_FILE', 'r') as f:
-    data = json.load(f)
-key = '$PLUGIN_NAME@$MARKETPLACE_NAME'
-data['plugins'][key] = [{
-    'scope': 'user',
-    'installPath': '$CACHE_DIR',
-    'version': '$VERSION',
-    'installedAt': '$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")',
-    'lastUpdated': '$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")'
-}]
-with open('$INSTALLED_FILE', 'w') as f:
-    json.dump(data, f, indent=2)
-    f.write('\n')
-" 2>/dev/null || warn "Could not update installed_plugins.json — update manually"
-        success "Plugin registered"
-    fi
-
-    # Enable plugin in settings.json
-    if [ "$DRY_RUN" = false ]; then
-        if [ ! -f "$SETTINGS_FILE" ]; then
-            echo '{}' > "$SETTINGS_FILE"
-        fi
-
-        python3 -c "
-import json
-with open('$SETTINGS_FILE', 'r') as f:
-    data = json.load(f)
-if 'enabledPlugins' not in data:
-    data['enabledPlugins'] = {}
-data['enabledPlugins']['$PLUGIN_NAME@$MARKETPLACE_NAME'] = True
-with open('$SETTINGS_FILE', 'w') as f:
-    json.dump(data, f, indent=2)
-    f.write('\n')
-" 2>/dev/null || warn "Could not update settings.json — enable plugin manually"
-        success "Plugin enabled"
-    fi
+if [ -n "$ONLY" ]; then
+    IFS=',' read -r -a requested <<< "$ONLY"
+    for h in "${requested[@]}"; do
+        case " ${ALL_HOSTS[*]} " in *" $h "*) ;; *) error "Unknown host in --only: $h (choose from ${ALL_HOSTS[*]})"; exit 2 ;; esac
+    done
 fi
 
-# ─── Scaffold project (if target dir provided) ────────────────
-if [ -n "$TARGET_DIR" ]; then
-    TARGET_DIR="$(cd "$TARGET_DIR" 2>/dev/null && pwd || echo "$TARGET_DIR")"
-
-    if [ ! -d "$TARGET_DIR" ]; then
-        info "Creating target directory: $TARGET_DIR"
-        if [ "$DRY_RUN" = false ]; then
-            mkdir -p "$TARGET_DIR"
-        fi
+installed=()
+for h in "${ALL_HOSTS[@]}"; do
+    if wanted "$h"; then
+        if have "$h"; then installed+=("$h"); else info "$h: not installed on this machine, skipped"; fi
     fi
+done
+if [ ${#installed[@]} -eq 0 ] && [ "$COPY_DIR_SET" = false ]; then
+    warn "No supported tool found on PATH (${ALL_HOSTS[*]})."
+    info "Install one, or copy the skills somewhere with --copy-dir DIR."
+    [ -n "$PROJECT_DIR" ] || exit 1
+fi
 
-    info "Scaffolding project at ${BOLD}$TARGET_DIR${NC}..."
+listed() { local h; for h in "${installed[@]:-}"; do [ "$h" = "$1" ] && return 0; done; return 1; }
 
-    # scaffold.py adds src/, tests/ and infra/ only to an empty project
-    scaffold_project
-    success "Project files scaffolded"
+# ─── Native installs ──────────────────────────────────────────
+run() {
+    if [ "$DRY_RUN" = true ]; then plan "$*"; else "$@"; fi
+}
+
+if listed claude; then
+    info "Claude Code: plugin install through its marketplace commands"
+    if claude plugin marketplace list 2>/dev/null | grep -q 'agent-blueprint'; then
+        run claude plugin marketplace update agent-blueprint
+    else
+        run claude plugin marketplace add "$SOURCE_DIR"
+    fi
+    plugins=$(claude plugin list 2>/dev/null || true)
+    if printf '%s' "$plugins" | grep -q 'agent-blueprint@agent-blueprint'; then
+        run claude plugin update agent-blueprint@agent-blueprint
+    else
+        run claude plugin install agent-blueprint@agent-blueprint
+    fi
+    if printf '%s' "$plugins" | grep -q 'claude-code-blueprint@'; then
+        warn "The v3 plugin claude-code-blueprint is still installed; run the ab-migrate skill so the two sets of skills do not both load."
+    fi
+    success "Claude Code: agent-blueprint@agent-blueprint"
+fi
+
+if listed agy; then
+    info "Antigravity: agy plugin install from this checkout (a copy in ~/.agents/skills would not cover it)"
+    run agy plugin install "$SOURCE_DIR"
+    success "Antigravity: agent-blueprint"
+fi
+
+# ─── One copy for the hosts that scan ~/.agents/skills ────────
+copy_reasons=()
+for h in "${COPY_HOSTS[@]}"; do
+    listed "$h" || continue
+    if [ "$h" = amp ] && listed claude; then
+        info "Amp: covered by the Claude Code install (Amp reads Claude Code's plugin cache); no copy needed for it"
+        continue
+    fi
+    copy_reasons+=("$h")
+done
+if listed hermes; then copy_reasons+=(hermes); fi
+[ "$COPY_DIR_SET" = true ] && copy_reasons+=("--copy-dir")
+
+RECORD="$COPY_DIR/.agent-blueprint-install.json"
+copy_skills() {
+    info "Copying ${SKILL_COUNT} skills into $COPY_DIR (one copy covers: ${copy_reasons[*]})"
+    local previous=() name src dest src_real copy_real
+    # The copy replaces each skill folder, so a destination that is the source itself (the path,
+    # or a symlink to it) would delete the checkout's skills before copying them.
+    src_real=$(cd "$SOURCE_DIR/skills" && pwd -P)
+    copy_real=""
+    if [ -d "$COPY_DIR" ]; then copy_real=$(cd "$COPY_DIR" && pwd -P); fi
+    case "$copy_real/" in
+        "$src_real"/*)
+            error "--copy-dir points into this checkout's own skills folder ($src_real); choose another directory"
+            exit 2 ;;
+    esac
+    if [ -f "$RECORD" ]; then
+        while IFS= read -r name; do previous+=("$name"); done < <(sed -n 's/^ *"\(ab-[a-z0-9-]*\)".*/\1/p' "$RECORD")
+    fi
+    local current=()
+    for src in "$SOURCE_DIR"/skills/*/; do
+        name=$(basename "$src")
+        current+=("$name")
+        dest="$COPY_DIR/$name"
+        if [ "$DRY_RUN" = true ]; then
+            echo -e "    ${DIM}copy  $name${NC}"
+        else
+            mkdir -p "$COPY_DIR"
+            # Copy next to the destination first, then swap, so a failed copy leaves the old skill in place.
+            rm -rf "${dest:?}.new"
+            cp -R "$src" "$dest.new"
+            rm -rf "${dest:?}"
+            mv "$dest.new" "$dest"
+        fi
+    done
+    # A skill in the last record that no longer exists in the source was renamed or deleted.
+    for name in "${previous[@]:-}"; do
+        [ -n "$name" ] || continue
+        case " ${current[*]} " in *" $name "*) continue ;; esac
+        if [ "$DRY_RUN" = true ]; then
+            echo -e "    ${DIM}remove $name (no longer shipped)${NC}"
+        elif [ -d "$COPY_DIR/$name" ]; then
+            rm -rf "${COPY_DIR:?}/$name"
+            info "Removed $name: it is no longer shipped"
+        fi
+    done
+    if [ "$DRY_RUN" = false ]; then
+        {
+            echo "{"
+            echo "  \"plugin\": \"agent-blueprint\","
+            echo "  \"version\": \"$VERSION\","
+            echo "  \"source\": \"$SOURCE_DIR\","
+            echo "  \"skills\": ["
+            local i=0
+            for name in "${current[@]}"; do
+                i=$((i + 1))
+                if [ "$i" -lt ${#current[@]} ]; then echo "    \"$name\","; else echo "    \"$name\""; fi
+            done
+            echo "  ]"
+            echo "}"
+        } > "$RECORD"
+    fi
+    success "Skills copied to $COPY_DIR"
+    for h in "${copy_reasons[@]}"; do
+        case "$h" in
+            hermes)
+                if [ -f "$HOME/.hermes/config.yaml" ] && grep -q -F "$COPY_DIR" "$HOME/.hermes/config.yaml"; then
+                    success "Hermes: $COPY_DIR is already under skills.external_dirs"
+                else
+                    warn "Hermes: add this to ~/.hermes/config.yaml so it indexes the copy (bare skill names, slash commands):"
+                    echo "      skills:"
+                    echo "        external_dirs:"
+                    echo "          - $COPY_DIR"
+                fi ;;
+            --copy-dir) ;;
+            *) success "$h: covered by the copy in $COPY_DIR" ;;
+        esac
+    done
+    if listed cursor-agent && listed claude; then
+        warn "Cursor CLI can also import Claude Code plugins; keep one route or it lists every skill twice."
+    fi
+}
+if [ ${#copy_reasons[@]} -gt 0 ]; then
+    copy_skills
+fi
+
+# ─── Optional project scaffold ────────────────────────────────
+if [ -n "$PROJECT_DIR" ]; then
+    info "Scaffolding project files into $PROJECT_DIR"
+    scaffold_project "$PROJECT_DIR"
+    success "Project scaffolded"
 fi
 
 echo ""
-
 if [ "$DRY_RUN" = true ]; then
     info "Dry run complete. No files were modified."
-elif [ "$SCAFFOLD_ONLY" = true ]; then
-    echo -e "  ${GREEN}${BOLD}Project scaffolded!${NC}"
-    echo ""
-    echo -e "  ${BOLD}Next steps:${NC}"
-    echo -e "  ${DIM}1.${NC} cd $TARGET_DIR"
-    echo -e "  ${DIM}2.${NC} claude"
-    echo -e "  ${DIM}3.${NC} /ab-project-start ${DIM}← interactive project setup${NC}"
-elif [ -n "$TARGET_DIR" ]; then
-    echo -e "  ${GREEN}${BOLD}Plugin installed + project scaffolded!${NC}"
-    echo ""
-    echo -e "  ${BOLD}Next steps:${NC}"
-    echo -e "  ${DIM}1.${NC} cd $TARGET_DIR"
-    echo -e "  ${DIM}2.${NC} claude"
-    echo -e "  ${DIM}3.${NC} /ab-project-start ${DIM}← interactive project setup${NC}"
-    echo ""
-    echo -e "  ${DIM}Plugin provides: 53 skills · 10 hooks${NC}"
-    echo -e "  ${DIM}Quick start: /ab-build-pipeline · /ab-ship-pipeline · /ab-brainstorming · /ab-review-swarm · /ab-deep-research${NC}"
 else
-    echo -e "  ${GREEN}${BOLD}Plugin installed!${NC}"
-    echo ""
-    echo -e "  ${BOLD}Next steps:${NC}"
-    echo -e "  ${DIM}1.${NC} cd your-project"
-    echo -e "  ${DIM}2.${NC} claude"
-    echo -e "  ${DIM}3.${NC} /ab-project-start ${DIM}← scaffolds project + interactive setup${NC}"
-    echo ""
-    echo -e "  ${DIM}Plugin provides: 53 skills · 10 hooks${NC}"
-    echo -e "  ${DIM}Available in all projects — no per-project installation needed${NC}"
+    success "Done. Start a session in your tool and ask for the ab-project-start skill to set up a project."
 fi
-
-echo ""

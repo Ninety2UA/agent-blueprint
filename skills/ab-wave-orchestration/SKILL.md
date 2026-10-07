@@ -44,27 +44,23 @@ Start no helpers of your own, and do not commit on the main checkout.
 Return: Summary of changes, files modified, test results.
 ```
 
-### 4b. Collect results
+### 4b. Collect and bring the wave onto the branch
 
-When all helpers return, read each summary, note the files each modified, and check for unexpected overlaps.
+When all helpers return, read each summary and note the files each modified. Then bring each task's changes onto the working branch, one commit per task: merge its worktree, or commit its owned files by name so another task's work stays out of that commit. The check below reads the branch, so it runs after this, never before.
 
 ### 4c. Integration check
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Prompt: `references/agents/integration-verifier.md`. Inputs: the wave number and the tasks completed, with their summaries; it runs the full test suite and checks for conflicts between task implementations.
+Prompt: `references/agents/integration-verifier.md`. Inputs: the wave number, the commit the wave started from, the project's test command, and the tasks completed with their summaries; it runs the full test suite and checks for conflicts between task implementations.
 
 **Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
 ### 4d. Act on the result
 
-- **PASS:** go to 4e.
-- **ISSUES FOUND:** fix each with a targeted helper as in 4a, the issue as its task packet, then check again.
-- **FAIL:** stop and report to the user; the next wave would build on a broken one.
-
-### 4e. Commit the wave
-
-Bring each task's changes onto the working branch, one commit per task: merge its worktree, or commit its owned files by name so another task's work stays out of that commit. Then start the next wave.
+- **PASS:** start the next wave.
+- **ISSUES FOUND:** fix each with a targeted helper as in 4a, the issue as its task packet, commit the fix, then check again.
+- **FAIL:** stop and report to the user with the wave's commits listed; the next wave would build on a broken one, and whether to reset to the wave's starting commit is the user's call.
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 

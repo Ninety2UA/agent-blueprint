@@ -9,15 +9,17 @@
  *   0 — Allow teammate to go idle (all checks pass)
  *   2 — Send feedback and keep teammate working (issues found)
  *
- * Part of ab-orchestrate's Claude Code Agent Teams extra; registered in hooks.json.
+ * Part of ab-orchestrate's Claude Code Agent Teams extra; registered in hooks/claude-code.json.
  */
 
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { detectHost, readInput } = require('./host');
 
 // Guard: only act while ab-orchestrate runs the Agent Teams extra, which writes
-// "active: true" to this file at the start and "active: false" at the end.
+// "active: true" to this file at the start and "active: false" at the end. This
+// check comes before the payload is read, so the common no-team case exits at once.
 const stateFile = path.join(process.cwd(), '.agent-blueprint', 'team', 'active.md');
 let teamActive = false;
 try {
@@ -26,6 +28,14 @@ try {
 if (!teamActive) {
   process.exit(0); // No active team — allow idle silently
 }
+
+// Agent Teams exist only in Claude Code; any other host gets a silent allow.
+readInput((input) => {
+  if (detectHost(input) !== 'claude') process.exit(0);
+  main();
+});
+
+function main() {
 
 function run(cmd, args) {
   try {
@@ -95,4 +105,5 @@ function detectLintCommand() {
     return { cmd: 'python', args: ['-m', 'flake8'] };
   }
   return null;
+}
 }

@@ -1,141 +1,83 @@
 #!/usr/bin/env bash
-# ship-loop.sh — Stop hook for /ab-ship-pipeline premature-exit prevention (inner guard)
+# ship-loop.sh — Stop hook that keeps an interactive ship-pipeline run going (KTD11).
 #
-# Prevents Claude from giving up before the pipeline is done.
-# This is the INNER guard — it blocks premature exit within a single session.
-# It does NOT reset context (the conversation keeps growing).
+# The ab-ship-pipeline skill writes .agent-blueprint/run/state.json. While its
+# status is "running", an interactive session that tries to stop is sent back
+# to the run. The hook stands down when:
+#   - there is no state file, or it is not valid JSON;
+#   - status is anything but "running" (done, blocked, needs-human);
+#   - the run's driver is "runner", or AGENT_BLUEPRINT_RUNNER is set, since the
+#     ship runner starts one headless session per iteration and a blocked stop
+#     would stall every one of them;
+#   - the state belongs to another session (session_id differs);
+#   - it has already sent this session back 20 times, the pipeline's own ceiling.
+# It never deletes or edits the run's files; the runner owns cleanup.
 #
-# For true context-exhaustion recovery with fresh 200K context per iteration,
-# use the OUTER loop: scripts/ship.sh (Ralph-style external bash loop).
-#
-# State file: .agent-blueprint/run/ship-loop.md (YAML frontmatter + prompt body)
-# Activation: /ship (interactive mode, no --external flag) creates the state file
-# Termination: <promise>DONE</promise> in last assistant output, or max iterations (default 5)
-#
-# This hook is session-isolated — it only blocks exit for the session that started the loop.
-# When --external flag is used, no state file is created, so this hook does nothing.
+# Runs on Claude Code and Codex, whose Stop hooks both take {"decision": "block", "reason": ...}.
 
 set -uo pipefail
 
-SHIP_STATE_FILE=".agent-blueprint/run/ship-loop.md"
+STATE_FILE=".agent-blueprint/run/state.json"
+GUARD_FILE=".agent-blueprint/run/stop-guard.json"
+CEILING=20
 
-# --------------------------------------------------
-# 1. Read hook input from stdin (JSON from Claude Code)
-# --------------------------------------------------
 HOOK_INPUT=$(cat 2>/dev/null || echo "")
 
-# --------------------------------------------------
-# 2. Check if a ship loop is active
-# --------------------------------------------------
-if [[ ! -f "$SHIP_STATE_FILE" ]]; then
-  exit 0  # No active loop — allow exit
-fi
+# shellcheck source=hooks/handlers/host.sh disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/host.sh"
+require_host "$HOOK_INPUT" claude codex
 
-# --------------------------------------------------
-# 3. Parse state file frontmatter
-# --------------------------------------------------
-FRONTMATTER=$(awk '/^---$/{i++; next} i==1{print} i>=2{exit}' "$SHIP_STATE_FILE")
+[ -n "${AGENT_BLUEPRINT_RUNNER:-}" ] && exit 0
+[ -f "$STATE_FILE" ] || exit 0
+command -v python3 >/dev/null 2>&1 || exit 0
 
-ACTIVE=$(echo "$FRONTMATTER" | grep '^active:' | sed 's/active: *//')
-if [[ "$ACTIVE" != "true" ]]; then
-  exit 0  # Loop not active — allow exit
-fi
+# One Python pass reads the state and the guard and prints the decision fields.
+DECISION=$(python3 - "$STATE_FILE" "$GUARD_FILE" "$CEILING" "$HOOK_INPUT" <<'PY'
+import json, sys
+state_file, guard_file, ceiling, raw = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4]
+try:
+    state = json.load(open(state_file, encoding="utf-8"))
+except Exception:
+    print("allow"); sys.exit(0)
+if not isinstance(state, dict) or state.get("status") != "running":
+    print("allow"); sys.exit(0)
+if state.get("driver") == "runner":
+    print("allow"); sys.exit(0)
+try:
+    hook = json.loads(raw) if raw.strip() else {}
+except Exception:
+    hook = {}
+session = hook.get("session_id", "") if isinstance(hook, dict) else ""
+own = state.get("session_id", "")
+if session and own and session != own:
+    print("allow"); sys.exit(0)
+guard = {}
+try:
+    guard = json.load(open(guard_file, encoding="utf-8"))
+except Exception:
+    guard = {}
+if not isinstance(guard, dict) or guard.get("session_id") != session:
+    guard = {"session_id": session, "count": 0}
+if guard.get("count", 0) >= ceiling:
+    print("allow"); sys.exit(0)
+guard["count"] = int(guard.get("count", 0)) + 1
+try:
+    tmp = guard_file + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(guard, fh)
+    import os
+    os.replace(tmp, guard_file)
+except Exception:
+    pass
+stage = state.get("stage", "?")
+reason = ("The ship-pipeline run in .agent-blueprint/run/state.json is still running (stage %s, send-back %d of %d). "
+          "Continue it: read state.json and go on from that stage. To stop instead, set its status to blocked or "
+          "needs-human with a reason." % (stage, guard["count"], ceiling))
+print(json.dumps({"decision": "block", "reason": reason,
+                  "systemMessage": "Ship pipeline still running: stage %s (%d/%d)" % (stage, guard["count"], ceiling)}))
+PY
+)
 
-# --------------------------------------------------
-# 4. Session isolation — only block the session that started the loop
-# --------------------------------------------------
-STATE_SESSION=$(echo "$FRONTMATTER" | grep '^session_id:' | sed 's/session_id: *//' | tr -d '"')
-# Try python3 first, fall back to grep+sed for systems without python3
-HOOK_SESSION=$(echo "$HOOK_INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('session_id',''))" 2>/dev/null || echo "$HOOK_INPUT" | grep -o '"session_id":"[^"]*"' | sed 's/"session_id":"//;s/"//' || echo "")
-
-if [[ -n "$STATE_SESSION" ]] && [[ -n "$HOOK_SESSION" ]] && [[ "$STATE_SESSION" != "$HOOK_SESSION" ]]; then
-  exit 0  # Different session — don't interfere
-fi
-
-# --------------------------------------------------
-# 5. Parse iteration state
-# --------------------------------------------------
-ITERATION=$(echo "$FRONTMATTER" | grep '^iteration:' | sed 's/iteration: *//')
-MAX_ITERATIONS=$(echo "$FRONTMATTER" | grep '^max_iterations:' | sed 's/max_iterations: *//')
-COMPLETION_PROMISE=$(echo "$FRONTMATTER" | grep '^completion_promise:' | sed 's/completion_promise: *//' | tr -d '"')
-
-# Validate numeric fields
-if ! [[ "$ITERATION" =~ ^[0-9]+$ ]]; then
-  rm -f "$SHIP_STATE_FILE"
-  exit 0
-fi
-
-if ! [[ "$MAX_ITERATIONS" =~ ^[0-9]+$ ]]; then
-  rm -f "$SHIP_STATE_FILE"
-  exit 0
-fi
-
-# --------------------------------------------------
-# 6. Check max iterations
-# --------------------------------------------------
-if [[ "$MAX_ITERATIONS" -gt 0 ]] && [[ "$ITERATION" -ge "$MAX_ITERATIONS" ]]; then
-  rm -f "$SHIP_STATE_FILE"
-  exit 0  # Allow exit — max iterations reached
-fi
-
-# --------------------------------------------------
-# 7. Check for completion promise in last assistant output
-# --------------------------------------------------
-TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('transcript_path',''))" 2>/dev/null || echo "")
-
-if [[ -n "$TRANSCRIPT_PATH" ]] && [[ -f "$TRANSCRIPT_PATH" ]]; then
-  # Extract last assistant text from JSONL transcript
-  LAST_OUTPUT=$(grep '"role":"assistant"' "$TRANSCRIPT_PATH" | tail -n 50 | python3 -c "
-import sys, json
-lines = sys.stdin.readlines()
-for line in reversed(lines):
-    try:
-        msg = json.loads(line)
-        contents = msg.get('message', {}).get('content', [])
-        for c in contents:
-            if c.get('type') == 'text':
-                print(c.get('text', ''))
-                sys.exit(0)
-    except:
-        continue
-print('')
-" 2>/dev/null || echo "")
-
-  # Check for completion promise using exact match
-  if [[ -n "$COMPLETION_PROMISE" ]] && [[ -n "$LAST_OUTPUT" ]]; then
-    # Extract text between <promise> tags
-    PROMISE_TEXT=$(echo "$LAST_OUTPUT" | perl -0777 -pe 's/.*?<promise>(.*?)<\/promise>.*/$1/s; s/^\s+|\s+$//g; s/\s+/ /g' 2>/dev/null || echo "")
-
-    if [[ "$PROMISE_TEXT" = "$COMPLETION_PROMISE" ]]; then
-      rm -f "$SHIP_STATE_FILE"
-      exit 0  # Allow exit — completion promise fulfilled
-    fi
-  fi
-fi
-
-# --------------------------------------------------
-# 8. Increment iteration and re-feed prompt
-# --------------------------------------------------
-NEXT_ITERATION=$((ITERATION + 1))
-
-# Atomically update iteration counter
-TEMP_FILE="${SHIP_STATE_FILE}.tmp.$$"
-sed "s/^iteration: .*/iteration: $NEXT_ITERATION/" "$SHIP_STATE_FILE" > "$TEMP_FILE"
-mv "$TEMP_FILE" "$SHIP_STATE_FILE"
-
-# Extract prompt text (everything after second ---)
-PROMPT_TEXT=$(awk '/^---$/{i++; next} i>=2' "$SHIP_STATE_FILE")
-
-if [[ -z "$PROMPT_TEXT" ]]; then
-  rm -f "$SHIP_STATE_FILE"
-  exit 0  # No prompt text — cleanup and allow exit
-fi
-
-# --------------------------------------------------
-# 9. Block exit and re-feed the prompt
-# --------------------------------------------------
-# JSON-escape the prompt text to prevent malformed output from quotes/backslashes/newlines
-ESCAPED_PROMPT=$(printf '%s' "$PROMPT_TEXT" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read())[1:-1])" 2>/dev/null || printf '%s' "$PROMPT_TEXT" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g' | tr '\n' ' ')
-ESCAPED_SYSTEM="Ship loop iteration $NEXT_ITERATION/$MAX_ITERATIONS | To complete: output <promise>$COMPLETION_PROMISE</promise> (ONLY when ALL work is done and verified)"
-
-printf '{\n  "decision": "block",\n  "reason": "%s",\n  "systemMessage": "%s"\n}\n' "$ESCAPED_PROMPT" "$ESCAPED_SYSTEM"
+[ "$DECISION" = "allow" ] && exit 0
+[ -z "$DECISION" ] && exit 0
+printf '%s\n' "$DECISION"

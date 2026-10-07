@@ -140,6 +140,10 @@ HERMES = [(re.compile(p, re.IGNORECASE), label) for p, label in [
     (r"\bc2\s+(?:server|channel|infrastructure|beacon)\b|\bcommand\s+and\s+control\b", "C2 vocabulary"),
     (r"curl\s+(?![^\n]*https?://(?:localhost|127\.0\.0\.1|\[::1\]))[^\n]*%s" % _SECRET_VAR, "curl with a secret variable"),
     (r"wget\s+[^\n]*%s" % _SECRET_VAR, "wget with a secret variable"),
+    # skills_guard's dns_exfil: case-insensitive, so a shell variable named HOST followed by
+    # another variable on the same line ("$HOST ... $x") matches as well as the literal word.
+    (r"(?<![-/])\b(?:dig|nslookup|host)\s+(?:[-+@]\S*(?:\s+[^\s$\"'-][^\s$]*)?\s+)*[\"']?[^\s\"'$]*\$",
+     "DNS lookup with a variable (dig, nslookup or host followed by $VAR)"),
     (r"cat\s+(?!>)[^\n]*(?:\.env|credentials|\.netrc|\.pgpass|\.npmrc|\.pypirc)", "reads a secrets file"),
     (r"curl\s+[^\n]*\|\s*%s" % _SHELLS, "curl piped to a shell"),
     (r"wget\s+[^\n]*-O\s*-\s*\|\s*%s" % _SHELLS, "wget piped to a shell"),

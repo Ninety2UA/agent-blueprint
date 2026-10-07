@@ -25,21 +25,21 @@ Announce at start: "Starting ship pipeline — fully autonomous. No checkpoints.
 - `decisions`: each default taken without asking (assumptions, must-ask choices, danger-scan hits).
 - `provenance`: `ab-ship-pipeline` and this file's `metadata.version`. `session_id`: the host's, else the branch name fitted to the pattern.
 
-Leave every run file in place, on failure too, and set `status` instead: only the ship runner cleans up, since it alone sees the whole run.
+Leave every run file in place, on failure too, and set `status` instead: only the ship runner cleans up.
 
 ## Arguments
 
-Everything that is not a flag is the feature description. The flags are in `references/modes-and-reports.md` § Flags Reference; `--external` equals `AGENT_BLUEPRINT_RUNNER=1`.
+Everything that is not a flag is the feature description. The flags are in `references/modes-and-reports.md` § Flags Reference; `--external` equals `AGENT_BLUEPRINT_RUNNER=1`. The external loop is `scripts/run.sh` in this skill's folder (`references/modes-and-reports.md` § External loop): when a feature may outgrow one context window, print `bash <folder>/scripts/run.sh --host <host> "<feature>"` with its absolute path.
 
 ## Pipeline Stages
 
 ### Stage 0: Initialize Loop & Detect Continuation
 
-Ship only a feature: route the request with `references/stages.md` § Intake, then run `references/stages.md` § Continuation checks, and skip to the stage that needs work. At an `iteration` of 20 or more, stop before Stage 1 as `blocked`, the ceiling as `reason`, and report what was completed and what failed; state.json keeps the count; only the runner or the user clears `.agent-blueprint/run/` for a restart, never this skill. The ceiling is fixed; the runner's limit is the user's knob below it.
+Ship only a feature: route the request with `references/stages.md` § Intake, then run `references/stages.md` § Continuation checks, and skip to the stage that needs work. At an `iteration` of 20 or more, stop before Stage 1 as `blocked`, the ceiling as `reason`; state.json keeps the count; only the runner or the user clears `.agent-blueprint/run/` for a restart, never this skill.
 
 ### Stage 1: Requirements (Auto-Discuss)
 
-Lock clear requirements as decisions; where they are ambiguous, lock reasonable assumptions from `docs/context/CONVENTIONS.md` and `docs/context/GOALS.md` instead of asking. Other decisions follow the ab-executing-plans skill's decision boundary, except that a must-ask category from the project instructions file is decided conservatively and locked the same way, since this skill cannot stop to ask. Append decisions to `docs/context/DECISIONS.md` (append, don't overwrite) and score the requirements with `references/stages.md` § Ambiguity gate.
+Lock clear requirements as decisions; where they are ambiguous, lock reasonable assumptions from `docs/context/CONVENTIONS.md` and `docs/context/GOALS.md` instead of asking. Other decisions follow the ab-executing-plans skill's decision boundary, except that a must-ask category from the project instructions file is decided conservatively and locked the same way. Append decisions to `docs/context/DECISIONS.md` (append, don't overwrite) and score the requirements with `references/stages.md` § Ambiguity gate.
 
 ### Stage 2: Plan
 
@@ -54,7 +54,7 @@ Invoke the ab-deepen-plan skill on the plan file.
 
 ### Stage 4: Execute
 
-Invoke the ab-orchestrate skill with the plan file, the `--no-review` flag and autonomous mode, in both modes (with or without `--swarm`). It needs no user approval, since plan-checker verified the plan; review is Stage 5's job. If its report shows a task not done or a failed integration, stop as `blocked` naming them: partial work is not reviewed.
+Invoke the ab-orchestrate skill with the plan file, the `--no-review` flag and autonomous mode, in both modes (with or without `--swarm`). Plan-checker verified the plan; review is Stage 5's job. If its report shows a task not done or a failed integration, stop as `blocked` naming them: partial work is not reviewed.
 
 ### Stage 5: Iterative Review
 
@@ -66,7 +66,7 @@ If it ends without converging (P1 > 0 for `fast`, P1+P2 > 0 for `deep`, any find
 
 ### Stage 6: Compound (Knowledge Capture)
 
-If the work solved a non-trivial problem, invoke the ab-knowledge-compounding skill to document it in `docs/solutions/`; otherwise skip it.
+If the work solved a non-trivial problem, invoke the ab-knowledge-compounding skill to document it in `docs/solutions/`.
 
 ### Stage 7: Ship It
 
@@ -78,4 +78,4 @@ If the work solved a non-trivial problem, invoke the ab-knowledge-compounding sk
 
 ## Error Recovery
 
-If a stage fails fatally, stop at once: report what was completed and what failed, and set `blocked` (or `needs-human` when only a person can unblock it) with a `reason` saying what would, so neither the runner nor the Stop hook restarts a broken pipeline. Do not skip a stage or work around a failure, because the PR would then claim checks that never ran; partial work (plan, branch, code) stays for the ab-build-pipeline skill. After a failed execution, skip review: there is nothing to review.
+If a stage fails fatally, stop at once: report what was completed and what failed, and set `blocked` (or `needs-human` when only a person can unblock it) with a `reason` saying what would, so neither the runner nor the Stop hook restarts a broken pipeline. Do not skip a stage or work around a failure, because the PR would then claim checks that never ran; partial work (plan, branch, code) stays for the ab-build-pipeline skill. After a failed execution there is nothing to review.

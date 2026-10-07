@@ -78,7 +78,14 @@
     {
       "owner": "docs/upgrade/v4-skill-names.tsv",
       "copies": [
-        "skills/ab-executing-plans/references/v4-skill-names.tsv"
+        "skills/ab-executing-plans/references/v4-skill-names.tsv",
+        "skills/ab-migrate/references/v4-skill-names.tsv"
+      ]
+    },
+    {
+      "owner": "skills/ab-orchestrate/references/host-limits.tsv",
+      "copies": [
+        "skills/ab-ship-pipeline/scripts/host-limits.tsv"
       ]
     }
   ]

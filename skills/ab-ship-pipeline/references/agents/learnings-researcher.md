@@ -10,13 +10,15 @@ Search the project's institutional memory to find solutions, patterns, decisions
 
 ## Search Locations (in priority order)
 
-1. **CLAUDE.md Key Learnings section** — Dated institutional memory entries
-2. **docs/decisions/** — Architecture Decision Records (ADRs)
-3. **docs/context/DECISIONS.md** — Locked decisions from `ab-discuss` sessions
-4. **docs/plans/** — Past implementation plans
-5. **docs/research/** — Domain research and analysis
-6. **docs/specs/** — Feature specifications
-7. **docs/context/CONVENTIONS.md** — Established patterns and standards
+1. **docs/solutions/** — Documented solutions, one file per solved problem, with the fix and why it worked
+2. **The project instructions file's Key Learnings section** (`AGENTS.md`, or `CLAUDE.md` where that is the only one) — Dated institutional memory entries
+3. **docs/learnings/** — Records of past analysis cycles and their verdicts
+4. **docs/decisions/** — Architecture Decision Records (ADRs)
+5. **docs/context/DECISIONS.md** — Locked decisions from `ab-discuss` sessions
+6. **docs/plans/** — Past implementation plans
+7. **docs/research/** — Domain research and analysis
+8. **docs/specs/** — Feature specifications
+9. **docs/context/CONVENTIONS.md** — Established patterns and standards
 
 ## Search Process
 

@@ -22,6 +22,9 @@ REMOVED = ["ab-agent-teams", "ab-team-execution"]
 SURFACES = ["AGENTS.md", "README.md", "index.html", "install.sh", ".claude-plugin", "hooks", "scripts",
             "docs/images/promo-video.html"]
 MARKER = ".agent-blueprint/team/active.md"
+# The hooks act only on the host they were written for (KTD11): run them as Claude Code.
+CLAUDE_ENV = {k: v for k, v in os.environ.items() if not k.startswith(("CURSOR_", "GROK_", "CODEX_"))}
+CLAUDE_ENV["CLAUDECODE"] = "1"
 
 
 def section(text, heading):
@@ -230,12 +233,21 @@ class AgentTeamsHooks(unittest.TestCase):
         with open(os.path.join(self.dir, MARKER), "w") as fh:
             fh.write(content)
 
-    def hook(self, name):
-        return subprocess.run(["node", os.path.join(REPO, "hooks", "handlers", name)], cwd=self.dir,
-                              capture_output=True, text=True, timeout=60)
+    def hook(self, name, env=CLAUDE_ENV):
+        return subprocess.run(["node", os.path.join(REPO, "hooks", "handlers", name)], cwd=self.dir, input="{}",
+                              capture_output=True, text=True, timeout=60, env=env)
 
     def test_no_marker_means_no_action(self):
         self.assertEqual(self.hook("task-completed.js").returncode, 0)
+
+    def test_foreign_hosts_get_a_silent_allow_even_with_an_active_marker(self):
+        # A stale marker in a project opened with Cursor or Codex must not gate anything there.
+        self.marker("active: true\n")
+        base = {k: v for k, v in CLAUDE_ENV.items() if k != "CLAUDECODE"}
+        for extra in ({"CURSOR_AGENT": "1"}, {"GROK_AGENT": "1"}, {"CODEX_SANDBOX": "seatbelt"}, {}):
+            for name in ("task-completed.js", "teammate-idle.js"):
+                result = self.hook(name, env=dict(base, **extra))
+                self.assertEqual((result.returncode, result.stdout, result.stderr), (0, "", ""), (name, extra))
 
     def test_inactive_marker_means_no_action(self):
         self.marker("active: false\n")
@@ -270,8 +282,8 @@ class TeammateIdleGuard(unittest.TestCase):
             os.makedirs(os.path.join(self.dir, ".agent-blueprint", "team"), exist_ok=True)
             with open(os.path.join(self.dir, MARKER), "w") as fh:
                 fh.write(marker)
-        return subprocess.run(["node", os.path.join(REPO, "hooks", "handlers", "teammate-idle.js")], cwd=self.dir,
-                              capture_output=True, text=True, timeout=120)
+        return subprocess.run(["node", os.path.join(REPO, "hooks", "handlers", "teammate-idle.js")], cwd=self.dir, input="{}",
+                              capture_output=True, text=True, timeout=120, env=CLAUDE_ENV)
 
     def test_no_marker_means_no_action(self):
         self.assertEqual(self.idle().returncode, 0)

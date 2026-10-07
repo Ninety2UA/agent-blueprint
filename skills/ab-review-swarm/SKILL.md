@@ -52,7 +52,7 @@ The findings-validator re-checks each finding against the code and the diff (`re
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Prompt: `references/agents/findings-validator.md`. Inputs: the merged finding list from the compact returns, the diff, and `run_id={run_id}`.
+Prompt: `references/agents/findings-validator.md`. Inputs: the merged finding list from the compact returns, numbered `F1`, `F2`, … in list order (its verdicts come back by that id), the diff, and `run_id={run_id}`.
 
 Drop rejected findings. Keep each **unresolved** one (a protected subject neither confirmed nor refuted), marked unresolved: it reaches the report as advisory with a human owner, because a wrong dismissal there costs more than a false alarm.
 
@@ -64,7 +64,7 @@ Prompt: `references/agents/findings-synthesizer.md`. Inputs: the validated findi
 
 ## Step 6: Present Results
 
-Present the report with its P1, P2 and P3 counts, then offer to act on the actionable findings (gated_auto, manual, advisory). With none, the report ends the run.
+Present the report with its P1, P2 and P3 counts, then offer to act on the actionable findings (present, gated_auto, advisory). With none, the report ends the run.
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 

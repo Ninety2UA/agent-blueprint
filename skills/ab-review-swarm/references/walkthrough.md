@@ -1,6 +1,6 @@
 # Per-Finding Walkthrough Mode
 
-Loaded on demand from SKILL.md when the synthesizer returns more than 5 actionable findings (gated_auto + manual + advisory) and the user wants per-item judgment rather than bulk action.
+Loaded on demand from SKILL.md when the synthesizer returns more than 5 actionable findings (present + gated_auto + advisory) and the user wants per-item judgment rather than bulk action.
 
 Walkthrough is a **decision loop, not a pair-programming surface**. The user picks one of three preset actions per finding, or hands the rest over to auto-resolve; freeform fix authoring belongs outside the flow.
 
@@ -18,7 +18,7 @@ Mixing the two — a numbered list with per-row options — looks dense and effi
 
 The walkthrough receives, from the synthesizer:
 
-- The merged findings list in severity order (P1 → P2 → P3), filtered to gated_auto and manual findings that survived the synthesis confidence gate. Advisory findings are included when surfaced for acknowledgment.
+- The merged findings list in severity order (P1 → P2 → P3), filtered to present and gated_auto findings that survived the synthesis confidence gate. Advisory findings are included when surfaced for acknowledgment.
 - The recommended_action per finding (already normalized by the synthesizer's tie-break — see `references/agents/findings-synthesizer.md` Step 2.8).
 - The run_id for artifact lookups at `.agent-blueprint/review-runs/{run_id}/{reviewer}.json`.
 
@@ -115,7 +115,7 @@ Keep the order the same on every finding, so the user can answer by position wit
 
 | Condition | Adaptation |
 |-----------|-----------|
-| **No `suggested_fix`** (manual finding without proposed fix) | Option 1 (Apply) is **omitted**. Synthesis already maps these to Defer recommendation. Menu shows Defer / Skip; Auto-resolve stays a typed answer. |
+| **No `suggested_fix`** (a present or gated_auto finding without a proposed fix) | Option 1 (Apply) is **omitted**. Synthesis already maps these to Defer recommendation. Menu shows Defer / Skip; Auto-resolve stays a typed answer. |
 | **Advisory-only finding** | Option 1 becomes `Acknowledge — mark as reviewed`. The other two options remain. |
 | **N=1 (exactly one pending finding)** | Heading omits position counter. Auto-resolve is not offered. Menu shows Apply / Defer / Skip (or Acknowledge). |
 | **No tracker sink available** | Option 2 (Defer) is omitted. Stem appends one line explaining no tracker is configured. Menu shows Apply / Skip; Auto-resolve stays a typed answer. |
@@ -138,7 +138,7 @@ After the user answers, before printing the next finding's terminal block, emit 
 |-----------|--------|
 | **Apply** | Add the finding to an in-memory Apply set. Advance. Do not dispatch the fixer inline — Apply accumulates for end-of-walkthrough batch dispatch. |
 | **Acknowledge** (advisory variant) | Record in decision list. Advance. No side effects. |
-| **Defer** | Invoke tracker-defer flow. Position stays on current finding during any failure-path sub-question. On success, record tracker URL and advance. |
+| **Defer** | Append the finding (title, `file:line`, the fix) as an open item to `BACKLOG.md` in the project root, creating the file if needed; that is the only tracker the walkthrough writes to. File a GitHub issue instead only when the user asks for one in that answer. Record the item and advance. |
 | **Skip** | Record in decision list. Advance. No side effects. |
 | **Auto-resolve with best judgment on the rest** | Exit walkthrough loop and dispatch fixer immediately on (current finding + everything not yet decided). Apply findings already chosen during walkthrough are dispatched in the same fixer pass. |
 

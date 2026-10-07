@@ -45,7 +45,7 @@ Three helpers, in order, each starting once the one before is done and passing:
 
 **Fix rounds.** Send a reviewer's findings to the same implementer in one message, same-shape ones batched, then have that reviewer check BASE..HEAD again; if you cannot reach it, start a fresh one with its report and the findings. Fix through a helper, never by hand, also when an implementer fails a task, so your context stays clean. An open finding means not done; self-review replaces neither review. After five rounds in one stage, mark the task `— BLOCKED: <reason>` in the progress file and ask the user.
 
-When the code-quality reviewer approves, tick the box and take the next task.
+When the code-quality reviewer's verdict line says ready, tick the box and take the next task.
 
 ## 4. Final review
 

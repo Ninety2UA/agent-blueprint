@@ -25,6 +25,11 @@ command -v shasum >/dev/null 2>&1 || command -v sha256sum >/dev/null 2>&1 || exi
 
 if [ -t 0 ]; then INPUT="{}"; else INPUT=$(cat); fi
 
+# WebFetch exists only in Claude Code; any other host gets nothing from this hook.
+# shellcheck source=hooks/handlers/host.sh disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/host.sh"
+require_host "$INPUT" claude
+
 # The blueprint's working folder carries its own ignore file; write it before the
 # first write under .agent-blueprint/, as the skills' Working folder step does.
 ensure_ignore() {

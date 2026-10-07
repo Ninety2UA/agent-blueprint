@@ -101,13 +101,13 @@ Specific patterns:
 | Reviewer's tier + suggested_fix | Implies action |
 |---------------------------------|---------------|
 | `safe_auto` or `gated_auto` with `suggested_fix` | Apply |
-| `manual`/`gated_auto` with concrete `suggested_fix` and recommended resolution | Apply |
-| `manual` flagged as tradeoff/scope question with no recommended resolution | Defer |
+| `present`/`gated_auto` with concrete `suggested_fix` and recommended resolution | Apply |
+| `present` flagged as tradeoff/scope question with no recommended resolution | Defer |
 | Reviewer flagged as low-confidence or suppression-eligible | Skip |
 | Reviewer in contradiction set (Step 2.7) implying "keep as-is" | Skip |
 | `advisory` | Acknowledge |
 
-**Default when reviewers are silent on action** (e.g., a merged `manual` from reviewers who all flagged it as observation):
+**Default when reviewers are silent on action** (e.g., a merged `present` from reviewers who all flagged it as observation):
 - `suggested_fix` present → Apply (pragmatic default).
 - `suggested_fix` absent → Defer (cannot Apply without a fix).
 
@@ -119,7 +119,7 @@ Specific patterns:
 
 **Step 2.9.1 — Identify roots.** A finding is a candidate root when ALL hold:
 - Severity P1 or P2 (premise-level issues carry high priority by nature; no P3 roots).
-- Tier is `present` or `manual` (the root requires judgment — a safe/gated root is acted on, not cascaded).
+- Tier is `present` (the root requires judgment — a safe/gated root is acted on, not cascaded).
 - Title or Impact challenges a foundational premise — signal phrases (shape, not vocabulary): "premise unsupported", "is X justified", "is the proposed solution the right approach", "scope is wrong".
 - The finding's location is a framing-level surface (Overview, Plan, top-level module, primary entry point) OR explicitly questions whether a named component should exist.
 
@@ -214,14 +214,16 @@ Organize findings by what needs to happen, not by which agent found them:
      - **[Dependent title]** — `file:line` — ...
 
 ### P2 — Important (should fix)
-1. **[Issue title]** — `file:line` — Confidence: [score] — Tier: [tier]
+1. **[Issue title]** — `file:line` — Confidence: [score] — Tier: [tier] — Recommended: [Apply|Defer|Skip|Acknowledge]
    - Found by: [agent(s)]
    - Impact: [what goes wrong at scale / under edge conditions]
    - Fix: [specific recommendation]
+   - [Conflict context line, when reviewers disagreed]
 
 ### P3 — Suggestions (optional)
-1. **[Issue title]** — `file:line` — Confidence: [score] — Tier: [tier]
+1. **[Issue title]** — `file:line` — Confidence: [score] — Tier: [tier] — Recommended: [Apply|Defer|Skip|Acknowledge]
    - Fix: [recommendation]
+   - [Conflict context line, when reviewers disagreed]
 
 ### Auto-Fixable (safe_auto tier)
 - [count] findings can be applied without confirmation:

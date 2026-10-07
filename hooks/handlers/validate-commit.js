@@ -5,7 +5,7 @@
  * Triggers on Bash tool calls that look like a commit invocation. Validates
  * the message conforms to Conventional Commits (`type(scope): subject`, with
  * subject <= 72 chars). Advisory by default — never blocks. Opt-in via
- * `~/.claude/blueprint.local.json` or `.claude/blueprint.local.json` with:
+ * `.agent-blueprint/config.json` in the project or `~/.agent-blueprint/config.json` with:
  *
  *   { "hooks": { "validateCommit": true } }
  *
@@ -18,6 +18,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { detectHost } = require('./host');
 
 const VALID_TYPES = new Set([
   'feat',
@@ -47,6 +48,7 @@ process.stdin.on('end', () => {
     if (!isEnabled()) process.exit(0);
 
     const data = JSON.parse(input);
+    if (detectHost(data) === 'other') process.exit(0);
     if (data.tool_name !== 'Bash') process.exit(0);
 
     const cmd = data.tool_input?.command || '';
@@ -74,8 +76,8 @@ process.stdin.on('end', () => {
 
 function isEnabled() {
   const candidates = [
-    path.join(process.cwd(), '.claude', 'blueprint.local.json'),
-    path.join(os.homedir(), '.claude', 'blueprint.local.json'),
+    path.join(process.cwd(), '.agent-blueprint', 'config.json'),
+    path.join(os.homedir(), '.agent-blueprint', 'config.json'),
   ];
   for (const p of candidates) {
     try {

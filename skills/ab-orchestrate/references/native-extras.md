@@ -20,7 +20,7 @@ Decide from the tools you actually have in this session, not from what a setting
 4. A teammate's final answer arrives with its idle notice. Treat it as that task's output section and record it in the ledger as usual. Check the live roster before you broadcast to or wait on a teammate.
 5. For the next wave, message an idle teammate its next packet rather than starting a new one, so its context carries over. The host's shared task list may mirror the ledger, but the ledger stays the record.
 6. Teammates do not commit. You commit each task's files after its checks pass.
-7. When the run ends, rewrite `.agent-blueprint/team/active.md` to `active: false`, so the hooks stop acting in the rest of the session.
+7. When the run ends, rewrite `.agent-blueprint/team/active.md` to `active: false`, so the hooks stop acting in the rest of the session. If a run crashes and leaves it active, the session-start hook resets a marker older than twelve hours; a younger one you reset by hand.
 
 ## Codex multi_agent_v2
 
