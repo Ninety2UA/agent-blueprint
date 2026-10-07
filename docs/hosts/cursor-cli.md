@@ -66,15 +66,15 @@ From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | pass | 19s | 53 ab- skills once each in 1 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 6s | final message names HARBOR-19 |
-| `hooks` | pass | 1s | no blueprint hook fired (from the canary run) |
-| `manual-only` | pass | 12s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
-| `build` | pass | 15m11s | acceptance test passes (deps: tabulate); 6 commit(s) after the base · helper steps: helper,helper,helper,helper,inline,helper,helper,helper,helper,helper,inline,? |
+| `discovery` | pass | 7s | 53 ab- skills once each in 1 location(s); the answer names ab-ship-pipeline |
+| `canary` | pass | 8s | final message names HARBOR-19 |
+| `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
+| `manual-only` | pass | 20s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `build` | pass | 5m22s | acceptance test passes (deps: tabulate>=0.9.0,<0.10); 4 commit(s) after the base · helper steps: helper,helper,helper,helper,helper,helper,helper,helper |
 | `helpers-off` | n/a | 0s | no helper switch on cursor-agent |
 | `effort` | n/a | 0s | no per-dispatch effort metadata on cursor-agent |
-| `review` | pass | 2m15s | the review reports eval in cli.py as a finding (security: arbitrary) · helper steps: helper |
-| `debug` | pass | 1m37s | suite passes; store.py fixed; regression test present · helper steps: helper |
-| `ship` | pass | 18m34s | published; pr create recorded; acceptance test passes (deps: tabulate==0.9.0) on the pushed branch |
-| `team` | pass | 5m25s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |
+| `review` | pass | 1m10s | the review reports eval in cli.py as a finding (security: arbitrary) · helper steps: helper |
+| `debug` | pass | 57s | suite passes; store.py fixed; regression test present · helper steps: helper |
+| `ship` | pass | 10m48s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9.0,<0.10) on the pushed branch |
+| `team` | pass | 3m55s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |
 | `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |

@@ -4,57 +4,57 @@
       "cells": {
         "build": {
           "cost_usd": null,
-          "date": "2026-10-07T01:18:50Z",
+          "date": "2026-10-07T11:39:57Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031558/agy/build.log",
+          "log": "tests/smoke/logs/20261007-133719/agy/build.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "acceptance test passes (deps: tabulate); 1 commit(s) after the base",
-          "seconds": 139,
+          "seconds": 125,
           "session": "",
           "state": "pass",
-          "tokens": 102939
+          "tokens": 98552
         },
         "canary": {
           "cost_usd": null,
-          "date": "2026-10-07T01:16:17Z",
+          "date": "2026-10-07T11:37:41Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031558/agy/canary.log",
+          "log": "tests/smoke/logs/20261007-133719/agy/canary.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "final message names HARBOR-19",
-          "seconds": 8,
+          "seconds": 11,
           "session": "",
           "state": "pass",
-          "tokens": 17990
+          "tokens": 18171
         },
         "debug": {
           "cost_usd": null,
-          "date": "2026-10-07T01:21:49Z",
+          "date": "2026-10-07T11:42:34Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031558/agy/debug.log",
+          "log": "tests/smoke/logs/20261007-133719/agy/debug.log",
           "plugin_dir": "$TMPDIR/.../skills",
-          "reason": "suite passes; store.py fixed; regression test present",
-          "seconds": 57,
+          "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: inline",
+          "seconds": 54,
           "session": "",
-          "state": "pass",
-          "tokens": 76086
+          "state": "degraded-pass (inline)",
+          "tokens": 61701
         },
         "discovery": {
           "cost_usd": null,
-          "date": "2026-10-07T01:16:09Z",
+          "date": "2026-10-07T11:37:30Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031558/agy/discovery.log",
+          "log": "tests/smoke/logs/20261007-133719/agy/discovery.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "53 ab- skills once each in 1 location(s); the answer names ab-ship-pipeline",
           "seconds": 11,
           "session": "",
           "state": "pass",
-          "tokens": 26305
+          "tokens": 26467
         },
         "effort": {
           "cost_usd": null,
-          "date": "2026-10-07T01:18:50Z",
+          "date": "2026-10-07T11:39:57Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031558/agy/effort.log",
+          "log": "tests/smoke/logs/20261007-133719/agy/effort.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "no per-dispatch effort metadata on agy",
           "seconds": 0,
@@ -64,9 +64,9 @@
         },
         "helpers-off": {
           "cost_usd": null,
-          "date": "2026-10-07T01:18:50Z",
+          "date": "2026-10-07T11:39:57Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031558/agy/helpers-off.log",
+          "log": "tests/smoke/logs/20261007-133719/agy/helpers-off.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "no helper switch on agy",
           "seconds": 0,
@@ -76,9 +76,9 @@
         },
         "hooks": {
           "cost_usd": null,
-          "date": "2026-10-07T01:16:17Z",
+          "date": "2026-10-07T11:37:41Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031558/agy/hooks.log",
+          "log": "tests/smoke/logs/20261007-133719/agy/hooks.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "no blueprint hook fired (from the canary run)",
           "seconds": 0,
@@ -88,57 +88,57 @@
         },
         "manual-only": {
           "cost_usd": null,
-          "date": "2026-10-07T01:16:31Z",
+          "date": "2026-10-07T11:37:52Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031558/agy/manual-only.log",
+          "log": "tests/smoke/logs/20261007-133719/agy/manual-only.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
-          "seconds": 14,
+          "seconds": 11,
           "session": "",
           "state": "pass",
-          "tokens": 18940
+          "tokens": 18775
         },
         "review": {
           "cost_usd": null,
-          "date": "2026-10-07T01:20:52Z",
+          "date": "2026-10-07T11:41:40Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031558/agy/review.log",
+          "log": "tests/smoke/logs/20261007-133719/agy/review.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "the review reports eval in cli.py as a finding (security: arbitrary) \u00b7 helper steps: inline",
-          "seconds": 122,
+          "seconds": 103,
           "session": "",
           "state": "degraded-pass (inline)",
-          "tokens": 122077
+          "tokens": 82693
         },
         "ship": {
           "cost_usd": 0.0,
-          "date": "2026-10-07T01:40:12Z",
+          "date": "2026-10-07T11:45:19Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-033740/agy/ship.log",
+          "log": "tests/smoke/logs/20261007-133719/agy/ship.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "published; pr create recorded; acceptance test passes (deps: tabulate) on the pushed branch",
-          "seconds": 151,
+          "seconds": 165,
           "session": "",
           "state": "pass",
-          "tokens": 132835
+          "tokens": 140331
         },
         "team": {
           "cost_usd": null,
-          "date": "2026-10-07T01:27:19Z",
+          "date": "2026-10-07T11:49:51Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031558/agy/team.log",
+          "log": "tests/smoke/logs/20261007-133719/agy/team.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "ledger done; 3 commits; tests pass",
-          "seconds": 219,
+          "seconds": 272,
           "session": "",
           "state": "pass",
-          "tokens": 172769
+          "tokens": 216624
         },
         "upgrade": {
           "cost_usd": null,
-          "date": "2026-10-07T01:27:19Z",
+          "date": "2026-10-07T11:49:51Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031558/agy/upgrade.log",
+          "log": "tests/smoke/logs/20261007-133719/agy/upgrade.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4)",
           "seconds": 0,
@@ -147,7 +147,7 @@
           "tokens": null
         }
       },
-      "version": "1.3.0"
+      "version": "1.3.1"
     },
     "amp": {
       "cells": {
@@ -301,82 +301,82 @@
     "claude": {
       "cells": {
         "build": {
-          "cost_usd": 15.7922,
-          "date": "2026-10-07T01:53:01Z",
+          "cost_usd": 12.7026,
+          "date": "2026-10-07T12:54:43Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/claude/build.log",
+          "log": "tests/smoke/logs/20261007-142713/claude/build.log",
           "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.0.0/skills",
-          "reason": "acceptance test passes (deps: tabulate>=0.9); 12 commit(s) after the base \u00b7 helper steps: helper,helper,helper,helper,helper",
-          "seconds": 2204,
-          "session": "b0c60a7f-fe08-4b2a-a246-6e9585c3e13f",
+          "reason": "acceptance test passes (deps: tabulate>=0.9); 7 commit(s) after the base \u00b7 helper steps: helper,helper,helper,helper",
+          "seconds": 1650,
+          "session": "4dccc34b-45d6-42c8-86f9-0c276447b593",
           "state": "pass",
-          "tokens": 9206498
+          "tokens": 5948304
         },
         "canary": {
-          "cost_usd": 0.1916,
-          "date": "2026-10-07T01:16:04Z",
+          "cost_usd": 0.1682,
+          "date": "2026-10-07T12:12:32Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/claude/canary.log",
+          "log": "tests/smoke/logs/20261007-141217/claude/canary.log",
           "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.0.0/skills",
           "reason": "final message names HARBOR-19",
-          "seconds": 6,
-          "session": "86e64ff9-062c-453e-a021-c36cd2644f3f",
+          "seconds": 8,
+          "session": "52975905-eac5-4814-a73b-3dfb3826ac0e",
           "state": "pass",
-          "tokens": 33852
+          "tokens": 30930
         },
         "debug": {
-          "cost_usd": 0.7852,
-          "date": "2026-10-07T02:10:42Z",
+          "cost_usd": 0.7659,
+          "date": "2026-10-07T12:53:34Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/claude/debug.log",
+          "log": "tests/smoke/logs/20261007-141214/claude/debug.log",
           "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.0.0/skills",
           "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper",
-          "seconds": 107,
-          "session": "4b019a1b-4055-472e-b770-ada83802669b",
+          "seconds": 123,
+          "session": "c34ddbb5-485f-44eb-9892-ced82934b13c",
           "state": "pass",
-          "tokens": 490010
+          "tokens": 466315
         },
         "discovery": {
-          "cost_usd": 0.2754,
-          "date": "2026-10-07T01:15:58Z",
+          "cost_usd": 0.1702,
+          "date": "2026-10-07T12:12:24Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/claude/discovery.log",
+          "log": "tests/smoke/logs/20261007-141217/claude/discovery.log",
           "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.0.0/skills",
           "reason": "53 ab- skills once each in 7 location(s); the answer names ab-ship-pipeline",
-          "seconds": 8,
-          "session": "53af78fa-a00a-4647-99b7-6572a7eb502d",
+          "seconds": 7,
+          "session": "463ce828-6f79-4f86-b0f4-b3261036860c",
           "state": "pass",
-          "tokens": 33979
+          "tokens": 31040
         },
         "effort": {
           "cost_usd": null,
-          "date": "2026-10-07T02:02:04Z",
+          "date": "2026-10-07T12:54:43Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/claude/effort.log",
+          "log": "tests/smoke/logs/20261007-142713/claude/effort.log",
           "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.0.0/skills",
-          "reason": "session effort xhigh; 14 helper transcript(s) at the same effort",
+          "reason": "session effort xhigh; 12 helper transcript(s) at the same effort",
           "seconds": 0,
           "session": "",
           "state": "pass",
           "tokens": null
         },
         "helpers-off": {
-          "cost_usd": 3.0866,
-          "date": "2026-10-07T02:02:04Z",
+          "cost_usd": 4.1252,
+          "date": "2026-10-07T12:25:12Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/claude/helpers-off.log",
+          "log": "tests/smoke/logs/20261007-141217/claude/helpers-off.log",
           "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.0.0/skills",
-          "reason": "acceptance test passes (deps: tabulate); 4 commit(s) after the base \u00b7 helper steps: inline,inline,inline,inline",
-          "seconds": 543,
-          "session": "1d503373-5bcb-47f0-bab6-d788b6ab1af3",
+          "reason": "acceptance test passes (deps: tabulate); 6 commit(s) after the base \u00b7 helper steps: inline,inline,inline,inline",
+          "seconds": 751,
+          "session": "e18f6a21-84ff-4e40-9685-cab25202b4dc",
           "state": "degraded-pass (inline)",
-          "tokens": 4555935
+          "tokens": 6607398
         },
         "hooks": {
           "cost_usd": null,
-          "date": "2026-10-07T01:16:04Z",
+          "date": "2026-10-07T12:12:32Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/claude/hooks.log",
+          "log": "tests/smoke/logs/20261007-141217/claude/hooks.log",
           "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.0.0/skills",
           "reason": "handlers wrote the trace: session-start.js x1, ship-loop.sh x1 (from the canary run)",
           "seconds": 0,
@@ -385,28 +385,28 @@
           "tokens": null
         },
         "manual-only": {
-          "cost_usd": 0.2092,
-          "date": "2026-10-07T01:16:17Z",
+          "cost_usd": 0.1778,
+          "date": "2026-10-07T12:12:41Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/claude/manual-only.log",
+          "log": "tests/smoke/logs/20261007-141217/claude/manual-only.log",
           "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.0.0/skills",
           "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
-          "seconds": 13,
-          "session": "4db98291-3556-4cb7-97e9-fb28ac5650a2",
+          "seconds": 9,
+          "session": "86568800-b08f-48f4-8649-699bbe4ae4c0",
           "state": "pass",
-          "tokens": 34834
+          "tokens": 31469
         },
         "review": {
-          "cost_usd": 1.2647,
-          "date": "2026-10-07T02:08:55Z",
+          "cost_usd": 1.1223,
+          "date": "2026-10-07T12:51:31Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/claude/review.log",
+          "log": "tests/smoke/logs/20261007-141214/claude/review.log",
           "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.0.0/skills",
-          "reason": "the review reports eval in cli.py as a finding (rated critical) \u00b7 helper steps: helper",
-          "seconds": 411,
-          "session": "866aa823-a04c-4439-a439-b35f90f3c935",
+          "reason": "the review reports eval in cli.py as a finding (security: exploitable) \u00b7 helper steps: helper",
+          "seconds": 231,
+          "session": "8abe04bd-9501-42bc-984c-bd51551d265b",
           "state": "pass",
-          "tokens": 417620
+          "tokens": 161126
         },
         "ship": {
           "cost_usd": 25.6807,
@@ -421,25 +421,25 @@
           "tokens": 13732266
         },
         "team": {
-          "cost_usd": 2.5429,
-          "date": "2026-10-07T03:05:45Z",
+          "cost_usd": 2.6784,
+          "date": "2026-10-07T12:32:34Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/claude/team.log",
+          "log": "tests/smoke/logs/20261007-141217/claude/team.log",
           "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.0.0/skills",
           "reason": "ledger done; 3 commits; tests pass \u00b7 helper steps: helper,helper,helper,helper,helper",
-          "seconds": 320,
-          "session": "4d3c2ce2-196b-45cd-b8ea-bf1e4017e73b",
+          "seconds": 442,
+          "session": "0e1cf97d-f370-4f39-bcbc-1da5ebf9b0c3",
           "state": "pass",
-          "tokens": 1089087
+          "tokens": 1522150
         },
         "upgrade": {
           "cost_usd": null,
-          "date": "2026-10-07T03:05:48Z",
+          "date": "2026-10-07T12:32:38Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/claude/upgrade.log",
+          "log": "tests/smoke/logs/20261007-141217/claude/upgrade.log",
           "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.0.0/skills",
           "reason": "14 checks passed: both plugin ids listed, detect-v3.sh reported and removed the v3 traces, the session-start warning names the v3 plugin",
-          "seconds": 3,
+          "seconds": 4,
           "session": "",
           "state": "pass",
           "tokens": null
@@ -451,45 +451,45 @@
       "cells": {
         "build": {
           "cost_usd": null,
-          "date": "2026-10-07T01:23:57Z",
+          "date": "2026-10-07T11:46:53Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/codex/build.log",
+          "log": "tests/smoke/logs/20261007-133710/codex/build.log",
           "plugin_dir": "~/.agents/skills",
           "reason": "acceptance test passes (deps: tabulate>=0.9); no-commit mode (8 changed files in the tree, commit-msg.md written) \u00b7 helper steps: helper,helper,helper,helper",
-          "seconds": 460,
+          "seconds": 554,
           "session": "",
           "state": "pass",
           "tokens": null
         },
         "canary": {
           "cost_usd": null,
-          "date": "2026-10-07T01:16:09Z",
+          "date": "2026-10-07T11:37:30Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/codex/canary.log",
+          "log": "tests/smoke/logs/20261007-133710/codex/canary.log",
           "plugin_dir": "~/.agents/skills",
           "reason": "final message names HARBOR-19",
-          "seconds": 8,
+          "seconds": 7,
           "session": "",
           "state": "pass",
           "tokens": null
         },
         "debug": {
           "cost_usd": null,
-          "date": "2026-10-07T01:30:52Z",
+          "date": "2026-10-07T11:56:49Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/codex/debug.log",
+          "log": "tests/smoke/logs/20261007-133710/codex/debug.log",
           "plugin_dir": "~/.agents/skills",
           "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper",
-          "seconds": 80,
+          "seconds": 128,
           "session": "",
           "state": "pass",
           "tokens": null
         },
         "discovery": {
           "cost_usd": null,
-          "date": "2026-10-07T01:16:01Z",
+          "date": "2026-10-07T11:37:22Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/codex/discovery.log",
+          "log": "tests/smoke/logs/20261007-133710/codex/discovery.log",
           "plugin_dir": "~/.agents/skills",
           "reason": "53 ab- skills once each in 10 location(s); the answer names ab-ship-pipeline",
           "seconds": 11,
@@ -499,9 +499,9 @@
         },
         "effort": {
           "cost_usd": null,
-          "date": "2026-10-07T01:23:57Z",
+          "date": "2026-10-07T11:46:53Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/codex/effort.log",
+          "log": "tests/smoke/logs/20261007-133710/codex/effort.log",
           "plugin_dir": "~/.agents/skills",
           "reason": "no per-dispatch effort metadata on codex",
           "seconds": 0,
@@ -511,9 +511,9 @@
         },
         "helpers-off": {
           "cost_usd": null,
-          "date": "2026-10-07T01:23:57Z",
+          "date": "2026-10-07T11:46:53Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/codex/helpers-off.log",
+          "log": "tests/smoke/logs/20261007-133710/codex/helpers-off.log",
           "plugin_dir": "~/.agents/skills",
           "reason": "no helper switch on codex",
           "seconds": 0,
@@ -523,9 +523,9 @@
         },
         "hooks": {
           "cost_usd": null,
-          "date": "2026-10-07T01:16:09Z",
+          "date": "2026-10-07T11:37:30Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/codex/hooks.log",
+          "log": "tests/smoke/logs/20261007-133710/codex/hooks.log",
           "plugin_dir": "~/.agents/skills",
           "reason": "plugin hooks run only after trust on codex; the review cell covers the untrusted path (AE1)",
           "seconds": 0,
@@ -535,57 +535,57 @@
         },
         "manual-only": {
           "cost_usd": null,
-          "date": "2026-10-07T01:16:17Z",
+          "date": "2026-10-07T11:37:39Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/codex/manual-only.log",
+          "log": "tests/smoke/logs/20261007-133710/codex/manual-only.log",
           "plugin_dir": "~/.agents/skills",
           "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
-          "seconds": 8,
+          "seconds": 9,
           "session": "",
           "state": "pass",
           "tokens": null
         },
         "review": {
           "cost_usd": null,
-          "date": "2026-10-07T01:29:32Z",
+          "date": "2026-10-07T11:54:41Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/codex/review.log",
+          "log": "tests/smoke/logs/20261007-133710/codex/review.log",
           "plugin_dir": "~/.agents/skills",
-          "reason": "the review output does not name: eval \u00b7 work: $TMPDIR/ab-smoke-review-vSyziE",
-          "seconds": 335,
+          "reason": "the review reports eval in cli.py as a finding (rated critical) \u00b7 helper steps: helper",
+          "seconds": 468,
           "session": "",
-          "state": "fail",
+          "state": "pass",
           "tokens": null
         },
         "ship": {
           "cost_usd": null,
-          "date": "2026-10-07T01:43:16Z",
+          "date": "2026-10-07T12:18:21Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/codex/ship.log",
+          "log": "tests/smoke/logs/20261007-133710/codex/ship.log",
           "plugin_dir": "~/.agents/skills",
           "reason": "published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch",
-          "seconds": 744,
+          "seconds": 1292,
           "session": "",
           "state": "pass",
           "tokens": null
         },
         "team": {
           "cost_usd": null,
-          "date": "2026-10-07T01:47:31Z",
+          "date": "2026-10-07T12:25:38Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/codex/team.log",
+          "log": "tests/smoke/logs/20261007-133710/codex/team.log",
           "plugin_dir": "~/.agents/skills",
           "reason": "ledger done; no-commit mode (4 changed files in the tree, commit-msg.md written); tests pass \u00b7 helper steps: helper,helper,helper,helper,helper",
-          "seconds": 255,
+          "seconds": 437,
           "session": "",
           "state": "pass",
           "tokens": null
         },
         "upgrade": {
           "cost_usd": null,
-          "date": "2026-10-07T01:47:31Z",
+          "date": "2026-10-07T12:25:38Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-031549/codex/upgrade.log",
+          "log": "tests/smoke/logs/20261007-133710/codex/upgrade.log",
           "plugin_dir": "~/.agents/skills",
           "reason": "the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4)",
           "seconds": 0,
@@ -600,57 +600,57 @@
       "cells": {
         "build": {
           "cost_usd": null,
-          "date": "2026-10-07T01:55:44Z",
+          "date": "2026-10-07T11:43:16Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-034025/cursor-agent/build.log",
+          "log": "tests/smoke/logs/20261007-133716/cursor-agent/build.log",
           "plugin_dir": "$TMPDIR/.../skills",
-          "reason": "acceptance test passes (deps: tabulate); 6 commit(s) after the base \u00b7 helper steps: helper,helper,helper,helper,inline,helper,helper,helper,helper,helper,inline,?",
-          "seconds": 911,
-          "session": "10bb315c-3449-4488-a494-68d64d20b3ac",
+          "reason": "acceptance test passes (deps: tabulate>=0.9.0,<0.10); 4 commit(s) after the base \u00b7 helper steps: helper,helper,helper,helper,helper,helper,helper,helper",
+          "seconds": 322,
+          "session": "351a6f6c-d858-45eb-813d-8bf8b4dc5fd3",
           "state": "pass",
           "tokens": null
         },
         "canary": {
           "cost_usd": null,
-          "date": "2026-10-07T01:40:32Z",
+          "date": "2026-10-07T11:37:34Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-034025/cursor-agent/canary.log",
+          "log": "tests/smoke/logs/20261007-133716/cursor-agent/canary.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "final message names HARBOR-19",
-          "seconds": 6,
-          "session": "8a9aaf82-cdc1-453c-99ee-d5ccf1531996",
+          "seconds": 8,
+          "session": "919f58a3-e72e-4ad4-8ce4-a41541dc66bb",
           "state": "pass",
           "tokens": null
         },
         "debug": {
           "cost_usd": null,
-          "date": "2026-10-07T01:39:01Z",
+          "date": "2026-10-07T11:45:23Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-033711/cursor-agent/debug.log",
+          "log": "tests/smoke/logs/20261007-133716/cursor-agent/debug.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper",
-          "seconds": 97,
-          "session": "d4e603b4-627c-432b-8dde-0ed7c250e81d",
+          "seconds": 57,
+          "session": "17fc1f87-33b3-4e03-b71a-a5fecd171369",
           "state": "pass",
           "tokens": null
         },
         "discovery": {
           "cost_usd": null,
-          "date": "2026-10-07T01:40:14Z",
+          "date": "2026-10-07T11:37:26Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-033954/cursor-agent/discovery.log",
+          "log": "tests/smoke/logs/20261007-133716/cursor-agent/discovery.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "53 ab- skills once each in 1 location(s); the answer names ab-ship-pipeline",
-          "seconds": 19,
-          "session": "8f79ba6f-bf80-4601-8e56-9665232556b1",
+          "seconds": 7,
+          "session": "6690e8d3-90c6-4aa4-b146-94174ec81f7a",
           "state": "pass",
           "tokens": null
         },
         "effort": {
           "cost_usd": null,
-          "date": "2026-10-07T01:55:44Z",
+          "date": "2026-10-07T11:43:16Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-034025/cursor-agent/effort.log",
+          "log": "tests/smoke/logs/20261007-133716/cursor-agent/effort.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "no per-dispatch effort metadata on cursor-agent",
           "seconds": 0,
@@ -660,9 +660,9 @@
         },
         "helpers-off": {
           "cost_usd": null,
-          "date": "2026-10-07T01:55:44Z",
+          "date": "2026-10-07T11:43:16Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-034025/cursor-agent/helpers-off.log",
+          "log": "tests/smoke/logs/20261007-133716/cursor-agent/helpers-off.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "no helper switch on cursor-agent",
           "seconds": 0,
@@ -672,69 +672,69 @@
         },
         "hooks": {
           "cost_usd": null,
-          "date": "2026-10-07T01:40:33Z",
+          "date": "2026-10-07T11:37:34Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-034025/cursor-agent/hooks.log",
+          "log": "tests/smoke/logs/20261007-133716/cursor-agent/hooks.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "no blueprint hook fired (from the canary run)",
-          "seconds": 1,
+          "seconds": 0,
           "session": "",
           "state": "pass",
           "tokens": null
         },
         "manual-only": {
           "cost_usd": null,
-          "date": "2026-10-07T01:37:24Z",
+          "date": "2026-10-07T11:37:54Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-033711/cursor-agent/manual-only.log",
+          "log": "tests/smoke/logs/20261007-133716/cursor-agent/manual-only.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
-          "seconds": 12,
-          "session": "b67b954b-2e21-48b0-8541-50945712ce11",
+          "seconds": 20,
+          "session": "559c7990-7249-4022-8c92-214288715f91",
           "state": "pass",
           "tokens": null
         },
         "review": {
           "cost_usd": null,
-          "date": "2026-10-07T01:57:59Z",
+          "date": "2026-10-07T11:44:26Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-034025/cursor-agent/review.log",
+          "log": "tests/smoke/logs/20261007-133716/cursor-agent/review.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "the review reports eval in cli.py as a finding (security: arbitrary) \u00b7 helper steps: helper",
-          "seconds": 135,
-          "session": "11322de6-f5ae-4d44-afc8-f56ca2310b95",
+          "seconds": 70,
+          "session": "aa536641-eb27-4cc0-83ae-32f6c7536c79",
           "state": "pass",
           "tokens": null
         },
         "ship": {
           "cost_usd": null,
-          "date": "2026-10-07T02:16:33Z",
+          "date": "2026-10-07T11:56:11Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-034025/cursor-agent/ship.log",
+          "log": "tests/smoke/logs/20261007-133716/cursor-agent/ship.log",
           "plugin_dir": "$TMPDIR/.../skills",
-          "reason": "published; pr create recorded; acceptance test passes (deps: tabulate==0.9.0) on the pushed branch",
-          "seconds": 1114,
+          "reason": "published; pr create recorded; acceptance test passes (deps: tabulate>=0.9.0,<0.10) on the pushed branch",
+          "seconds": 648,
           "session": "",
           "state": "pass",
           "tokens": null
         },
         "team": {
           "cost_usd": null,
-          "date": "2026-10-07T02:21:58Z",
+          "date": "2026-10-07T12:00:06Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-034025/cursor-agent/team.log",
+          "log": "tests/smoke/logs/20261007-133716/cursor-agent/team.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "ledger done; 3 commits; tests pass \u00b7 helper steps: helper,helper,helper,helper,helper",
-          "seconds": 325,
-          "session": "e41f1293-0941-458c-a53b-bd6b81baa04f",
+          "seconds": 235,
+          "session": "ac9ce667-8c2e-45bb-8658-a698ea054b19",
           "state": "pass",
           "tokens": null
         },
         "upgrade": {
           "cost_usd": null,
-          "date": "2026-10-07T02:21:58Z",
+          "date": "2026-10-07T12:00:06Z",
           "link": "",
-          "log": "tests/smoke/logs/20261007-034025/cursor-agent/upgrade.log",
+          "log": "tests/smoke/logs/20261007-133716/cursor-agent/upgrade.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4)",
           "seconds": 0,
@@ -784,16 +784,16 @@
           "tokens": null
         },
         "discovery": {
-          "cost_usd": 0.0835,
-          "date": "2026-10-04T21:23:29Z",
+          "cost_usd": 0.0979,
+          "date": "2026-10-07T11:37:25Z",
           "link": "",
-          "log": "tests/smoke/logs/20261004-232322/grok/discovery.log",
+          "log": "tests/smoke/logs/20261007-133713/grok/discovery.log",
           "plugin_dir": "~/.agents/skills",
           "reason": "53 ab- skills once each in 3 location(s); the answer names ab-ship-pipeline",
-          "seconds": 6,
+          "seconds": 9,
           "session": "",
           "state": "pass",
-          "tokens": 42321
+          "tokens": 49628
         },
         "effort": {
           "cost_usd": null,
@@ -832,16 +832,16 @@
           "tokens": null
         },
         "manual-only": {
-          "cost_usd": 0.0863,
-          "date": "2026-10-04T21:23:50Z",
+          "cost_usd": 0.1018,
+          "date": "2026-10-07T11:37:41Z",
           "link": "",
-          "log": "tests/smoke/logs/20261004-232322/grok/manual-only.log",
+          "log": "tests/smoke/logs/20261007-133713/grok/manual-only.log",
           "plugin_dir": "~/.agents/skills",
           "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
-          "seconds": 13,
+          "seconds": 12,
           "session": "",
           "state": "pass",
-          "tokens": 42957
+          "tokens": 50306
         },
         "review": {
           "cost_usd": null,
@@ -1448,7 +1448,7 @@
       "cells": [
         "manual-only"
       ],
-      "command": "HOME=<clean profile> bash tests/smoke/run-smoke.sh --host cursor-agent --cell manual-only --plugin-dir . (only the blueprint installed)",
+      "command": "HOME=<a profile holding only the blueprint> bash tests/smoke/run-smoke.sh --host cursor-agent --cell manual-only --plugin-dir . (only the blueprint installed)",
       "date": "2026-10-04 14:46 UTC",
       "hosts": [
         "cursor-agent"
@@ -1637,7 +1637,126 @@
         "cursor-agent"
       ],
       "plugin_dir": "~/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "build",
+        "canary",
+        "debug",
+        "discovery",
+        "effort",
+        "helpers-off",
+        "hooks",
+        "manual-only",
+        "review",
+        "ship",
+        "team",
+        "upgrade"
+      ],
+      "command": "HOME=<a profile holding only the blueprint> bash tests/smoke/run-smoke.sh --host cursor-agent --plugin-dir . --out $TMPDIR/.../smoke-cursor",
+      "date": "2026-10-07 12:09 UTC",
+      "hosts": [
+        "cursor-agent"
+      ],
+      "plugin_dir": "~/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "build",
+        "canary",
+        "debug",
+        "discovery",
+        "effort",
+        "helpers-off",
+        "hooks",
+        "manual-only",
+        "review",
+        "ship",
+        "team",
+        "upgrade"
+      ],
+      "command": "HOME=<a profile holding only the blueprint> bash tests/smoke/run-smoke.sh --host agy --plugin-dir . --out $TMPDIR/.../smoke-agy",
+      "date": "2026-10-07 12:09 UTC",
+      "hosts": [
+        "agy"
+      ],
+      "plugin_dir": "~/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "discovery",
+        "manual-only"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host grok --cell discovery,canary,hooks,manual-only --plugin-dir . --out $TMPDIR/.../smoke-grok (canary and hooks refused by Grok's free usage limit; their 2026-10-04 rows stay)",
+      "date": "2026-10-07 12:09 UTC",
+      "hosts": [
+        "grok"
+      ],
+      "plugin_dir": "~/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "build",
+        "canary",
+        "debug",
+        "discovery",
+        "effort",
+        "helpers-off",
+        "hooks",
+        "manual-only",
+        "review",
+        "ship",
+        "team",
+        "upgrade"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude,codex --plugin-dir . --v3-dir $TMPDIR/.../prov-v3 --jobs 2 --out $TMPDIR/.../smoke-main (Codex rows only: every Claude Code cell failed its installed-copy check against a stale plugin cache and was rerun after a refresh)",
+      "date": "2026-10-07 12:26 UTC",
+      "hosts": [
+        "codex"
+      ],
+      "plugin_dir": "~/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "canary",
+        "discovery",
+        "helpers-off",
+        "hooks",
+        "manual-only",
+        "team",
+        "upgrade"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude --cell discovery,canary,hooks,manual-only,helpers-off,effort,team,upgrade --plugin-dir . --v3-dir $TMPDIR/.../prov-v3 --out $TMPDIR/.../smoke-claude-c (effort is merged from the build run below, since it reads the build's transcripts)",
+      "date": "2026-10-07 12:55 UTC",
+      "hosts": [
+        "claude"
+      ],
+      "plugin_dir": "~/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "debug",
+        "review"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude --cell build,review,debug --plugin-dir . --v3-dir $TMPDIR/.../prov-v3 --out $TMPDIR/.../smoke-claude-b (build is merged from the run below, together with the effort check that reads it)",
+      "date": "2026-10-07 12:55 UTC",
+      "hosts": [
+        "claude"
+      ],
+      "plugin_dir": "~/projects/claude-eng/project-template/project-template-phase4"
+    },
+    {
+      "cells": [
+        "build",
+        "effort"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude --cell build,effort --plugin-dir . --v3-dir $TMPDIR/.../prov-v3 --out $TMPDIR/.../smoke-claude-d",
+      "date": "2026-10-07 12:55 UTC",
+      "hosts": [
+        "claude"
+      ],
+      "plugin_dir": "~/projects/claude-eng/project-template/project-template-phase4"
     }
   ],
-  "updated": "2026-10-07 03:06 UTC"
+  "updated": "2026-10-07 12:55 UTC"
 }

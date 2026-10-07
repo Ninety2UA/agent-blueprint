@@ -63,14 +63,14 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version grok 1.0.34 (3736acbc8658) [stable], last cell 2026-10-04.
+From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version grok 1.0.34 (3736acbc8658) [stable], last cell 2026-10-07.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | pass | 6s | 53 ab- skills once each in 3 location(s); the answer names ab-ship-pipeline |
+| `discovery` | pass | 9s | 53 ab- skills once each in 3 location(s); the answer names ab-ship-pipeline |
 | `canary` | pass | 8s | final message names HARBOR-19 |
 | `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
-| `manual-only` | pass | 13s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `manual-only` | pass | 12s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
 | `build` | fail | 1m42s | the host refused the run: usage or rate limit reached. acceptance test failed: tabulate is not declared in pyproject.toml or requirements.txt (host exited 1) |
 | `helpers-off` | n/a | 0s | no helper switch on grok |
 | `effort` | n/a | 0s | no per-dispatch effort metadata on grok |
