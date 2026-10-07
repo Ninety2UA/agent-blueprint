@@ -1,13 +1,13 @@
 ---
 name: ab-migration-planning
-description: "Trigger this skill for any change requiring careful sequencing, data transformation, and rollback capability — even if the user doesn't call it a 'migration'. Trigger when the user says 'database migration', 'API migration', 'upgrade path', 'data migration', 'schema change', 'breaking change', 'add column', 'rename table', 'change API version', 'backfill data', 'format change', or 'deprecate endpoint'. Trigger for database schema changes (adding, modifying, or removing tables/columns), API version transitions, major dependency upgrades (framework, ORM, runtime), data transformations (backfills, format changes), and any change where 'just deploy it' could corrupt data or break downstream systems. Creates safe, reversible migration plans with explicit rollback procedures. DO NOT TRIGGER for simple dependency additions — use ab-dependency-management instead."
+description: "Plans a migration so every step can be undone: a blast-radius analysis of data, services and dependents, atomic expand-contract steps each deployable on its own, a forward and a rollback for each step with irreversible steps marked and backed up first, verification checks, and a pre-, during- and post-migration checklist. Use when a change needs careful sequencing, data transformation or rollback, whether or not the user calls it a migration: schema changes (adding, renaming, changing or dropping tables and columns), backfills and format changes, API version transitions and deprecated endpoints, breaking changes, major framework, ORM or runtime upgrades, and any change where just deploying it could corrupt data or break downstream systems. Not for a simple dependency addition (ab-dependency-management)."
 ---
 
 # Migration Planning
 
 ## Overview
 
-Create safe, reversible migration plans with explicit rollback procedures. Covers database schema changes, API version transitions, major dependency upgrades, and data transformations.
+Create safe, reversible migration plans with explicit rollback procedures. Covers database schema changes, API version transitions, major dependency upgrades, and data transformations. The plan is done when every step has its forward, rollback and verification written down and the execution checklist is written for this migration.
 
 ## When to Use
 
@@ -19,9 +19,7 @@ Create safe, reversible migration plans with explicit rollback procedures. Cover
 
 ## The Iron Law
 
-<HARD-GATE>
-NO MIGRATION WITHOUT A ROLLBACK PLAN. Every migration step must have a documented reverse operation. If a step cannot be reversed, it must be explicitly marked as irreversible with a data backup requirement.
-</HARD-GATE>
+**Hard gate.** No migration without a rollback plan: every migration step has a documented reverse operation, and a step that cannot be reversed is marked irreversible and requires a data backup before it runs. A migration without a way back turns one bad step into lost or corrupted data in production, which no later fix can undo.
 
 ## Process
 
@@ -48,7 +46,7 @@ Before writing any migration code, analyze the blast radius:
 
 ### Step 2: Design Migration Steps
 
-Break the migration into atomic, ordered steps. Each step must be:
+Break the migration into atomic, ordered steps, so any step can ship, be verified and be rolled back on its own. Each step is:
 - **Independently deployable** — can be released without the next step
 - **Backward-compatible** — old code works with new schema (expand-contract pattern)
 - **Reversible** — has a documented rollback procedure
@@ -127,7 +125,7 @@ Define how to verify each step succeeded:
 
 ## Common Mistakes
 
-**Deploying code and migration simultaneously** — Deploy the migration first, verify it worked, then deploy the code that uses it. Never atomic "big bang" deployments.
+**Deploying code and migration simultaneously** — Deploy the migration first, verify it worked, then deploy the code that uses it. Avoid atomic "big bang" deployments: when both change at once, a failure cannot be traced to either, and neither can be rolled back alone.
 
 **No rollback testing** — If you haven't tested the rollback, you don't have a rollback plan. You have a rollback hope.
 

@@ -8,7 +8,7 @@
 # For true context-exhaustion recovery with fresh 200K context per iteration,
 # use the OUTER loop: scripts/ship.sh (Ralph-style external bash loop).
 #
-# State file: .claude/ship-loop.local.md (YAML frontmatter + prompt body)
+# State file: .agent-blueprint/run/ship-loop.md (YAML frontmatter + prompt body)
 # Activation: /ship (interactive mode, no --external flag) creates the state file
 # Termination: <promise>DONE</promise> in last assistant output, or max iterations (default 5)
 #
@@ -17,7 +17,7 @@
 
 set -uo pipefail
 
-SHIP_STATE_FILE=".claude/ship-loop.local.md"
+SHIP_STATE_FILE=".agent-blueprint/run/ship-loop.md"
 
 # --------------------------------------------------
 # 1. Read hook input from stdin (JSON from Claude Code)

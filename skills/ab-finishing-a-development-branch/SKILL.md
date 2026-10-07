@@ -1,290 +1,93 @@
 ---
 name: ab-finishing-a-development-branch
-description: "Trigger this skill when all implementation is complete and tests pass — even if the user doesn't explicitly ask what's next. Trigger when the user says 'done with the feature', 'ready to merge', 'branch is complete', 'what now', 'finished implementing', 'all tests pass now what', 'how do I wrap this up', or 'integration options'. Trigger when you detect that a feature branch has all planned work completed and tests are green. Guides completion by presenting structured options: merge to main, create a PR, or cleanup. Verifies tests pass before presenting options. DO NOT TRIGGER for creating PRs specifically — use ab-pr-workflow instead. DO NOT TRIGGER if implementation is still in progress or tests are failing."
+description: "Finishes a development branch whose work is done: runs the tests, has a read-only helper audit each plan item against the diff, offers to merge locally, push and open a PR, or keep the branch, and carries out the choice; discarding needs an explicit request and typed confirmation. Use when implementation is complete and tests pass, or the user says the work is done or ready to merge, or asks what now. Not for creating a PR alone (use ab-pr-workflow), or while work is in progress or tests fail."
+metadata:
+  version: "3.8.0"
 ---
 
 # Finishing a Development Branch
 
-## Overview
-
-Guide completion of development work by presenting clear options and handling chosen workflow.
-
-**Core principle:** Verify tests → Audit the plan → Present options → Execute choice → Clean up.
+Bring finished work to a clean end: verify tests → audit the plan → present options → execute the choice → clean up.
 
 **Announce at start:** "I'm using the ab-finishing-a-development-branch skill to complete this work."
 
-## The Process
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
+
+**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. Before that, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ### Step 1: Verify Tests
 
-**Before presenting options, verify tests pass:**
+Run the project's test suite (`npm test`, `cargo test`, `pytest`, `go test ./...`, or the one in `docs/context/CONVENTIONS.md`). A merge or PR on failing tests hands broken code on, so on any failure stop and report:
 
-```bash
-# Run project's test suite
-npm test / cargo test / pytest / go test ./...
-```
-
-**If tests fail:**
 ```
 Tests failing (<N> failures). Must fix before completing:
-
 [Show failures]
-
 Cannot proceed with merge/PR until tests pass.
 ```
-
-Stop. Don't proceed to Step 2.
-
-**If tests pass:** Continue to Step 2.
 
 ### Step 2: Determine Base Branch
 
 ```bash
-# Try common base branches
 git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
 ```
 
-Or ask: "This branch split from main - is that correct?"
+With neither `main` nor `master`, use the remote's default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`). Name the base in your report instead of asking.
 
 ### Step 3: Plan Audit
 
-A fresh-context, read-only agent classifies every plan item against the branch diff before any option is offered. This step owns the audit procedure. `ab-pr-workflow` renders the result; `ab-executing-plans` and `ab-subagent-driven-development` pass the plan path.
+Before any option, a fresh read-only helper classifies every plan item against the branch diff. This step owns the audit procedure; `ab-pr-workflow` renders the result, and `ab-executing-plans` and `ab-subagent-driven-development` pass the plan path.
 
-**Plan path.** Use the path the caller passed. Without one, take the newest `docs/plans/*.md` file added or modified on the branch, skipping design documents:
+Find the plan per `references/plan-audit.md` § Plan path; its items are `### U<N>.` headings, `### Task N:` headings, or checklist lines. No plan file, or one with no items, reports `NO PLAN`: show that line, skip the table and go on to Step 4, since a missing plan never blocks.
 
-```bash
-git log --name-only --format= <base-branch>..HEAD -- docs/plans/ | grep -v -- '-design\.md$' | grep . | sort -u | tail -1
-```
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Plan items are `### U<N>.` headings, `### Task N:` headings, or checklist lines. No plan file, or a file with no items, reports `NO PLAN`. Show that line, skip the table, and continue to Step 4 — a missing plan never blocks.
+Prompt: `references/agents/code-reviewer.md`, in a fresh helper. Inputs: the request in `references/plan-audit.md` § Audit request, filled in, and nothing else; its task and output rules replace the prompt file's review. The states are in `references/plan-audit.md` § States.
 
-**Dispatch.** Dispatch a fresh `code-reviewer` subagent with this prompt and nothing else (its tool grant includes Bash; the prompt, not the grant, holds it to reads):
+**The gate.** Any NOT DONE or PARTIAL row blocks Options 1 and 2, since merging or opening a PR would call the branch finished with planned work missing: show those rows and offer Option 3 only. DONE, CHANGED, DEFERRED, UNVERIFIABLE and NO PLAN never block. Keep the table and the unplanned-work list for Option 2.
 
-```
-Task tool (code-reviewer):
-  Plan audit. Classify; do not review. Read only.
-
-  PLAN_FILE: <plan-path>
-  DIFF: git diff <base-branch>...HEAD
-  ITEMS: every `### U<N>.` heading, `### Task N:` heading, and checklist line in PLAN_FILE
-
-  Output one table row per item: | Item | State | Evidence |
-  State is exactly one of DONE, CHANGED, PARTIAL, NOT DONE, DEFERRED, UNVERIFIABLE.
-  CHANGED states the reason. DEFERRED names the BACKLOG.md line or the plan's
-  Assumptions entry that defers it. Evidence is one line: a path and hunk, a
-  commit, or the sentence that decided the call.
-
-  Then, under the heading "Unplanned diff work", list every change in DIFF that
-  no item covers, one line each, or the single word "none". Never list
-  PLAN_FILE or .claude/plans/*.progress.local.md there.
-
-  Output the table and that list only. No strengths, no issues, no assessment.
-```
-
-**States and their evidence:**
-
-| State | Meaning | Evidence line |
-|-------|---------|---------------|
-| DONE | The diff delivers the item as planned | Path and hunk, or commit |
-| CHANGED | Delivered, but not as planned | The hunk plus the reason |
-| PARTIAL | Some of the item landed | What landed; what is missing |
-| NOT DONE | Nothing in the diff addresses it | "no hunk" |
-| DEFERRED | A `BACKLOG.md` line or a plan-file Assumptions entry defers it | That line, quoted |
-| UNVERIFIABLE | The diff cannot show it (runtime or external behaviour) | Why the diff cannot show it |
-
-**The gate:**
-
-<HARD-GATE>
-Any NOT DONE or PARTIAL row blocks Options 1 and 2. Show the blocking rows and offer Option 3 only. DONE, CHANGED, DEFERRED, UNVERIFIABLE, and NO PLAN never block.
-</HARD-GATE>
-
-Keep the table and the unplanned-work list: Option 2 passes both to `ab-pr-workflow`.
-
-**Autonomous runs** (ab-autonomous-loop, ab-ship-pipeline): a blocked gate stops the run. Report with ab-autonomous-loop's structured escalation format (what I was trying / what I tried / what I think / what I need) and open no PR.
+**Autonomous runs** (ab-autonomous-loop, ab-ship-pipeline): a blocked gate stops the run. Report in ab-autonomous-loop's escalation format (what I was trying / what I tried / what I think / what I need), set the run state's `status` to `blocked` with that report as its `reason` if a run state exists, and open no PR.
 
 ### Step 4: Present Options
 
-Present exactly these 3 options:
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
+
+Offer exactly the three below, without explanation: a structured choice gets a clear answer where "what now?" does not. When Step 3 blocked, mark 1 and 2 `(blocked by plan audit)` and accept only 3. Default when nobody answers: 3, keep the branch; 2 when the calling pipeline asked for a PR and the audit did not block.
 
 ```
 Implementation complete. What would you like to do?
-
 1. Merge back to <base-branch> locally
 2. Push and create a Pull Request
 3. Keep the branch as-is (I'll handle it later)
-
-Which option?
 ```
 
-**Don't add explanation** - keep options concise.
-
-When Step 3 blocked, mark options 1 and 2 `(blocked by plan audit)` and accept only 3.
-
-Discarding the branch is not on the menu. It runs only on an explicit request — see "Discarding work" below.
+Discarding the branch is not on the menu: it deletes commits and a worktree for good, and a menu slot invites an accidental pick. Run it only when the user explicitly asks, following `references/discarding-work.md`.
 
 ### Step 5: Execute Choice
 
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+
+A merge is a commit, so in this mode Option 1 cannot run: say so and keep the branch (Option 3). Option 2 leaves uncommitted work and its message as above.
+
 #### Option 1: Merge Locally
 
-```bash
-# From the main checkout — a worktree cannot check out the branch the main checkout holds
-cd <main-checkout>
-git checkout <base-branch>
-git pull
-git merge <feature-branch>
-
-# Verify tests on merged result
-<test command>
-
-# If tests pass: the worktree goes first (git refuses to delete a branch a worktree still holds), then the branch
-git worktree remove <worktree-path>   # skip when the branch had no worktree
-git branch -d <feature-branch>
-```
-
-Then: confirm the cleanup (Step 6). If `git worktree remove` refuses, keep the worktree and the branch and report the dirty state (Option 3 behaviour).
+From the main checkout, merge `<feature-branch>` into an updated `<base-branch>` and rerun the tests on the result. Only if they pass, remove the worktree and then delete the branch (`git branch -d`), as `references/merge-locally.md` § Merge sequence lists. If `git worktree remove` refuses, keep the worktree and the branch and report the dirty state (Option 3 behaviour).
 
 #### Option 2: Push and Create PR
 
-**REQUIRED SUB-SKILL:** Use ab-pr-workflow.
+Use the ab-pr-workflow skill, passing the Step 3 table and unplanned-work list (or the `NO PLAN` line) for its `## Plan audit` section; it audits itself only when it gets no table. Force-push only on the user's explicit request, since it rewrites history others may hold. Keep the worktree for review fixes.
 
-Pass it the Step 3 table and the unplanned-work list (or the `NO PLAN` line); its `## Plan audit` section renders them. `ab-pr-workflow` runs the audit itself only when it receives no table.
-
-Then: Keep the worktree for review fixes (Step 6)
+In a runner-driven run (`AGENT_BLUEPRINT_RUNNER` is `1`), push nothing and open no PR: write the PR body, with that `## Plan audit` section, to `.agent-blueprint/run/pr-body.md`; the runner scans for secrets, pushes and opens the PR, because host sandboxes may block the network and one publish step is easier to trust.
 
 #### Option 3: Keep As-Is
 
-Report: "Keeping branch <name>. Worktree preserved at <path>."
-
-**Don't cleanup worktree.**
-
-#### Discarding work (explicit request only)
-
-Not a menu option. Run this path only when the user says "Discard this work" or asks for it by name.
-
-1. List what would be lost:
-   ```bash
-   git status --porcelain                                # untracked and modified files
-   git log --oneline <base-branch>..<feature-branch>     # commits
-   ```
-2. Confirm the worktree removes cleanly: the status output must be empty. Any line printed means removal would be refused — go to **Refused removal** and run nothing else.
-3. Ask for typed confirmation:
-   ```
-   This will permanently delete:
-   - Branch <name>
-   - All commits: <commit-list>
-   - Worktree at <path>
-
-   Type 'discard' to confirm.
-   ```
-   Wait for the exact word.
-4. Only after confirmation:
-   ```bash
-   # In a worktree: leave it, remove it, then delete the branch
-   cd <main-checkout>
-   git worktree remove <worktree-path>
-   git branch -D <feature-branch>
-
-   # Plain branch, no worktree
-   git checkout <base-branch>
-   git branch -D <feature-branch>
-   ```
-   Remove the worktree before deleting the branch; git refuses to delete a branch a worktree still holds. If git refuses the removal, stop: keep the worktree and the branch, then go to **Refused removal**.
-
-**Refused removal.** Report the state and relay the commands. Never run them yourself. With a worktree:
-
-```
-Worktree <path> has uncommitted changes and was not removed:
-<git status --porcelain output>
-
-To discard anyway, run these yourself:
-  git worktree remove --force <worktree-path>
-  git branch -D <feature-branch>
-```
-
-Plain branch, no worktree:
-
-```
-Branch <name> has uncommitted changes and was not deleted:
-<git status --porcelain output>
-
-Commit or stash them first, or to discard anyway run these yourself:
-  git checkout <base-branch>
-  git branch -D <feature-branch>
-```
+Report "Keeping branch <name>. Worktree preserved at <path>." and leave the worktree.
 
 ### Step 6: Cleanup Worktree
 
-**For Option 1:** the merge sequence already removed the worktree before deleting the branch. Confirm nothing is left:
-```bash
-git worktree list | grep <feature-branch>   # must print nothing
-```
+**For Option 1:** confirm nothing is left (`references/merge-locally.md` § Confirm the cleanup).
 
-No force flag, ever — ab-using-git-worktrees, "Removing a Worktree", owns that rule. If git refused the removal, the branch still exists and the worktree is intact: report the dirty state and keep both (Option 3 behaviour).
+Leave out the force flag, because a forced removal deletes uncommitted work (the ab-using-git-worktrees skill's "Removing a Worktree" owns that rule). If git refuses, keep the branch and the worktree and report the dirty state (Option 3 behaviour).
 
-**For Options 2 and 3:** Keep worktree.
+**For Options 2 and 3:** keep the worktree. **Discard path:** its own Step 4 removes the worktree under the same rule.
 
-**Discard path:** its own step 4 removes the worktree under the same rule.
-
-## Quick Reference
-
-| Path | Merge | Push | Keep Worktree | Cleanup Branch |
-|------|-------|------|---------------|----------------|
-| 1. Merge locally | ✓ | - | - | ✓ |
-| 2. Create PR | - | ✓ | ✓ | - |
-| 3. Keep as-is | - | - | ✓ | - |
-| Discard (explicit request only) | - | - | - | ✓ (typed confirmation; never forced) |
-
-## Common Mistakes
-
-**Skipping test verification**
-- **Problem:** Merge broken code, create failing PR
-- **Fix:** Always verify tests before offering options
-
-**Skipping the plan audit**
-- **Problem:** Branch declared finished with planned work missing
-- **Fix:** Run Step 3 before the menu; NOT DONE or PARTIAL blocks merge and PR
-
-**Open-ended questions**
-- **Problem:** "What should I do next?" → ambiguous
-- **Fix:** Present exactly 3 structured options
-
-**Automatic worktree cleanup**
-- **Problem:** Remove worktree when might need it (Option 2, 3)
-- **Fix:** Only cleanup for Option 1 and the explicit discard path
-
-**Offering discard**
-- **Problem:** A menu slot invites an accidental "4"
-- **Fix:** Discard only on explicit request, after listing files, with typed "discard"
-
-**Forcing a refused removal**
-- **Problem:** Uncommitted work vanishes silently
-- **Fix:** Never pass the force flag; relay the command for the user to run
-
-## Red Flags
-
-**Never:**
-- Proceed with failing tests
-- Merge or open a PR while the audit shows NOT DONE or PARTIAL
-- Merge without verifying tests on result
-- Offer discard as a menu option
-- Delete work without typed confirmation
-- Force a worktree removal (relay the command instead)
-- Force-push without explicit request
-
-**Always:**
-- Verify tests before offering options
-- Run the plan audit before the menu; NO PLAN is a report, not a block
-- Present exactly 3 options
-- List untracked and modified files before asking for the typed discard confirmation
-- Clean up worktree for Option 1 and the discard path only
-
-## Integration
-
-**Called by:**
-- **ab-subagent-driven-development** (Progress File) - After all tasks complete; passes the plan path
-- **ab-executing-plans** (Step 5) - After all batches complete; passes the plan path
-
-**Pairs with:**
-- **ab-using-git-worktrees** - "Removing a Worktree" owns the never-force rule and the refusal branch that Step 6 and the discard path follow
-- **ab-pr-workflow** - Option 2 delegates PR creation and passes the audit table and unplanned-work list for its `## Plan audit` section
-- **code-reviewer** (agent) - Step 3 dispatches it read-only for the classification table
+Quick reference, common mistakes, red flags and callers: `references/summary.md`.

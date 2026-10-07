@@ -1,171 +1,48 @@
 ---
 name: ab-swarm-orchestration
-description: "Trigger this skill when coordinating multiple specialized agents on different aspects of the same problem — even if the user just wants a thorough review or analysis. Trigger when the user says 'swarm', 'parallel agents', 'dispatch agents', 'multi-agent review', 'get multiple perspectives', or 'thorough analysis'. Trigger for review swarms (multiple reviewers checking different quality dimensions), research swarms (multiple researchers investigating different aspects), analysis swarms, and audit swarms. Dispatches agents simultaneously and synthesizes their combined outputs into one result. Usually invoked internally by ab-review-swarm and ab-deep-research — not typically called directly by users. DO NOT TRIGGER when tasks modify shared state — use ab-wave-orchestration instead. DO NOT TRIGGER when only one perspective is needed — dispatch a single agent."
+description: "Starts several read-only specialist helpers at once on the same input, each on one dimension such as quality, security, performance or a research angle, then hands all their outputs to a synthesizer that merges them into one report. Use when a thorough review, research, analysis or audit needs several perspectives on one problem, or to compose a custom swarm such as a migration or architecture review. The standard review and research swarms run through ab-review-swarm and ab-deep-research, which carry their prompt files. Not for tasks that modify shared state (ab-wave-orchestration) or when one perspective is enough (start a single helper)."
 ---
 
 # Swarm Orchestration
 
-## Overview
+A swarm is a group of specialist helpers started at the same time, each looking at the same input from its own angle, whose outputs a synthesizer merges into one report. Many focused passes catch more than one broad scan, because each specialist looks only for its own class of problem. The run is done when every member has returned and the synthesized report is with the user or the calling skill. Unlike the ab-wave-orchestration skill, which orders dependent tasks, a swarm's members do not depend on each other and change no files.
 
-A swarm is a group of specialized agents dispatched simultaneously to analyze or work on different aspects of the same problem. Unlike ab-wave-orchestration (which handles task dependencies), ab-swarm-orchestration is for cases where multiple independent perspectives are needed on the same input.
+Use it for review swarms (reviewers on different quality dimensions), research swarms (researchers on different aspects), analysis swarms (different risk areas) and audit swarms (different compliance areas). Not when members would modify shared state (use the ab-wave-orchestration skill), when the tasks are sequential (use the ab-autonomous-loop skill), or when one perspective is enough (start a single helper). The swarm's shape is drawn in `references/swarm-guide.md` § Swarm Architecture.
 
-**Core principle:** Many focused eyes catch more than one broad scan.
+## Step 1: Select the members
 
-## When to Use
+Decide which perspectives the task needs and which specialists provide them, and check `blueprint.local.md` for project-specific overrides. Pre-built review, research and custom swarms, with the skill that carries each member's prompt file: `references/swarm-guide.md` § Pre-Built Swarm Configurations. Size the swarm by `references/swarm-guide.md` § Scaling Guidelines, and weigh its cost by `references/swarm-guide.md` § Cost Awareness: for a small change, one code reviewer is usually enough.
 
-- **Review swarms:** Multiple reviewers each checking different quality dimensions
-- **Research swarms:** Multiple researchers each investigating different aspects
-- **Analysis swarms:** Multiple analysts each evaluating different risk areas
-- **Audit swarms:** Multiple auditors each checking different compliance areas
+## Step 2: Prepare the shared context
 
-**Don't use when:**
-- Tasks modify shared state (use ab-wave-orchestration instead)
-- Tasks are sequential (use ab-autonomous-loop)
-- Only one perspective is needed (dispatch a single agent)
+Every member gets the same base context: the code, diff or files to analyze; the project's conventions and standards; its own focus area; and one output format for all, so the synthesizer can merge the results.
 
-## Swarm Architecture
+## Step 3: Start every member at once
 
-```
-Controller (you)
-    │
-    ├── Agent A (specialist focus)  ─┐
-    ├── Agent B (specialist focus)   ├── All run in parallel
-    ├── Agent C (specialist focus)   │
-    └── Agent D (specialist focus)  ─┘
-              │
-              ▼
-    Synthesizer Agent
-              │
-              ▼
-    Unified Output
-```
+Review and research specialists start through the skills that carry them. Start the members this skill runs itself all at once, since starting them one after another gives up the speed that is the point of a swarm. Members only read, and none starts helpers of its own.
 
-## Pre-Built Swarm Configurations
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-### Review Swarm
-
-Used by `ab-review-swarm`. Dispatches:
-- code-reviewer
-- security-sentinel
-- performance-oracle
-- code-simplicity-reviewer
-- convention-enforcer
-- test-coverage-reviewer
-
-Synthesized by: **findings-synthesizer**
-
-### Research Swarm
-
-Used by `ab-deep-research`. Dispatches:
-- learnings-researcher
-- framework-docs-researcher
-- best-practices-researcher
-- git-history-analyzer
-- codebase-context-mapper
-
-Synthesized by: **research-synthesizer**
-
-### Custom Swarms
-
-You can compose custom swarms for specific needs:
-
-**Migration Swarm:**
-- data-integrity-guardian (migration safety)
-- schema-drift-detector (unrelated schema changes)
-- performance-oracle (query performance impact)
-- deployment-verifier (deployment safety)
-
-**Architecture Swarm:**
-- architecture-strategist (pattern compliance)
-- code-simplicity-reviewer (complexity assessment)
-- performance-oracle (scalability)
-- integration-checker (wiring correctness)
-
-## Process
-
-### Step 1: Select Agents
-
-Choose agents based on the task:
-1. What perspectives are needed?
-2. Which agents provide those perspectives?
-3. Are there project-specific agent overrides in `blueprint.local.md`?
-
-### Step 2: Prepare Shared Context
-
-All agents in a swarm need the same base context:
-- The code/diff/files to analyze
-- Project conventions and standards
-- Specific focus area for each agent
-- Output format requirements (consistent across all agents for synthesis)
-
-### Step 3: Dispatch All Simultaneously
+Prompt: `references/agents/integration-checker.md` for the integration checker; for any other member, the task packet below, one per member. Inputs: the member's focus and the shared context from Step 2.
 
 ```
-// All in a single message for maximum parallelism
-Task("agent-A: [focus]. Context: [shared context]. Report findings as P1/P2/P3 with file:line locations.")
-Task("agent-B: [focus]. Context: [shared context]. Report findings as P1/P2/P3 with file:line locations.")
-Task("agent-C: [focus]. Context: [shared context]. Report findings as P1/P2/P3 with file:line locations.")
-Task("agent-D: [focus]. Context: [shared context]. Report findings as P1/P2/P3 with file:line locations.")
+[member]: [focus]. Context: [shared context]. Read only; start no helpers of your own. Report findings as P1/P2/P3 with file:line locations.
 ```
 
-**Critical:** Dispatch ALL in one message. Sequential dispatch negates the benefit.
+## Step 4: Collect results
 
-### Step 4: Collect Results
+Wait for every member to return before acting on any result: the synthesizer needs all the outputs, and a partial set skews its report.
 
-Wait for all agents to return. Do not act on partial results — the synthesizer needs all outputs.
+## Step 5: Synthesize
 
-### Step 5: Synthesize
+Hand every output to the synthesizer of the skill that carries it: for a review swarm, the ab-review-swarm skill's findings-synthesizer; for a research swarm, the ab-deep-research skill's research-synthesizer. It removes duplicates, resolves contradictions and produces one report. Raw outputs from several members repeat each other and bury the findings that matter, so a swarm always ends in a synthesis.
 
-Dispatch the appropriate synthesizer agent with ALL outputs:
-- For review swarms → **findings-synthesizer**
-- For research swarms → **research-synthesizer**
+## Step 6: Act on the results
 
-The synthesizer de-duplicates, resolves contradictions, and produces one unified report.
+Present the synthesized report and offer the next step.
 
-### Step 6: Act on Results
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-Present the synthesized report and offer next steps:
-- For review findings: offer to fix via ab-resolve-in-parallel
-- For research findings: offer to proceed to `ab-writing-plans`
+Options: for review findings, fix them with the ab-resolve-in-parallel skill; for research findings, go on to the ab-writing-plans skill; or stop here. Default when nobody answers: stop and return the report for the calling skill or the user to act on.
 
-## Scaling Guidelines
-
-| Swarm Size | Recommendation |
-|-----------|----------------|
-| 2-3 agents | Always fine. Low overhead. |
-| 4-6 agents | Sweet spot. Good coverage without excessive token cost. |
-| 7-10 agents | Use when comprehensive coverage needed (full review swarm). |
-| 10+ agents | Diminishing returns. Split into focused sub-swarms. |
-
-## Cost Awareness
-
-Each agent in a swarm gets its own 200K context window. A 6-agent review swarm uses ~6x the tokens of a single reviewer. The trade-off is:
-- **Breadth:** 6 specialists catch issues a generalist misses
-- **Speed:** Parallel execution is faster than 6 sequential reviews
-- **Cost:** 6x token usage
-
-For small changes (< 50 lines), a single code-reviewer is usually sufficient. Reserve full swarms for significant changes (new features, refactors, pre-release).
-
-## Common Mistakes
-
-**Sequential dispatch** — Dispatching agents one at a time defeats the purpose. Use a single message with all Task() calls.
-
-**Missing synthesizer** — Raw outputs from 6 agents are noisy and duplicative. Always synthesize.
-
-**Wrong swarm for the job** — If agents need to build on each other's work, use ab-wave-orchestration, not a swarm. If they need to discuss and coordinate in real time, use Agent Teams (`ab-team-execution`).
-
-**No shared output format** — If each agent reports in a different format, synthesis is much harder. Specify the format in the dispatch prompt.
-
-## Swarms vs Agent Teams
-
-Swarms and Agent Teams serve different purposes and complement each other:
-
-| Aspect | Swarms | Agent Teams |
-|--------|--------|-------------|
-| **Communication** | One-way (report to controller) | Multi-directional (teammates message each other) |
-| **Best for** | Parallel analysis (review, research) | Collaborative implementation |
-| **File access** | Read-only (analysis agents) | Read-write (each teammate owns files) |
-| **Coordination** | Synthesizer merges outputs | Shared task list + messaging |
-| **When to use** | Multiple perspectives on same code | Complex multi-file implementation |
-
-**Typical workflow:** `ab-deep-research` (swarm) → `ab-writing-plans` → `ab-team-execution` (agent teams) → `ab-review-swarm` (swarm)
+Common mistakes: `references/swarm-guide.md` § Common Mistakes. How swarms differ from team work in the ab-orchestrate skill: `references/swarm-guide.md` § Swarms vs Team Work.

@@ -1,19 +1,17 @@
 ---
 name: ab-session-continuity
-description: "Trigger this skill when pausing, resuming, or handing off work between sessions. Manages persistent state tracking via docs/context/STATE.md to ensure no context is lost across session boundaries. Trigger when session state needs to be written or updated — wave progress, task completion status, blockers, or execution phase changes. Usually invoked internally by ab-pause-checkpoint and ab-session-wrap, not directly by users. Trigger even when the user doesn't mention STATE.md explicitly — any session transition (pause, resume, wrap, handoff) needs state tracking. DO NOT TRIGGER as the primary user-facing command for pausing — use ab-pause-checkpoint instead. DO NOT TRIGGER as the primary user-facing command for ending sessions — use ab-session-wrap instead. This skill is the internal state persistence engine that those user-facing skills delegate to."
+description: "Keeps docs/context/STATE.md, the execution-state file, current across session boundaries (plan and phase, wave and task progress, blockers, decisions to honor, next steps, a HEAD stamp) and refreshes the one-line summary in the Session Continuity section of docs/context/STATUS.md, so a later session or another tool resumes exactly where work stopped. Mostly run by ab-pause-checkpoint, ab-session-wrap and wave execution rather than by the user. Use when execution state must be written or read: starting or finishing a plan task or wave, hitting a blocker, pausing, handing off or resuming. Not the user-facing pause (ab-pause-checkpoint) or end-of-session wrap (ab-session-wrap)."
 ---
 
 # Session Continuity
 
-## Overview
+Manage state across session boundaries so work can be paused and resumed without losing context. This skill adds structured execution state to the ab-pause-checkpoint and ab-resume-session skills.
 
-Manage state across session boundaries so work can be paused and resumed without losing context. This skill extends the existing `ab-pause-checkpoint` and `ab-resume-session` skills with structured state tracking.
-
-**Core principle:** Every session should be resumable. If you can't resume cleanly from a state file, the state file is incomplete.
+Every session should be resumable: if the next session can't resume cleanly from the state file, the state file is incomplete.
 
 ## State File: docs/context/STATE.md
 
-The central state tracking file. Updated automatically by `ab-pause-checkpoint`, `ab-session-wrap`, and ab-wave-orchestration.
+The central execution-state file, updated by the ab-pause-checkpoint and ab-session-wrap skills.
 
 ### State File Format
 
@@ -50,7 +48,7 @@ status: [active | paused | blocked | complete]
 - [x] Task 1: [description] — commit [sha]
 - [x] Task 2: [description] — commit [sha]
 - [ ] Task 3: [description] — IN PROGRESS
-- Progress file: .claude/plans/<plan-basename>.progress.local.md — [when one exists: its ticks are the per-task resume point; an interrupted run leaves it in place]
+- Progress file: .agent-blueprint/plans/<plan-basename>.progress.md — [when one exists: its ticks are the per-task resume point; an interrupted run leaves it in place]
 
 ## Context Needed to Resume
 - [Key decision that was made and must be honored]
@@ -74,47 +72,56 @@ status: [active | paused | blocked | complete]
 | Completing a task in a plan | Update progress and completed tasks list |
 | Completing a wave | Update wave progress table |
 | Hitting a blocker | Add to blockers section |
-| `ab-pause-checkpoint` | Full state dump including uncommitted changes |
-| `ab-session-wrap` | Final state update before session end |
-| `ab-resume-session` | Read STATE.md to reload context |
+| ab-pause-checkpoint | Full state dump including uncommitted changes |
+| ab-session-wrap | Final update and HEAD stamp, only when STATE.md already exists |
+| ab-resume-session | Read STATE.md to reload context |
+
+**Tracking tasks.** The plan file's checkboxes are the record of progress: tick each one when its task is done and verified, so another session or another tool can continue from there. A host task list, if you have one, may mirror them, but it never replaces them.
+
+STATE.md summarizes that progress for the handoff; it does not replace the plan's boxes or its progress file. When they disagree, trust the boxes and correct STATE.md from them.
 
 ## Process: Pausing Work
 
-When the user runs `ab-pause-checkpoint` or you need to save state:
+When the ab-pause-checkpoint skill runs, or you need to save state:
 
 1. **Capture git state:**
    ```bash
    git branch --show-current
+   git rev-parse HEAD
    git status --short
    git log --oneline -5
    git stash list
    ```
 
-2. **Update STATE.md** with current progress, decisions, and next steps
+2. **Update STATE.md** with current progress, decisions and next steps, and stamp `last-updated:` and `head:` (the sha from `git rev-parse HEAD`) in its frontmatter, the stamp the ab-resume-session skill checks for freshness.
 
-3. **Update Session Continuity** in CLAUDE.md with a one-line summary
+3. **Refresh Session Continuity** in `docs/context/STATUS.md` with a one-line summary.
 
-4. **Confirm to user:** "State saved. Resume with `ab-resume-session` in a new session."
+4. **Confirm to the user:** "State saved. Resume with ab-resume-session in a new session."
 
 ## Process: Resuming Work
 
-When the user runs `ab-resume-session`:
+When the ab-resume-session skill runs:
 
-1. **Read STATE.md** — full state including wave progress, blockers, next steps
-2. **Read CLAUDE.md Session Continuity** — summary and "start here" instruction
-3. **Check git state** — branch, uncommitted changes, stashes
-4. **Verify plan file** — is it still current? Any tasks completed outside this session?
-5. **Present orientation** — summary of where things stand and what's next
-6. **Ask:** "Ready to continue from [next step]?"
+1. **Read STATE.md**: full state including wave progress, blockers, next steps.
+2. **Read the Session Continuity section of `docs/context/STATUS.md`**: summary and "start here" instruction.
+3. **Check git state**: branch, uncommitted changes, stashes.
+4. **Verify the plan file**: is it still current? Were any tasks completed outside this session?
+5. **Present orientation**: a summary of where things stand and what's next.
+6. **Ask** whether to continue from the next step.
+
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
+
+Options: 1. Continue from [next step]. 2. Work on something else. Default when nobody answers: continue from the first of STATE.md's Next Steps, or from the "Start here" step in STATUS.md when it lists none; if neither names a step, stop after the orientation.
 
 ## Process: Handing Off Between Sessions
 
 When context is getting large or the session is ending:
 
-1. Run full state dump to STATE.md
-2. Note which subagents are pending (if any)
-3. Record any in-flight decisions that aren't committed yet
-4. Update the Session Continuity section in CLAUDE.md
+1. Run a full state dump to STATE.md.
+2. Note which helpers are still pending, if any.
+3. Record any in-flight decisions that aren't committed yet.
+4. Refresh the Session Continuity section in `docs/context/STATUS.md`.
 
 The next session reads STATE.md and picks up exactly where work stopped.
 
@@ -127,10 +134,10 @@ During wave-orchestrated execution:
 
 ## Common Mistakes
 
-**Not updating on pause** — If you pause without updating STATE.md, the next session starts blind.
+**Not updating on pause.** Pausing without updating STATE.md leaves the next session starting blind.
 
-**Over-documenting state** — STATE.md is a resume point, not a diary. Key decisions + progress + next steps. That's it.
+**Over-documenting state.** STATE.md is a resume point, not a diary: key decisions, progress and next steps, nothing more.
 
-**Forgetting uncommitted changes** — Always run `git status` and record uncommitted changes. They're the most fragile state.
+**Forgetting uncommitted changes.** Run `git status` and record what it shows, because uncommitted changes are the most fragile state.
 
-**Not recording decisions** — A decision made in session 1 but not recorded will be re-debated in session 2. Write it down.
+**Not recording decisions.** A decision made in session 1 but not recorded will be re-debated in session 2, so write it under Context Needed to Resume.

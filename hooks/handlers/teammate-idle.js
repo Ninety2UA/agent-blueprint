@@ -9,16 +9,21 @@
  *   0 — Allow teammate to go idle (all checks pass)
  *   2 — Send feedback and keep teammate working (issues found)
  *
- * To enable: Add to your Claude Code settings.json under hooks.TeammateIdle
+ * Part of ab-orchestrate's Claude Code Agent Teams extra; registered in hooks.json.
  */
 
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-// Guard: only run during active /ab-team-execution sessions
-const stateFile = path.join(process.cwd(), '.claude', 'team-active.local.md');
-if (!fs.existsSync(stateFile)) {
+// Guard: only act while ab-orchestrate runs the Agent Teams extra, which writes
+// "active: true" to this file at the start and "active: false" at the end.
+const stateFile = path.join(process.cwd(), '.agent-blueprint', 'team', 'active.md');
+let teamActive = false;
+try {
+  teamActive = /^active:\s*true\s*$/m.test(fs.readFileSync(stateFile, 'utf-8'));
+} catch (e) { /* no marker: no active team */ }
+if (!teamActive) {
   process.exit(0); // No active team — allow idle silently
 }
 
@@ -32,11 +37,7 @@ function run(cmd, args) {
 
 const issues = [];
 
-// Check for modified files with uncommitted changes
-const status = run('git', ['status', '--porcelain']);
-if (status) {
-  issues.push('Uncommitted changes detected. Commit your work before going idle.');
-}
+// Teammates leave their changes uncommitted: the lead commits each task (team-ledger.md).
 
 // Check if tests pass for the project
 const testInfo = detectTestCommand();

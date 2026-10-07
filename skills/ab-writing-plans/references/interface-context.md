@@ -1,6 +1,6 @@
 # ab-writing-plans — interface context for parallel executors
 
-Loaded on demand from `SKILL.md` when a plan will run in waves (`ab-orchestrate`, `ab-team-execution`); nothing here is needed for a sequential plan.
+Loaded on demand from `SKILL.md` when a plan will run in waves (`ab-orchestrate`); nothing here is needed for a sequential plan.
 
 When creating plans that will run in parallel (wave execution via `ab-orchestrate`), embed key types/interfaces/exports from the codebase directly in the plan. This prevents executors from wasting context exploring the codebase to discover contracts.
 
@@ -10,7 +10,8 @@ After determining which files the task touches, extract the key interfaces from 
 
 ````markdown
 ### Interface Context
-<!-- Extracted from codebase — executor should use directly, no exploration needed -->
+
+Extracted from the codebase: use these directly, no exploration needed.
 
 From `src/types/user.ts`:
 ```typescript

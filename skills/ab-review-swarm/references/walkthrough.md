@@ -1,8 +1,8 @@
 # Per-Finding Walkthrough Mode
 
-**Load this reference when** the synthesizer returns >5 actionable findings (gated_auto + manual + advisory) and the user wants per-item judgment rather than bulk action.
+Loaded on demand from SKILL.md when the synthesizer returns more than 5 actionable findings (gated_auto + manual + advisory) and the user wants per-item judgment rather than bulk action.
 
-Walkthrough is a **decision loop, not a pair-programming surface**. The user picks one of four preset actions per finding; freeform fix authoring belongs outside the flow.
+Walkthrough is a **decision loop, not a pair-programming surface**. The user picks one of three preset actions per finding, or hands the rest over to auto-resolve; freeform fix authoring belongs outside the flow.
 
 ## When to use vs. bulk action
 
@@ -19,14 +19,14 @@ Mixing the two — a numbered list with per-row options — looks dense and effi
 The walkthrough receives, from the synthesizer:
 
 - The merged findings list in severity order (P1 → P2 → P3), filtered to gated_auto and manual findings that survived the synthesis confidence gate. Advisory findings are included when surfaced for acknowledgment.
-- The recommended_action per finding (already normalized by the synthesizer's tie-break — see `findings-synthesizer.md` Step 2.8).
-- The run_id for artifact lookups at `.claude/review-runs/{run_id}/{reviewer}.json`.
+- The recommended_action per finding (already normalized by the synthesizer's tie-break — see `references/agents/findings-synthesizer.md` Step 2.8).
+- The run_id for artifact lookups at `.agent-blueprint/review-runs/{run_id}/{reviewer}.json`.
 
 Each finding's recommended action has been pre-computed by synthesis. The walkthrough surfaces it but does not recompute.
 
 ## Per-finding presentation
 
-Each finding presents in two parts: a **terminal output block** (markdown) and a **question** via `AskUserQuestion`. **Never merge them** — the terminal block carries the explanation; the question carries the decision.
+Each finding presents in two parts: a **terminal output block** (markdown) and a **question**. Keep them apart: the terminal block carries the explanation and the question carries the decision, and a question stuffed with explanation is hard to answer.
 
 ### Terminal output block (print before firing the question)
 
@@ -61,10 +61,10 @@ The walkthrough renders intent, not syntax. The fixer subagent owns the exact co
   - ✅ `` Replace `==` with `===` on line 42. ``
   - ✅ `Extract the request-building logic into a helper and call it from both sites.`
   - ❌ `` Add `if (!response.ok) throw new Error(`HTTP ${response.status}`);` after the `await fetch(...)` call. `` — multiple code spans, full statement quoted; renders broken.
-- **Code-span budget: at most 2 inline backtick spans per sentence**, each a single identifier, operator, or short phrase. Never embed full statements, template literals, or code requiring nested backticks.
-- **Always leave a space before and after every backtick span.** Without it, the terminal's markdown renderer eats the delimiters.
+- **Code-span budget: at most 2 inline backtick spans per sentence**, each a single identifier, operator, or short phrase. Full statements, template literals and code needing nested backticks render broken, so leave them out.
+- **Leave a space before and after every backtick span.** Without it, the terminal's markdown renderer eats the delimiters.
 - **Raw code block — only for short (≤5 line) genuinely additive new code** where no before-state exists.
-- **Summary + artifact pointer** — when prose can't capture the fix: one-sentence transformation + key symbol/location + `Full fix: .claude/review-runs/{run_id}/{reviewer}.json → findings[].suggested_fix`.
+- **Summary + artifact pointer** — when prose can't capture the fix: one-sentence transformation + key symbol/location + `Full fix: .agent-blueprint/review-runs/{run_id}/{reviewer}.json → findings[].suggested_fix`.
 - **No diff blocks.** Modifications to existing code render as prose.
 
 ### Conflict context line
@@ -79,7 +79,13 @@ The agent's recommendation — the post-tie-break value — is what the menu mar
 
 ### Question stem (short, decision-focused)
 
-After the terminal block renders, fire the `AskUserQuestion` tool with a compact two-line stem:
+After the terminal block renders, ask the question.
+
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
+
+Default when nobody answers: Skip this finding and every one still undecided, with the reason "no answer", so nothing is changed or filed without a decision.
+
+Use a compact two-line stem:
 
 ```
 Finding {N} of {M} — {severity} {short handle}.
@@ -91,27 +97,28 @@ Examples:
 - `Skip the fix since the fixture is being deleted?`
 - `Defer and file an issue?`
 
-Never enumerate alternatives in the stem. One recommendation as a yes/no — the option list carries the alternatives.
+Keep alternatives out of the stem: it frames one recommendation as a yes/no, and the option list carries the alternatives.
 
-### Options (four, fixed order — never reorder)
+### Options (three, fixed order)
 
 ```
 1. Apply the proposed fix
 2. Defer — file an issue
 3. Skip — don't apply, don't track
-4. Auto-resolve with best judgment on the rest
 ```
 
-**Mark the post-tie-break recommendation with `(recommended)`** on its option label. Required, not optional. Any of the four can carry it.
+Keep the order the same on every finding, so the user can answer by position without rereading. **Mark the post-tie-break recommendation with `(recommended)`** on its option label, on every finding, so the user always sees the synthesis's pick.
+
+**Auto-resolve with best judgment on the rest** is the fourth action. It is not a menu slot, because question tools offer at most three options: accept it as a typed answer (the question tool's free-text answer, or a plain-text reply such as "auto-resolve the rest"), and name it once, as a third line of the first finding's stem.
 
 ### Adaptations
 
 | Condition | Adaptation |
 |-----------|-----------|
-| **No `suggested_fix`** (manual finding without proposed fix) | Option A (Apply) is **omitted**. Synthesis already maps these to Defer recommendation. Menu shows Defer / Skip / Auto-resolve. |
-| **Advisory-only finding** | Option A becomes `Acknowledge — mark as reviewed`. Other three options remain. |
-| **N=1 (exactly one pending finding)** | Heading omits position counter. Option D (Auto-resolve) is suppressed. Menu shows Apply / Defer / Skip (or Acknowledge). |
-| **No tracker sink available** | Option B (Defer) is omitted. Stem appends one line explaining no tracker is configured. Menu shows Apply / Skip / Auto-resolve. |
+| **No `suggested_fix`** (manual finding without proposed fix) | Option 1 (Apply) is **omitted**. Synthesis already maps these to Defer recommendation. Menu shows Defer / Skip; Auto-resolve stays a typed answer. |
+| **Advisory-only finding** | Option 1 becomes `Acknowledge — mark as reviewed`. The other two options remain. |
+| **N=1 (exactly one pending finding)** | Heading omits position counter. Auto-resolve is not offered. Menu shows Apply / Defer / Skip (or Acknowledge). |
+| **No tracker sink available** | Option 2 (Defer) is omitted. Stem appends one line explaining no tracker is configured. Menu shows Apply / Skip; Auto-resolve stays a typed answer. |
 | **Combined N=1 + no sink** | Two options: Apply / Skip (or Acknowledge / Skip). |
 
 ### Confirmation between findings
@@ -152,7 +159,7 @@ Nothing is written to disk per-decision. An interrupted walkthrough (user cancel
 
 When the loop runs to completion (every finding answered):
 
-1. **Apply set:** spawn one fixer (the existing ab-iterative-refinement skill or a dedicated fixer subagent) for the full accumulated Apply set. The fixer receives the set as its input queue and applies all changes in one pass against the current working tree.
+1. **Apply set:** hand the full accumulated Apply set to one fixer (the ab-iterative-refinement skill, or a dedicated fixer helper where the host can start one). The fixer receives the set as its input queue and applies all changes in one pass against the current working tree.
 2. **Defer set:** already executed inline during walkthrough. Nothing to dispatch.
 3. **Skip / Acknowledge:** no-op.
 

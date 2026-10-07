@@ -179,7 +179,7 @@ if [[ -z "$FEATURE" ]]; then
   echo ""
   echo "  ${DIM}Flags:${NC}"
   echo "    --max N              Max outer loop iterations ${DIM}(default: 10)${NC}"
-  echo "    --swarm              Use parallel team execution"
+  echo "    --swarm              Run review and browser testing in parallel"
   echo "    --iterations N       Max review-improve iterations"
   echo "    --convergence MODE   ${DIM}fast${NC} | ${DIM}deep${NC} | ${DIM}perfect${NC}"
   echo ""
@@ -205,8 +205,8 @@ fi
 # ──────────────────────────────────────────────
 # Progress tracking
 # ──────────────────────────────────────────────
-PROGRESS_FILE=".claude/ship-progress.local.md"
-LOG_DIR=".claude/ship-logs"
+PROGRESS_FILE=".agent-blueprint/run/ship-progress.md"
+LOG_DIR=".agent-blueprint/run/logs"
 mkdir -p "$LOG_DIR"
 
 if [[ ! -f "$PROGRESS_FILE" ]]; then

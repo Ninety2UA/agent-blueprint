@@ -1,212 +1,68 @@
 ---
 name: ab-executing-plans
-description: "Trigger this skill when executing a written plan sequentially with human review checkpoints between batches. Trigger scenarios: 'execute the plan', 'implement the plan', 'work through the tasks', 'follow this plan', 'run through the plan step by step', 'execute sequentially', or when the user has a plan file and wants controlled, checkpoint-based execution with human review between batches. Even if the user doesn't explicitly mention checkpoints, trigger this skill when they want sequential plan execution with oversight rather than autonomous or parallel approaches. DO NOT TRIGGER when tasks can run in parallel and speed matters — use ab-orchestrate instead. DO NOT TRIGGER when spawning collaborative teammates with shared task lists — use ab-team-execution instead. DO NOT TRIGGER for fully autonomous execution without human checkpoints — use ab-autonomous-loop instead."
+description: "Executes a written plan in this session in batches of three tasks: each task is followed step by step, verified, committed and ticked in a progress file; each batch ends with a report and a checkpoint for the user's feedback; a whole-branch review closes the run. Reads plans that use v3 skill names. Use when the user wants to work through a plan with human review between batches. Not for parallel or team work (ab-orchestrate) or fully autonomous runs (ab-autonomous-loop)."
+metadata:
+  version: "3.8.0"
 ---
 
 # Executing Plans
 
-## Overview
+Execute a written plan in batches, with the user reviewing between them, since small batches keep rework small. The run is done when every task is committed and ticked, the whole-branch review is clean, and the ab-finishing-a-development-branch skill has the branch.
 
-Load plan, review critically, execute tasks in batches, report for review between batches.
+Announce at start: "I'm using the ab-executing-plans skill to implement this plan." Hand off instead for team work (ab-orchestrate), runs with no reviewer (ab-autonomous-loop, ab-ship-pipeline), no plan yet (ab-writing-plans), or one trivial change (ab-quick-fix).
 
-**Core principle:** Batch execution with checkpoints for architect review.
+## Step 1: Load and review the plan
 
-**Announce at start:** "I'm using the ab-executing-plans skill to implement this plan."
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-## When NOT to Use
+**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. Before that, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
-- **Tasks can run in parallel and speed matters** — use `ab-orchestrate` for wave-based parallelism.
-- **Spawning collaborative teammates with shared task list** — use `ab-team-execution`.
-- **Fully autonomous, no checkpoints** — use `ab-autonomous-loop` or `ab-ship-pipeline`.
-- **No written plan exists** — write one with `ab-writing-plans` first.
-- **One task only, change is trivial** — execute directly with `ab-quick-fix`.
+Read the plan and review it critically; raise concerns before starting (§ When to stop and ask). A skill named by its v3 name, with or without a leading slash (such as `executing-plans` or `writing-plans`), is the v4 skill in the second column of `references/v4-skill-names.tsv`.
 
-## The Process
+For three or more new files, map existing patterns first so new code follows the codebase's structure; read the map before each task.
 
-### Step 1: Load and Review Plan
-1. Read plan file
-2. Review critically - identify any questions or concerns about the plan
-3. If concerns: Raise them with your human partner before starting
-4. **Pattern mapping (optional but recommended for plans with 3+ new files):** dispatch the `pattern-mapper` agent to produce `.claude/plans/PATTERNS.md` mapping each new file to existing analogs with line-numbered excerpts. Read PATTERNS.md before each task — it grounds new code in existing conventions and prevents structural drift.
-5. If no concerns: create the progress file (below) and proceed
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-**Progress file — `.claude/plans/<plan-basename>.progress.local.md`** (`<plan-basename>` is the plan's filename without `.md`):
+Prompt: `references/agents/pattern-mapper.md`. Inputs: the plan path, the codebase root, and the output path `.agent-blueprint/plans/PATTERNS.md`.
 
-- First line names the plan; one checkbox per task.
-- If the file already exists, reuse it and its ticks instead of recreating it.
-- At creation, run `git check-ignore -q` on it; if that fails, append `.claude/plans/*.progress.local.md` to the file named by `git rev-parse --git-path info/exclude`.
-- Delete it when the run's final review is clean — Step 5, before invoking ab-finishing-a-development-branch.
-- An interrupted run leaves it in place; the STATE.md handoff (ab-session-continuity) points at it.
-- The session's native task list is the alternative only when the model offers one: Claude Code exposes its native task-list tools only on Claude 3.x, Opus 4.0–4.7, Sonnet 4.0–4.6 and Haiku 4.5 (CLI 2.1.233; verified on 2.1.268); `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` restores them elsewhere.
+**Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
-```bash
-plan=docs/plans/<plan-basename>.md
-progress=".claude/plans/$(basename "$plan" .md).progress.local.md"
-mkdir -p .claude/plans
-if [ ! -f "$progress" ]; then   # an existing file keeps its ticks
-  printf '# Progress: %s\n\n' "$plan" > "$progress"
-  # then append one "- [ ] Task N: <title>" line per task in the plan
-fi
-git check-ignore -q "$progress" || {   # projects scaffolded before v3.6.0 lack the ignore rule
-  if exclude="$(git rev-parse --git-path info/exclude 2>/dev/null)" && [ -n "$exclude" ]; then
-    mkdir -p "$(dirname "$exclude")"
-    echo '.claude/plans/*.progress.local.md' >> "$exclude"
-  else
-    echo "warning: not a git repository - add .claude/plans/*.progress.local.md to your ignore rules yourself" >&2
-  fi
-}
-```
+**Tracking tasks.** The plan file's checkboxes are the record of progress: tick each one when its task is done and verified, so another session or another tool can continue from there. A host task list, if you have one, may mirror them, but it never replaces them.
 
-### Step 2: Execute Batch
-**Default: First 3 tasks**
+Here they live in `.agent-blueprint/plans/<plan-basename>.progress.md`, one box per task (`references/progress-file.md`); tick the plan's own boxes too if it has them. An existing file keeps its ticks; an interrupted run leaves it for the STATE.md handoff (ab-session-continuity).
 
-For each task:
-1. Start at the first unticked box in the progress file
-2. Follow each step exactly (plan has bite-sized steps)
-3. Run verifications as specified
-4. Tick the box (`- [ ]` → `- [x]`)
+## Step 2: Execute a batch
 
-**Framework-specific code:** if a task touches a framework or library API (forms, routing, data fetching, hooks, ORM queries, framework config), invoke the `ab-source-driven-development` skill — detect the version, fetch the relevant docs page, follow the documented pattern, and cite the URL. The `sdd-cache` hook revalidates each WebFetch via HTTP `If-None-Match`, so repeat fetches are cheap and citations stay fresh.
+A batch is the next three tasks. Work in an isolated workspace (ab-using-git-worktrees); on main or master, branch first unless the user said to work there. For each task, from the first unticked box: follow its steps exactly, run its verifications, commit, tick the box (`- [ ]` → `- [x]`), and record interpretive choices (`references/assumption-tracking.md`).
 
-### Step 3: Report
-When batch complete:
-- Show what was implemented
-- Show verification output
-- Say: "Ready for feedback."
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
 
-### Step 4: Continue
-Based on feedback:
-- Apply changes if needed
-- Execute next batch
-- Repeat until complete
+A task that touches a framework or library API (forms, routing, data fetching, hooks, ORM queries, config) uses the ab-source-driven-development skill: detect the version, fetch the docs page, follow its pattern, cite the URL.
 
-### Step 5: Complete Development
+## Step 3: Report
 
-After all tasks complete and verified:
-- **Final whole-branch review:** run ab-requesting-code-review once over the whole branch (base `git merge-base origin/main HEAD`, head `HEAD`), with the plan as the requirements and its Review Focus list as the reviewer's checklist. Use ab-review-swarm instead when the branch touches auth, money, data, or a public contract. Fix Critical and Important findings and review again; the review is clean when it returns none.
-- Delete the progress file (`.claude/plans/<plan-basename>.progress.local.md`) — every box is ticked and the final review is clean, so nothing is left to resume
-- Announce: "I'm using the ab-finishing-a-development-branch skill to complete this work."
-- **REQUIRED SUB-SKILL:** Use ab-finishing-a-development-branch, passing the plan path (`docs/plans/<plan-basename>.md`) so its plan audit reads this plan
-- Follow that skill to verify tests, present options, execute choice
+Scan the batch for stubs (`references/batch-report.md`). Show what was implemented and the verification output, with any Deferred Issues, Known Stubs and new Assumptions; say "Ready for feedback." and wait (§ When to stop and ask).
+
+## Step 4: Continue
+
+Apply the feedback and run the next batch until every box is ticked. Return to Step 1 when the user changes the plan or the approach needs rethinking.
+
+## Step 5: Complete development
+
+1. Run the ab-requesting-code-review skill once over the whole branch (base `git merge-base origin/main HEAD`, head `HEAD`; in no-commit mode, the working tree), with the plan as requirements and its Review Focus list as checklist (the ab-review-swarm skill instead for auth, money, data or a public contract). Fix Critical and Important findings until a review returns none.
+2. Delete the progress file; nothing is left to resume.
+3. Announce "I'm using the ab-finishing-a-development-branch skill to complete this work." and follow it, passing the plan path (`docs/plans/<plan-basename>.md`) for its plan audit.
 
 ## Decision Boundary
 
-One rule settles decide-versus-stop; it refines CLAUDE.md's "when in doubt, ask" rule rather than replacing it. Check CLAUDE.md's must-ask categories first: a decision inside one stops for a human wherever the running pipeline's contract allows stopping (this skill and ab-build-pipeline ask; ab-autonomous-loop stops with its structured escalation; ab-ship-pipeline, whose contract cannot stop, decides conservatively and locks the decision in `docs/context/DECISIONS.md`). Outside them, when you can both detect it and roll it back — name the rollback action — decide, record the choice under `### Assumptions` (see Assumption Tracking) plus a `BACKLOG.md` line when it defers work, and continue. Otherwise the posture decides: an interactive session asks in one sentence with two or three options; an autonomous session takes the conservative option and records it the same way; a subagent returns `NEEDS_INPUT` with the options, and team-lead routes that return instead of retrying with a narrower scope. A claim that something is impossible, blocked, or needs a credential requires evidence — a verbatim error, a documentation citation, or a live probe.
+A decision in a must-ask category of the project instructions (new tables or schema changes, a framework switch, a public API contract, auth logic, new environment variables) stops here for the user. Outside those, a choice you can detect and roll back is decided, recorded under `### Assumptions` and continued; the rest is asked. Claims that something is impossible or blocked need evidence. The full rule, which other skills cite, and examples: `references/decision-boundary.md`.
 
-Examples: a migration is a must-ask category, so every posture stops (ab-ship-pipeline alone decides conservatively and records, because it cannot stop). A helper's default value is detectable with a grep and revertible with one edit, so it is decided, recorded, and continued.
+Fix what the current task caused or needs; everything else goes to `BACKLOG.md`. After three failed fixes on one issue, list it under `### Deferred Issues` in the batch report and move on (`references/deviations.md`).
 
-## Deviation Scope Boundary
+## When to stop and ask
 
-When executing, you will discover issues not in the plan. Apply these rules:
+Stop at a blocker (a missing dependency, a failing test, an unclear instruction), a gap that keeps the plan from starting, repeated verification failures, or a must-ask decision; a guess builds what nobody asked for. After five read-only steps in a row, act (`references/staying-on-course.md`).
 
-**Auto-fix (no permission needed):**
-- Bugs directly caused by the current task's changes (wrong logic, type errors, broken imports)
-- Missing critical functionality for correctness/security (null checks, input validation, error handling)
-- Blocking issues preventing task completion (missing dependency, wrong path)
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-**Scope boundary:** Only fix issues DIRECTLY caused by the current task's changes. Pre-existing warnings, linting errors in unrelated files, or tech debt you notice → add to BACKLOG.md, don't fix inline.
-
-**Fix attempt limit:** After 3 auto-fix attempts on a single issue within a task, STOP trying. Document it under `### Deferred Issues` in the batch report and move to the next task. Don't burn context retrying what isn't working.
-
-**Must ask the user FIRST:**
-- New database tables or major schema changes
-- Switching frameworks or libraries
-- Changing public API contracts
-- Modifying auth logic
-- Adding new environment variables
-
-## Stub Tracking
-
-After completing each batch, scan created/modified files for stub patterns before reporting:
-
-- Hardcoded empty values flowing to rendering: `= []`, `= {}`, `= null`, `= ""`
-- Placeholder text: "not available", "coming soon", "placeholder", "TODO", "FIXME"
-- Components with no data source wired (props always receiving empty/mock data)
-
-If stubs are found, include a `### Known Stubs` section in the batch report:
-
-```markdown
-### Known Stubs
-- `src/components/Dashboard.tsx:45` — `items = []` hardcoded, API not wired yet (Task 5 will resolve)
-- `src/api/users.ts:23` — `// TODO: add pagination` (out of scope for this plan, added to BACKLOG)
-```
-
-Don't mark a batch as fully complete if stubs prevent the planned feature from working end-to-end. Either wire the data or document which future task resolves it.
-
-## When to Stop and Ask for Help
-
-**STOP executing immediately when:**
-- Hit a blocker mid-batch (missing dependency, test fails, instruction unclear)
-- Plan has critical gaps preventing starting
-- You don't understand an instruction
-- Verification fails repeatedly
-- 3 auto-fix attempts on the same issue haven't resolved it (see Deviation Scope Boundary)
-
-**Ask for clarification rather than guessing.**
-
-## When to Revisit Earlier Steps
-
-**Return to Review (Step 1) when:**
-- Partner updates the plan based on your feedback
-- Fundamental approach needs rethinking
-
-**Don't force through blockers** - stop and ask.
-
-## Analysis Paralysis Guard
-
-**If you make 5+ consecutive read-only operations (Read, Glob, Grep) without any Edit, Write, or Bash action that modifies state, STOP.**
-
-You are in analysis paralysis. Do one of:
-1. **Write code** — you have enough information, start implementing
-2. **Report a blocker** — explain what's preventing you from writing code
-3. **Ask for help** — if the plan is unclear, ask rather than endlessly reading
-
-Reading code is preparation. Writing code is progress. Don't confuse the two.
-
-## Assumption Tracking
-
-During execution, you will make interpretive decisions — the spec says "handle errors" and you choose to return 400 with a JSON body; the plan says "add validation" and you choose specific validation rules. These decisions are invisible unless documented.
-
-**After each task**, if you made any interpretive choices, append them to the plan file under an `### Assumptions` heading:
-
-```markdown
-### Assumptions
-- Task 3: "Handle errors" interpreted as returning 400 with `{ error: string }` JSON body (not HTML error pages)
-- Task 3: Rate limiting set to 100 req/min per IP (common default, not specified in plan)
-- Task 5: "Support pagination" interpreted as cursor-based, not offset-based (better for large datasets)
-```
-
-**Rules:**
-- Only document decisions where a reasonable engineer might have chosen differently
-- Skip obvious choices (naming a variable, import ordering)
-- The user reviews these at batch checkpoints (Step 3), not in real-time — don't interrupt execution to ask about each one
-- If an assumption has cascading impact (other tasks will build on it), flag it: `[cascading]`
-
-## Remember
-- Review plan critically first
-- Follow plan steps exactly
-- Don't skip verifications
-- Reference skills when plan says to
-- Between batches: just report and wait
-- Stop when blocked, don't guess
-- Never start implementation on main/master branch without explicit user consent
-- Document interpretive decisions in Assumptions section (see above)
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-|---|---|
-| "The plan says X but Y is obviously better, I'll just do Y" | If Y is better, surface it. Silent deviations break the spec contract and corrupt the next reviewer's mental model. |
-| "I'll skip verification — the code is obviously correct" | Verification catches what "obvious" misses. Skipping is the failure mode every postmortem cites. |
-| "Three tasks done, I'll do six before reporting" | Bigger batches mean more rework when feedback finally arrives. Default 3 exists for a reason. |
-| "I'll fix this adjacent thing while I'm here" | Scope creep. Note it for the assumption log or BACKLOG; don't expand the diff. |
-| "The plan is wrong, I'll rewrite it" | If the plan is wrong, stop and report. Rewriting silently creates a phantom plan no one reviewed. |
-| "Verification failed but the code looks right" | Trust the verification. "Looks right" is exactly the heuristic that produced the failure. |
-| "I'll add a stub now and fill it in later" | Stubs ship. Track them explicitly in Known Stubs and resolve before the batch is complete — never carry implicit ones forward. |
-
-## Integration
-
-**Required workflow skills:**
-- **ab-using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
-- **ab-writing-plans** - Creates the plan this skill executes
-- **ab-finishing-a-development-branch** - Complete development after all tasks
+Batch checkpoint: continue, apply changes first, or stop. Default when nobody answers: continue. A concern about the plan: proceed as written, revise it, or stop. Default when nobody answers: proceed and list it in the first report. A blocker or must-ask decision: options from the case. Default when nobody answers: stop, keep the progress file, report. Any other open choice: the conservative option, recorded under `### Assumptions`.

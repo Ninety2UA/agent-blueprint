@@ -1,13 +1,11 @@
 ---
 name: ab-browser-testing
-description: "Trigger this skill when changes touch UI components (.tsx, .jsx, .vue, .svelte, CSS, SCSS, HTML templates) and visual or interaction verification is needed, when the user says 'test in browser', 'check the UI', 'visual testing', 'does it look right', 'verify the layout', 'test the form', or wants to see how changes actually render. Trigger even for CSS-only changes — they can break layout, spacing, and responsiveness in ways unit tests cannot catch. Also trigger for user interaction flows (forms, navigation, modals, dropdowns), responsive layout verification at different viewport sizes, accessibility checks in a real browser context, and whenever unit tests pass but the actual user experience needs confirmation. Requires Playwright MCP or similar browser automation."
+description: "Verifies UI changes in a real browser: starts the dev server, opens the affected pages with a browser automation tool (such as a Playwright MCP server), reads accessibility snapshots, runs the interaction flows including error states, checks mobile, tablet and desktop widths, and reports pass or fail per check; without a browser tool it lists the checks to run by hand. Use when a change touches UI components (.tsx, .jsx, .vue, .svelte), CSS or SCSS, or HTML templates, CSS-only changes included since they break layout and spacing in ways unit tests miss; when the user asks to test in the browser, check the UI, test a form or verify a layout; for interaction flows, responsive layouts or accessibility in a real browser; or when unit tests pass but the rendered experience still needs confirming."
 ---
 
 # Browser Testing
 
-## Overview
-
-Verify UI changes by launching a development server, navigating to the relevant pages, and testing interactions via Playwright MCP browser tools. This provides visual and interactive verification that complements unit tests.
+Verify UI changes by launching a development server, navigating to the relevant pages, and testing interactions with a browser automation tool. This provides visual and interactive verification that complements unit tests. The run is done when the Step 6 results table covers every check the change needs.
 
 ## When to Use
 
@@ -16,6 +14,12 @@ Verify UI changes by launching a development server, navigating to the relevant 
 - Verifying responsive layouts at different viewport sizes
 - Checking accessibility in a real browser context
 - When unit tests pass but you need to confirm the actual user experience
+
+## What You Need
+
+A browser automation tool, such as a Playwright MCP server or Claude in Chrome, that can navigate to a URL, take an accessibility snapshot, click and type, and resize the viewport. Steps 2 to 5 use it.
+
+If the host has none, say so at the start: the checks cannot be run here. Still start the dev server if you can (Step 1), then follow "Without a Browser Tool" below instead of Steps 2 to 5.
 
 ## Process
 
@@ -36,7 +40,7 @@ If the dev server command isn't known, check:
 
 ### Step 2: Navigate to the Page
 
-Use Playwright MCP tools to navigate:
+With the browser tool:
 
 1. Open the browser and navigate to the relevant URL
 2. Wait for the page to fully load
@@ -88,6 +92,19 @@ If the change involves layout:
 **Screenshots saved:** [paths if applicable]
 ```
 
+Close the browser session when you are done, so it does not hold memory and connections the next run needs.
+
+## Without a Browser Tool
+
+Give the user the checks to run by hand, built from Steps 2 to 5 for the pages this change touches:
+
+- The URL of each affected page, and the elements and text it should show
+- Each interaction to perform (submit a form, follow a link, open and close a modal or dropdown, enter invalid input) and the result to expect
+- If the layout changed: the page at 375px (mobile), 768px (tablet) and 1280px (desktop)
+- Keyboard navigation through the changed elements, with visible focus
+
+Then fill in the Step 6 table with every row marked "Not run (manual)" rather than Pass, so nobody takes an unverified check as verified.
+
 ## Quick Reference
 
 | Verification Type | What to Check |
@@ -104,6 +121,6 @@ If the change involves layout:
 
 **Testing only the happy path** — Also test error states, empty states, and edge cases (very long text, special characters).
 
-**Not closing the browser** — Always close the browser session when done to free resources.
+**Not closing the browser** — Close the browser session when done to free resources.
 
-**Manual visual checks without snapshots** — Use accessibility snapshots for programmatic verification. Visual-only checks can't be reproduced or automated later.
+**Manual visual checks without snapshots** — When a browser tool is available, use accessibility snapshots for programmatic verification. Visual-only checks can't be reproduced or automated later.

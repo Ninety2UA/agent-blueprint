@@ -13,7 +13,7 @@
   <a href="#what-you-get">What You Get</a> ·
   <a href="#workflow">Workflow</a> ·
   <a href="#autonomous-pipeline-ship-pipeline">Ship</a> ·
-  <a href="#agent-teams--swarms">Agent Teams</a> ·
+  <a href="#team-work--swarms">Team Work</a> ·
   <a href="#skills-reference">Skills</a> ·
   <a href="#agents-reference">Agents</a> ·
   <a href="#customization">Customization</a> ·
@@ -258,7 +258,7 @@ Commands were thin wrappers that couldn't load skill content due to Claude Code'
   | `/compound` | `/ab-knowledge-compounding` |
   | `/debug` | `/ab-systematic-debugging` |
   | `/update` | `/ab-plugin-update` |
-  | `/team` | `/ab-team-execution` |
+  | `/team` | `/ab-orchestrate` |
   | `/review` | `/ab-requesting-code-review` |
   | `/ideate` | `/ab-ideation` |
   | `/map` | `/ab-codebase-mapping` |
@@ -311,7 +311,7 @@ Fifteen patterns from [gstack](https://github.com/garrytan/gstack) (Garry Tan's 
 - **Diagram forcing** — mandatory ASCII diagrams for non-trivial data flows
 - **Dual-scale effort** — every effort estimate shows both human team time and AI-assisted time
 
-All patterns woven into existing agents ([security-sentinel](agents/security-sentinel.md), [performance-oracle](agents/performance-oracle.md), [data-integrity-guardian](agents/data-integrity-guardian.md), [code-reviewer](agents/code-reviewer.md), [frontend-reviewer](agents/frontend-reviewer.md), [findings-synthesizer](agents/findings-synthesizer.md), [team-lead](agents/team-lead.md)) and skills ([ab-autonomous-loop](skills/ab-autonomous-loop/), [ab-brainstorming](skills/ab-brainstorming/), [ab-writing-plans](skills/ab-writing-plans/)) — no new files were added.
+All patterns woven into existing agents ([security-sentinel](skills/ab-review-swarm/references/agents/security-sentinel.md), [performance-oracle](skills/ab-review-swarm/references/agents/performance-oracle.md), [data-integrity-guardian](skills/ab-review-swarm/references/agents/data-integrity-guardian.md), [code-reviewer](skills/ab-review-swarm/references/agents/code-reviewer.md), [frontend-reviewer](skills/ab-review-swarm/references/agents/frontend-reviewer.md), [findings-synthesizer](skills/ab-review-swarm/references/agents/findings-synthesizer.md), [team-lead](skills/ab-orchestrate/references/coordinator.md)) and skills ([ab-autonomous-loop](skills/ab-autonomous-loop/), [ab-brainstorming](skills/ab-brainstorming/), [ab-writing-plans](skills/ab-writing-plans/)) — no new files were added.
 
 </details>
 
@@ -460,10 +460,9 @@ Already using the blueprint with in-project files? Install the plugin, then run 
 
 ```
 Plugin (installed globally, zero files in your project)
-├── 55 skills            /ab-build-pipeline, /ab-ship-pipeline, /ab-brainstorming, /ab-review-swarm, /ab-orchestrate, /ab-forensics, ...
+├── 53 skills            /ab-build-pipeline, /ab-ship-pipeline, /ab-brainstorming, /ab-review-swarm, /ab-orchestrate, /ab-forensics, ...
 │                        TDD, ab-wave-orchestration, swarms, ab-iterative-refinement, ...
-├── 29 agents            team-lead, reviewer, security, perf, doc-claim-verifier, pattern-mapper, ...
-└── 10 hooks              session-start, context-monitor, prompt-guard, read-injection-scanner, validate-commit (opt-in), ship-loop, sdd-cache (pre/post) + 2 Agent Teams
+└── 10 hooks              session-start, context-monitor, prompt-guard, read-injection-scanner, validate-commit (opt-in), ship-loop, sdd-cache (pre/post) + 2 for the Agent Teams extra
 
 your-project/ (scaffolded by /ab-project-start)
 ├── docs/
@@ -513,7 +512,7 @@ Every feature follows this flow:
 
 **3. Design** — Brainstorm options with `/ab-brainstorming`. Present tradeoffs. Get human approval before any code is written.
 
-**4. Plan** — Break the approved design into tasks that record decisions, not code: exact file paths, each test and what it asserts, signatures, and a Review Focus list of spec-implied edge cases. The user reviews the saved plan before it runs. After the plan is written, choose: deepen with research (`/ab-deepen-plan`), execute sequentially (subagent-driven), execute in parallel (`/ab-orchestrate`), or execute with Agent Teams (`/ab-team-execution`).
+**4. Plan** — Break the approved design into tasks that record decisions, not code: exact file paths, each test and what it asserts, signatures, and a Review Focus list of spec-implied edge cases. The user reviews the saved plan before it runs. After the plan is written, choose: deepen with research (`/ab-deepen-plan`), execute sequentially (subagent-driven), or execute as team work in parallel waves (`/ab-orchestrate`).
 
 **5. Build** — Execute using TDD (red-green-refactor). Verify with evidence. Dispatch code review agents.
 
@@ -568,8 +567,7 @@ As of v3.4.0, interactive runs can also opt into the platform-native `/goal` com
 | `/ab-ship-pipeline` (interactive) | None | 3 iterative cycles | Single-context fire-and-forget |
 | `ship.sh` (external) | None | 3 iterative cycles | Large features, context exhaustion |
 | `/ab-quick-fix` | None | None | Trivial changes (< 3 files) |
-| `/ab-orchestrate` | Between waves | Single pass (or `--iterations N`) | Dependency-ordered parallel execution |
-| `/ab-team-execution` | Async (teammates) | Single pass (or `--iterations N`) | Collaborative multi-file work |
+| `/ab-orchestrate` | Between waves | Single pass (or `--iterations N`) | Team work: dependency-ordered waves through a task ledger |
 
 ### Quality gates
 
@@ -602,9 +600,9 @@ Beyond the workflow gates above, two exact-match gates run in CI to keep the rep
 
 A third CI job validates the plugin and marketplace manifests with the CLI's own validator (`claude plugin validate --strict`).
 
-## Agent Teams & Swarms
+## Team Work & Swarms
 
-Agents are organized into coordinated teams for multi-agent workflows. Four orchestration patterns are built in:
+Helpers are organized into coordinated teams for multi-helper workflows. Three orchestration patterns are built in:
 
 ### Review Swarm (`/ab-review-swarm`)
 
@@ -622,17 +620,15 @@ Spawns 5 research agents in parallel before planning, then synthesizes findings 
   <img src="docs/images/research-swarm.png" alt="Research Swarm — 5 parallel researchers → research synthesizer" width="90%">
 </p>
 
-### Wave Orchestration (`/ab-orchestrate`)
+### Team Work (`/ab-orchestrate`)
 
-Groups plan tasks by dependency into waves. Independent tasks within each wave run in parallel; an integration-verifier validates between waves.
+Runs a plan as a team with this session as the lead. The lead keeps a task ledger in `.agent-blueprint/team/<run>/`, groups tasks by dependency into waves (tasks that share a file never share a wave, and no wave exceeds the tool's helper limit), and starts one helper per task, each owning its files or working in its own worktree. It commits each finished task itself and runs an integration verifier between waves. In a tool without helpers the lead does the tasks one after another through the same ledger, and a run can resume from the ledger in another session or another tool.
 
 <p align="center">
   <img src="docs/images/wave-orchestration.png" alt="Wave Orchestration — dependency-ordered waves with integration verification" width="90%">
 </p>
 
-### Agent Teams (`/ab-team-execution`) — Experimental
-
-For complex multi-file implementations where teammates need to discuss and coordinate, Agent Teams spawns fully independent Claude Code instances with a shared task list and messaging system.
+Where the user has switched on a native team feature, team work uses it on top of the ledger: **Claude Code Agent Teams** (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"`, interactive sessions only, with the blueprint's TeammateIdle and TaskCompleted quality hooks) and **Codex `multi_agent_v2`** (`multi_agent_v2 = true` under `[features]`, long-lived helpers that take follow-up tasks).
 
 <p align="center">
   <img src="docs/images/agent-teams.png" alt="Agent Teams — collaborative instances with shared task list and messaging" width="90%">
@@ -643,10 +639,9 @@ For complex multi-file implementations where teammates need to discuss and coord
 | Pattern | Best For | Key Feature |
 |---------|----------|-------------|
 | **Swarms** (`/ab-review-swarm`, `/ab-deep-research`) | Parallel analysis — same code, different lenses | Read-only, synthesizer merges outputs |
-| **Waves** (`/ab-orchestrate`) | Dependency-ordered implementation | Worktree isolation, integration verification |
-| **Agent Teams** (`/ab-team-execution`) | Collaborative multi-file implementation | Shared task list, inter-teammate messaging |
+| **Team work** (`/ab-orchestrate`) | Implementing a plan's tasks | Task ledger, waves, file ownership or worktrees, lead-only commits |
 
-Agent Teams is an experimental Claude Code feature. Enable it with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"` in settings.json. The typical workflow combines all patterns: `/ab-deep-research` (swarm) → `/ab-brainstorming` → `/ab-team-execution` (agent teams) → `/ab-review-swarm` (swarm).
+The typical workflow combines both: `/ab-deep-research` (swarm) → `/ab-brainstorming` → `/ab-orchestrate` (team work) → `/ab-review-swarm` (swarm).
 
 ### Knowledge Loop (`/ab-knowledge-compounding`)
 
@@ -727,7 +722,6 @@ Skills are workflow modules that activate at specific development phases. They c
 |-------|-------------|---------|
 | [**ab-wave-orchestration**](skills/ab-wave-orchestration/) | Groups tasks by dependency into waves, parallel within waves, integration verification between | `/ab-orchestrate` or plans with mixed dependencies |
 | [**ab-swarm-orchestration**](skills/ab-swarm-orchestration/) | Coordinates multiple specialized agents analyzing the same input in parallel | `/ab-review-swarm`, `/ab-deep-research`, or custom swarms |
-| [**ab-agent-teams**](skills/ab-agent-teams/) | Collaborative multi-file implementation with shared task list and messaging (experimental) | `/ab-team-execution` or complex cross-layer features |
 | [**ab-knowledge-compounding**](skills/ab-knowledge-compounding/) | Documents solved problems as searchable institutional knowledge in docs/solutions/ | `/ab-knowledge-compounding` or after solving non-trivial problems |
 | [**ab-session-continuity**](skills/ab-session-continuity/) | Manages STATE.md for execution tracking across session boundaries | `/ab-pause-checkpoint`, `/ab-resume-session`, or during wave orchestration |
 
@@ -737,53 +731,54 @@ Skills are workflow modules that activate at specific development phases. They c
 |-------|-------------|---------|
 | [**ab-writing-skills**](skills/ab-writing-skills/) | Creates and tests new skills using TDD for documentation | When creating new skills |
 
-## Agents Reference
+## Helper Prompts Reference
 
 <p align="center">
-  <img src="docs/images/agents-ecosystem.png" alt="Agent Ecosystem" width="90%">
+  <img src="docs/images/agents-ecosystem.png" alt="Helper prompt groups" width="90%">
 </p>
 
-Agents are specialized subprocesses dispatched via Claude's Task tool. Each agent gets a fresh 200K-token context window focused entirely on its domain.
+Helpers are prompt files inside the skills that use them (`skills/<skill>/references/agents/<name>.md`). A skill starts a helper where the tool has subagents and follows the same file itself where it does not; either way the result comes back in the prompt's Output format. A prompt that several skills use has one owner and byte-identical copies, checked by `scripts/sync-shared.py --check`.
 
-| Agent | Domain | When to dispatch |
+| Helper | Domain | When it runs |
 |-------|--------|-----------------|
-| [**code-reviewer**](agents/code-reviewer.md) | Standards, correctness, plan compliance | After completing a major step or before merge |
-| [**architecture-strategist**](agents/architecture-strategist.md) | Structural patterns, service boundaries | When reviewing PRs, adding services, refactoring |
-| [**security-sentinel**](agents/security-sentinel.md) | OWASP, auth flows, vulnerability scanning | Before deployment, after auth/payment/API work |
-| [**code-simplicity-reviewer**](agents/code-simplicity-reviewer.md) | YAGNI violations, over-engineering | After implementation is complete |
-| [**performance-oracle**](agents/performance-oracle.md) | Bottlenecks, N+1 queries, algorithmic complexity | After features are built, on performance concerns |
-| [**best-practices-researcher**](agents/best-practices-researcher.md) | Industry standards, library documentation | When needing external guidance |
-| [**git-history-analyzer**](agents/git-history-analyzer.md) | Code evolution, pattern archaeology | When understanding why code is the way it is |
-| [**learnings-researcher**](agents/learnings-researcher.md) | Past solutions, decisions, patterns | Before planning — searches docs/ for prior art |
-| [**plan-checker**](agents/plan-checker.md) | Plan validation, gap detection | After writing a plan, before execution |
-| [**integration-checker**](agents/integration-checker.md) | Component wiring, connection validation | After implementation — verifies components connect |
-| [**bug-reproduction-validator**](agents/bug-reproduction-validator.md) | Bug reproduction, fix verification | When debugging — validates repro steps and fixes |
-| [**codebase-mapper**](agents/codebase-mapper.md) | Architecture, conventions, stack analysis | Onboarding to unfamiliar code or before modifying it |
-| [**pr-comment-resolver**](agents/pr-comment-resolver.md) | Targeted PR comment resolution | Processing review feedback — one comment per agent |
-| [**test-gap-analyzer**](agents/test-gap-analyzer.md) | Coverage gaps, test generation | Improving coverage or before major refactors |
-| [**research-synthesizer**](agents/research-synthesizer.md) | Multi-agent output consolidation | After parallel research — unifies findings |
-| [**deployment-verifier**](agents/deployment-verifier.md) | Deployment readiness verification | Before deploying — checks 8 critical areas |
-| [**schema-drift-detector**](agents/schema-drift-detector.md) | Unrelated schema/migration changes | Reviewing PRs — catches scope creep in data layer |
-| [**frontend-reviewer**](agents/frontend-reviewer.md) | UI/UX code quality review | Reviewing frontend code — a11y, responsive, perf |
-| [**convention-enforcer**](agents/convention-enforcer.md) | CONVENTIONS.md compliance checking | Reviewing code against project standards |
-| [**data-integrity-guardian**](agents/data-integrity-guardian.md) | Migration safety, transactions, rollback plans | PRs with migrations, schema changes, data transforms |
-| [**test-coverage-reviewer**](agents/test-coverage-reviewer.md) | Test quality, assertion meaningfulness, edge cases | After implementation — verifies tests actually validate behavior |
-| [**framework-docs-researcher**](agents/framework-docs-researcher.md) | Current framework docs for installed versions | Before planning features that use specific framework APIs |
-| [**codebase-context-mapper**](agents/codebase-context-mapper.md) | Focused impact map for a specific change | Before planning — maps files and dependencies a change will touch |
-| [**integration-verifier**](agents/integration-verifier.md) | Cross-task integration verification | After wave completion — ensures parallel implementations work together |
-| [**findings-synthesizer**](agents/findings-synthesizer.md) | Review swarm output consolidation | After `/ab-review-swarm` — de-duplicates and prioritizes all findings |
-| [**pattern-mapper**](agents/pattern-mapper.md) | Analog-file mapping for new code | Between research and execution — grounds new files in existing conventions |
-| [**doc-claim-verifier**](agents/doc-claim-verifier.md) | Doc claims vs live codebase | Reviewing READMEs, ADRs, runbooks — catches doc drift after refactors |
-| [**findings-validator**](agents/findings-validator.md) | Independent re-verification of review findings | Between `/ab-review-swarm` and synthesis — suppresses false positives |
-| [**team-lead**](agents/team-lead.md) | Dedicated orchestrator (200K fresh context) | Coordinates `/ab-orchestrate` and `/ab-team-execution` — delegates to workers, monitors progress, reviews, signs off |
+| [**code-reviewer**](skills/ab-review-swarm/references/agents/code-reviewer.md) | Standards, correctness, plan compliance | After completing a major step or before merge |
+| [**architecture-strategist**](skills/ab-review-swarm/references/agents/architecture-strategist.md) | Structural patterns, service boundaries | When reviewing PRs, adding services, refactoring |
+| [**security-sentinel**](skills/ab-review-swarm/references/agents/security-sentinel.md) | OWASP, auth flows, vulnerability scanning | Before deployment, after auth/payment/API work |
+| [**code-simplicity-reviewer**](skills/ab-review-swarm/references/agents/code-simplicity-reviewer.md) | YAGNI violations, over-engineering | After implementation is complete |
+| [**performance-oracle**](skills/ab-review-swarm/references/agents/performance-oracle.md) | Bottlenecks, N+1 queries, algorithmic complexity | After features are built, on performance concerns |
+| [**best-practices-researcher**](skills/ab-deep-research/references/agents/best-practices-researcher.md) | Industry standards, library documentation | When needing external guidance |
+| [**git-history-analyzer**](skills/ab-deep-research/references/agents/git-history-analyzer.md) | Code evolution, pattern archaeology | When understanding why code is the way it is |
+| [**learnings-researcher**](skills/ab-deep-research/references/agents/learnings-researcher.md) | Past solutions, decisions, patterns | Before planning — searches docs/ for prior art |
+| [**plan-checker**](skills/ab-deepen-plan/references/agents/plan-checker.md) | Plan validation, gap detection | After writing a plan, before execution |
+| [**integration-checker**](skills/ab-swarm-orchestration/references/agents/integration-checker.md) | Component wiring, connection validation | After implementation — verifies components connect |
+| [**bug-reproduction-validator**](skills/ab-systematic-debugging/references/agents/bug-reproduction-validator.md) | Bug reproduction, fix verification | When debugging — validates repro steps and fixes |
+| [**codebase-mapper**](skills/ab-codebase-mapping/references/agents/codebase-mapper.md) | Architecture, conventions, stack analysis | Onboarding to unfamiliar code or before modifying it |
+| [**pr-comment-resolver**](skills/ab-pr-workflow/references/agents/pr-comment-resolver.md) | Targeted PR comment resolution | Processing review feedback — one comment per agent |
+| [**test-gap-analyzer**](skills/ab-add-tests/references/agents/test-gap-analyzer.md) | Coverage gaps, test generation | Improving coverage or before major refactors |
+| [**research-synthesizer**](skills/ab-deep-research/references/agents/research-synthesizer.md) | Multi-agent output consolidation | After parallel research — unifies findings |
+| [**deployment-verifier**](skills/ab-deployment-verification/references/agents/deployment-verifier.md) | Deployment readiness verification | Before deploying — checks 8 critical areas |
+| [**schema-drift-detector**](skills/ab-review-swarm/references/agents/schema-drift-detector.md) | Unrelated schema/migration changes | Reviewing PRs — catches scope creep in data layer |
+| [**frontend-reviewer**](skills/ab-review-swarm/references/agents/frontend-reviewer.md) | UI/UX code quality review | Reviewing frontend code — a11y, responsive, perf |
+| [**convention-enforcer**](skills/ab-review-swarm/references/agents/convention-enforcer.md) | CONVENTIONS.md compliance checking | Reviewing code against project standards |
+| [**data-integrity-guardian**](skills/ab-review-swarm/references/agents/data-integrity-guardian.md) | Migration safety, transactions, rollback plans | PRs with migrations, schema changes, data transforms |
+| [**test-coverage-reviewer**](skills/ab-review-swarm/references/agents/test-coverage-reviewer.md) | Test quality, assertion meaningfulness, edge cases | After implementation — verifies tests actually validate behavior |
+| [**framework-docs-researcher**](skills/ab-deep-research/references/agents/framework-docs-researcher.md) | Current framework docs for installed versions | Before planning features that use specific framework APIs |
+| [**codebase-context-mapper**](skills/ab-deep-research/references/agents/codebase-context-mapper.md) | Focused impact map for a specific change | Before planning — maps files and dependencies a change will touch |
+| [**integration-verifier**](skills/ab-wave-orchestration/references/agents/integration-verifier.md) | Cross-task integration verification | After wave completion — ensures parallel implementations work together |
+| [**findings-synthesizer**](skills/ab-review-swarm/references/agents/findings-synthesizer.md) | Review swarm output consolidation | After `/ab-review-swarm` — de-duplicates and prioritizes all findings |
+| [**pattern-mapper**](skills/ab-executing-plans/references/agents/pattern-mapper.md) | Analog-file mapping for new code | Between research and execution — grounds new files in existing conventions |
+| [**implementer**](skills/ab-subagent-driven-development/references/agents/implementer.md) | One plan task, test first, with a self-review | Subagent-driven development — a fresh helper per task |
+| [**spec-reviewer**](skills/ab-subagent-driven-development/references/agents/spec-reviewer.md) | Built what the task asked, nothing more | Subagent-driven development — after each implementer, before code review |
+| [**doc-claim-verifier**](skills/ab-document-review/references/agents/doc-claim-verifier.md) | Doc claims vs live codebase | Reviewing READMEs, ADRs, runbooks — catches doc drift after refactors |
+| [**findings-validator**](skills/ab-review-swarm/references/agents/findings-validator.md) | Independent re-verification of review findings | Between `/ab-review-swarm` and synthesis — suppresses false positives |
 
-### How agents work
+### How helpers run
 
-Agents run in isolation with their own 200K context window. They can be dispatched individually or as coordinated swarms:
+A helper runs in its own context where the tool can start one; otherwise the main session follows the prompt file itself. Helpers run individually or as coordinated swarms:
 
-**Single dispatch** — one agent, one focused job:
+**Single dispatch** — one helper, one focused job:
 ```
-Main Session → Task("security-sentinel: audit auth endpoints") → findings → act on results
+Main session -> helper with references/agents/security-sentinel.md -> findings -> act on results
 ```
 
 **Swarm dispatch** — multiple agents, same input, different lenses:
@@ -821,8 +816,7 @@ Skills are invoked as slash commands. Each skill's content loads directly — no
 | **`/ab-review-swarm`** | Multi-agent parallel review — dispatches 6-10 specialized reviewers, synthesizes findings into prioritized P1/P2/P3 report. |
 | **`/ab-deep-research`** | Multi-agent parallel research — spawns 5 research agents, synthesizes into unified brief for planning. |
 | **`/ab-knowledge-compounding`** | Document a solved problem for future reference. Creates searchable entry in docs/solutions/. |
-| **`/ab-orchestrate`** | Wave-based parallel execution — groups plan tasks by dependency, runs independent tasks in parallel per wave. Supports `--iterations N` and `--convergence fast\|deep\|perfect` for iterative review. |
-| **`/ab-team-execution`** | Spawn an Agent Team for collaborative multi-file implementation with shared task list and messaging (experimental). Supports `--iterations N` and `--convergence fast\|deep\|perfect` for iterative review. |
+| **`/ab-orchestrate`** | Team work — runs a plan through a task ledger in dependency-ordered waves, with helpers in parallel where the tool has them and Claude Code Agent Teams or Codex `multi_agent_v2` when switched on. Supports `--wave-size N`, `--iterations N` and `--convergence fast\|deep\|perfect` for iterative review. |
 | **`/ab-project-status`** | Shows current project state, goal alignment, blockers, and suggests next actions. |
 | **`/ab-systematic-debugging [issue]`** | Root cause investigation. Gathers evidence, forms hypotheses, tests them systematically. |
 | **`/ab-backlog-triage`** | Triages inbox items in BACKLOG.md into prioritized tasks using GOALS.md context. |
@@ -847,8 +841,7 @@ claude
 > /ab-ideation                                 # "What's worth building?" — AI generates ranked ideas
 > /ab-deep-research add OAuth2 login           # Research the chosen idea (5 agents in parallel)
 > /ab-brainstorming add OAuth2 login           # Design + plan based on research findings
-> /ab-orchestrate                              # Execute with wave-based parallelism
->   # OR: /ab-team-execution                   # Execute with collaborative Agent Team
+> /ab-orchestrate                              # Execute as team work in dependency-ordered waves
 > /ab-review-swarm                             # Multi-agent review (6-10 reviewers in parallel)
 > /ab-knowledge-compounding OAuth2 sessions    # Document the solution for future reference
 > /ab-session-wrap                             # Document everything for next session
@@ -887,72 +880,17 @@ claude
 # 3. Verify it handles the test scenario correctly
 ```
 
-### Adding your own agents
+### Adding your own helper prompts
 
-In plugin mode, agents are provided by the plugin. To add project-specific agents, create them in your project's `.claude/agents/your-agent-name.md`. Create a markdown file with YAML frontmatter and a system prompt:
+Put a prompt file in the skill that dispatches it, under `references/agents/<name>.md`, with no frontmatter. Open it with a one-line role header (what it may change, whether it is safe at lower effort, and that it starts no helpers of its own) and end it with an `## Output` section, so a helper run and an inline run return the same shape. The `ab-writing-skills` skill covers the details.
 
-```markdown
----
-name: your-agent-name
-description: "When to use this agent. Be specific so Claude knows when to delegate."
-model: inherit
-effort: medium
-tools: [Read, Glob, Grep, Bash]
----
+### Effort
 
-You are a [role] specializing in [domain].
-
-## Process
-1. [Step-by-step instructions]
-
-## Output Format
-[How findings should be structured]
-
-## Rules
-- [Operational guardrails]
-```
-
-**Key frontmatter fields:**
-
-| Field | Purpose | Example |
-|-------|---------|---------|
-| `tools` | Restrict which tools the agent can use (principle of least privilege) | `[Read, Glob, Grep, Bash]` for read-only; add `Edit, Write` for agents that modify code |
-| `model` | Override the model (`sonnet`, `opus`, `fable`, `haiku`, or `inherit`) | `inherit` to use the session's model |
-| `effort` | Reasoning-depth tier — `low`, `medium`, or `high`. Every bundled agent sets one (see Effort tiers below) | `high` for reviewers/oracles, `low` for mechanical validators |
-| `isolation` | Set to `worktree` for agents that modify files in parallel | Used by `pr-comment-resolver` |
-| `maxTurns` | Limit agentic turns to prevent runaway token consumption | `20` for focused tasks |
-
-### Effort tiers & opt-in model mapping
-
-Every bundled agent now carries an `effort:` tier in its frontmatter — `low`, `medium`, or `high` — chosen from the depth of reasoning its job demands (all 29 agents set exactly one):
-
-<p align="center">
-  <img src="docs/images/effort-tiers.png" alt="Effort tiers — 2 low, 14 medium, 13 high across 29 agents; model: inherit stays default with an opt-in per-tier model mapping" width="90%">
-</p>
-
-| Tier | Assigned to | Examples |
-|------|-------------|----------|
-| `high` | Reviewers, synthesizers, oracles, and the orchestrator — deep reasoning, cross-checking, adversarial review | `code-reviewer`, `security-sentinel`, `findings-synthesizer`, `team-lead` |
-| `medium` | Standard workers and researchers — implementers, verifiers, doc and research gathering | `pr-comment-resolver`, `best-practices-researcher`, `integration-checker` |
-| `low` | Mechanical validators — rule-matching or existence checks against a known source | `convention-enforcer`, `doc-claim-verifier` |
-
-`effort:` is a plain frontmatter scalar. CLIs that don't recognize the key ignore it harmlessly, so the tiers are safe to ship in a portable template.
-
-The shipped default stays `model: inherit` on every agent, so agents ride whatever model your session runs and the template assumes nothing about your plan tier. If your plan supports per-model selection, you *may* opt in by adding a `model:` line per agent in your project's `.claude/agents/` copies, mapping tiers to models:
-
-| Effort tier | Suggested opt-in model |
-|-------------|------------------------|
-| `low` | Haiku 4.5 |
-| `medium` | Sonnet 5 |
-| `high` | Opus 5.5 / Fable 5.1 |
-
-This mapping is documentation, not shipped configuration — leaving `model: inherit` in place is the supported default.
-
-Effort tiers are honored on every model from CLI 2.1.267. Earlier CLIs silently ignored per-agent `effort:` whenever the session ran Opus 4.7, Opus 4.8, or Fable 5 — which affects `model: inherit` agents on those sessions, so a CLI upgrade, not a model pin, is what restores the tiers. The `maxEffortLevel` setting caps every tier from above. To give subagents a different default model without editing agent files, set `CLAUDE_CODE_SUBAGENT_MODEL`; an agent's own `model:` line and a per-spawn model still take precedence over it, and `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` overrides all of them.
+Helper prompts carry no effort tier. A helper runs at the session's effort (in Claude Code 2.1.284 the general-purpose helper inherits it), and a prompt whose role header says it is safe at lower effort may run lower only where the tool takes a per-helper effort and you have not asked for your level throughout.
 
 #### Session model and effort: your choice
 
-The blueprint never picks a model or an effort level for you, in Claude Code or in any other tool. Agents set a tier in frontmatter, which overrides the session level (still capped by `maxEffortLevel`), so all 29 agents run at their tier whatever the session uses. Skills set no `effort:`, so a main-session pipeline (`/ab-ship-pipeline`, `/ab-build-pipeline`, `/lfg`-style runs) reasons at whatever level your session runs. A skill-level `effort:` would override a higher level you chose, which is why skills don't carry one.
+The blueprint never picks a model or an effort level for you, in Claude Code or in any other tool. Neither skills nor helper prompts set an `effort:`, so a main-session pipeline (`/ab-ship-pipeline`, `/ab-build-pipeline`, `/lfg`-style runs) reasons at whatever level your session runs. A skill-level `effort:` would override a higher level you chose, which is why skills don't carry one.
 
 Opus 5.5 is the default model on every plan from CLI 2.1.280, and it **starts sessions at `medium` effort** (other current models start at `high`). An `effortLevel` saved in user settings before per-model `/effort` does not carry over to Opus 5.5. From 2.1.280, Opus 4.7, Opus 4.8, and Fable 5 no longer hold their launch default over the level set by settings, `--settings`, or `-p`. Some reference points:
 
@@ -974,7 +912,7 @@ The blueprint tracks new Claude Code platform features and adopts them as **opt-
 
 | Platform feature | Blueprint's stance | Gating |
 |------------------|--------------------|--------|
-| **Effort tiers** (`effort: low/medium/high`) | Shipped on every bundled agent (see "Effort tiers & opt-in model mapping" above) | None — an unrecognized key is ignored by older CLIs |
+| **Effort tiers** (`effort: low/medium/high`) | Retired in v4: helper prompts carry no tier and run at the session's effort (see "Effort" above) | None |
 | **`/goal`** (condition-based completion) | Opt-in complement to the ship loop's Stop-hook guard | None; generally available in the CLI |
 | **Native `/loop` + ScheduleWakeup** | Add interval/scheduled reruns, but `/loop` is session-scoped and does **not** reset context, circuit-break, or detect degradation — so `ab-autonomous-loop` keeps its own circuit breaker and degradation detection | None; complementary, not a replacement |
 | **Workflow tool / `/workflows` / ultracode** | Opt-in for very large autonomous fan-outs — default size guideline `medium` (under 10 agents; Pro defaults to `small`, under 5), 16 concurrent agents by default (adjustable 1–256 via `CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS`) and 1,000 per run, runs pause and resume across a usage-limit reset in interactive subscription sessions (not `-p`), no mid-run user input; wave orchestration stays the ungated, portable default | Available on all paid plans, the API, and Bedrock/Vertex/Foundry (Pro enables it in `/config`); runs in `claude -p`/SDK only behind a `Workflow` allow rule, auto or bypass mode, or a PreToolUse hook; disable-able per user (`disableWorkflows` / `CLAUDE_CODE_DISABLE_WORKFLOWS=1`) and org-wide |
@@ -1176,9 +1114,9 @@ After solving a non-trivial problem, `/ab-knowledge-compounding` saves it as a s
 </details>
 
 <details>
-<summary><strong>What are Agent Teams and how do they differ from swarms?</strong></summary>
+<summary><strong>How does team work differ from swarms?</strong></summary>
 
-Agent Teams (`/ab-team-execution`) spawn fully independent Claude Code instances that collaborate through a shared task list and messaging. Unlike swarms (which are read-only subagents reporting analysis back to a controller), Agent Teams are peers that can discuss design decisions, divide file ownership, and coordinate in real time. Use swarms for parallel analysis (review, research) and Agent Teams for collaborative implementation. Agent Teams is an experimental feature — enable with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"` in settings.json.
+Swarms are read-only helpers that analyze the same code from different angles and report back to a synthesizer. Team work (`/ab-orchestrate`) implements a plan: the lead keeps a task ledger, runs tasks in dependency-ordered waves with each helper owning its files, and commits each finished task itself. It runs in every supported tool, one task after another where the tool has no helpers, and uses Claude Code Agent Teams (an experimental feature, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"`) or Codex `multi_agent_v2` when the user has switched them on.
 </details>
 
 <details>

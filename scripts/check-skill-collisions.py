@@ -21,7 +21,7 @@ warn-only body-size report.
 
 Two structure checks FAIL the run (exit 1):
 
-  - Frontmatter is valid YAML: every SKILL.md and agent file's frontmatter
+  - Frontmatter is valid YAML: every SKILL.md's frontmatter
     must parse as a YAML mapping (PyYAML). The regex extraction above reads a
     `description:` line even when the block around it would break a real YAML
     loader; this catches that. Without PyYAML the check is skipped with a
@@ -32,7 +32,8 @@ Two structure checks FAIL the run (exit 1):
     pointer must match a heading in that file. Fenced code blocks (indented
     ones included) are skipped; single-letter placeholders such as
     `references/X.md` are ignored. Not covered: bare "other-skill § heading"
-    citations between skills, and agent files.
+    citations between skills, and helper prompt files (check-portability.py
+    checks those carry no frontmatter).
 
 Usage: check-skill-collisions.py [repo-root]   (default: parent of this script's dir)
 Exit:  0 = clean · 1 = collision(s) >= FAIL or a structure check failed · 2 = no skills found
@@ -195,7 +196,7 @@ def print_structure_report(yaml_fail, yaml_skipped, pointer_fail):
             print("    " + f)
         failed = True
     else:
-        print("\n  Frontmatter parses as YAML in every skill and agent.")
+        print("\n  Frontmatter parses as YAML in every skill.")
     if pointer_fail:
         print("\n  FAIL (references/ pointers or links that do not resolve):")
         for f in pointer_fail:
@@ -237,8 +238,7 @@ def main():
     warns.sort(reverse=True)
     fails.sort(reverse=True)
 
-    agent_paths = sorted(glob.glob(os.path.join(repo, "agents/*.md")))
-    yaml_fail, yaml_skipped = yaml_failures(paths + agent_paths, repo)
+    yaml_fail, yaml_skipped = yaml_failures(paths, repo)
     pointer_fail = pointer_failures([os.path.dirname(p) for p in paths], repo)
 
     print("Skill-collision gate — %d skills compared" % len(skills))

@@ -1,20 +1,20 @@
 ---
 name: ab-deepen-plan
-description: "Trigger this skill when a plan exists but lacks depth, research backing, or framework-specific details. Trigger when the user says 'deepen', 'enrich the plan', 'add more detail', 'research the plan', 'more context for the plan', 'flesh out the plan', 'the plan is too thin', or 'add best practices to the plan'. Even trigger when a plan seems thin on framework-specific guidance, prior art, or implementation details — proactively suggest deepening before execution begins. Dispatches all configured research agents in parallel to add best practices, prior solutions, and framework docs to each plan section. DO NOT TRIGGER when no plan exists yet — use ab-writing-plans first. DO NOT TRIGGER for general research unrelated to an existing plan — use ab-deep-research instead."
+description: "Enriches an existing plan with research: five read-only helpers run in parallel (prior solutions, best practices, current framework docs, the files and dependencies the change touches, git history), their findings go under each plan section as Research Notes without changing its tasks or order, and a plan-checker flags conflicts with the plan's approach. Use when a plan exists but is thin on framework detail, prior art or constraints (suggest it before execution starts), or when the user asks to deepen, enrich, research or flesh out a plan. Not for writing a plan when none exists (ab-writing-plans) or research without a plan (ab-deep-research)."
 argument-hint: "[path to plan file]"
 ---
 
 # Deepen Plan — Parallel Plan Enrichment
 
-Dispatch multiple research agents in parallel to enrich an existing plan with deeper context, best practices, prior solutions, and framework-specific guidance.
+Research helpers run in parallel to enrich an existing plan with deeper context, best practices, prior solutions and framework-specific guidance. The run is done when the plan file carries research notes under the sections the research informed, any conflict is flagged in the plan, and the report is out. Deepening adds context to a plan; it never re-plans it.
 
-**Announce at start:** "Deepening plan with parallel research agents."
+**Announce at start:** "Deepening plan with parallel research helpers."
 
 ## Step 1: Load the Plan
 
-If arguments specify a plan file path, read it. Otherwise, find the most recent plan in `docs/plans/` (sort by date prefix, pick latest).
+If the request names a plan file, read it. Otherwise, find the most recent plan in `docs/plans/` (sort by date prefix, pick latest).
 
-If no plan file found, report: "No plan file found. Write a plan first with the ab-brainstorming skill or specify a path."
+If no plan file is found, report "No plan file found. Write a plan first with the ab-brainstorming skill or specify a path." and stop.
 
 Read the full plan file. Identify:
 - Each section/task in the plan
@@ -24,93 +24,56 @@ Read the full plan file. Identify:
 
 ## Step 2: Load Project Configuration
 
-Check `blueprint.local.md` for configured research agents. If not found, use defaults.
-
-**Default research agents:**
-- **learnings-researcher** — search `docs/solutions/` for relevant past solutions
-- **best-practices-researcher** — industry standards for the approach
-- **framework-docs-researcher** — current docs for libraries being used
-- **codebase-context-mapper** — files and dependencies affected by the change
-- **git-history-analyzer** — historical context for files being modified
+Check `blueprint.local.md` for configured research helpers. If it names none, use the five defaults: learnings-researcher (past solutions in `docs/solutions/`), best-practices-researcher (industry standards for the approach), framework-docs-researcher (current docs for the libraries used), codebase-context-mapper (files and dependencies the change affects) and git-history-analyzer (history of the files being modified).
 
 ## Step 3: Dispatch All Researchers in Parallel
 
-Use the Task tool to dispatch all selected agents simultaneously. Each agent gets the plan content plus a focused research prompt:
+Start every selected helper at once: they do not depend on each other, so the step takes only as long as the slowest one.
 
-```
-Task("learnings-researcher: Search docs/solutions/ for prior work related to: [feature]. Plan context: [plan summary]. Return findings as bullet points organized by plan section.")
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-Task("best-practices-researcher: Research industry best practices for: [technologies/patterns in plan]. Return recommendations organized by plan section.")
+Prompt files and inputs. Each helper also gets the plan content and returns its findings organized by plan section:
+- `references/agents/learnings-researcher.md`: prior work in docs/solutions/ related to [feature], with [plan summary] as context; findings as bullet points.
+- `references/agents/best-practices-researcher.md`: industry best practices for [technologies/patterns in plan].
+- `references/agents/framework-docs-researcher.md`: current documentation for [frameworks referenced in plan], focused on API patterns, version constraints and gotchas.
+- `references/agents/codebase-context-mapper.md`: all files and dependencies affected by [feature description], with integration points, shared utilities and potential conflicts.
+- `references/agents/git-history-analyzer.md`: git history of the files the plan references ([file list]): patterns, past refactors and contributors.
 
-Task("framework-docs-researcher: Gather current documentation for: [frameworks referenced in plan]. Focus on API patterns, version constraints, and gotchas. Return findings organized by plan section.")
-
-Task("codebase-context-mapper: Map all files and dependencies affected by: [feature description]. Identify integration points, shared utilities, and potential conflicts. Return file map organized by plan section.")
-
-Task("git-history-analyzer: Analyze git history for files referenced in this plan: [file list]. Identify patterns, past refactors, and contributors. Return historical context organized by plan section.")
-```
-
-**Important:** Dispatch ALL agents in a single message to maximize parallelism.
+**Lower effort.** This step is safe at lower effort. If your host lets you set effort for a single helper, you may start this one lower, unless the user asked for their level everywhere; otherwise it runs at the session's level. Never switch models to save effort.
 
 ## Step 4: Collect and Merge
 
-When all agents return, integrate their findings into the plan:
+When all helpers return, add a `### Research Notes` subsection to each plan section with what the helpers found for it: prior solutions, best practices and recommendations, framework constraints and API notes, file dependencies and integration points, and historical context and patterns.
 
-For each section of the plan, add a `### Research Notes` subsection containing:
-- Relevant prior solutions (from learnings-researcher)
-- Best practices and recommendations (from best-practices-researcher)
-- Framework constraints and API notes (from framework-docs-researcher)
-- File dependencies and integration points (from codebase-context-mapper)
-- Historical context and patterns (from git-history-analyzer)
-
-**Merge rules:**
-- Do NOT change the plan's structure, tasks, or ordering
-- Do NOT add new tasks — only add research context to existing ones
-- Do NOT remove anything from the original plan
+**Merge rules.** The plan's structure, tasks and order are decisions already made, and the executor follows them task by task, so research informs the plan without re-planning it:
+- Keep the plan's structure, tasks and ordering as they are
+- Add no new tasks; add research context to existing ones only
+- Remove nothing from the original plan
 - Add findings as supplementary notes that inform implementation: constraints, citations, gotchas. Don't paste implementation code into the plan; a plan records decisions, and the executor writes the code
 - If researchers contradict each other, note both perspectives and flag for the implementer
 - If a researcher found nothing relevant for a section, omit that section's entry (no empty notes)
 
 ## Step 5: Re-verify
 
-After enrichment, use the Task tool to dispatch the **plan-checker** agent on the updated plan to verify the research notes don't conflict with the plan's approach.
+After enrichment, run the plan-checker on the updated plan to verify the research notes don't conflict with the plan's approach. It runs at the session's effort, because its judgment is the point of the step.
 
-```
-Task("plan-checker: Verify the enriched plan at [plan file path]. Check for conflicts between research notes and the plan's approach. Report BLOCKING issues only.")
-```
+**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
-If the plan-checker finds new issues introduced by research (e.g., a best practice contradicts the plan's approach):
-- Flag the conflict clearly in the plan
-- Do NOT change the plan's approach — leave the decision to the implementer or the calling workflow
+Prompt: `references/agents/plan-checker.md`. Inputs: Verify the enriched plan at [plan file path]. Check for conflicts between research notes and the plan's approach. Report BLOCKING issues only.
+
+If the plan-checker finds new issues introduced by research (for example, a best practice contradicts the plan's approach), flag the conflict clearly in the plan and leave the approach as it is: that choice belongs to the implementer or the calling workflow.
 
 ## Step 6: Report
 
-Update the plan file with enriched content. Report:
+Update the plan file with enriched content, then report in the format in `references/report.md`.
 
-```markdown
-## Plan Deepened
+**Called from a pipeline** (ab-build-pipeline or ab-ship-pipeline): skip the execution options and return to the calling workflow. The pipeline controls execution in its next stage.
 
-- Research agents dispatched: [N]
-- Sections enriched: [N] of [total]
-- Prior solutions found: [N]
-- Best practices added: [N]
-- Framework notes added: [N]
-- File dependencies mapped: [N]
-- Historical patterns noted: [N]
-- Conflicts flagged: [N]
+**Called standalone** (the user asked for it directly): offer execution, ending with "Ready to execute. Which approach?"
 
-Plan updated: [path to plan file]
-```
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-**If called from a pipeline** (ab-build-pipeline or ab-ship-pipeline): skip execution options and return to the calling workflow. The pipeline controls execution in its next stage.
-
-**If called standalone** (user invoked directly): offer execution options:
-
-**"Ready to execute. Which approach?**
-
-**1. Subagent-Driven (this session)** — I dispatch a fresh subagent per task, review between tasks, fast iteration. Good for hands-on oversight.
-
-**2. Parallel Orchestration (ab-orchestrate skill)** — Executes the wave plan: independent tasks run in parallel within each wave. Faster total time for plans with concurrent tasks.
-
-**3. Agent Teams (ab-team-execution skill)** — Collaborative teammates with file ownership and shared task list. Best for 4+ tasks touching different areas. Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`.
-
-**Which approach?"**
+Default when nobody answers: stop here (option 3), with the plan path and the report in the output, and start nothing, because the run was asked to deepen the plan and executing it is a separate decision. Options:
+1. **Subagent-driven, in this session**, with the ab-subagent-driven-development skill: a fresh helper per task and a review between tasks. Good for hands-on oversight.
+2. **Team work** with the ab-orchestrate skill: waves through a task ledger, independent tasks in parallel within a wave, each helper owning its files, the lead committing, and a native team feature (such as Claude Code Agent Teams or Codex multi_agent_v2) when one is switched on. Faster for plans with concurrent tasks.
+3. **Stop here**, with the deepened plan saved.

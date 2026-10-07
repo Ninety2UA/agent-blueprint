@@ -1,168 +1,74 @@
 ---
 name: ab-brainstorming
-description: "Trigger this skill for ANY creative work before implementation begins — designing features, building components, adding functionality, making architecture decisions, or changing how something works. Trigger even when the user jumps straight to coding without brainstorming first — redirect them to design before implementing. Trigger when the user says 'plan', 'planning', 'brainstorm', 'design', 'let's think about', 'how should we', 'what's the best approach', 'before we build', 'I want to add', 'let's build', or describes any non-trivial change. Even if they don't explicitly ask for brainstorming, trigger this skill whenever a change involves design decisions, multiple approaches, or touches 3+ files. DO NOT TRIGGER for trivial changes qualifying as ab-quick-fix (< 3 files, obvious single approach) — use ab-quick-fix instead. DO NOT TRIGGER when the user only wants to capture decisions without exploring design alternatives — use ab-discuss instead."
+description: "Turns an idea into an approved design before any code is written: settles what the repository answers, challenges the premise, asks the remaining questions one at a time, compares two or three approaches, presents the design in sections for approval, then saves it and hands off to ab-writing-plans. Use when the user wants to brainstorm or design a change, or when work involves design decisions, several viable approaches or three or more files, including when the user jumps straight to code on such work. Not for a trivial change under three files with one obvious approach (ab-quick-fix), or for recording decisions without exploring alternatives (ab-discuss)."
+metadata:
+  version: "3.8.0"
 ---
 
 # Brainstorming Ideas Into Designs
 
-## Overview
+The outcome is a design the user approved, saved as `docs/plans/YYYY-MM-DD-<topic>-design.md`, and a handoff to the ab-writing-plans skill.
 
-Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
+**Hard gate.** Start nothing that implements (no implementation skill, code or scaffolding) until a design has been presented and approved, however simple the project looks: simple projects are where unexamined assumptions waste the most work. Approving the design approves the scope only; the plan the ab-writing-plans skill saves is reviewed before anything executes. Stay in the normal conversation rather than a host's own plan mode (such as Claude Code's), because this skill is the planning process.
 
-Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design and get user approval.
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-<HARD-GATE>
-Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it. This applies to EVERY project regardless of perceived simplicity. Approving the design approves the scope only: ab-writing-plans saves a plan that the user reviews before anything executes.
+**Provenance record.** When this skill starts, write `.agent-blueprint/run/provenance/<name>.json`, where `<name>` is the `name` in this skill's frontmatter: `skill` (that name), `version` (its `metadata.version`), `started_at` (the current UTC time, ISO 8601) and an empty `helper_steps` list, replacing any older record of that name. Before that, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`. Each Helper step adds its entry to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
-Do NOT use Claude Code's native EnterPlanMode tool or enter plan mode. This skill IS the planning process — it replaces native plan mode with a structured brainstorming workflow. Stay in the normal conversation flow and follow the steps below.
-</HARD-GATE>
+## Size the ceremony
 
-## Ceremony Sizing
+- **Spike**: an exploratory probe with no fixed destination yet (a timeboxed look at what is there, a throwaway prototype that answers one question). Skip brainstorming: probe, then decide whether what you learned needs a design.
+- **Bounded**: a bug fix with an obvious root cause touching under three files, a typo, or a test for existing behavior. Skip brainstorming and go straight to TDD.
+- **Architectural**: everything else, including any change touching three or more files or with more than one viable approach. Run every step below; the design may be a few sentences, but it is presented and approved.
 
-Not every change earns the full ceremony below. Size it first:
+When in doubt, treat it as architectural: a two-minute design review costs less than rework. Why "too simple" is no exemption: `references/rationalizations.md`.
 
-- **Spike** — an exploratory probe with no fixed destination yet (a timeboxed "what's actually here" investigation, a throwaway prototype to answer one question). Skip brainstorming; do the probe, then decide afterward whether what you learned needs a real design.
-- **Bounded** — the existing **Lightweight Workflow** exception in CLAUDE.md (bug fix with obvious root cause touching < 3 files, typo fix, adding a test for existing behavior). Skip brainstorming and go directly to TDD.
-- **Architectural** — everything else: new features, components, or architecture decisions, or a change touching 3+ files or more than one viable approach. Run the full process below.
+## Steps
 
-When in doubt, treat it as architectural — the cost of a 2-minute design review is much lower than rework.
+**Tracking tasks.** The plan file's checkboxes are the record of progress: tick each one when its task is done and verified, so another session or another tool can continue from there. A host task list, if you have one, may mirror them, but it never replaces them.
 
-## Anti-Pattern: "This Is Too Simple To Need A Design"
+Here the checkboxes live in `.agent-blueprint/plans/<topic-slug>.progress.md`: create it with one per step below.
 
-For changes that land in the **Architectural** tier: every one of them goes through this process. A todo list, a single-function utility, a config change — all of them, once they're architectural by the sizing above. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short (a few sentences for truly simple projects), but you MUST present it and get approval.
+### 1. Explore the project context
 
-## Fog Test
+Read the relevant files, docs and recent commits, and settle from them whatever they answer, so the user is not asked what the repository already says.
 
-Before challenging the premise, check whether there is enough shape to challenge yet:
+### 2. Frame the problem
 
-1. **Can you state the destination in one sentence?** If "done" can't be named yet, that's fog — the next step is narrowing the destination, not designing toward it.
-2. **Can you name the first three decisions right now?** If the immediate next choices aren't nameable yet, the work needs more exploration (or a Spike, see Ceremony Sizing), not more design.
+Work through `references/framing.md` in order: the fog test (if you cannot yet state the destination in one sentence or name the first three decisions, narrow it or run a spike first), the premise challenge, the blindspot pass when the user is in unfamiliar territory, and a scope mode inferred from context, stated, then held.
 
-Both checks pass → proceed to Premise Challenge. Either fails → resolve the fog first.
+### 3. Ask clarifying questions
 
-## Premise Challenge
+WHY first (the problem and who has it), then constraints and success criteria. One question per message, multiple choice where you can; the one exception is a single batch of the genuinely residual questions left after settling. A better framing from step 2 goes to the user here. Then write your understanding back in a few lines, separating what the user said from what you assume, so a wrong assumption is caught before the design rests on it.
 
-Before diving into design options, challenge the premise of the request itself:
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-1. **Is this the right problem to solve?** Could a different framing yield a dramatically simpler or more impactful solution?
-2. **What is the actual user/business outcome?** Is the request the most direct path to that outcome, or is it solving a proxy problem?
-3. **What would happen if we did nothing?** Is this a real pain point or a hypothetical one?
-4. **What existing code already partially solves this?** Map every sub-problem to existing code before proposing new code.
+Options: the likely answers, your recommendation first. Default when nobody answers: take the recommended answer, record it as an explicit assumption for the design doc, and continue.
 
-If the premise challenge reveals a better framing, present it to the user before proceeding to design options.
+### 4. Propose approaches
 
-## Blindspot Pass
+Propose two or three approaches with their trade-offs, leading with the one you recommend and why: a single option is a recommendation disguised as a decision. Cut features the design does not need (YAGNI).
 
-The rest of this skill assumes the user can evaluate the questions you ask. That assumption breaks when the user is working in unfamiliar territory — "I know nothing about X but need to…", a domain they have never shipped in, or a decision space where they cannot yet tell which choices matter. Asking decision questions first would force them to answer things they do not yet understand.
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-When the user signals unfamiliarity (or you detect it), run a blindspot pass **before** asking any decision questions:
+Options: the approaches, at most three. Default when nobody answers: the recommended approach, logged as a decision.
 
-1. **Map the decision surface** — enumerate the decisions this work actually requires, including the ones the user does not know they need to make. Where are the forks in the road?
-2. **Surface the blind spots** — for each decision, name what the user would need to know to choose well, and flag the ones they are least likely to be aware of.
-3. **Present the map, then ask** — show the decision surface and the blind spots first so the user learns the shape of the problem. Only then begin the one-at-a-time questions, now that the user can actually evaluate them.
+### 5. Present the design
 
-This composes with the sections around it: run the **Premise Challenge** first (is this even the right problem?), then the blindspot pass (what does deciding well require?), then apply **Scope Modes** and proceed to questions. Skip it when the user is clearly fluent in the domain — the blindspot pass is for unfamiliar territory, not every session. In a non-interactive run (a pipeline stage, headless `-p`, no human to answer), don't stall waiting for answers: record the recommended defaults as explicit assumptions and proceed, so the pass informs the work instead of blocking it.
+Present the chosen approach's design in sections (architecture, components, data flow, error handling, testing), each scaled to its complexity: a few sentences, up to 200-300 words when nuanced. After each section ask whether it looks right, and go back to clarify when something does not fit.
 
-## Scope Modes
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-When presenting design options, the user can choose a scope posture. Default based on context:
+Options: approve, revise (say what), or return to step 4. Default when nobody answers: approve the design as presented and log it as a decision. This is the hard gate's unattended path; the plan is still checked before anything executes.
 
-| Mode | Default For | Posture |
-|------|------------|---------|
-| **Expansion** | Greenfield features | Propose the ambitious version. What's the 10x better product for 2x the effort? |
-| **Selective Expansion** | Feature enhancements | Hold scope as baseline, but surface opportunities individually for cherry-picking |
-| **Hold Scope** | Bug fixes, refactors | Maximum rigor on existing scope. No expansions surfaced. |
-| **Reduction** | Overbuilt plans, tight deadlines | Cut to minimum viable. Be ruthless. |
+### 6. Write and commit the design doc
 
-If the user doesn't specify, infer from context and state your assumption. Once a mode is selected, **commit fully — do not silently drift toward a different mode.**
+Write the approved design to `docs/plans/YYYY-MM-DD-<topic>-design.md` with the assumptions and defaults you took, using a clear-writing skill such as elements-of-style:writing-clearly-and-concisely if one is available. Commit it.
 
-## Checklist
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
 
-Work through these items in order, tracked as a checklist file — `.claude/plans/<topic-slug>.progress.local.md`, one checkbox per item, same convention as `ab-executing-plans` — rather than a native task-list tool (not every model exposes one):
+### 7. Hand off
 
-1. **Explore project context** — check files, docs, recent commits
-2. **Ask clarifying questions** — WHY first (the problem and who has it), then constraints and success criteria; one at a time, then write your understanding back
-3. **Propose 2-3 approaches** — with trade-offs and your recommendation
-4. **Present design** — in sections scaled to their complexity, get user approval after each section
-5. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
-6. **Transition to implementation** — invoke ab-writing-plans skill to create implementation plan
+Invoke the ab-writing-plans skill with the design doc's path. This is the terminal state: the only skill you invoke after brainstorming is ab-writing-plans, because implementation starts from a reviewed plan, not from the design.
 
-## Process Flow
-
-```dot
-digraph brainstorming {
-    "Explore project context" [shape=box];
-    "Ask clarifying questions" [shape=box];
-    "Propose 2-3 approaches" [shape=box];
-    "Present design sections" [shape=box];
-    "User approves design?" [shape=diamond];
-    "Write design doc" [shape=box];
-    "Invoke ab-writing-plans skill" [shape=doublecircle];
-
-    "Explore project context" -> "Ask clarifying questions";
-    "Ask clarifying questions" -> "Propose 2-3 approaches";
-    "Propose 2-3 approaches" -> "Present design sections";
-    "Present design sections" -> "User approves design?";
-    "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Write design doc" [label="yes"];
-    "Write design doc" -> "Invoke ab-writing-plans skill";
-}
-```
-
-**The terminal state is invoking ab-writing-plans.** Do NOT invoke any implementation skill directly. The ONLY skill you invoke after brainstorming is ab-writing-plans.
-
-## The Process
-
-**Understanding the idea:**
-- Check out the current project state first (files, docs, recent commits) and settle from it whatever it already answers — don't ask the user something the repository already tells you
-- Ask what's left one at a time to refine the idea
-- Prefer multiple choice questions when possible, but open-ended is fine too
-- Only one question per message, with one narrow exception: once you've settled what the repository and context answer, if several genuinely residual questions remain, ask them together in a single batch rather than one at a time
-- Focus on understanding: find out WHY first (the problem and who has it), then constraints and success criteria
-- Before proposing approaches, write the understanding back in a few lines, separating what the user said from what you are assuming, so the assumptions can be corrected before the design rests on them
-
-**Exploring approaches:**
-- Propose 2-3 different approaches with trade-offs
-- Present options conversationally with your recommendation and reasoning
-- Lead with your recommended option and explain why
-
-**Presenting the design:**
-- Once you believe you understand what you're building, present the design
-- Scale each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced
-- Ask after each section whether it looks right so far
-- Cover: architecture, components, data flow, error handling, testing
-- Be ready to go back and clarify if something doesn't make sense
-
-## After the Design
-
-**Documentation:**
-- Write the validated design to `docs/plans/YYYY-MM-DD-<topic>-design.md`
-- Use elements-of-style:writing-clearly-and-concisely skill if available
-- Commit the design document to git
-
-**Implementation:**
-- Invoke the ab-writing-plans skill to create a detailed implementation plan
-- Do NOT invoke any other skill. ab-writing-plans is the next step.
-
-## Key Principles
-
-- **Settle first, then one at a time** - Resolve what the repository and context already answer before asking anything; ask what's left one question at a time, with the narrow exception above for batching genuinely residual questions once
-- **Multiple choice preferred** - Easier to answer than open-ended when possible
-- **YAGNI ruthlessly** - Remove unnecessary features from all designs
-- **Explore alternatives** - Always propose 2-3 approaches before settling
-- **Incremental validation** - Present design, get approval before moving on
-- **Be flexible** - Go back and clarify when something doesn't make sense
-- **Non-interactive fallback** - In a pipeline stage or headless run with no one to answer, don't stall: record the recommended defaults as explicit assumptions and proceed (the same rule the Blindspot Pass uses)
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-|---|---|
-| "This is too simple to need a design" | Simple changes are where unexamined assumptions cause the most rework. A 2-minute design review costs less than the rework. |
-| "I'll figure it out as I go" | Implementation without a design is just typing. The design surfaces dependencies and edge cases the keyboard won't. |
-| "The user described it clearly, just build it" | Even clear requests carry implicit assumptions. The design surfaces them before code locks them in. |
-| "Brainstorming will slow us down" | A 10-minute brainstorm prevents hours of wrong-direction work. Speed without direction is rework. |
-| "I'll just propose one approach" | One option is a recommendation disguised as a decision. Two-to-three options give the user something to choose between. |
-| "Premise challenge feels confrontational" | Challenging the premise *before* design is collaborative. Discovering at review that you solved the wrong problem is not. |
-| "I can hold the design in my head" | Context windows compress, sessions end, teammates forget. The design doc is the artifact that survives all three. |
-| "I'll just batch all my questions to save time" | Batching is a narrow exception for questions that are genuinely residual after settling from the repository and context — not a shortcut around asking one at a time when you haven't checked what's already answered. |
+The flow as a diagram, and the principles behind these steps: `references/dialogue.md`.

@@ -4,7 +4,7 @@ All review agents in the review swarm use this shared calibration for consistent
 
 ## Confidence-Anchored Scoring
 
-Score each finding using these discrete anchors — do NOT use continuous values (no 0.6, 0.85, etc.).
+Score each finding using these discrete anchors, not continuous values (no 0.6, 0.85, etc.).
 
 | Score | Meaning | Operational Question |
 |-------|---------|---------------------|
@@ -16,7 +16,7 @@ Score each finding using these discrete anchors — do NOT use continuous values
 
 **Why discrete anchors:** Continuous confidence scales (0.0–1.0) produce false precision — models cluster on round numbers (0.60, 0.72, 0.85) regardless of true certainty. Anchored integers force operational calibration through concrete questions.
 
-**Anchored on BEHAVIOR, not certainty.** Each anchor has a behavioral criterion you must honestly self-apply. If you cannot truthfully attach the behavioral claim to the finding, step down to the next anchor.
+**Anchored on behavior, not certainty.** Each anchor has a behavioral criterion you must honestly self-apply. If you cannot truthfully attach the behavioral claim to the finding, step down to the next anchor.
 
 - **Anchor 75 requires naming a concrete observable consequence** — a wrong result, an unhandled error path, a contract mismatch, a security exposure, missing coverage that a real test scenario would surface. "This could be cleaner" or "I would have written this differently" do NOT meet this bar — they are advisory observations and land at anchor 50.
 - **Disambiguator between 50 and 75:** Ask "will a user, caller, or operator concretely encounter this in normal usage, or is this my opinion about the code's quality?" The former is 75; the latter is 50.
@@ -40,12 +40,12 @@ Classify each finding into exactly one remediation tier:
 **Classification rules:**
 - When uncertain between safe_auto and gated_auto → choose gated_auto (conservative)
 - When uncertain between gated_auto and advisory → choose gated_auto (actionable beats informational)
-- Findings that touch auth, payments, or data mutations are NEVER safe_auto — minimum gated_auto
+- Findings that touch auth, payments, or data mutations are gated_auto at least, never safe_auto: a wrong automatic fix there does damage nobody reviewed
 - **No straw-man alternatives:** Do not pad `present` findings with weak alternatives to make one option look better. If one approach is clearly superior, classify as gated_auto with that fix, not present with a fake choice.
 
 ## Finding Output Format
 
-Each finding MUST include all five fields:
+Each finding includes all five fields, because the synthesizer needs every one to merge and route it:
 
 ```markdown
 - **[Title]** — `file:line` — Confidence: [0/25/50/75/100] — Tier: [safe_auto|gated_auto|advisory|present]

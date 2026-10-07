@@ -1,13 +1,11 @@
 ---
 name: ab-dependency-management
-description: "Trigger this skill when adding, upgrading, or removing ANY dependency — even a single package install deserves compatibility checking. Trigger when the user says 'add dependency', 'upgrade package', 'remove dependency', 'update deps', 'dependency conflict', 'version mismatch', 'install this library', 'npm install', 'pip install', 'cargo add', 'go get', 'bump version', 'security advisory', or 'audit dependencies'. Trigger even when the user wants to just run 'npm install X' without thinking — evaluate necessity, check compatibility, manage lock files, and plan safe rollback first. DO NOT TRIGGER for updating the blueprint plugin itself — use ab-plugin-update instead. DO NOT TRIGGER for installing dev tooling that doesn't ship with the product (linters, formatters) — just do it."
+description: "Adds, upgrades and removes project dependencies deliberately: checks a new package against five gates (necessity, maintenance, size, license, security) and build-versus-install, installs a pinned version range, commits the manifest and lockfile together with the reason, upgrades by changelog and risk, and removes unused packages cleanly. Use when adding, upgrading or removing a dependency, even a single package, when resolving a version conflict, responding to a security advisory, or auditing dependencies. Not for updating the Agent Blueprint plugin itself, nor for dev tooling that does not ship with the product (linters, formatters), which you can simply install."
 ---
 
 # Dependency Management
 
-## Overview
-
-Dependencies are the biggest source of invisible risk. Every dependency you add is code you don't control, maintained by people you don't know, on a schedule you can't predict. Manage them deliberately.
+Every dependency is code you don't control, maintained by people you don't know, on a schedule you can't predict: the biggest source of invisible risk. A finished change adds, upgrades or removes one on purpose: justified against the gates below, version pinned, manifest and lockfile changed together, full test suite passing.
 
 **Core principle:** Fewer dependencies, carefully chosen, regularly updated. Every addition is a long-term commitment.
 
@@ -22,6 +20,7 @@ Dependencies are the biggest source of invisible risk. Every dependency you add 
 **Don't use when:**
 - Installing dev tooling that doesn't ship with the product (linters, formatters)
 - Pinning a version temporarily during debugging (just do it, create a BACKLOG item to revisit)
+- Updating the Agent Blueprint plugin itself
 
 ## Phase 1: Evaluate Before Adding
 
@@ -62,9 +61,17 @@ Install a library when:
 - Rolling your own would introduce security risk
 - The library handles edge cases you'd miss
 
+### Decide
+
+Adding a dependency is usually the user's call (many projects' instructions say so), because the team carries each addition for years. Go ahead without asking only when the user's request names this dependency and no gate showed a red flag; otherwise ask, with the gate results and your recommendation.
+
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
+
+Options: add the package at the version range you recommend; build it in-house instead; add nothing. Default when nobody answers: do not add the dependency; report the recommendation with the gate results.
+
 ## Phase 2: Adding a Dependency
 
-1. **Install the exact version** — use lockfile pinning
+1. **Install a pinned version range**, so the lockfile records exactly what was tested
    ```bash
    # Good: pinned version
    npm install package@^2.3.0
@@ -76,32 +83,25 @@ Install a library when:
    npm install package
    pip install package
    ```
+2. **Verify the lockfile updated**, and stage it with the manifest (`git add package.json package-lock.json` or the equivalent): together they make the build reproducible
+3. **Run the full test suite** — ensure nothing breaks with the new dependency
 
-2. **Verify lockfile updated** — commit the lockfile with the dependency addition
-   ```bash
-   git add package.json package-lock.json  # or equivalent
-   ```
+Commit the manifest and lockfile together, with a message that says why you chose this package:
 
-3. **Run full test suite** — ensure nothing breaks with the new dependency
+```
+feat(deps): add zod for runtime schema validation
 
-4. **Document why** — add a brief comment in the commit message explaining the choice
-   ```
-   feat(deps): add zod for runtime schema validation
+Chosen over joi (smaller bundle, TypeScript-native, zero deps).
+Evaluated: joi, yup, zod, ajv. Zod won on type inference + size.
+```
 
-   Chosen over joi (smaller bundle, TypeScript-native, zero deps).
-   Evaluated: joi, yup, zod, ajv. Zod won on type inference + size.
-   ```
+**Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
+
+**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
 
 ## Phase 3: Upgrading Dependencies
 
-### Upgrade Strategy
-
-| Type | Frequency | Process |
-|------|-----------|---------|
-| **Security patches** | Immediately | Apply, test, deploy |
-| **Patch versions** (x.x.PATCH) | Weekly/biweekly | Batch update, test, deploy |
-| **Minor versions** (x.MINOR.x) | Monthly | Review changelogs, test, deploy |
-| **Major versions** (MAJOR.x.x) | Plan explicitly | Read migration guide, create plan, test thoroughly |
+Take security patches immediately, batch patch versions, review changelogs for minor versions, and plan major versions explicitly; cadence table: `references/upgrade-strategy.md`.
 
 ### Upgrade Checklist
 
@@ -124,11 +124,11 @@ Major upgrades are features, not chores. Treat them as such:
 2. Read the full migration guide
 3. Use the ab-migration-planning skill if the upgrade touches > 5 files
 4. Run the test suite after each migration step
-5. Don't bundle major upgrades with feature work
+5. Keep major upgrades out of feature work, so a failure points at one cause
 
 ## Phase 4: Removing Dependencies
 
-Removing a dependency is always a win if the replacement is simpler.
+Removing a dependency is a win whenever the replacement is simpler.
 
 1. **Search for all imports/requires** of the dependency
 2. **Replace with stdlib or inline code** where possible
@@ -139,21 +139,8 @@ Removing a dependency is always a win if the replacement is simpler.
 
 ## Common Mistakes
 
-**"Just update everything"** — Batch-updating all deps at once makes it impossible to isolate which upgrade broke something. Update in logical groups.
-
-**Ignoring lockfiles** — Lockfiles ensure reproducible builds. Always commit them. Never `.gitignore` them.
-
-**Vendoring without a plan** — If you vendor a dependency, you own its maintenance. Create a BACKLOG item to check for updates quarterly.
-
-**Choosing by GitHub stars** — Stars measure popularity, not quality. A 500-star library with zero deps and a clean API beats a 50K-star framework you use 2% of.
-
-**Not reading changelogs** — "It's just a minor version" — until it deprecates the function you depend on. Always read release notes.
+Batch-updating everything, ignoring lockfiles, vendoring without a plan, choosing by stars, skipping changelogs: `references/common-mistakes.md`.
 
 ## Integration with Other Skills
 
-| Situation | Skill |
-|-----------|-------|
-| Major upgrade is complex, needs a plan | ab-writing-plans + ab-migration-planning |
-| Security vulnerability discovered | ab-systematic-debugging (to assess impact) |
-| Evaluating build-vs-buy for a feature | ab-brainstorming |
-| Dependency broke the build | ab-systematic-debugging |
+A complex major upgrade needs a plan: the ab-writing-plans and ab-migration-planning skills. A security vulnerability (to assess impact) or a dependency that broke the build: the ab-systematic-debugging skill. Build-vs-buy for a feature: the ab-brainstorming skill.

@@ -1,5 +1,85 @@
 {
   "_comment": "Owners of text that skills share (KTD2, KTD3, KTD14, KTD17). snippet_owner holds the capability snippets; shared lists whole files kept byte-identical to their owner. Edit the owner, then run python3 scripts/sync-shared.py.",
   "snippet_owner": "skills/ab-writing-skills/references/capability-snippets.md",
-  "shared": []
+  "shared": [
+    {
+      "owner": "skills/ab-deep-research/references/agents/best-practices-researcher.md",
+      "copies": [
+        "skills/ab-deepen-plan/references/agents/best-practices-researcher.md"
+      ]
+    },
+    {
+      "owner": "skills/ab-review-swarm/references/agents/code-reviewer.md",
+      "copies": [
+        "skills/ab-requesting-code-review/references/agents/code-reviewer.md",
+        "skills/ab-finishing-a-development-branch/references/agents/code-reviewer.md",
+        "skills/ab-subagent-driven-development/references/agents/code-reviewer.md",
+        "skills/ab-wave-orchestration/references/agents/code-reviewer.md"
+      ]
+    },
+    {
+      "owner": "skills/ab-deep-research/references/agents/codebase-context-mapper.md",
+      "copies": [
+        "skills/ab-deepen-plan/references/agents/codebase-context-mapper.md",
+        "skills/ab-build-pipeline/references/agents/codebase-context-mapper.md",
+        "skills/ab-ship-pipeline/references/agents/codebase-context-mapper.md",
+        "skills/ab-ideation/references/agents/codebase-context-mapper.md"
+      ]
+    },
+    {
+      "owner": "skills/ab-deployment-verification/references/agents/deployment-verifier.md",
+      "copies": [
+        "skills/ab-ship-pipeline/references/agents/deployment-verifier.md"
+      ]
+    },
+    {
+      "owner": "skills/ab-deep-research/references/agents/framework-docs-researcher.md",
+      "copies": [
+        "skills/ab-deepen-plan/references/agents/framework-docs-researcher.md",
+        "skills/ab-build-pipeline/references/agents/framework-docs-researcher.md",
+        "skills/ab-ship-pipeline/references/agents/framework-docs-researcher.md"
+      ]
+    },
+    {
+      "owner": "skills/ab-deep-research/references/agents/git-history-analyzer.md",
+      "copies": [
+        "skills/ab-deepen-plan/references/agents/git-history-analyzer.md",
+        "skills/ab-ideation/references/agents/git-history-analyzer.md"
+      ]
+    },
+    {
+      "owner": "skills/ab-wave-orchestration/references/agents/integration-verifier.md",
+      "copies": [
+        "skills/ab-orchestrate/references/agents/integration-verifier.md"
+      ]
+    },
+    {
+      "owner": "skills/ab-deep-research/references/agents/learnings-researcher.md",
+      "copies": [
+        "skills/ab-deepen-plan/references/agents/learnings-researcher.md",
+        "skills/ab-build-pipeline/references/agents/learnings-researcher.md",
+        "skills/ab-ship-pipeline/references/agents/learnings-researcher.md",
+        "skills/ab-ideation/references/agents/learnings-researcher.md"
+      ]
+    },
+    {
+      "owner": "skills/ab-deepen-plan/references/agents/plan-checker.md",
+      "copies": [
+        "skills/ab-build-pipeline/references/agents/plan-checker.md",
+        "skills/ab-ship-pipeline/references/agents/plan-checker.md"
+      ]
+    },
+    {
+      "owner": "skills/ab-pr-workflow/references/agents/pr-comment-resolver.md",
+      "copies": [
+        "skills/ab-resolve-in-parallel/references/agents/pr-comment-resolver.md"
+      ]
+    },
+    {
+      "owner": "docs/upgrade/v4-skill-names.tsv",
+      "copies": [
+        "skills/ab-executing-plans/references/v4-skill-names.tsv"
+      ]
+    }
+  ]
 }
