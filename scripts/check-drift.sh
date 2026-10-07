@@ -45,7 +45,8 @@ if [[ ! -d "$REPO_ROOT" ]]; then
 fi
 REPO_ROOT="$(cd "$REPO_ROOT" && pwd)"
 
-PLUGIN_DIR="$REPO_ROOT/plugins/claude-code-blueprint"
+# The repository root is the plugin root (v4 flattened plugins/<name>/ into it).
+PLUGIN_DIR="$REPO_ROOT"
 SKILLS_DIR="$PLUGIN_DIR/skills"
 AGENTS_DIR="$PLUGIN_DIR/agents"
 HOOKS_JSON="$PLUGIN_DIR/hooks/hooks.json"
@@ -106,7 +107,6 @@ import json, os, re, sys
 repo = sys.argv[1]
 SK, AG, HK = int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])
 GT = {"skills": SK, "agents": AG, "hooks": HK}
-PLUGIN = "plugins/claude-code-blueprint"
 
 failures = []
 _cache = {}
@@ -175,14 +175,14 @@ def check_single(label, rel, text, pattern, name):
         failures.append("%s (%s): expected %d %s, found %d" % (label, rel, GT[name], name, got))
 
 # ── COUNT CLAIMS (current-state locations only) ──
-plugin_json = "%s/.claude-plugin/plugin.json" % PLUGIN
+plugin_json = ".claude-plugin/plugin.json"
 marketplace = ".claude-plugin/marketplace.json"
 
 check_triple("plugin.json description", plugin_json, json_get(plugin_json, ["description"]))
 check_triple("marketplace.json plugin description", marketplace,
              json_get(marketplace, ["plugins", 0, "description"]))
-check_triple("templates/CLAUDE.md Plugin-provided line", "%s/templates/CLAUDE.md" % PLUGIN,
-             rd("%s/templates/CLAUDE.md" % PLUGIN))
+check_triple("templates/CLAUDE.md Plugin-provided line", "templates/CLAUDE.md",
+             rd("templates/CLAUDE.md"))
 check_triple("index.html meta/og description", "index.html", rd("index.html"), min_matches=2)
 
 # index.html current-state count WIDGETS (hero stats, "By The Numbers" bar, feature
@@ -300,9 +300,9 @@ if promo is not None:
             failures.append("%s stat card '%s': expected %d, found %s — promo GIF source drifted"
                             % (promo_rel, lab, GT[key], num))
 
-claude_md = rd("CLAUDE.md")
-check_single("CLAUDE.md architecture", "CLAUDE.md", claude_md, r"(\d+) skills \(slash commands", "skills")
-check_single("CLAUDE.md architecture", "CLAUDE.md", claude_md, r"(\d+) specialized subagents", "agents")
+claude_md = rd("AGENTS.md")  # canonical; CLAUDE.md is a symlink to it
+check_single("AGENTS.md architecture", "AGENTS.md", claude_md, r"(\d+) skills \(slash commands", "skills")
+check_single("AGENTS.md architecture", "AGENTS.md", claude_md, r"(\d+) specialized subagents", "agents")
 
 readme = rd("README.md")
 if readme is not None:

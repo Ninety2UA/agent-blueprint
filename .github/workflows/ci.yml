@@ -17,7 +17,7 @@ jobs:
         run: npm install -g markdownlint-cli
 
       - name: Lint markdown files
-        run: markdownlint '**/*.md' --ignore node_modules --ignore docs/images --ignore plugins/claude-code-blueprint/skills/writing-skills
+        run: markdownlint '**/*.md' --ignore node_modules --ignore docs/images --ignore skills/ab-writing-skills
 
   install-test:
     name: Install Script (${{ matrix.os }})
@@ -74,6 +74,11 @@ jobs:
           test -d /tmp/blueprint-test/tests
           test -d /tmp/blueprint-test/infra
 
+          echo "Checking legacy install copies only scripts/ship.sh and .claude-plugin/plugin.json..."
+          test -f /tmp/blueprint-test/scripts/ship.sh
+          test "$(ls /tmp/blueprint-test/scripts)" = "ship.sh"
+          test "$(ls /tmp/blueprint-test/.claude-plugin)" = "plugin.json"
+
           echo "All checks passed!"
 
       - name: Test --no-overwrite mode
@@ -90,15 +95,18 @@ jobs:
           echo "Checking marketplace manifest..."
           test -f .claude-plugin/marketplace.json
 
-          echo "Checking plugin directory..."
-          test -d plugins/claude-code-blueprint
-          test -f plugins/claude-code-blueprint/.claude-plugin/plugin.json
+          echo "Checking plugin root (the repository root is the plugin)..."
+          test -f .claude-plugin/plugin.json
+          test ! -e plugins
+          test -f AGENTS.md
+          test -L CLAUDE.md
+          test "$(readlink CLAUDE.md)" = "AGENTS.md"
 
           echo "Checking plugin components..."
-          test -d plugins/claude-code-blueprint/skills
-          test -d plugins/claude-code-blueprint/agents
-          test -d plugins/claude-code-blueprint/hooks
-          test -f plugins/claude-code-blueprint/hooks/hooks.json
+          test -d skills
+          test -d agents
+          test -d hooks
+          test -f hooks/hooks.json
 
           echo "Plugin structure valid!"
 
@@ -112,13 +120,13 @@ jobs:
         run: shellcheck install.sh
 
       - name: Run ShellCheck on ship.sh
-        run: shellcheck --exclude=SC2317,SC2329 plugins/claude-code-blueprint/scripts/ship.sh
+        run: shellcheck --exclude=SC2317,SC2329 scripts/ship.sh
 
       - name: Run ShellCheck on check-drift.sh
         run: shellcheck scripts/check-drift.sh
 
       - name: Run ShellCheck on hook handlers
-        run: shellcheck plugins/claude-code-blueprint/hooks/handlers/*.sh
+        run: shellcheck hooks/handlers/*.sh
 
   drift-gate:
     name: Drift Gate
@@ -139,6 +147,46 @@ jobs:
           REQUIRE_YAML: "1"
         run: python3 scripts/check-skill-collisions.py
 
+  portability-gates:
+    name: Portability Gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the allowlist-base check reads the PR base's allowlist
+
+      - name: Install PyYAML
+        run: python3 -c 'import yaml' 2>/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q python3-yaml; }
+
+      # On pull requests, an allowlist entry that the base branch does not have
+      # fails: the allowlists only shrink (KTD5).
+      - name: Skill portability gate
+        env:
+          REQUIRE_YAML: "1"
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            python3 scripts/check-portability.py --allowlist-base "origin/$BASE_REF"
+          else
+            python3 scripts/check-portability.py
+          fi
+
+      - name: Manifest gate
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            python3 scripts/check-manifests.py --allowlist-base "origin/$BASE_REF"
+          else
+            python3 scripts/check-manifests.py
+          fi
+
+      - name: Shared-text copies match their owners
+        run: python3 scripts/sync-shared.py --check
+
+      - name: Gate unit tests
+        run: python3 -m unittest discover -s tests/gates -v
+
   plugin-validate:
     name: Plugin Validate
     runs-on: ubuntu-latest
@@ -151,8 +199,10 @@ jobs:
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
+      # The root holds both manifests; validating "." checks only the marketplace,
+      # so the plugin manifest (which also flags a regular-file CLAUDE.md) runs by path.
       - name: Validate plugin manifest
-        run: claude plugin validate --strict --json plugins/claude-code-blueprint
+        run: claude plugin validate --strict --json .claude-plugin/plugin.json
 
       - name: Validate marketplace manifest
         run: claude plugin validate --strict --json .

@@ -2,11 +2,11 @@
 set -euo pipefail
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║  Claude Code Blueprint — Plugin Installer                    ║
+# ║  Agent Blueprint — Plugin Installer                    ║
 # ║  Installs the blueprint as a Claude Code plugin              ║
 # ╚══════════════════════════════════════════════════════════════╝
 
-REPO_URL="https://github.com/Ninety2UA/claude-code-blueprint"
+REPO_URL="https://github.com/Ninety2UA/agent-blueprint"
 TEMP_DIR=""
 VERSION="3.8.0"
 
@@ -21,7 +21,7 @@ NC='\033[0m'
 
 print_banner() {
     echo ""
-    echo -e "${BOLD}  Claude Code Blueprint${NC} ${DIM}v${VERSION}${NC}"
+    echo -e "${BOLD}  Agent Blueprint${NC} ${DIM}v${VERSION}${NC}"
     echo -e "${DIM}  Production-grade AI-assisted development toolkit${NC}"
     echo ""
 }
@@ -41,7 +41,7 @@ trap cleanup EXIT
 usage() {
     echo "Usage: $0 [OPTIONS] [TARGET_DIR]"
     echo ""
-    echo "Install the Claude Code Blueprint plugin and optionally scaffold a project."
+    echo "Install the Agent Blueprint plugin and optionally scaffold a project."
     echo ""
     echo "Arguments:"
     echo "  TARGET_DIR          Project directory to scaffold (optional)"
@@ -81,7 +81,7 @@ while [[ $# -gt 0 ]]; do
         --no-overwrite) NO_OVERWRITE=true; shift ;;
         --force)        FORCE=true; shift ;;
         --dry-run)      DRY_RUN=true; shift ;;
-        -v|--version)   echo "claude-code-blueprint v${VERSION}"; exit 0 ;;
+        -v|--version)   echo "agent-blueprint v${VERSION}"; exit 0 ;;
         -h|--help)      usage; exit 0 ;;
         -*)             error "Unknown option: $1"; usage; exit 1 ;;
         *)              TARGET_DIR="$1"; shift ;;
@@ -119,7 +119,10 @@ else
     SOURCE_DIR="$TEMP_DIR/template"
 fi
 
-PLUGIN_DIR="$SOURCE_DIR/plugins/claude-code-blueprint"
+# The repository root is the plugin root.
+PLUGIN_DIR="$SOURCE_DIR"
+# Scripts that ship with the plugin (scripts/ also holds repo-only CI gates).
+PLUGIN_SCRIPTS=(ship.sh)
 
 # ─── Copy function with conflict handling ─────────────────────
 copy_item() {
@@ -206,24 +209,21 @@ if [ "$LEGACY" = true ]; then
         copy_item "$PLUGIN_DIR/hooks/hooks.json" "$TARGET_DIR/hooks/hooks.json"
         success "hooks/ installed"
     fi
-    if [ -d "$PLUGIN_DIR/.claude-plugin" ]; then
-        find "$PLUGIN_DIR/.claude-plugin" -type f | while read -r file; do
-            rel="${file#"$PLUGIN_DIR"/}"
-            copy_item "$file" "$TARGET_DIR/$rel"
-        done
+    # The repo root is the plugin root, so its .claude-plugin/ and scripts/ also
+    # hold repo-only files (marketplace manifest, CI gates); copy only what ships.
+    if [ -f "$PLUGIN_DIR/.claude-plugin/plugin.json" ]; then
+        copy_item "$PLUGIN_DIR/.claude-plugin/plugin.json" "$TARGET_DIR/.claude-plugin/plugin.json"
         success ".claude-plugin/ installed"
     fi
-    if [ -d "$PLUGIN_DIR/scripts" ]; then
-        find "$PLUGIN_DIR/scripts" -type f | while read -r file; do
-            rel="${file#"$PLUGIN_DIR"/}"
-            case "$rel" in scripts/record-promo.js) continue ;; esac
-            copy_item "$file" "$TARGET_DIR/$rel"
-        done
-        if [ "$DRY_RUN" = false ]; then
-            find "$TARGET_DIR/scripts" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
+    for script in "${PLUGIN_SCRIPTS[@]}"; do
+        if [ -f "$PLUGIN_DIR/scripts/$script" ]; then
+            copy_item "$PLUGIN_DIR/scripts/$script" "$TARGET_DIR/scripts/$script"
         fi
-        success "scripts/ installed"
+    done
+    if [ "$DRY_RUN" = false ] && [ -d "$TARGET_DIR/scripts" ]; then
+        find "$TARGET_DIR/scripts" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
     fi
+    success "scripts/ installed"
 
     # Template/project files
     if [ -d "$PLUGIN_DIR/templates" ]; then
@@ -258,7 +258,7 @@ if [ "$LEGACY" = true ]; then
         echo -e "  ${BOLD}Next steps:${NC}"
         echo -e "  ${DIM}1.${NC} cd $TARGET_DIR"
         echo -e "  ${DIM}2.${NC} claude"
-        echo -e "  ${DIM}3.${NC} /project-start ${DIM}← interactive project setup${NC}"
+        echo -e "  ${DIM}3.${NC} /ab-project-start ${DIM}← interactive project setup${NC}"
     fi
     echo ""
     exit 0
@@ -269,8 +269,8 @@ CLAUDE_DIR="$HOME/.claude"
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 KNOWN_FILE="$CLAUDE_DIR/plugins/known_marketplaces.json"
 INSTALLED_FILE="$CLAUDE_DIR/plugins/installed_plugins.json"
-MARKETPLACE_NAME="claude-code-blueprint"
-PLUGIN_NAME="claude-code-blueprint"
+MARKETPLACE_NAME="agent-blueprint"
+PLUGIN_NAME="agent-blueprint"
 
 if [ "$SCAFFOLD_ONLY" = false ]; then
     info "Installing as Claude Code plugin..."
@@ -286,11 +286,16 @@ if [ "$SCAFFOLD_ONLY" = false ]; then
 
     if [ "$DRY_RUN" = false ]; then
         mkdir -p "$CACHE_DIR"
-        # Copy plugin engine files from plugins/ subdirectory
-        for dir in skills agents hooks .claude-plugin scripts templates; do
+        # Copy the plugin engine files from the repository root
+        for dir in skills agents hooks templates; do
             if [ -d "$PLUGIN_DIR/$dir" ]; then
                 cp -R "$PLUGIN_DIR/$dir" "$CACHE_DIR/$dir"
             fi
+        done
+        mkdir -p "$CACHE_DIR/.claude-plugin" "$CACHE_DIR/scripts"
+        cp "$PLUGIN_DIR/.claude-plugin/plugin.json" "$CACHE_DIR/.claude-plugin/plugin.json"
+        for script in "${PLUGIN_SCRIPTS[@]}"; do
+            cp "$PLUGIN_DIR/scripts/$script" "$CACHE_DIR/scripts/$script"
         done
         # Make scripts executable
         find "$CACHE_DIR" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
@@ -309,7 +314,7 @@ import json, sys
 with open('$KNOWN_FILE', 'r') as f:
     data = json.load(f)
 data['$MARKETPLACE_NAME'] = {
-    'source': {'source': 'github', 'repo': 'Ninety2UA/claude-code-blueprint'},
+    'source': {'source': 'github', 'repo': 'Ninety2UA/agent-blueprint'},
     'installLocation': '$CACHE_DIR',
     'lastUpdated': '$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")',
     'autoUpdate': True
@@ -409,24 +414,24 @@ elif [ "$SCAFFOLD_ONLY" = true ]; then
     echo -e "  ${BOLD}Next steps:${NC}"
     echo -e "  ${DIM}1.${NC} cd $TARGET_DIR"
     echo -e "  ${DIM}2.${NC} claude"
-    echo -e "  ${DIM}3.${NC} /project-start ${DIM}← interactive project setup${NC}"
+    echo -e "  ${DIM}3.${NC} /ab-project-start ${DIM}← interactive project setup${NC}"
 elif [ -n "$TARGET_DIR" ]; then
     echo -e "  ${GREEN}${BOLD}Plugin installed + project scaffolded!${NC}"
     echo ""
     echo -e "  ${BOLD}Next steps:${NC}"
     echo -e "  ${DIM}1.${NC} cd $TARGET_DIR"
     echo -e "  ${DIM}2.${NC} claude"
-    echo -e "  ${DIM}3.${NC} /project-start ${DIM}← interactive project setup${NC}"
+    echo -e "  ${DIM}3.${NC} /ab-project-start ${DIM}← interactive project setup${NC}"
     echo ""
     echo -e "  ${DIM}Plugin provides: 55 skills · 29 agents · 10 hooks${NC}"
-    echo -e "  ${DIM}Quick start: /build-pipeline · /ship-pipeline · /brainstorming · /review-swarm · /deep-research${NC}"
+    echo -e "  ${DIM}Quick start: /ab-build-pipeline · /ab-ship-pipeline · /ab-brainstorming · /ab-review-swarm · /ab-deep-research${NC}"
 else
     echo -e "  ${GREEN}${BOLD}Plugin installed!${NC}"
     echo ""
     echo -e "  ${BOLD}Next steps:${NC}"
     echo -e "  ${DIM}1.${NC} cd your-project"
     echo -e "  ${DIM}2.${NC} claude"
-    echo -e "  ${DIM}3.${NC} /project-start ${DIM}← scaffolds project + interactive setup${NC}"
+    echo -e "  ${DIM}3.${NC} /ab-project-start ${DIM}← scaffolds project + interactive setup${NC}"
     echo ""
     echo -e "  ${DIM}Plugin provides: 55 skills · 29 agents · 10 hooks${NC}"
     echo -e "  ${DIM}Available in all projects — no per-project installation needed${NC}"

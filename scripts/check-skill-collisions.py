@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""check-skill-collisions.py — Cross-skill description-collision detector,
-SKILL.md size report, and skill structure checks.
+"""check-skill-collisions.py — Cross-skill description-collision detector and
+skill structure checks.
 
 A single-skill trigger test proves a skill fires on the right prompts, but it
 cannot catch TWO skills whose descriptions are similar enough that a prompt
@@ -15,11 +15,9 @@ lowercased, tokenized on non-alphanumerics, and stripped of stopwords plus the
 shared "trigger this skill when ..." boilerplate, so the score reflects what
 separates two skills, not the template they share.
 
-The same run also prints a warn-only size report: each SKILL.md's body (the
-file content after its frontmatter — the part that loads into every triggered
-conversation) is measured against the 8,192-byte budget from writing-skills,
-with a second, more urgent tier at 16,384 bytes. The size report never
-affects the exit code — it is informational, the same as the WARN tier above.
+Skill size is not checked here: check-portability.py holds every SKILL.md to
+a hard 8,000-byte cap on the whole file (R6), which replaced this script's
+warn-only body-size report.
 
 Two structure checks FAIL the run (exit 1):
 
@@ -46,11 +44,6 @@ import glob
 
 WARN = 0.50
 FAIL = 0.75
-
-# SKILL.md body size budget (bytes after frontmatter), from writing-skills'
-# Token Efficiency section. Both tiers are warn-only — see print_size_report.
-SIZE_WARN = 8192
-SIZE_WARN_URGENT = 16384
 
 # A SKILL.md's frontmatter: the fenced block at the top of the file. Group 1 is
 # the frontmatter text; the match end is where the body starts.
@@ -116,31 +109,6 @@ def description(path):
         joined = " ".join(block).strip()
         return joined or None
     return val.strip("\"'") or None
-
-
-def body_bytes(path):
-    """Byte length of a SKILL.md's body — everything after the frontmatter,
-    which is what actually loads into a triggered conversation."""
-    text = open(path, encoding="utf-8").read()
-    m = FRONTMATTER.match(text)
-    body = text[m.end():] if m else text
-    return len(body.encode("utf-8"))
-
-
-def print_size_report(paths):
-    """Warn-only report of SKILL.md bodies over the byte budget. Never
-    appended to the warns/fails lists — it cannot affect the exit code."""
-    sizes = [(body_bytes(p), os.path.basename(os.path.dirname(p))) for p in paths]
-    tiers = (
-        (SIZE_WARN, "move phase procedures to references/, don't squeeze sentences"),
-        (SIZE_WARN_URGENT, "second tier, split these first"),
-    )
-    for limit, advice in tiers:   # the tiers nest: an urgent file is listed under both
-        over = sorted((entry for entry in sizes if entry[0] > limit), reverse=True)
-        if over:
-            print("\n  WARN size (body over %d bytes — %s):" % (limit, advice))
-            for size, name in over:
-                print("    %d bytes  %s" % (size, name))
 
 
 def yaml_failures(paths, repo):
@@ -241,7 +209,7 @@ def print_structure_report(yaml_fail, yaml_skipped, pointer_fail):
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     repo = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] else os.path.dirname(script_dir)
-    skills_glob = os.path.join(repo, "plugins/claude-code-blueprint/skills/*/SKILL.md")
+    skills_glob = os.path.join(repo, "skills/*/SKILL.md")
     paths = sorted(glob.glob(skills_glob))
 
     if not paths:
@@ -269,7 +237,7 @@ def main():
     warns.sort(reverse=True)
     fails.sort(reverse=True)
 
-    agent_paths = sorted(glob.glob(os.path.join(repo, "plugins/claude-code-blueprint/agents/*.md")))
+    agent_paths = sorted(glob.glob(os.path.join(repo, "agents/*.md")))
     yaml_fail, yaml_skipped = yaml_failures(paths + agent_paths, repo)
     pointer_fail = pointer_failures([os.path.dirname(p) for p in paths], repo)
 
@@ -284,14 +252,12 @@ def main():
             print("    %.0f%%  %s  <->  %s" % (s * 100, a, b))
         print("\nDisambiguate the FAILing pairs' descriptions (narrow their trigger conditions).")
         print_structure_report(yaml_fail, yaml_skipped, pointer_fail)
-        print_size_report(paths)
         return 1
 
     print("\n  No skill-description collisions at or above the %.0f%% fail threshold." % (FAIL * 100))
     if not warns:
         print("  No pairs above the %.0f%% warn threshold either." % (WARN * 100))
     structure_failed = print_structure_report(yaml_fail, yaml_skipped, pointer_fail)
-    print_size_report(paths)
     return 1 if structure_failed else 0
 
 
