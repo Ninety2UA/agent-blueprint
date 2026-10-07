@@ -3,7 +3,7 @@ name: ab-orchestrate
 description: "Runs a plan as team work: a task ledger, dependency-ordered waves of parallel helpers with file ownership or worktrees, integration checks between waves, lead-only commits, then review and sign-off. Use when a plan has four or more tasks, some of them independent, or when the user asks for parallel, team, wave or collaborative execution. Not for a sequential plan with review checkpoints between batches (ab-executing-plans) or a change under three files (ab-quick-fix)."
 argument-hint: "[path to plan file] [--no-review] [--wave-size N] [--iterations N] [--convergence fast|deep|perfect]"
 metadata:
-  version: "4.0.0"
+  version: "4.0.1"
 ---
 
 # Orchestrate — Team Work in Waves
@@ -16,7 +16,7 @@ The same run works everywhere. Where the tool can start helpers, a wave's worker
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-orchestrate", "version": "4.0.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-orchestrate.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-orchestrate", "version": "4.0.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-orchestrate.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## Parse Arguments
 

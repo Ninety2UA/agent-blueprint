@@ -4,7 +4,7 @@ Binary `pi`; docs only (the Pi docs at release v0.87.1, read on 2026-09-28): Pi 
 
 ## Install
 
-One route: one copy of `skills/` in `~/.agents/skills`, which Pi scans recursively. `bash install.sh` writes it, and the same copy serves Codex, Grok Build, Cursor CLI and Amp:
+One route: one copy of `skills/` in `~/.agents/skills`, which Pi scans recursively. `bash install.sh` writes it, and the same copy serves Codex, Grok Build, Cursor CLI and Amp. On a machine with Claude Code and Cursor CLI or Amp, it copies the skills into `~/.pi/agent/skills` instead, which only Pi reads:
 
 ```bash
 git clone https://github.com/Ninety2UA/agent-blueprint.git

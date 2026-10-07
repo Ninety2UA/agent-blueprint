@@ -4,7 +4,7 @@ Binary `hermes` (Hermes Agent, by Nous Research); docs only (release v2026.9.24,
 
 ## Install
 
-One route: a skills directory listed under `skills.external_dirs` in `~/.hermes/config.yaml`. `bash install.sh` writes one copy of `skills/` into `~/.agents/skills` and prints the lines to add, since it does not edit your config:
+One route: a skills directory listed under `skills.external_dirs` in `~/.hermes/config.yaml`. `bash install.sh` writes one copy of `skills/` into `~/.agents/skills` and prints the lines to add, since it does not edit your config. On a machine with Claude Code and Cursor CLI or Amp, it copies the skills into `~/.hermes/skills` instead, which Hermes reads with no config change:
 
 ```bash
 git clone https://github.com/Ninety2UA/agent-blueprint.git

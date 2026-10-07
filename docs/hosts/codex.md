@@ -4,7 +4,7 @@ Binary `codex`; facts checked against Codex CLI 0.155.1 on 2026-09-30.
 
 ## Install
 
-One route: the shared skills copy that `bash install.sh` writes to `~/.agents/skills`, which Codex scans (along with Grok Build, Pi, Cursor CLI and Amp, so one copy serves all five):
+One route: the shared skills copy that `bash install.sh` writes to `~/.agents/skills`, which Codex scans (along with Grok Build, Pi, Cursor CLI and Amp, so one copy serves all five). On a machine with Claude Code and Cursor CLI or Amp, which would see that copy a second time, the installer uses Codex's plugin route instead (below):
 
 ```bash
 git clone https://github.com/Ninety2UA/agent-blueprint.git

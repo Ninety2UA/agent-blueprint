@@ -6,7 +6,7 @@ Binary `amp` (Sourcegraph); docs only (the skills page dated 2026-09-27, read on
 
 One route, with two starting points:
 
-- If Claude Code with the Agent Blueprint plugin is on the machine, there is nothing to do: Amp loads `~/.claude/plugins/cache/`, so the skills are already there. `bash install.sh` sees the Claude Code install and skips Amp.
+- If Claude Code with the Agent Blueprint plugin is on the machine, there is nothing to do: Amp loads `~/.claude/plugins/cache/`, so the skills are already there. `bash install.sh` sees the Claude Code install, skips Amp and, since 4.0.1, writes no shared copy, which Amp would read as a second set.
 - Otherwise, one copy of `skills/` in `~/.agents/skills`, which Amp scans; the same copy serves Codex, Grok Build, Pi and Cursor CLI:
 
 ```bash

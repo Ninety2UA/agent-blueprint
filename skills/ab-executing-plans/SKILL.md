@@ -2,7 +2,7 @@
 name: ab-executing-plans
 description: "Executes a written plan in this session in batches of three tasks: each task is followed step by step, verified, committed and ticked in a progress file; each batch ends with a report and a checkpoint for the user's feedback; a whole-branch review closes the run. Reads plans that use v3 skill names. Use when the user wants to work through a plan with human review between batches. Not for parallel or team work (ab-orchestrate) or fully autonomous runs (ab-autonomous-loop)."
 metadata:
-  version: "4.0.0"
+  version: "4.0.1"
 ---
 
 # Executing Plans
@@ -15,7 +15,7 @@ Announce at start: "I'm using the ab-executing-plans skill to implement this pla
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-executing-plans", "version": "4.0.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-executing-plans.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-executing-plans", "version": "4.0.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-executing-plans.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 Read the plan and review it critically; raise concerns before starting (§ When to stop and ask). A skill named by its v3 name, with or without a leading slash (such as `executing-plans` or `writing-plans`), is the v4 skill in the second column of `references/v4-skill-names.tsv`.
 

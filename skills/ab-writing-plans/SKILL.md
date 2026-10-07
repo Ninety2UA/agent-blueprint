@@ -2,7 +2,7 @@
 name: ab-writing-plans
 description: "Turns an approved design or a clear spec into an implementation plan that records decisions, not code: exact file paths, each test and what it asserts, signatures and spec values, dependency order, verification commands, boundaries and a review focus, saved for review before anything runs. Use when an approved design or spec needs breaking into bite-sized executable tasks, when the user asks for a plan or implementation steps, or once ab-brainstorming has an approved design. Not for work with no design yet (ab-brainstorming), executing a plan (ab-executing-plans) or enriching one with research (ab-deepen-plan)."
 metadata:
-  version: "4.0.0"
+  version: "4.0.1"
 ---
 
 # Writing Plans
@@ -13,7 +13,7 @@ A plan records decisions, not a transcript of the code. For each task it names t
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-writing-plans", "version": "4.0.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-writing-plans.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-writing-plans", "version": "4.0.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-writing-plans.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 Announce at start: "I'm using the ab-writing-plans skill to create the implementation plan." Work in a dedicated worktree where the project uses them, and save the plan to `docs/plans/YYYY-MM-DD-<feature-name>.md`.
 

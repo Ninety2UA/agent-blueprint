@@ -3,7 +3,7 @@ name: ab-session-wrap
 description: "Ends a work session from git history and the file system: shows a summary for the user to confirm, rewrites the Session Continuity section of docs/context/STATUS.md, records durable learnings, updates the status tables, goals, backlog, plans, specs and ADRs the session touched, and commits the docs. Documentation only. Use when the user is wrapping up or ending the session, and suggest it when a session ends without one. Not for a mid-session checkpoint or pause (use ab-pause-checkpoint)."
 argument-hint: "[optional: focus area]"
 metadata:
-  version: "4.0.0"
+  version: "4.0.1"
 ---
 
 # Session Wrap-Up
@@ -12,7 +12,7 @@ Summarize what was done, record what was learned, and update every project docum
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-session-wrap", "version": "4.0.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-session-wrap.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-session-wrap", "version": "4.0.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-session-wrap.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 **Documentation only.** Apart from the working files above, change no source code, tests, configs or infrastructure, since a wrap that edits code ships an unreviewed change; a needed code change goes into BACKLOG.md. Git history and the file system are the ground truth: record only work you can find there. The remaining constraints are in `references/step-checklists.md` § Constraints.
 
