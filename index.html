@@ -3567,7 +3567,7 @@
       <div class="section-header reveal">
         <span class="new__badge">v4.0.1</span>
         <h2>What's new in v4.0.1</h2>
-        <p>Cursor CLI and Amp no longer list every skill twice next to Claude Code. Both read Claude Code's plugin as well as <code>~/.agents/skills</code>, so with Claude Code and either of them installed, <code>install.sh</code> now leaves <code>~/.agents/skills</code> alone: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder (Hermes then needs no config edit), and the copy an earlier install left there is removed. Run <code>bash install.sh</code> again to switch.</p>
+        <p>Cursor CLI and Amp no longer list every skill twice next to Claude Code. Both read Claude Code's plugin as well as <code>~/.agents/skills</code>, so with Claude Code and either of them installed, <code>install.sh</code> no longer writes the shared copy to <code>~/.agents/skills</code>: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder (Hermes then needs no config edit), and the copy an earlier install left there is removed. Run <code>bash install.sh</code> again to switch.</p>
       </div>
       <div class="section-header reveal">
         <span class="new__badge">v4.0.0</span>

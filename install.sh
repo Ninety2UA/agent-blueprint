@@ -52,6 +52,7 @@ DRY_RUN=false
 ONLY=""
 COPY_DIR="${AGENT_BLUEPRINT_COPY_DIR:-$HOME/.agents/skills}"
 COPY_DIR_SET=false
+if [ -n "${AGENT_BLUEPRINT_COPY_DIR:-}" ]; then COPY_DIR_SET=true; fi
 SCAFFOLD_ONLY=""
 PROJECT_DIR=""
 
@@ -172,11 +173,23 @@ fi
 # Cursor CLI and Amp read Claude Code's plugin as well as ~/.agents/skills, so beside that plugin a
 # shared copy would show them every skill twice. Then they use the Claude Code plugin, Codex gets a
 # plugin of its own, and Grok Build, Pi and Hermes each get a copy in a folder only they read.
-# Otherwise one shared copy covers every host that scans it.
+# Otherwise one shared copy covers every host that scans it. The machine decides, not the --only
+# list: the Claude Code plugin is installed (or is being installed now) and Cursor CLI or Amp is on PATH.
+claude_plugin=false
+if listed claude; then
+    claude_plugin=true
+elif have claude && claude plugin list 2>/dev/null | grep -q 'agent-blueprint@agent-blueprint'; then
+    claude_plugin=true
+fi
 SPLIT=false
-if listed claude && { listed cursor-agent || listed amp; } && [ "$COPY_DIR_SET" = false ]; then
+if [ "$claude_plugin" = true ] && { have cursor-agent || have amp; } && [ "$COPY_DIR_SET" = false ]; then
     SPLIT=true
 fi
+in_list() {   # in_list WORD ITEM...: true when WORD is one of the items
+    local word="$1" item; shift
+    for item in "$@"; do [ "$item" = "$word" ] && return 0; done
+    return 1
+}
 
 # copy_skills DEST HOST...: copies every skill into DEST and keeps an install record there, so a
 # re-run removes skills renamed or deleted since and leaves every other skill in DEST alone.
@@ -198,11 +211,18 @@ copy_skills() {
     if [ -f "$record" ]; then
         while IFS= read -r name; do previous+=("$name"); done < <(sed -n 's/^ *"\(ab-[a-z0-9-]*\)".*/\1/p' "$record")
     fi
-    local current=()
+    local current=() recorded=() kept=()
     for src in "$SOURCE_DIR"/skills/*/; do
         name=$(basename "$src")
         current+=("$name")
         dest="$dest_dir/$name"
+        # A folder of that name that this destination's record does not list is someone else's:
+        # leave it as it is rather than replace it.
+        if [ -e "$dest" ] && ! in_list "$name" "${previous[@]:-}"; then
+            kept+=("$name")
+            continue
+        fi
+        recorded+=("$name")
         if [ "$DRY_RUN" = true ]; then
             echo -e "    ${DIM}copy  $name${NC}"
         else
@@ -233,15 +253,19 @@ copy_skills() {
             echo "  \"source\": \"$SOURCE_DIR\","
             echo "  \"skills\": ["
             local i=0
-            for name in "${current[@]}"; do
+            for name in "${recorded[@]:-}"; do
+                [ -n "$name" ] || continue
                 i=$((i + 1))
-                if [ "$i" -lt ${#current[@]} ]; then echo "    \"$name\","; else echo "    \"$name\""; fi
+                if [ "$i" -lt ${#recorded[@]} ]; then echo "    \"$name\","; else echo "    \"$name\""; fi
             done
             echo "  ]"
             echo "}"
         } > "$record"
     fi
     success "Skills copied to $dest_dir"
+    if [ ${#kept[@]} -gt 0 ]; then
+        warn "Kept ${#kept[@]} folder(s) in $dest_dir that this installer did not put there: ${kept[*]}. Remove them and run install.sh again to install the blueprint's."
+    fi
 }
 
 # remove_recorded_copy DIR: removes the skills an earlier copy install recorded in DIR, and its
@@ -249,15 +273,25 @@ copy_skills() {
 remove_recorded_copy() {
     local dir="$1" record="$1/.agent-blueprint-install.json" name
     [ -f "$record" ] || return 0
+    if ! grep -q '^ *"plugin": *"agent-blueprint",* *$' "$record"; then
+        warn "Left $dir as it is: its install record does not name agent-blueprint"
+        return 0
+    fi
+    # Names come only from the skills list, one per line as copy_skills writes them; the record's
+    # other values (the checkout path among them) never name a folder to remove.
     while IFS= read -r name; do
         if [ "$DRY_RUN" = true ]; then
             echo -e "    ${DIM}remove $name${NC}"
         else
             rm -rf "${dir:?}/$name"
         fi
-    done < <(grep -o '"ab-[a-z0-9-]*"' "$record" | tr -d '"')
-    if [ "$DRY_RUN" = false ]; then rm -f "$record"; fi
-    info "Removed the earlier shared copy in $dir: Cursor CLI and Amp would list its skills a second time"
+    done < <(sed -n 's/^ *"\(ab-[a-z0-9-]*\)",* *$/\1/p' "$record")
+    if [ "$DRY_RUN" = true ]; then
+        info "Would remove the earlier shared copy in $dir: Cursor CLI and Amp would list its skills a second time"
+    else
+        rm -f "$record"
+        info "Removed the earlier shared copy in $dir: Cursor CLI and Amp would list its skills a second time"
+    fi
 }
 
 if [ "$SPLIT" = true ]; then
@@ -272,7 +306,16 @@ if [ "$SPLIT" = true ]; then
     if listed grok; then copy_skills "$HOME/.grok/skills" grok; fi
     if listed pi; then copy_skills "$HOME/.pi/agent/skills" pi; fi
     if listed hermes; then copy_skills "$HOME/.hermes/skills" hermes; fi
-    remove_recorded_copy "$COPY_DIR"
+    # The shared copy goes only when every host on PATH that read it has its own route now.
+    stranded=()
+    for h in codex grok pi hermes; do
+        if have "$h" && ! listed "$h"; then stranded+=("$h"); fi
+    done
+    if [ ${#stranded[@]} -eq 0 ]; then
+        remove_recorded_copy "$COPY_DIR"
+    elif [ -f "$COPY_DIR/.agent-blueprint-install.json" ]; then
+        warn "Kept the shared copy in $COPY_DIR: ${stranded[*]} still read it. Run install.sh without --only to give them their own routes."
+    fi
 else
     copy_reasons=()
     for h in "${COPY_HOSTS[@]}"; do

@@ -35,7 +35,7 @@ Agent Blueprint gives the agent one way of working that is the same in every too
 
 ## What's new in v4.0.1
 
-Cursor CLI and Amp no longer list every skill twice next to Claude Code. Both read Claude Code's plugin as well as `~/.agents/skills`, so with Claude Code and either of them installed, `install.sh` now leaves `~/.agents/skills` alone: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder (Hermes then needs no config edit), and the copy an earlier install left there is removed. Run `bash install.sh` again to switch.
+Cursor CLI and Amp no longer list every skill twice next to Claude Code. Both read Claude Code's plugin as well as `~/.agents/skills`, so with Claude Code and either of them installed, `install.sh` no longer writes the shared copy to `~/.agents/skills`: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder (Hermes then needs no config edit), and the copy an earlier install left there is removed. Run `bash install.sh` again to switch.
 
 ## What's new in v4.0.0
 
