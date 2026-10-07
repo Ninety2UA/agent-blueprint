@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, release/v4]
+  # No base-branch filter: v4 phase PRs stack on release/v4 and on each other.
   pull_request:
-    branches: [main]
 
 jobs:
   lint-markdown:
@@ -17,7 +17,7 @@ jobs:
         run: npm install -g markdownlint-cli
 
       - name: Lint markdown files
-        run: markdownlint '**/*.md' --ignore node_modules --ignore docs/images --ignore plugins/claude-code-blueprint/skills/writing-skills
+        run: markdownlint '**/*.md' --ignore node_modules --ignore docs/images --ignore skills/ab-writing-skills
 
   install-test:
     name: Install Script (${{ matrix.os }})
@@ -28,61 +28,47 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Test legacy install (dry-run)
+      - name: Dry run reports absent tools
         run: |
-          bash install.sh --local --legacy --dry-run /tmp/blueprint-test 2>&1 | tee /tmp/dry-run.log
-          grep -q "Dry run complete" /tmp/dry-run.log
-
-      - name: Run legacy install
-        run: |
-          bash install.sh --local --legacy --force /tmp/blueprint-test
-
-      - name: Verify installed files exist
-        run: |
+          set +e
+          bash install.sh --dry-run 2>&1 | tee /tmp/dry-run.log
           set -e
-          echo "Checking core files..."
-          test -f /tmp/blueprint-test/CLAUDE.md
+          grep -q "not installed" /tmp/dry-run.log
+          grep -q -- "--copy-dir" /tmp/dry-run.log
+
+      - name: Copy install into a skills folder
+        run: |
+          bash install.sh --copy-dir /tmp/ab-skills
+          SKILLS=$(find /tmp/ab-skills -mindepth 2 -maxdepth 2 -name 'SKILL.md' | wc -l | tr -d ' ')
+          echo "Skills: $SKILLS"
+          test "$SKILLS" -ge 53 || { echo "Expected >= 53 skills, got $SKILLS"; exit 1; }
+          test -f /tmp/ab-skills/.agent-blueprint-install.json
+          grep -q '"ab-quick-fix"' /tmp/ab-skills/.agent-blueprint-install.json
+
+      - name: Scaffold a project
+        run: |
+          bash install.sh --scaffold /tmp/blueprint-test
+          set -e
+          test -f /tmp/blueprint-test/AGENTS.md
+          test "$(cat /tmp/blueprint-test/CLAUDE.md)" = "@AGENTS.md"
+          test -f /tmp/blueprint-test/.agent-blueprint/.gitignore
           test -f /tmp/blueprint-test/BACKLOG.md
           test -f /tmp/blueprint-test/blueprint.local.md
           test -f /tmp/blueprint-test/.gitignore
-
-          echo "Checking .claude/ structure..."
-          test -d /tmp/blueprint-test/.claude/skills
-          test -d /tmp/blueprint-test/.claude/agents
-          test -d /tmp/blueprint-test/.claude/hooks
-
-          # Count installed components
-          AGENTS=$(find /tmp/blueprint-test/.claude/agents -name '*.md' | wc -l | tr -d ' ')
-          SKILLS=$(find /tmp/blueprint-test/.claude/skills -name 'SKILL.md' | wc -l | tr -d ' ')
-
-          echo "Agents: $AGENTS, Skills: $SKILLS"
-
-          test "$AGENTS" -ge 24 || { echo "Expected >= 24 agents, got $AGENTS"; exit 1; }
-          test "$SKILLS" -ge 45 || { echo "Expected >= 45 skills, got $SKILLS"; exit 1; }
-
-          echo "Checking docs/ structure..."
-          test -d /tmp/blueprint-test/docs/context
-          test -d /tmp/blueprint-test/docs/plans
-          test -d /tmp/blueprint-test/docs/specs
-          test -d /tmp/blueprint-test/docs/decisions
-          test -d /tmp/blueprint-test/docs/research
-          test -d /tmp/blueprint-test/docs/solutions
-          test -f /tmp/blueprint-test/docs/solutions/README.md
-
-          echo "Checking placeholder dirs..."
+          for d in context plans specs decisions research solutions; do test -d /tmp/blueprint-test/docs/$d; done
           test -d /tmp/blueprint-test/src
-          test -d /tmp/blueprint-test/tests
-          test -d /tmp/blueprint-test/infra
+          # A second run merges and changes nothing
+          bash install.sh --scaffold /tmp/blueprint-test | tee /tmp/rerun.log
+          grep -q "0 created, 0 merged" /tmp/rerun.log
 
-          echo "All checks passed!"
-
-      - name: Test --no-overwrite mode
+      - name: Legacy mode is retired
         run: |
-          mkdir -p /tmp/blueprint-nooverwrite
-          echo "ORIGINAL" > /tmp/blueprint-nooverwrite/CLAUDE.md
-          bash install.sh --local --legacy --no-overwrite --force /tmp/blueprint-nooverwrite
-          grep -q "ORIGINAL" /tmp/blueprint-nooverwrite/CLAUDE.md
-          echo "--no-overwrite mode passed!"
+          set +e
+          bash install.sh --legacy /tmp/never 2>&1 | tee /tmp/legacy.log
+          code=${PIPESTATUS[0]}
+          set -e
+          test "$code" -eq 2
+          grep -q "ab-migrate" /tmp/legacy.log
 
       - name: Verify plugin structure
         run: |
@@ -90,15 +76,20 @@ jobs:
           echo "Checking marketplace manifest..."
           test -f .claude-plugin/marketplace.json
 
-          echo "Checking plugin directory..."
-          test -d plugins/claude-code-blueprint
-          test -f plugins/claude-code-blueprint/.claude-plugin/plugin.json
+          echo "Checking plugin root (the repository root is the plugin)..."
+          test -f .claude-plugin/plugin.json
+          test ! -e plugins
+          test -f AGENTS.md
+          test -L CLAUDE.md
+          test "$(readlink CLAUDE.md)" = "AGENTS.md"
 
           echo "Checking plugin components..."
-          test -d plugins/claude-code-blueprint/skills
-          test -d plugins/claude-code-blueprint/agents
-          test -d plugins/claude-code-blueprint/hooks
-          test -f plugins/claude-code-blueprint/hooks/hooks.json
+          test -d skills
+          test ! -e agents   # v4: helper prompts live in skills/*/references/agents/
+          test -d hooks
+          test -f hooks/claude-code.json
+          test -f hooks/codex.json
+          test ! -e hooks/hooks.json   # Grok loads that conventional path from any plugin (KTD11)
 
           echo "Plugin structure valid!"
 
@@ -111,14 +102,53 @@ jobs:
       - name: Run ShellCheck on install.sh
         run: shellcheck install.sh
 
-      - name: Run ShellCheck on ship.sh
-        run: shellcheck --exclude=SC2317,SC2329 plugins/claude-code-blueprint/scripts/ship.sh
+      - name: Run ShellCheck on the ship runner
+        run: shellcheck skills/ab-ship-pipeline/scripts/run.sh skills/ab-ship-pipeline/scripts/hosts.sh skills/ab-ship-pipeline/scripts/scan-secrets.sh skills/ab-ship-pipeline/scripts/outgoing-commits.sh
+
+      - name: Run ShellCheck on the runner and hook tests
+        run: shellcheck tests/runner/run-tests.sh tests/runner/fake-host.sh tests/hooks/run-tests.sh
+
+      - name: Run ShellCheck on skill scripts
+        run: shellcheck skills/*/scripts/*.sh
+
+      # The smoke test itself never runs in CI (real hosts, real tokens); its scripts are linted here
+      # and its selftest runs under Runner Tests.
+      - name: Run ShellCheck on the smoke test
+        run: shellcheck tests/smoke/*.sh tests/smoke/scenarios/*/*.sh
 
       - name: Run ShellCheck on check-drift.sh
         run: shellcheck scripts/check-drift.sh
 
       - name: Run ShellCheck on hook handlers
-        run: shellcheck plugins/claude-code-blueprint/hooks/handlers/*.sh
+        run: shellcheck hooks/handlers/*.sh
+
+  runner-tests:
+    name: Runner Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      # t62 needs a tr_TR locale that keeps I apart from i, as glibc's does; the Ubuntu image ships
+      # none, and macOS's folds I as C does, so t62 skips there.
+      - name: Turkish locale for t62
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo locale-gen tr_TR.UTF-8
+
+      # Every scenario drives the fake host in tests/runner/fake-host.sh; no real host runs.
+      - name: Ship runner scenarios
+        run: bash tests/runner/run-tests.sh
+
+      # The smoke harness against its own fake host (tests/smoke/fake-host.sh): no real host, no
+      # tokens; bash, git, python3 and pip's network access only. The eval part needs a v3 checkout
+      # and is skipped; markdownlint has its own job.
+      - name: Smoke harness selftest
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          SMOKE_SELFTEST_NO_LINT: "1"
+        run: bash tests/smoke/selftest.sh
 
   drift-gate:
     name: Drift Gate
@@ -139,6 +169,46 @@ jobs:
           REQUIRE_YAML: "1"
         run: python3 scripts/check-skill-collisions.py
 
+  portability-gates:
+    name: Portability Gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the allowlist-base check reads the PR base's allowlist
+
+      - name: Install PyYAML
+        run: python3 -c 'import yaml' 2>/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q python3-yaml; }
+
+      # On pull requests, an allowlist entry that the base branch does not have
+      # fails: the allowlists only shrink (KTD5).
+      - name: Skill portability gate
+        env:
+          REQUIRE_YAML: "1"
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            python3 scripts/check-portability.py --allowlist-base "origin/$BASE_REF"
+          else
+            python3 scripts/check-portability.py
+          fi
+
+      - name: Manifest gate
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            python3 scripts/check-manifests.py --allowlist-base "origin/$BASE_REF"
+          else
+            python3 scripts/check-manifests.py
+          fi
+
+      - name: Shared-text copies match their owners
+        run: python3 scripts/sync-shared.py --check
+
+      - name: Gate unit tests
+        run: python3 -m unittest discover -s tests/gates -v
+
   plugin-validate:
     name: Plugin Validate
     runs-on: ubuntu-latest
@@ -151,8 +221,10 @@ jobs:
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
+      # The root holds both manifests; validating "." checks only the marketplace,
+      # so the plugin manifest (which also flags a regular-file CLAUDE.md) runs by path.
       - name: Validate plugin manifest
-        run: claude plugin validate --strict --json plugins/claude-code-blueprint
+        run: claude plugin validate --strict --json .claude-plugin/plugin.json
 
       - name: Validate marketplace manifest
         run: claude plugin validate --strict --json .

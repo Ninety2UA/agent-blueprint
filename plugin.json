@@ -1,0 +1,5 @@
+{
+  "name": "agent-blueprint",
+  "version": "4.0.0",
+  "description": "Skills, helper prompts and pipelines for AI-assisted engineering, portable across eight coding CLIs."
+}

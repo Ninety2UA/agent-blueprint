@@ -1,0 +1,1 @@
+{{SKILL_REF}} Implement the feature request in docs/plans/feature-export-table.md. Run the tests, and commit when they pass.

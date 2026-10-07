@@ -1,0 +1,29 @@
+{
+  "name": "agent-blueprint",
+  "version": "4.0.0",
+  "description": "Production-grade development toolkit for AI-assisted engineering. 53 skills and 10 hooks covering the full development lifecycle \u2014 from brainstorming through verified deployment, with helper swarms, team work, wave orchestration, and knowledge compounding.",
+  "author": {
+    "name": "Ninety2UA"
+  },
+  "homepage": "https://github.com/Ninety2UA/agent-blueprint",
+  "repository": "https://github.com/Ninety2UA/agent-blueprint",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "agents",
+    "agent-swarms",
+    "agent-teams",
+    "wave-orchestration",
+    "plugin",
+    "tdd",
+    "debugging",
+    "code-review",
+    "best-practices",
+    "workflows",
+    "development-lifecycle",
+    "hooks",
+    "knowledge-compounding",
+    "multi-agent"
+  ],
+  "skills": "./skills/"
+}

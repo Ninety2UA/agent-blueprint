@@ -1,0 +1,56 @@
+v3_name	v4_name	note
+add-tests	ab-add-tests	
+agent-teams	ab-orchestrate	merged into ab-orchestrate: team work with the Claude Code Agent Teams extra
+autonomous-loop	ab-autonomous-loop	
+backlog-triage	ab-backlog-triage	
+brainstorming	ab-brainstorming	
+browser-testing	ab-browser-testing	
+build-pipeline	ab-build-pipeline	
+changelog-generation	ab-changelog-generation	
+codebase-mapping	ab-codebase-mapping	
+context-checkpoint	ab-context-checkpoint	
+deep-research	ab-deep-research	
+deepen-plan	ab-deepen-plan	
+dependency-management	ab-dependency-management	
+deployment-verification	ab-deployment-verification	
+discuss	ab-discuss	
+dispatching-parallel-agents	ab-dispatching-parallel-agents	
+document-review	ab-document-review	
+executing-plans	ab-executing-plans	
+finishing-a-development-branch	ab-finishing-a-development-branch	
+forensics	ab-forensics	
+health-check	ab-health-check	
+ideation	ab-ideation	
+iterative-refinement	ab-iterative-refinement	
+knowledge-compounding	ab-knowledge-compounding	
+migrate-to-plugin	ab-migrate	renamed; cleans v3 installs out of a project and is manual-only
+migration-planning	ab-migration-planning	
+orchestrate	ab-orchestrate	
+pause-checkpoint	ab-pause-checkpoint	
+performance-profiling	ab-performance-profiling	
+plugin-update	ab-plugin-update	
+pr-workflow	ab-pr-workflow	
+project-start	ab-project-start	
+project-status	ab-project-status	
+quick-fix	ab-quick-fix	
+receiving-code-review	ab-receiving-code-review	
+requesting-code-review	ab-requesting-code-review	
+resolve-in-parallel	ab-resolve-in-parallel	
+resume-session	ab-resume-session	
+review-swarm	ab-review-swarm	
+scope-cutting	ab-scope-cutting	
+session-continuity	ab-session-continuity	
+session-wrap	ab-session-wrap	
+ship-pipeline	ab-ship-pipeline	
+source-driven-development	ab-source-driven-development	
+spike-exploration	ab-spike-exploration	
+subagent-driven-development	ab-subagent-driven-development	
+swarm-orchestration	ab-swarm-orchestration	
+systematic-debugging	ab-systematic-debugging	
+team-execution	ab-orchestrate	merged into ab-orchestrate: team work in every tool
+test-driven-development	ab-test-driven-development	
+using-git-worktrees	ab-using-git-worktrees	
+verification-before-completion	ab-verification-before-completion	
+wave-orchestration	ab-wave-orchestration	
+writing-plans	ab-writing-plans	
+writing-skills	ab-writing-skills	

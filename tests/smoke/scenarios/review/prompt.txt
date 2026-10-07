@@ -1,0 +1,1 @@
+{{SKILL_REF}} Review the changes on this branch against main: the commit that added `--filter` to the `list` command in src/notes/cli.py. Put every finding in your final message.

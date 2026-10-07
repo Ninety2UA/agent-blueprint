@@ -5,7 +5,7 @@ category: gate-decision
 cycle: cli-watch-2026-09-11
 requirement: R19, KTD7, KTD8, KTD9
 applies_when:
-  - A future /cli-watch or /repo-watch cycle re-flags ship-loop.sh, ship.sh, wave orchestration, the injection scanners, or plugin-update as duplicating a native feature
+  - A future /cli-watch cycle re-flags ship-loop.sh, ship.sh, wave orchestration, the injection scanners, or plugin-update as duplicating a native feature
   - Deciding whether a native primitive should replace custom blueprint machinery
   - Re-running the standing capability probes against a newer CLI (start from the 2.1.268 facts recorded here)
 tags: [gate-decision, supersede, cli-watch, ship-loop, ship-sh, goal, wave-orchestration, workflow-tool, injection-scanner, plugin-update, platform-currency]
@@ -19,6 +19,9 @@ Second platform-currency cycle after the July sync. The July verdicts are in
 them against CLI 2.1.268 and adds two new candidates (S2, S5) and two new probes (e, f). Recorded
 per R19 so future cycles do not re-litigate. Outcome: **no custom machinery removed**, one
 native-first adoption with the manual path kept as fallback, released as v3.6.0 (minor).
+
+The next cycle's verdicts, re-verified against CLI 2.1.283, are in
+[the 2026-09-27 cli-watch record](2026-09-27-cli-watch-cycle-verdicts.md).
 
 ## Cutoff pin
 

@@ -1,0 +1,1 @@
+Add `notes export --format table` as specified in docs/plans/feature-export-table.md: render the notes as a text table with the tabulate package, add tabulate to pyproject.toml and install it, keep the json and md formats, and cover the new format with a test.

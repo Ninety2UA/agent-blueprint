@@ -29,10 +29,8 @@ guard against premature exit) with the platform-native `/goal` condition-based c
 
 1. **A skill/hook cannot invoke `/goal`.** `/goal` is a top-level *user-typed* command. Verified
    two ways: no goal tool exists anywhere in the Claude Code toolset (ToolSearch for
-   goal/completion primitives returns none), and the compound-engineering plugin's own
-   `ce-work/references/execution-engines.md` states it plainly ("No goal tools exposed. `/goal` is a
-   top-level user command only; a skill cannot invoke it"). So `/ship` (a skill) cannot start a goal
-   on the user's behalf.
+   goal/completion primitives returns none), and `/goal` is documented as a top-level user command
+   only. So `/ship` (a skill) cannot start a goal on the user's behalf.
 2. **`ship-loop.sh` guards automatically, with zero user action, in every mode.** It is a Stop hook
    reading stdin — it fires in interactive **and** headless `--external` (`scripts/ship.sh` spawning
    `claude -p` per iteration) runs where no human is present. Behavioral baseline drive: 6/6
@@ -45,16 +43,9 @@ guard against premature exit) with the platform-native `/goal` condition-based c
    would have blocked." A retry cannot fix it; the constraint is architectural, not an
    implementation bug.
 
-## Precedent that settled the shape (compound-engineering v3.19.0)
+## The shape that follows
 
-CE hit the identical wall for its own engine and resolved it by **emitting a copyable `/goal`
-prompt the user pastes**, treated as strictly best-effort: "print a copyable prompt block for the
-user to paste, then continue inline/subagents if the user does not paste it. Do not stall waiting
-for a paste." In headless/return-to-caller mode it does **not** emit the prompt at all ("a manual
-paste step strands the caller. Run inline/subagents instead"). The load-bearing principle: never
-depend on the paste; always keep a fallback that does the real work. Applied to `/ship`, that
-fallback *is* `ship-loop.sh` — so CE's own pattern both prescribes the complement shape and refutes
-removal.
+A skill that wants `/goal` can only print a copyable `/goal` prompt for the user to paste, and it must keep working when nobody pastes it. In a headless run there is nobody to paste at all, so the prompt is not printed. Applied to `/ship`, the fallback that does the real work is `ship-loop.sh`: `/goal` can complement it, never replace it.
 
 ## Decision (kept)
 

@@ -1,0 +1,9 @@
+host	interactive	headless	isolation	note
+claude	20	20	worktree	Agent tool with worktree isolation; 20 concurrent subagents per session
+codex	4	4	ownership	agents.max_concurrent_threads_per_session defaults to 6 with multi_agent and 4 with multi_agent_v2; helpers share the parent checkout and sandbox
+agy	-	-	worktree	no documented cap; a subagent's workspace branch is a git worktree
+grok	-	-	worktree	no documented cap (8 is a third-party claim); a subagent can request worktree isolation
+pi	4	4	worktree	only with the pi-subagents package (parallel.concurrency 4, worktree per child); without it there are no helpers
+cursor-agent	-	-	worktree	no documented cap; ask for isolation to give each subagent its own worktree
+hermes	3	2	worktree	delegation.max_concurrent_children is 3 in the config reference (the delegation page says 10); one-shot runs cap at oneshot_max_children 2; worktree_isolation
+amp	-	-	ownership	no documented cap; subagents run isolated from each other and cannot be steered mid-task

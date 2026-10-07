@@ -111,18 +111,19 @@
   .wf-ship .wf-num { background: #7c3aed; }
 
   /* ── QUALITY GATES ─────────────────────────────────── */
-  #quality-gates { }
+  #quality-gates { padding: 48px 32px; }
 
   .qg-row {
     display: flex;
-    gap: 14px;
+    gap: 6px;
   }
 
   .qg-gate {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
     background: #fff;
     border-radius: 12px;
-    padding: 20px 16px;
+    padding: 20px 10px;
     text-align: center;
     border: 1.5px solid #e2e8f0;
     position: relative;
@@ -155,15 +156,17 @@
     color: #64748b;
     background: #f1f5f9;
     display: inline-block;
-    padding: 3px 8px;
+    padding: 3px 6px;
     border-radius: 4px;
+    white-space: nowrap;
+    line-height: 1.5;
   }
 
   .qg-connector {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
+    width: 14px;
     color: #cbd5e1;
     font-size: 18px;
     flex-shrink: 0;
@@ -224,6 +227,9 @@
   }
 
   /* Phase colors */
+  .sm-pipelines .sm-header { background: #fce7f3; color: #9d174d; }
+  .sm-pipelines .sm-skill { background: #fdf2f8; border-color: #f9a8d4; color: #9d174d; }
+
   .sm-design .sm-header { background: #dbeafe; color: #1e40af; }
   .sm-design .sm-skill { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
 
@@ -239,190 +245,14 @@
   .sm-operations .sm-header { background: #e0f2fe; color: #075985; }
   .sm-operations .sm-skill { background: #f0f9ff; border-color: #bae6fd; color: #075985; }
 
+  .sm-session .sm-header { background: #ccfbf1; color: #115e59; }
+  .sm-session .sm-skill { background: #f0fdfa; border-color: #99f6e4; color: #115e59; }
+
+  .sm-orchestration .sm-header { background: #e0e7ff; color: #3730a3; }
+  .sm-orchestration .sm-skill { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; }
+
   .sm-meta .sm-header { background: #f1f5f9; color: #334155; }
   .sm-meta .sm-skill { background: #f8fafc; border-color: #e2e8f0; color: #334155; }
-
-  /* ── AGENTS ECOSYSTEM ──────────────────────────────── */
-  #agents-ecosystem { }
-
-  .ae-hub {
-    text-align: center;
-    margin-bottom: 24px;
-  }
-
-  .ae-hub-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    background: #0f172a;
-    color: #fff;
-    padding: 14px 28px;
-    border-radius: 12px;
-    font-size: 15px;
-    font-weight: 700;
-  }
-
-  .ae-hub-icon {
-    width: 28px;
-    height: 28px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
-    font-weight: 700;
-  }
-
-  .ae-dispatch {
-    text-align: center;
-    margin-bottom: 18px;
-    color: #94a3b8;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  .ae-dispatch::before,
-  .ae-dispatch::after {
-    content: '';
-    display: inline-block;
-    width: 40px;
-    height: 1px;
-    background: #e2e8f0;
-    vertical-align: middle;
-    margin: 0 12px;
-  }
-
-  /* Team-based layout */
-  .ae-team {
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
-    border: 1.5px solid;
-  }
-
-  .ae-team:last-child { margin-bottom: 0; }
-
-  .ae-team-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-
-  .ae-team-name {
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: -0.2px;
-  }
-
-  .ae-team-badge {
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 3px 10px;
-    border-radius: 20px;
-    color: #fff;
-  }
-
-  .ae-team-agents {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .ae-output {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 6px;
-    padding-top: 8px;
-    border-top: 1px dashed;
-    border-color: inherit;
-    width: 100%;
-  }
-
-  .ae-output-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: #94a3b8;
-    flex-shrink: 0;
-  }
-
-  .ae-agent {
-    font-size: 12px;
-    font-weight: 500;
-    padding: 6px 12px;
-    border-radius: 6px;
-    border: 1px solid;
-    line-height: 1.3;
-    white-space: nowrap;
-  }
-
-  .ae-agent-sub {
-    font-size: 10px;
-    font-weight: 400;
-    opacity: 0.65;
-  }
-
-  .ae-arrow {
-    font-size: 16px;
-    color: #94a3b8;
-    padding: 0 2px;
-    flex-shrink: 0;
-  }
-
-  .ae-synthesizer {
-    font-size: 12px;
-    font-weight: 700;
-    padding: 6px 14px;
-    border-radius: 6px;
-    border: 2px solid;
-    white-space: nowrap;
-  }
-
-  /* Two-column row for smaller teams */
-  .ae-teams-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-
-  .ae-teams-row .ae-team { margin-bottom: 0; }
-
-  /* Research Swarm — purple */
-  .ae-research-swarm { background: #faf5ff; border-color: #d8b4fe; }
-  .ae-research-swarm .ae-team-name { color: #7c3aed; }
-  .ae-research-swarm .ae-team-badge { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
-  .ae-research-swarm .ae-agent { background: #f5f3ff; border-color: #c4b5fd; color: #5b21b6; }
-  .ae-research-swarm .ae-synthesizer { background: #ede9fe; border-color: #8b5cf6; color: #5b21b6; }
-
-  /* Review Swarm — green */
-  .ae-review-swarm { background: #f0fdf4; border-color: #86efac; }
-  .ae-review-swarm .ae-team-name { color: #059669; }
-  .ae-review-swarm .ae-team-badge { background: linear-gradient(135deg, #10b981, #059669); }
-  .ae-review-swarm .ae-agent { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
-  .ae-review-swarm .ae-synthesizer { background: #d1fae5; border-color: #059669; color: #065f46; }
-
-  /* Planning — blue */
-  .ae-planning { background: #eff6ff; border-color: #93c5fd; }
-  .ae-planning .ae-team-name { color: #2563eb; }
-  .ae-planning .ae-team-badge { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-  .ae-planning .ae-agent { background: #f0f7ff; border-color: #bfdbfe; color: #1e40af; }
-
-  /* Operations — slate/cyan */
-  .ae-standalone { background: #f0f9ff; border-color: #a5f3fc; }
-  .ae-standalone .ae-team-name { color: #0284c7; }
-  .ae-standalone .ae-team-badge { background: linear-gradient(135deg, #06b6d4, #0284c7); }
-  .ae-standalone .ae-agent { background: #f0f9ff; border-color: #bae6fd; color: #075985; }
 
   /* ── PROJECT STRUCTURE ─────────────────────────────── */
   #project-structure { }
@@ -498,167 +328,6 @@
 
   .ps-source .ps-section-label { background: #d1fae5; color: #065f46; border: 2px solid #a7f3d0; }
   .ps-source .ps-child { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
-
-  /* ── ECOSYSTEM GUIDE ──────────────────────────── */
-  #ecosystem-guide {
-    background: linear-gradient(160deg, #f8fafc 0%, #eef2ff 50%, #faf5ff 100%);
-    border: 2px solid #e0e7ff;
-  }
-
-  .eg-header {
-    text-align: center;
-    margin-bottom: 28px;
-  }
-
-  .eg-badge {
-    display: inline-block;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: #fff;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    padding: 5px 16px;
-    border-radius: 20px;
-    margin-bottom: 14px;
-  }
-
-  .eg-title {
-    font-size: 22px;
-    font-weight: 800;
-    color: #0f172a;
-    letter-spacing: -0.5px;
-    margin-bottom: 6px;
-  }
-
-  .eg-subtitle {
-    font-size: 13px;
-    color: #64748b;
-    font-weight: 400;
-  }
-
-  .eg-tools {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    margin-bottom: 24px;
-  }
-
-  .eg-tool {
-    background: #fff;
-    border-radius: 10px;
-    padding: 14px 10px 12px;
-    text-align: center;
-    border: 1.5px solid #e2e8f0;
-  }
-
-  .eg-tool-cat {
-    font-size: 8px;
-    font-weight: 700;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    padding: 2px 8px;
-    border-radius: 4px;
-    display: inline-block;
-    margin-bottom: 8px;
-  }
-
-  .eg-tool-name {
-    font-size: 13px;
-    font-weight: 700;
-    color: #0f172a;
-    margin-bottom: 3px;
-    letter-spacing: -0.2px;
-  }
-
-  .eg-tool-stars {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    font-weight: 600;
-  }
-
-  /* Tool category badges */
-  .eg-cat-methodology { background: #dbeafe; color: #1e40af; }
-  .eg-cat-allinone { background: #e0e7ff; color: #3730a3; }
-  .eg-cat-design { background: #fce7f3; color: #9d174d; }
-  .eg-cat-orchestration { background: #fef3c7; color: #92400e; }
-  .eg-cat-plugin { background: #d1fae5; color: #065f46; }
-  .eg-cat-skills { background: #ede9fe; color: #5b21b6; }
-  .eg-cat-orchestrator { background: #ffe4e6; color: #9f1239; }
-  .eg-cat-marketplace { background: #ccfbf1; color: #115e59; }
-
-  /* Star colors matching categories */
-  .eg-tool:nth-child(1) .eg-tool-stars { color: #2563eb; }
-  .eg-tool:nth-child(2) .eg-tool-stars { color: #4338ca; }
-  .eg-tool:nth-child(3) .eg-tool-stars { color: #be185d; }
-  .eg-tool:nth-child(4) .eg-tool-stars { color: #b45309; }
-  .eg-tool:nth-child(5) .eg-tool-stars { color: #059669; }
-  .eg-tool:nth-child(6) .eg-tool-stars { color: #7c3aed; }
-  .eg-tool:nth-child(7) .eg-tool-stars { color: #e11d48; }
-  .eg-tool:nth-child(8) .eg-tool-stars { color: #0d9488; }
-
-  .eg-divider {
-    text-align: center;
-    margin-bottom: 18px;
-    color: #94a3b8;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  .eg-divider::before,
-  .eg-divider::after {
-    content: '';
-    display: inline-block;
-    width: 80px;
-    height: 1px;
-    background: #cbd5e1;
-    vertical-align: middle;
-    margin: 0 14px;
-  }
-
-  .eg-features {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 24px;
-  }
-
-  .eg-feature {
-    flex: 1;
-    background: #fff;
-    border-radius: 10px;
-    padding: 16px 10px 14px;
-    text-align: center;
-    border: 1.5px solid #e2e8f0;
-    border-top: 3.5px solid;
-  }
-
-  .eg-feature:nth-child(1) { border-top-color: #3b82f6; }
-  .eg-feature:nth-child(2) { border-top-color: #8b5cf6; }
-  .eg-feature:nth-child(3) { border-top-color: #f59e0b; }
-  .eg-feature:nth-child(4) { border-top-color: #10b981; }
-  .eg-feature:nth-child(5) { border-top-color: #f43f5e; }
-
-  .eg-feature-title {
-    font-size: 12px;
-    font-weight: 700;
-    color: #0f172a;
-    margin-bottom: 4px;
-    line-height: 1.35;
-  }
-
-  .eg-feature-desc {
-    font-size: 10.5px;
-    color: #64748b;
-    line-height: 1.4;
-  }
-
-  .eg-footer {
-    text-align: center;
-    font-size: 13px;
-    color: #475569;
-    font-style: italic;
-  }
 
   /* ── STANDALONE SWARM DIAGRAMS ──────────────── */
   .sw-controller {
@@ -803,6 +472,15 @@
     margin-bottom: 8px;
   }
 
+  .sw-validator-card {
+    display: inline-block;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    border: 1.5px solid;
+  }
+
   /* Review Swarm colors — green */
   .sw-review .sw-controller-icon { background: linear-gradient(135deg, #10b981, #059669); }
   .sw-review .sw-command { background: #d1fae5; color: #065f46; }
@@ -810,6 +488,7 @@
   .sw-review .sw-agent { background: #ecfdf5; border-color: #6ee7b7; color: #065f46; }
   .sw-review .sw-conditional-label { color: #059669; border-color: #86efac; }
   .sw-review .sw-synthesizer-card { background: #ecfdf5; border-color: #059669; color: #065f46; }
+  .sw-review .sw-validator-card { background: #f0fdf4; border-color: #6ee7b7; color: #065f46; }
   .sw-review .sw-synthesizer-icon { background: linear-gradient(135deg, #10b981, #059669); }
 
   /* Research Swarm colors — purple */
@@ -1078,22 +757,22 @@
   }
 
   /* ── KNOWLEDGE LOOP ─────────────────────────── */
-  #knowledge-loop { }
+  #knowledge-loop { padding: 48px 28px; }
 
   .kl-flow {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 
   .kl-step {
     text-align: center;
-    padding: 14px 16px;
+    padding: 14px 10px;
     border-radius: 10px;
     border: 1.5px solid;
-    min-width: 130px;
+    min-width: 120px;
   }
 
   .kl-step-name {
@@ -1111,7 +790,7 @@
   .kl-arrow {
     font-size: 20px;
     color: #94a3b8;
-    padding: 0 8px;
+    padding: 0 4px;
     flex-shrink: 0;
   }
 
@@ -1318,7 +997,7 @@
     background: #ecfdf5;
     border-color: #a7f3d0;
     color: #065f46;
-    min-width: 160px;
+    min-width: 180px;
   }
 
   .dp-swarm-finding {
@@ -1365,6 +1044,16 @@
     justify-content: center;
     font-size: 12px;
     color: #fff;
+  }
+
+  .dp-swarm-validator {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    border: 1.5px solid #6ee7b7;
+    background: #f0fdf4;
+    color: #065f46;
   }
 
   .dp-swarm-output {
@@ -1516,8 +1205,8 @@
     font-weight: 600;
     color: #64748b;
   }
-  /* ════════════ PLATFORM-SYNC CYCLE DIAGRAMS (2026-07) ════════════ */
-  /* Shared tokens reused from the house palette:
+  /* ════════════ CARD DIAGRAMS (consistency gates, /goal, host features) ════════════ */
+  /* Shared tokens from the house palette:
      green #ecfdf5/#6ee7b7/#059669 · blue #eff6ff/#93c5fd/#2563eb
      amber #fefce8/#fde68a/#d97706 · pink #fdf2f8/#f9a8d4/#db2777
      purple #f5f3ff/#c4b5fd/#7c3aed · slate ink #0f172a / muted #64748b */
@@ -1526,19 +1215,6 @@
   .fx-note { margin-top: 22px; text-align: center; font-size: 12.5px; color: #64748b; }
   .fx-note code, .fx-mono { font-family: 'JetBrains Mono', monospace; }
   .fx-pill { display: inline-block; border-radius: 999px; padding: 3px 11px; font-size: 11px; font-weight: 700; letter-spacing: 0.2px; }
-
-  /* ── EFFORT TIERS ─────────────────────────────────── */
-  .et-cols { display: flex; gap: 16px; align-items: stretch; }
-  .et-col { flex: 1; border-radius: 14px; border: 1.5px solid; padding: 20px 18px 18px; }
-  .et-badge { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; margin-bottom: 4px; }
-  .et-dot { width: 12px; height: 12px; border-radius: 50%; }
-  .et-count { font-size: 34px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; }
-  .et-count span { font-size: 14px; font-weight: 600; color: #64748b; letter-spacing: 0; }
-  .et-role { font-size: 12.5px; color: #475569; margin: 6px 0 12px; font-weight: 500; }
-  .et-ex { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #64748b; line-height: 1.7; }
-  .et-low { background: #ecfdf5; border-color: #6ee7b7; } .et-low .et-dot { background: #059669; } .et-low .et-badge { color: #047857; }
-  .et-med { background: #eff6ff; border-color: #93c5fd; } .et-med .et-dot { background: #2563eb; } .et-med .et-badge { color: #1d4ed8; }
-  .et-high { background: #f5f3ff; border-color: #c4b5fd; } .et-high .et-dot { background: #7c3aed; } .et-high .et-badge { color: #6d28d9; }
 
   /* ── CONSISTENCY GATES ────────────────────────────── */
   .cg-row { display: flex; gap: 18px; align-items: stretch; }
@@ -1550,11 +1226,13 @@
   .cg-desc { font-size: 12.5px; color: #475569; line-height: 1.6; }
   .cg-desc b { color: #0f172a; }
   .cg-a .cg-ico { background: #ecfdf5; } .cg-b .cg-ico { background: #eff6ff; }
+  .cg-c .cg-ico { background: #fefce8; } .cg-d .cg-ico { background: #f5f3ff; }
+  .cg-desc code { font-size: 11.5px; }
   .cg-ci { margin: 20px auto 0; width: fit-content; background: #0f172a; color: #fff; border-radius: 10px; padding: 10px 22px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
   .cg-ci .fx-mono { font-size: 11px; color: #94a3b8; font-weight: 500; }
   .cg-feeds { display: flex; justify-content: center; gap: 220px; margin: 10px 0 2px; color: #cbd5e1; font-size: 16px; }
 
-  /* ── /goal OPT-IN ─────────────────────────────────── */
+  /* ── /goal COMPLEMENT ─────────────────────────────────── */
   .go-row { display: flex; gap: 18px; align-items: stretch; }
   .go-card { flex: 1; border-radius: 14px; border: 1.5px solid; padding: 20px; position: relative; }
   .go-default { background: #ecfdf5; border-color: #6ee7b7; }
@@ -1575,21 +1253,6 @@
   .pc-name small { display: block; font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 500; color: #94a3b8; margin-top: 2px; }
   .pc-ship { background: #dcfce7; color: #15803d; } .pc-opt { background: #dbeafe; color: #1d4ed8; } .pc-gated { background: #fef3c7; color: #b45309; }
 
-  /* ── PLATFORM-SYNC CYCLE ──────────────────────────── */
-  .ps-flow { display: flex; align-items: center; justify-content: center; gap: 0; }
-  .ps-stage { border-radius: 13px; border: 1.5px solid; padding: 14px 12px; width: 142px; text-align: center; }
-  .ps-stage-t { font-size: 13px; font-weight: 800; letter-spacing: -0.2px; margin-bottom: 5px; }
-  .ps-stage-d { font-size: 10.5px; color: #64748b; line-height: 1.45; }
-  .ps-a { background: #eff6ff; border-color: #93c5fd; } .ps-a .ps-stage-t { color: #1d4ed8; }
-  .ps-b { background: #f5f3ff; border-color: #c4b5fd; } .ps-b .ps-stage-t { color: #6d28d9; }
-  .ps-gate { width: 60px; text-align: center; color: #d97706; flex-shrink: 0; }
-  .ps-gate-d { width: 44px; height: 44px; margin: 0 auto 5px; transform: rotate(45deg); background: #fefce8; border: 1.5px solid #fde68a; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
-  .ps-gate-d span { transform: rotate(-45deg); font-size: 15px; font-weight: 800; }
-  .ps-gate-l { font-size: 10px; font-weight: 700; color: #b45309; }
-  .ps-conn { color: #cbd5e1; font-size: 16px; padding: 0 3px; flex-shrink: 0; }
-  .ps-radar { margin: 18px auto 0; width: fit-content; display: flex; align-items: center; gap: 10px; background: #ecfdf5; border: 1.5px dashed #6ee7b7; border-radius: 10px; padding: 9px 18px; font-size: 12px; color: #047857; font-weight: 600; }
-  .ps-radar .fx-mono { font-size: 11px; }
-
 </style>
 </head>
 <body>
@@ -1601,7 +1264,7 @@
       <div class="wf-card">
         <div class="wf-num">1</div>
         <div class="wf-name">Orient</div>
-        <div class="wf-cmds">/start · /status<br>Load context</div>
+        <div class="wf-cmds">ab-project-status<br>Load context</div>
       </div>
       <div class="wf-arrow">→</div>
     </div>
@@ -1609,7 +1272,7 @@
       <div class="wf-card">
         <div class="wf-num">2</div>
         <div class="wf-name">Design</div>
-        <div class="wf-cmds">/planning · Brainstorm<br>Get approval</div>
+        <div class="wf-cmds">ab-brainstorming<br>Get approval</div>
       </div>
       <div class="wf-arrow">→</div>
     </div>
@@ -1617,7 +1280,7 @@
       <div class="wf-card">
         <div class="wf-num">3</div>
         <div class="wf-name">Plan</div>
-        <div class="wf-cmds">Bite-sized tasks<br>Create worktree</div>
+        <div class="wf-cmds">ab-writing-plans<br>Create worktree</div>
       </div>
       <div class="wf-arrow">→</div>
     </div>
@@ -1625,7 +1288,7 @@
       <div class="wf-card">
         <div class="wf-num">4</div>
         <div class="wf-name">Build</div>
-        <div class="wf-cmds">TDD · Verify<br>/review</div>
+        <div class="wf-cmds">TDD · Verify<br>Code review</div>
       </div>
       <div class="wf-arrow">→</div>
     </div>
@@ -1633,7 +1296,7 @@
       <div class="wf-card">
         <div class="wf-num">5</div>
         <div class="wf-name">Ship</div>
-        <div class="wf-cmds">Merge · /wrap<br>Next task ↩</div>
+        <div class="wf-cmds">Merge<br>ab-session-wrap</div>
       </div>
     </div>
   </div>
@@ -1657,183 +1320,133 @@
     <div class="qg-gate">
       <div class="qg-shield">1</div>
       <div class="qg-rule">No code without design approval</div>
-      <div class="qg-skill">brainstorming</div>
+      <div class="qg-skill">ab-brainstorming</div>
     </div>
     <div class="qg-connector">→</div>
     <div class="qg-gate">
       <div class="qg-shield">2</div>
-      <div class="qg-rule">No production code without failing test</div>
-      <div class="qg-skill">test-driven-development</div>
+      <div class="qg-rule">No production code without a failing test first</div>
+      <div class="qg-skill">ab-test-driven-<br>development</div>
     </div>
     <div class="qg-connector">→</div>
     <div class="qg-gate">
       <div class="qg-shield">3</div>
       <div class="qg-rule">No fix without root cause investigation</div>
-      <div class="qg-skill">systematic-debugging</div>
+      <div class="qg-skill">ab-systematic-<br>debugging</div>
     </div>
     <div class="qg-connector">→</div>
     <div class="qg-gate">
       <div class="qg-shield">4</div>
-      <div class="qg-rule">No completion claim without evidence</div>
-      <div class="qg-skill">verification</div>
+      <div class="qg-rule">No completion claim without fresh evidence</div>
+      <div class="qg-skill">ab-verification-<br>before-completion</div>
     </div>
     <div class="qg-connector">→</div>
     <div class="qg-gate">
       <div class="qg-shield">5</div>
       <div class="qg-rule">No merge without code review</div>
-      <div class="qg-skill">requesting-code-review</div>
+      <div class="qg-skill">ab-requesting-<br>code-review</div>
     </div>
   </div>
 </div>
 
 <!-- ════════════ SKILLS MAP ════════════ -->
 <div class="diagram" id="skills-map">
-  <!-- Design Phase -->
-  <div class="sm-phase sm-design">
-    <div class="sm-header">Design <span class="sm-count">2</span></div>
+  <div class="sm-phase sm-pipelines">
+    <div class="sm-header">Pipelines <span class="sm-count">4</span></div>
     <div class="sm-skills">
-      <div class="sm-skill">Brainstorming</div>
-      <div class="sm-skill">Writing Plans</div>
+      <div class="sm-skill">ab-build-pipeline</div>
+      <div class="sm-skill">ab-ship-pipeline</div>
+      <div class="sm-skill">ab-quick-fix</div>
+      <div class="sm-skill">ab-orchestrate</div>
     </div>
   </div>
-  <!-- Execution Phase -->
+  <div class="sm-phase sm-design">
+    <div class="sm-header">Design <span class="sm-count">8</span></div>
+    <div class="sm-skills">
+      <div class="sm-skill">ab-brainstorming</div>
+      <div class="sm-skill">ab-discuss</div>
+      <div class="sm-skill">ab-ideation</div>
+      <div class="sm-skill">ab-writing-plans</div>
+      <div class="sm-skill">ab-deepen-plan</div>
+      <div class="sm-skill">ab-deep-research</div>
+      <div class="sm-skill">ab-spike-exploration</div>
+      <div class="sm-skill">ab-scope-cutting</div>
+    </div>
+  </div>
   <div class="sm-phase sm-execution">
     <div class="sm-header">Execution <span class="sm-count">7</span></div>
     <div class="sm-skills">
-      <div class="sm-skill">Executing Plans</div>
-      <div class="sm-skill">Test-Driven Development</div>
-      <div class="sm-skill">Subagent-Driven Dev</div>
-      <div class="sm-skill">Parallel Agents</div>
-      <div class="sm-skill">Git Worktrees</div>
-      <div class="sm-skill">Wave Orchestration</div>
-      <div class="sm-skill">Swarm Orchestration</div>
+      <div class="sm-skill">ab-executing-plans</div>
+      <div class="sm-skill">ab-subagent-driven-development</div>
+      <div class="sm-skill">ab-autonomous-loop</div>
+      <div class="sm-skill">ab-test-driven-development</div>
+      <div class="sm-skill">ab-source-driven-development</div>
+      <div class="sm-skill">ab-dispatching-parallel-agents</div>
+      <div class="sm-skill">ab-using-git-worktrees</div>
     </div>
   </div>
-  <!-- Quality Phase -->
   <div class="sm-phase sm-quality">
-    <div class="sm-header">Quality <span class="sm-count">4</span></div>
+    <div class="sm-header">Quality <span class="sm-count">9</span></div>
     <div class="sm-skills">
-      <div class="sm-skill">Systematic Debugging</div>
-      <div class="sm-skill">Verification</div>
-      <div class="sm-skill">Requesting Review</div>
-      <div class="sm-skill">Receiving Review</div>
+      <div class="sm-skill">ab-systematic-debugging</div>
+      <div class="sm-skill">ab-verification-before-completion</div>
+      <div class="sm-skill">ab-requesting-code-review</div>
+      <div class="sm-skill">ab-receiving-code-review</div>
+      <div class="sm-skill">ab-review-swarm</div>
+      <div class="sm-skill">ab-iterative-refinement</div>
+      <div class="sm-skill">ab-add-tests</div>
+      <div class="sm-skill">ab-browser-testing</div>
+      <div class="sm-skill">ab-document-review</div>
     </div>
   </div>
-  <!-- Completion Phase -->
   <div class="sm-phase sm-completion">
-    <div class="sm-header">Completion <span class="sm-count">4</span></div>
+    <div class="sm-header">Completion <span class="sm-count">5</span></div>
     <div class="sm-skills">
-      <div class="sm-skill">Finishing Branch</div>
-      <div class="sm-skill">Session Wrap</div>
-      <div class="sm-skill">Knowledge Compounding</div>
-      <div class="sm-skill">Session Continuity</div>
+      <div class="sm-skill">ab-finishing-a-development-branch</div>
+      <div class="sm-skill">ab-pr-workflow</div>
+      <div class="sm-skill">ab-session-wrap</div>
+      <div class="sm-skill">ab-knowledge-compounding</div>
+      <div class="sm-skill">ab-changelog-generation</div>
     </div>
   </div>
-  <!-- Operations Phase -->
+  <div class="sm-phase sm-session">
+    <div class="sm-header">Session management <span class="sm-count">8</span></div>
+    <div class="sm-skills">
+      <div class="sm-skill">ab-project-start</div>
+      <div class="sm-skill">ab-project-status</div>
+      <div class="sm-skill">ab-resume-session</div>
+      <div class="sm-skill">ab-pause-checkpoint</div>
+      <div class="sm-skill">ab-context-checkpoint</div>
+      <div class="sm-skill">ab-session-continuity</div>
+      <div class="sm-skill">ab-backlog-triage</div>
+      <div class="sm-skill">ab-health-check</div>
+    </div>
+  </div>
   <div class="sm-phase sm-operations">
-    <div class="sm-header">Operations <span class="sm-count">11</span></div>
+    <div class="sm-header">Operations <span class="sm-count">7</span></div>
     <div class="sm-skills">
-      <div class="sm-skill">Codebase Mapping</div>
-      <div class="sm-skill">Context Checkpoint</div>
-      <div class="sm-skill">PR Workflow</div>
-      <div class="sm-skill">Resolve in Parallel</div>
-      <div class="sm-skill">Deploy Verification</div>
-      <div class="sm-skill">Document Review</div>
-      <div class="sm-skill">Changelog</div>
-      <div class="sm-skill">Migration Planning</div>
-      <div class="sm-skill">Perf Profiling</div>
-      <div class="sm-skill">Browser Testing</div>
-      <div class="sm-skill">Autonomous Loop</div>
+      <div class="sm-skill">ab-codebase-mapping</div>
+      <div class="sm-skill">ab-resolve-in-parallel</div>
+      <div class="sm-skill">ab-deployment-verification</div>
+      <div class="sm-skill">ab-migration-planning</div>
+      <div class="sm-skill">ab-performance-profiling</div>
+      <div class="sm-skill">ab-dependency-management</div>
+      <div class="sm-skill">ab-forensics</div>
     </div>
   </div>
-  <!-- Meta -->
+  <div class="sm-phase sm-orchestration">
+    <div class="sm-header">Orchestration primitives <span class="sm-count">2</span></div>
+    <div class="sm-skills">
+      <div class="sm-skill">ab-wave-orchestration</div>
+      <div class="sm-skill">ab-swarm-orchestration</div>
+    </div>
+  </div>
   <div class="sm-phase sm-meta">
-    <div class="sm-header">Meta <span class="sm-count">1</span></div>
+    <div class="sm-header">Meta <span class="sm-count">3</span></div>
     <div class="sm-skills">
-      <div class="sm-skill">Writing Skills</div>
-    </div>
-  </div>
-</div>
-
-<!-- ════════════ AGENTS ECOSYSTEM ════════════ -->
-<div class="diagram" id="agents-ecosystem">
-  <div class="ae-hub">
-    <div class="ae-hub-label">
-      <div class="ae-hub-icon">>_</div>
-      Claude Code Main Session
-    </div>
-  </div>
-  <div class="ae-dispatch">orchestrates 29 agents across 4 teams</div>
-
-  <!-- Research Swarm -->
-  <div class="ae-team ae-research-swarm">
-    <div class="ae-team-header">
-      <div class="ae-team-badge">Swarm</div>
-      <div class="ae-team-name">Research Swarm — /deep-research</div>
-    </div>
-    <div class="ae-team-agents">
-      <div class="ae-agent">Best Practices</div>
-      <div class="ae-agent">Framework Docs</div>
-      <div class="ae-agent">Learnings Researcher</div>
-      <div class="ae-agent">Git History Analyzer</div>
-      <div class="ae-agent">Context Mapper</div>
-      <div class="ae-output">
-        <div class="ae-output-label">output →</div>
-        <div class="ae-synthesizer">Research Synthesizer</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Review Swarm -->
-  <div class="ae-team ae-review-swarm">
-    <div class="ae-team-header">
-      <div class="ae-team-badge">Swarm</div>
-      <div class="ae-team-name">Review Swarm — /review-swarm</div>
-    </div>
-    <div class="ae-team-agents">
-      <div class="ae-agent">Code Reviewer</div>
-      <div class="ae-agent">Security Sentinel</div>
-      <div class="ae-agent">Performance Oracle</div>
-      <div class="ae-agent">Simplicity Reviewer</div>
-      <div class="ae-agent">Convention Enforcer</div>
-      <div class="ae-agent">Test Coverage</div>
-      <div class="ae-agent" style="opacity:0.6">+ Architecture Strategist</div>
-      <div class="ae-agent" style="opacity:0.6">+ Frontend Reviewer</div>
-      <div class="ae-agent" style="opacity:0.6">+ Data Integrity</div>
-      <div class="ae-agent" style="opacity:0.6">+ Schema Drift</div>
-      <div class="ae-output">
-        <div class="ae-output-label">output →</div>
-        <div class="ae-synthesizer">Findings Synthesizer</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Planning + Execution row -->
-  <div class="ae-teams-row">
-    <div class="ae-team ae-planning">
-      <div class="ae-team-header">
-        <div class="ae-team-badge">Pipeline</div>
-        <div class="ae-team-name">Planning &amp; Verification</div>
-      </div>
-      <div class="ae-team-agents">
-        <div class="ae-agent">Plan Checker</div>
-        <div class="ae-agent">Integration Checker</div>
-        <div class="ae-agent">Integration Verifier</div>
-        <div class="ae-agent">Deployment Verifier</div>
-      </div>
-    </div>
-
-    <div class="ae-team ae-standalone">
-      <div class="ae-team-header">
-        <div class="ae-team-badge">Standalone</div>
-        <div class="ae-team-name">Operations &amp; Testing</div>
-      </div>
-      <div class="ae-team-agents">
-        <div class="ae-agent">Codebase Mapper</div>
-        <div class="ae-agent">PR Comment Resolver</div>
-        <div class="ae-agent">Bug Reproduction</div>
-        <div class="ae-agent">Test Gap Analyzer</div>
-      </div>
+      <div class="sm-skill">ab-writing-skills</div>
+      <div class="sm-skill">ab-plugin-update</div>
+      <div class="sm-skill">ab-migrate</div>
     </div>
   </div>
 </div>
@@ -1844,29 +1457,33 @@
     <div class="ps-root">your-project/</div>
 
     <div class="ps-section ps-claude">
-      <div class="ps-section-label" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;">Plugin<br><span style="font-weight:500;font-size:11px;opacity:0.85">Installed globally — zero files in your project</span></div>
+      <div class="ps-section-label" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;">Agent Blueprint<br><span style="font-weight:500;font-size:11px;opacity:0.85">Installed per tool, outside your project</span></div>
       <div class="ps-children">
         <div class="ps-child">
-          <div class="ps-child-name">55 skills</div>
-          <div class="ps-child-desc">/build-pipeline /ship-pipeline /brainstorming /review-swarm ...</div>
+          <div class="ps-child-name">53 skills</div>
+          <div class="ps-child-desc">ab-build-pipeline · ab-ship-pipeline · ab-brainstorming · ab-review-swarm …</div>
         </div>
         <div class="ps-child">
-          <div class="ps-child-name">29 agents</div>
-          <div class="ps-child-desc">Specialized subagents</div>
+          <div class="ps-child-name">30 helper prompts</div>
+          <div class="ps-child-desc">Inside the skills that use them</div>
         </div>
         <div class="ps-child">
           <div class="ps-child-name">10 hooks</div>
-          <div class="ps-child-desc">Session &amp; context lifecycle</div>
+          <div class="ps-child-desc">Optional · Claude Code (Codex: 5)</div>
         </div>
       </div>
     </div>
 
     <div class="ps-section ps-root-files">
-      <div class="ps-section-label">Project Files<br><span style="font-weight:500;font-size:11px;opacity:0.7">Scaffolded by /start</span></div>
+      <div class="ps-section-label">Project files<br><span style="font-weight:500;font-size:11px;opacity:0.7">Scaffolded by ab-project-start</span></div>
       <div class="ps-children">
         <div class="ps-child">
+          <div class="ps-child-name">AGENTS.md</div>
+          <div class="ps-child-desc">Project instructions</div>
+        </div>
+        <div class="ps-child">
           <div class="ps-child-name">CLAUDE.md</div>
-          <div class="ps-child-desc">Master orchestration</div>
+          <div class="ps-child-desc">@AGENTS.md</div>
         </div>
         <div class="ps-child">
           <div class="ps-child-name">BACKLOG.md</div>
@@ -1874,13 +1491,17 @@
         </div>
         <div class="ps-child">
           <div class="ps-child-name">blueprint.local.md</div>
-          <div class="ps-child-desc">Per-project agent config</div>
+          <div class="ps-child-desc">Per-project helper config</div>
+        </div>
+        <div class="ps-child">
+          <div class="ps-child-name">.agent-blueprint/</div>
+          <div class="ps-child-desc">Run state, team ledger, review runs</div>
         </div>
       </div>
     </div>
 
     <div class="ps-section ps-docs">
-      <div class="ps-section-label">docs/<br><span style="font-weight:500;font-size:11px;opacity:0.7">Living Documentation</span></div>
+      <div class="ps-section-label">docs/<br><span style="font-weight:500;font-size:11px;opacity:0.7">Living documentation</span></div>
       <div class="ps-children">
         <div class="ps-child">
           <div class="ps-child-name">context/</div>
@@ -1900,17 +1521,21 @@
         </div>
         <div class="ps-child">
           <div class="ps-child-name">research/</div>
-          <div class="ps-child-desc">Spike results</div>
+          <div class="ps-child-desc">Research briefs, spikes</div>
         </div>
         <div class="ps-child">
           <div class="ps-child-name">solutions/</div>
-          <div class="ps-child-desc">Institutional knowledge</div>
+          <div class="ps-child-desc">Solved problems</div>
+        </div>
+        <div class="ps-child">
+          <div class="ps-child-name">learnings/</div>
+          <div class="ps-child-desc">Patterns and gotchas</div>
         </div>
       </div>
     </div>
 
     <div class="ps-section ps-source">
-      <div class="ps-section-label">Source Code</div>
+      <div class="ps-section-label">Source code</div>
       <div class="ps-children">
         <div class="ps-child">
           <div class="ps-child-name">src/</div>
@@ -1929,101 +1554,22 @@
   </div>
 </div>
 
-<!-- ════════════ ECOSYSTEM GUIDE ════════════ -->
-<div class="diagram" id="ecosystem-guide">
-  <div class="eg-header">
-    <div class="eg-badge">FREE GUIDE</div>
-    <div class="eg-title">The Claude Code Tools Guide</div>
-    <div class="eg-subtitle">An unbiased, evidence-based evaluation of the top 8 plugins and frameworks</div>
-  </div>
-
-  <div class="eg-tools">
-    <div class="eg-tool">
-      <div class="eg-tool-cat eg-cat-methodology">Methodology</div>
-      <div class="eg-tool-name">Superpowers</div>
-      <div class="eg-tool-stars">257.5K ★</div>
-    </div>
-    <div class="eg-tool">
-      <div class="eg-tool-cat eg-cat-allinone">All-in-One</div>
-      <div class="eg-tool-name">Everything CC</div>
-      <div class="eg-tool-stars">231K ★</div>
-    </div>
-    <div class="eg-tool">
-      <div class="eg-tool-cat eg-cat-design">Design Skill</div>
-      <div class="eg-tool-name">UI/UX Pro Max</div>
-      <div class="eg-tool-stars">107.7K ★</div>
-    </div>
-    <div class="eg-tool">
-      <div class="eg-tool-cat eg-cat-orchestration">Orchestration</div>
-      <div class="eg-tool-name">Get Shit Done</div>
-      <div class="eg-tool-stars">64.8K ★</div>
-    </div>
-    <div class="eg-tool">
-      <div class="eg-tool-cat eg-cat-plugin">Plugin + CLI</div>
-      <div class="eg-tool-name">Compound Eng.</div>
-      <div class="eg-tool-stars">23.2K ★</div>
-    </div>
-    <div class="eg-tool">
-      <div class="eg-tool-cat eg-cat-skills">Skills Pack</div>
-      <div class="eg-tool-name">Claude Skills</div>
-      <div class="eg-tool-stars">22.8K ★</div>
-    </div>
-    <div class="eg-tool">
-      <div class="eg-tool-cat eg-cat-orchestrator">Orchestrator</div>
-      <div class="eg-tool-name">Ralphy</div>
-      <div class="eg-tool-stars">2.9K ★</div>
-    </div>
-    <div class="eg-tool">
-      <div class="eg-tool-cat eg-cat-marketplace">Marketplace</div>
-      <div class="eg-tool-name">Plugins+Skills</div>
-      <div class="eg-tool-stars">2.5K ★</div>
-    </div>
-  </div>
-
-  <div class="eg-divider">what's inside</div>
-
-  <div class="eg-features">
-    <div class="eg-feature">
-      <div class="eg-feature-title">Honest Profiles</div>
-      <div class="eg-feature-desc">What works, what doesn't, what's hype</div>
-    </div>
-    <div class="eg-feature">
-      <div class="eg-feature-title">Classification Matrix</div>
-      <div class="eg-feature-desc">Architecture, scope, and overhead</div>
-    </div>
-    <div class="eg-feature">
-      <div class="eg-feature-title">Scenario Recs</div>
-      <div class="eg-feature-desc">Solo dev vs. team, simple vs. complex</div>
-    </div>
-    <div class="eg-feature">
-      <div class="eg-feature-title">Combination Safety</div>
-      <div class="eg-feature-desc">Which tools pair and which conflict</div>
-    </div>
-    <div class="eg-feature">
-      <div class="eg-feature-title">Final Ranking</div>
-      <div class="eg-feature-desc">Confidence-scored from repo inspection</div>
-    </div>
-  </div>
-
-  <div class="eg-footer">The best tool is the one that matches your actual workflow, not the one with the most stars.</div>
-</div>
-
 <!-- ════════════ SHIP PIPELINE ════════════ -->
 <div class="diagram" id="ship-pipeline" style="padding-bottom: 56px;">
   <div class="wf-pipeline">
-    <div class="wf-step wf-orient" style="flex: 0.8;">
+    <div class="wf-step wf-orient" style="flex: 1;">
       <div class="wf-card">
-        <div class="wf-num" style="width:28px;height:28px;font-size:12px;">0</div>
-        <div class="wf-name" style="font-size:13px;">Init</div>
-        <div class="wf-cmds">Detect continuation<br>Activate loop</div>
+        <div class="wf-num" style="width:28px;height:28px;font-size:12px;">1</div>
+        <div class="wf-name" style="font-size:13px;">Requirements</div>
+        <div class="wf-cmds">Lock as decisions<br>No checkpoints</div>
       </div>
       <div class="wf-arrow">→</div>
     </div>
     <div class="wf-step wf-design" style="flex: 1;">
       <div class="wf-card">
-        <div class="wf-num" style="width:28px;height:28px;font-size:12px;">1–2</div>
+        <div class="wf-num" style="width:28px;height:28px;font-size:12px;">2–3</div>
         <div class="wf-name" style="font-size:13px;">Plan</div>
-        <div class="wf-cmds">Research · Write plan<br>Verify · Deepen</div>
+        <div class="wf-cmds">Research · Write<br>Check · Deepen</div>
       </div>
       <div class="wf-arrow">→</div>
     </div>
@@ -2031,7 +1577,7 @@
       <div class="wf-card">
         <div class="wf-num" style="width:28px;height:28px;font-size:12px;">4</div>
         <div class="wf-name" style="font-size:13px;">Execute</div>
-        <div class="wf-cmds">Team-lead agent<br>Workers (200K each)</div>
+        <div class="wf-cmds">ab-orchestrate<br>Waves of helpers</div>
       </div>
       <div class="wf-arrow">→</div>
     </div>
@@ -2039,20 +1585,20 @@
       <div class="wf-card">
         <div class="wf-num" style="width:28px;height:28px;font-size:12px;">5</div>
         <div class="wf-name" style="font-size:13px;">Review</div>
-        <div class="wf-cmds">Iterative refinement<br>3 cycles · P1 = 0</div>
+        <div class="wf-cmds">Findings converge<br>3 cycles · P1 = 0</div>
       </div>
       <div class="wf-arrow">→</div>
     </div>
-    <div class="wf-step wf-ship" style="flex: 0.8;">
+    <div class="wf-step wf-ship" style="flex: 1;">
       <div class="wf-card">
-        <div class="wf-num" style="width:28px;height:28px;font-size:12px;">7</div>
-        <div class="wf-name" style="font-size:13px;">Ship</div>
-        <div class="wf-cmds">PR · Compound<br>&lt;promise&gt;DONE&lt;/promise&gt;</div>
+        <div class="wf-num" style="width:28px;height:28px;font-size:12px;">6–7</div>
+        <div class="wf-name" style="font-size:13px;">Compound + ship</div>
+        <div class="wf-cmds">Knowledge capture<br>Commit · PR body</div>
       </div>
     </div>
   </div>
 
-  <!-- Outer loop arrow (ship.sh) -->
+  <!-- Outer loop arrow (ship runner) -->
   <div class="wf-loop" style="margin-top: 18px; height: 50px;">
     <svg viewBox="0 0 860 50" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M 770 4 C 815 4, 840 20, 840 30 C 840 42, 815 50, 770 50 L 90 50 C 45 50, 20 42, 20 30 C 20 20, 45 4, 90 4" stroke="#7c3aed" stroke-width="2" stroke-dasharray="8 4" fill="none" marker-start="url(#shipArrow)"/>
@@ -2061,15 +1607,15 @@
           <path d="M 8 0 L 0 4 L 8 8" fill="none" stroke="#7c3aed" stroke-width="1.5"/>
         </marker>
       </defs>
-      <rect x="290" y="15" width="280" height="24" rx="12" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1"/>
-      <text x="430" y="32" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600" fill="#7c3aed">ship.sh — fresh 200K context</text>
+      <rect x="250" y="15" width="360" height="24" rx="12" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1"/>
+      <text x="430" y="32" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600" fill="#7c3aed">ship runner · fresh session per iteration</text>
     </svg>
   </div>
 
-  <!-- Inner guard label -->
+  <!-- State file label -->
   <div style="text-align: center; margin-top: 6px;">
     <span style="display: inline-block; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 14px; font-size: 11px; color: #64748b; font-family: 'JetBrains Mono', monospace; font-weight: 500;">
-      ship-loop.sh (Stop hook) — blocks premature exit within session
+      state.json: each iteration resumes from it · stops on done, blocked, needs-human or stall
     </span>
   </div>
 </div>
@@ -2079,7 +1625,7 @@
   <div class="dp-swarm">
     <div class="dp-session">
       <div class="dp-session-icon">>_</div>
-      Main Session
+      Session
     </div>
     <div class="dp-arrow" style="padding: 0 6px;">→</div>
     <div class="dp-swarm-agents">
@@ -2088,29 +1634,31 @@
         <div class="dp-swarm-finding">→ findings</div>
       </div>
       <div class="dp-swarm-agent">
-        <div class="dp-swarm-agent-name">security-sentinel</div>
-        <div class="dp-swarm-finding">→ findings</div>
-      </div>
-      <div class="dp-swarm-agent">
-        <div class="dp-swarm-agent-name">performance-oracle</div>
-        <div class="dp-swarm-finding">→ findings</div>
-      </div>
-      <div class="dp-swarm-agent">
-        <div class="dp-swarm-agent-name">convention-enforcer</div>
+        <div class="dp-swarm-agent-name">code-simplicity-reviewer</div>
         <div class="dp-swarm-finding">→ findings</div>
       </div>
       <div class="dp-swarm-agent">
         <div class="dp-swarm-agent-name">test-coverage-reviewer</div>
         <div class="dp-swarm-finding">→ findings</div>
       </div>
+      <div class="dp-swarm-agent" style="opacity: 0.6;">
+        <div class="dp-swarm-agent-name">security-sentinel</div>
+        <div class="dp-swarm-finding">→ findings</div>
+      </div>
+      <div class="dp-swarm-agent" style="opacity: 0.6;">
+        <div class="dp-swarm-agent-name">performance-oracle</div>
+        <div class="dp-swarm-finding">→ findings</div>
+      </div>
     </div>
     <div class="dp-arrow" style="padding: 0 6px;">→</div>
     <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+      <div class="dp-swarm-validator">findings-validator</div>
+      <div class="dp-swarm-output" style="font-size: 14px; color: #94a3b8;">↓</div>
       <div class="dp-swarm-synth">
         <div class="dp-swarm-synth-icon">&#x2728;</div>
         findings-synthesizer
       </div>
-      <div class="dp-swarm-output">→ unified report</div>
+      <div class="dp-swarm-output">→ P1/P2/P3 report</div>
     </div>
   </div>
 </div>
@@ -2121,10 +1669,10 @@
     <div class="dp-wave-row">
       <div class="dp-wave-badge dp-wave-badge-1">Wave 1</div>
       <div class="dp-wave-tasks">
-        <div class="dp-wave-task dp-wave-task-1">implementer-A</div>
+        <div class="dp-wave-task dp-wave-task-1">helper: task A</div>
         <span style="font-size:11px; color:#94a3b8;">+</span>
-        <div class="dp-wave-task dp-wave-task-1">implementer-B</div>
-        <div class="dp-wave-meta">(parallel, worktree-isolated)</div>
+        <div class="dp-wave-task dp-wave-task-1">helper: task B</div>
+        <div class="dp-wave-meta">(parallel, no shared files)</div>
       </div>
       <div class="dp-arrow">→</div>
       <div class="dp-wave-verifier">integration-verifier</div>
@@ -2132,7 +1680,7 @@
     <div class="dp-wave-row">
       <div class="dp-wave-badge dp-wave-badge-2">Wave 2</div>
       <div class="dp-wave-tasks">
-        <div class="dp-wave-task dp-wave-task-2">implementer-C</div>
+        <div class="dp-wave-task dp-wave-task-2">helper: task C</div>
         <div class="dp-wave-meta">(depends on Wave 1)</div>
       </div>
       <div class="dp-arrow">→</div>
@@ -2145,8 +1693,8 @@
 <div class="diagram dp-diagram" id="dispatch-team">
   <div class="dp-team">
     <div class="dp-team-lead-row">
-      <div class="dp-team-lead">Team Lead</div>
-      <div class="dp-team-spawns">spawns teammates with file ownership boundaries</div>
+      <div class="dp-team-lead">Lead (your session)</div>
+      <div class="dp-team-spawns">starts teammates with file ownership: Claude Code Agent Teams or Codex multi_agent_v2</div>
     </div>
     <div class="dp-team-members">
       <div class="dp-team-member dp-team-member-blue">
@@ -2163,9 +1711,11 @@
       </div>
     </div>
     <div class="dp-team-infra">
-      <div class="dp-team-infra-item">shared tasks + messaging</div>
+      <div class="dp-team-infra-item">task ledger stays the record</div>
       <div class="dp-team-infra-item" style="color: #94a3b8;">·</div>
-      <div class="dp-team-infra-item" style="font-family: 'JetBrains Mono', monospace; font-size: 10px;">TeammateIdle + TaskCompleted hooks</div>
+      <div class="dp-team-infra-item">messaging</div>
+      <div class="dp-team-infra-item" style="color: #94a3b8;">·</div>
+      <div class="dp-team-infra-item">only the lead commits</div>
     </div>
   </div>
 </div>
@@ -2218,21 +1768,21 @@
       Review Swarm
     </div>
     <br>
-    <div class="sw-command">/review-swarm</div>
+    <div class="sw-command">ab-review-swarm</div>
   </div>
 
-  <div class="sw-parallel-label">dispatches 6–10 reviewers in parallel</div>
+  <div class="sw-parallel-label">starts 3 to 10 reviewer helpers in parallel</div>
 
   <div class="sw-agents">
     <div class="sw-agent">Code Reviewer</div>
-    <div class="sw-agent">Security Sentinel</div>
-    <div class="sw-agent">Performance Oracle</div>
     <div class="sw-agent">Simplicity Reviewer</div>
-    <div class="sw-agent">Convention Enforcer</div>
     <div class="sw-agent">Test Coverage</div>
-    <div class="sw-conditional-label">conditional — enabled via blueprint.local.md</div>
-    <div class="sw-agent sw-agent-conditional">Architecture Strategist</div>
+    <div class="sw-conditional-label">as the diff calls for them</div>
+    <div class="sw-agent sw-agent-conditional">Security Sentinel</div>
+    <div class="sw-agent sw-agent-conditional">Performance Oracle</div>
+    <div class="sw-agent sw-agent-conditional">Convention Enforcer</div>
     <div class="sw-agent sw-agent-conditional">Frontend Reviewer</div>
+    <div class="sw-agent sw-agent-conditional">Architecture Strategist</div>
     <div class="sw-agent sw-agent-conditional">Data Integrity</div>
     <div class="sw-agent sw-agent-conditional">Schema Drift</div>
   </div>
@@ -2240,7 +1790,14 @@
   <div class="sw-flow-arrow">↓</div>
 
   <div class="sw-synthesizer">
-    <div class="sw-output-label">merges all outputs</div>
+    <div class="sw-output-label">re-checks each finding (above 5 findings)</div>
+    <div class="sw-validator-card">Findings Validator</div>
+  </div>
+
+  <div class="sw-flow-arrow">↓</div>
+
+  <div class="sw-synthesizer">
+    <div class="sw-output-label">merges into one P1/P2/P3 report</div>
     <div class="sw-synthesizer-card">
       <div class="sw-synthesizer-icon">&#x2728;</div>
       Findings Synthesizer
@@ -2256,17 +1813,17 @@
       Research Swarm
     </div>
     <br>
-    <div class="sw-command">/deep-research</div>
+    <div class="sw-command">ab-deep-research</div>
   </div>
 
-  <div class="sw-parallel-label">spawns 5 research agents in parallel</div>
+  <div class="sw-parallel-label">starts 5 research helpers in parallel</div>
 
   <div class="sw-agents">
     <div class="sw-agent">Learnings Researcher</div>
     <div class="sw-agent">Framework Docs</div>
     <div class="sw-agent">Best Practices</div>
     <div class="sw-agent">Git History Analyzer</div>
-    <div class="sw-agent">Context Mapper</div>
+    <div class="sw-agent">Codebase Context Mapper</div>
   </div>
 
   <div class="sw-flow-arrow">↓</div>
@@ -2277,6 +1834,7 @@
       <div class="sw-synthesizer-icon">&#x2728;</div>
       Research Synthesizer
     </div>
+    <div class="sw-output-label" style="margin: 10px 0 0; text-transform: none; letter-spacing: 0.3px;">one brief in docs/research/</div>
   </div>
 </div>
 
@@ -2286,12 +1844,12 @@
   <div class="wo-wave wo-wave-1">
     <div class="wo-wave-header">
       <div class="wo-wave-badge">Wave 1</div>
-      <div class="wo-wave-desc">independent — run in parallel</div>
+      <div class="wo-wave-desc">independent, run in parallel; tasks that share a file never share a wave</div>
     </div>
     <div class="wo-tasks">
-      <div class="wo-task">Task A<div class="wo-task-sub">worktree-isolated</div></div>
-      <div class="wo-task">Task B<div class="wo-task-sub">worktree-isolated</div></div>
-      <div class="wo-task">Task C<div class="wo-task-sub">worktree-isolated</div></div>
+      <div class="wo-task">Task A<div class="wo-task-sub">own files or worktree</div></div>
+      <div class="wo-task">Task B<div class="wo-task-sub">own files or worktree</div></div>
+      <div class="wo-task">Task C<div class="wo-task-sub">own files or worktree</div></div>
     </div>
   </div>
 
@@ -2312,8 +1870,8 @@
       <div class="wo-wave-desc">depends on Wave 1</div>
     </div>
     <div class="wo-tasks">
-      <div class="wo-task">Task D<div class="wo-task-sub">worktree-isolated</div></div>
-      <div class="wo-task">Task E<div class="wo-task-sub">worktree-isolated</div></div>
+      <div class="wo-task">Task D<div class="wo-task-sub">own files or worktree</div></div>
+      <div class="wo-task">Task E<div class="wo-task-sub">own files or worktree</div></div>
     </div>
   </div>
 
@@ -2337,18 +1895,20 @@
       <div class="wo-task">Task F<div class="wo-task-sub">final integration</div></div>
     </div>
   </div>
+
+  <div class="fx-note">The lead keeps the ledger in <code>.agent-blueprint/team/&lt;run&gt;/</code>, commits each finished task and runs the tests</div>
 </div>
 
 <!-- ════════════ AGENT TEAMS ════════════ -->
 <div class="diagram" id="agent-teams">
   <div class="at-lead">
     <div class="at-lead-label">
-      <div class="at-lead-badge">Experimental</div>
-      Team Lead
+      <div class="at-lead-badge">Optional</div>
+      Lead (your session)
     </div>
   </div>
 
-  <div class="at-dispatch">spawns teammates with file ownership</div>
+  <div class="at-dispatch">Claude Code Agent Teams or Codex multi_agent_v2, on top of the ledger</div>
 
   <div class="at-teammates">
     <div class="at-teammate at-backend">
@@ -2372,21 +1932,21 @@
     <div class="at-shared-bar">
       <div class="at-shared-item">
         <div class="at-shared-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">&#x2630;</div>
-        Shared Task List
+        Task ledger is the record
       </div>
       <div class="at-shared-item">
         <div class="at-shared-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">&#x2709;</div>
-        Inter-Teammate Messaging
+        Messages and follow-up tasks
       </div>
       <div class="at-shared-item">
         <div class="at-shared-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">&#x2699;</div>
-        Plan Approval Gate
+        Approach approved first
       </div>
     </div>
   </div>
 
   <div class="at-hooks">
-    <div class="at-hook-label">Quality gates: TeammateIdle + TaskCompleted hooks</div>
+    <div class="at-hook-label">Teammates never commit · Claude Code: TeammateIdle + TaskCompleted hooks</div>
   </div>
 </div>
 
@@ -2394,18 +1954,18 @@
 <div class="diagram" id="knowledge-loop">
   <div class="kl-flow">
     <div class="kl-step kl-solve">
-      <div class="kl-step-name">Solve Problem</div>
-      <div class="kl-step-desc">Fix bug, build feature</div>
+      <div class="kl-step-name">Solve a problem</div>
+      <div class="kl-step-desc">Bug fix or feature</div>
     </div>
     <div class="kl-arrow">→</div>
     <div class="kl-step kl-compound">
-      <div class="kl-step-name">/compound</div>
+      <div class="kl-step-name">ab-knowledge-<br>compounding</div>
       <div class="kl-step-desc">Document the solution</div>
     </div>
     <div class="kl-arrow">→</div>
     <div class="kl-step kl-solutions">
       <div class="kl-step-name">docs/solutions/</div>
-      <div class="kl-step-desc">Institutional knowledge</div>
+      <div class="kl-step-desc">Searchable records</div>
     </div>
     <div class="kl-arrow">→</div>
     <div class="kl-step kl-learnings">
@@ -2414,7 +1974,7 @@
     </div>
     <div class="kl-arrow">→</div>
     <div class="kl-step kl-plan">
-      <div class="kl-step-name">/planning</div>
+      <div class="kl-step-name">ab-brainstorming</div>
       <div class="kl-step-desc">Informed by history</div>
     </div>
   </div>
@@ -2432,134 +1992,93 @@
   </div>
 </div>
 
-<!-- ════════════ EFFORT TIERS ════════════ -->
-<div class="diagram" id="effort-tiers">
-  <div class="fx-cap">effort: tiers across 29 agents</div>
-  <div class="et-cols">
-    <div class="et-col et-low">
-      <div class="et-badge"><span class="et-dot"></span>low</div>
-      <div class="et-count">2 <span>agents</span></div>
-      <div class="et-role">Mechanical validators — rule-match &amp; existence checks</div>
-      <div class="et-ex">convention-enforcer<br>doc-claim-verifier</div>
-    </div>
-    <div class="et-col et-med">
-      <div class="et-badge"><span class="et-dot"></span>medium</div>
-      <div class="et-count">14 <span>agents</span></div>
-      <div class="et-role">Standard workers &amp; researchers</div>
-      <div class="et-ex">pr-comment-resolver<br>best-practices-researcher<br>integration-checker · …</div>
-    </div>
-    <div class="et-col et-high">
-      <div class="et-badge"><span class="et-dot"></span>high</div>
-      <div class="et-count">13 <span>agents</span></div>
-      <div class="et-role">Reviewers, synthesizers, oracles &amp; the orchestrator</div>
-      <div class="et-ex">code-reviewer · security-sentinel<br>findings-synthesizer · team-lead · …</div>
-    </div>
-  </div>
-  <div class="fx-note"><code>model: inherit</code> stays the shipped default · opt-in mapping: low→Haiku 4.5 · medium→Sonnet 5 · high→Opus 5.5 / Fable 5.1</div>
-</div>
-
 <!-- ════════════ CONSISTENCY GATES ════════════ -->
 <div class="diagram" id="consistency-gates">
-  <div class="fx-cap">exact-match consistency gates, wired into CI</div>
+  <div class="fx-cap">consistency gates, run in CI on every pull request</div>
   <div class="cg-row">
     <div class="cg-card cg-a">
       <div class="cg-head">
         <div class="cg-ico fx-mono" style="color:#059669;font-weight:700;">#</div>
         <div>
-          <div class="cg-name">Drift Gate</div>
+          <div class="cg-name">Drift gate</div>
           <div class="cg-file">scripts/check-drift.sh</div>
         </div>
       </div>
-      <div class="cg-desc">Counts <b>derived from the filesystem</b> (55 · 29 · 10) checked against every manifest, doc, installer &amp; <b>website widget</b> — plus exact version-string equality.</div>
+      <div class="cg-desc">Counts <b>derived from the tree</b> (53 skills · 30 helper prompts · 10 hooks) checked against every manifest, doc, installer, the <b>website</b> and the promo source, plus <b>one version</b> everywhere.</div>
     </div>
     <div class="cg-card cg-b">
       <div class="cg-head">
         <div class="cg-ico fx-mono" style="color:#2563eb;font-weight:700;">≈</div>
         <div>
-          <div class="cg-name">Skill-Collision Gate</div>
+          <div class="cg-name">Skill-collision gate</div>
           <div class="cg-file">scripts/check-skill-collisions.py</div>
         </div>
       </div>
-      <div class="cg-desc">Pairwise description overlap, <b>Jaccard</b> — <b>warn ≥50%</b>, <b>fail ≥75%</b>. Catches near-duplicate routing a single-skill test can't.</div>
+      <div class="cg-desc">Frontmatter, <code class="fx-mono">references/</code> pointers and § headings resolve. Description overlap (<b>Jaccard</b>) <b>warns at 50%</b>, <b>fails at 75%</b>.</div>
+    </div>
+  </div>
+  <div class="cg-row" style="margin-top: 18px;">
+    <div class="cg-card cg-c">
+      <div class="cg-head">
+        <div class="cg-ico fx-mono" style="color:#d97706;font-weight:700;">8</div>
+        <div>
+          <div class="cg-name">Portability gate</div>
+          <div class="cg-file">scripts/check-portability.py</div>
+        </div>
+      </div>
+      <div class="cg-desc">The rules for <b>all eight tools</b>: agentskills frontmatter, the <code class="fx-mono">ab-</code> prefix, the 8,000-byte cap, no slash names, nothing Hermes would quarantine.</div>
+    </div>
+    <div class="cg-card cg-d">
+      <div class="cg-head">
+        <div class="cg-ico fx-mono" style="color:#7c3aed;font-weight:700;">=</div>
+        <div>
+          <div class="cg-name">Manifest gate</div>
+          <div class="cg-file">scripts/check-manifests.py</div>
+        </div>
+      </div>
+      <div class="cg-desc">Every tool's <b>plugin manifest</b> and every skill's <code class="fx-mono">metadata.version</code> agree with the release.</div>
     </div>
   </div>
   <div class="cg-feeds"><span>↓</span><span>↓</span></div>
-  <div class="cg-ci">CI · required <span class="fx-mono">ends the count-drift that recurred 3×</span></div>
+  <div class="cg-ci">CI · required <span class="fx-mono">+ sync-shared.py --check · gate tests · claude plugin validate --strict</span></div>
 </div>
 
-<!-- ════════════ /goal OPT-IN ════════════ -->
+<!-- ════════════ /goal COMPLEMENT ════════════ -->
 <div class="diagram" id="goal-opt-in">
-  <div class="fx-cap">/ship completion guard — default + opt-in</div>
+  <div class="fx-cap">ship pipeline completion: the guarantee + an optional complement</div>
   <div class="go-row">
     <div class="go-card go-default">
-      <div class="go-tag">DEFAULT · ALWAYS ON</div>
-      <div class="go-title">ship-loop.sh</div>
-      <div class="go-li">Stop-hook guard, <b>zero config</b><br>Works <b>headless</b> (-p · CI · ship.sh)<br>Blocks premature exit until <span class="fx-mono">&lt;promise&gt;DONE&lt;/promise&gt;</span><br><b>The guarantee</b></div>
+      <div class="go-tag">DEFAULT · EVERY TOOL</div>
+      <div class="go-title">run.sh + state.json</div>
+      <div class="go-li">A <b>fresh headless session</b> per iteration<br>Works in <b>all eight tools</b><br>Done = <span class="fx-mono">done</span> in state.json + commits + PR body<br><b>The guarantee</b></div>
     </div>
     <div class="go-mid">
       <div class="go-plus">+</div>
       <div class="go-mid-l">complements ·<br>never replaces</div>
     </div>
     <div class="go-card go-opt">
-      <div class="go-tag">OPT-IN · INTERACTIVE</div>
+      <div class="go-tag">OPTIONAL · CLAUDE CODE, INTERACTIVE</div>
       <div class="go-title">/goal</div>
-      <div class="go-li">Native condition-completion<br>CLI <b>2.1.139+</b>, pasted at Stage 0<br>Live elapsed / turns / tokens overlay<br><b>A convenience, not a dependency</b></div>
+      <div class="go-li">Claude Code's own condition completion<br>Prompt printed at Stage 0 to paste<br>Live elapsed / turns / tokens overlay<br><b>A convenience, not a dependency</b></div>
     </div>
   </div>
-  <div class="fx-note">A skill can't invoke <code>/goal</code>, so the hook stays the guarantee · both release on <span class="fx-mono">&lt;promise&gt;DONE&lt;/promise&gt;</span></div>
+  <div class="fx-note">A skill cannot start a <code>/goal</code>, so the ship runner and <span class="fx-mono">state.json</span> stay the guarantee</div>
 </div>
 
 <!-- ════════════ PLATFORM CURRENCY ════════════ -->
 <div class="diagram" id="platform-currency">
-  <div class="fx-cap">native platform features — adopted as guarded opt-ins</div>
+  <div class="fx-cap">host features, used where present</div>
   <div class="pc-grid">
-    <div class="pc-item"><span class="pc-name">effort: tiers<small>per-agent reasoning depth</small></span><span class="fx-pill pc-ship">SHIPPED</span></div>
-    <div class="pc-item"><span class="pc-name">Claude 5 lineup<small>Opus 5.5 default · Fable 5.1 · inherit rides it</small></span><span class="fx-pill pc-ship">AUTO</span></div>
-    <div class="pc-item"><span class="pc-name">/goal<small>condition completion</small></span><span class="fx-pill pc-opt">OPT-IN</span></div>
-    <div class="pc-item"><span class="pc-name">/loop + ScheduleWakeup<small>circuit breaker retained</small></span><span class="fx-pill pc-opt">COMPLEMENT</span></div>
-    <div class="pc-item"><span class="pc-name">injection hardening<small>reinforces custom scanners</small></span><span class="fx-pill pc-ship">REINFORCES</span></div>
-    <div class="pc-item"><span class="pc-name">subagent caps<small>20 concurrent · depth 3 · 200 WebSearches</small></span><span class="fx-pill pc-opt">DOCUMENTED</span></div>
-    <div class="pc-item"><span class="pc-name">Workflow tool / ultracode<small>paid plans · Pro opt-in · org switch</small></span><span class="fx-pill pc-gated">GATED</span></div>
-    <div class="pc-item"><span class="pc-name">fast mode<small>Opus 5.5 / 5 / 4.8 · research preview</small></span><span class="fx-pill pc-gated">GATED</span></div>
+    <div class="pc-item"><span class="pc-name">model + effort<small>helpers inherit the session's choice</small></span><span class="fx-pill pc-ship">INHERITED</span></div>
+    <div class="pc-item"><span class="pc-name">plugin manifests<small>one per tool with a plugin system, all read skills/</small></span><span class="fx-pill pc-ship">SHIPPED</span></div>
+    <div class="pc-item"><span class="pc-name">Agent Teams<small>Claude Code · on top of the task ledger</small></span><span class="fx-pill pc-opt">OPT-IN</span></div>
+    <div class="pc-item"><span class="pc-name">multi_agent_v2<small>Codex · long-lived helpers on the ledger</small></span><span class="fx-pill pc-opt">OPT-IN</span></div>
+    <div class="pc-item"><span class="pc-name">/goal<small>Claude Code · interactive ship runs</small></span><span class="fx-pill pc-opt">COMPLEMENT</span></div>
+    <div class="pc-item"><span class="pc-name">hooks<small>claude-code.json (10) · codex.json (5)</small></span><span class="fx-pill pc-opt">OPTIONAL</span></div>
+    <div class="pc-item"><span class="pc-name">helper limits<small>Claude Code 20 · Codex 4 · Pi 4 · Hermes 3</small></span><span class="fx-pill pc-ship">DOCUMENTED</span></div>
+    <div class="pc-item"><span class="pc-name">Workflow tool<small>Claude Code · fan-out instead of waves</small></span><span class="fx-pill pc-gated">GATED</span></div>
   </div>
-  <div class="fx-note">No core pipeline depends on a gated or experimental feature — a deliberate stability guardrail</div>
-</div>
-
-<!-- ════════════ PLATFORM-SYNC CYCLE ════════════ -->
-<div class="diagram" id="platform-sync-cycle">
-  <div class="fx-cap">the platform-sync cycle — two maintainer-gated parts</div>
-  <div class="ps-flow">
-    <div class="ps-stage ps-a">
-      <div class="ps-stage-t">Audit</div>
-      <div class="ps-stage-d">68 CLI versions · 1,328 entries</div>
-    </div>
-    <div class="ps-conn">→</div>
-    <div class="ps-gate">
-      <div class="ps-gate-d"><span>1</span></div>
-      <div class="ps-gate-l">Gate&nbsp;1</div>
-    </div>
-    <div class="ps-conn">→</div>
-    <div class="ps-stage ps-a">
-      <div class="ps-stage-t">Adopt + verify</div>
-      <div class="ps-stage-d">Part 1 · v3.4.0 · keep-old-until-pass</div>
-    </div>
-    <div class="ps-conn">→</div>
-    <div class="ps-stage ps-b">
-      <div class="ps-stage-t">Delta sweep</div>
-      <div class="ps-stage-d">Part 2 · 4 repos re-analyzed</div>
-    </div>
-    <div class="ps-conn">→</div>
-    <div class="ps-gate">
-      <div class="ps-gate-d"><span>2</span></div>
-      <div class="ps-gate-l">Gate&nbsp;2</div>
-    </div>
-    <div class="ps-conn">→</div>
-    <div class="ps-stage ps-b">
-      <div class="ps-stage-t">Import + close</div>
-      <div class="ps-stage-d">v3.5.0 · verified re-sweep</div>
-    </div>
-  </div>
-  <div class="ps-radar">codified into <span class="fx-mono">/cli-watch</span> + <span class="fx-mono">/repo-watch</span> — monthly watchers</div>
+  <div class="fx-note">No pipeline depends on a host-only or gated feature; skills run the same in all eight tools</div>
 </div>
 
 </body>

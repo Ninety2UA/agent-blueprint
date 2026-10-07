@@ -43,3 +43,7 @@ blueprint.local.md
 # Ship loop state (session-local, not committed)
 .claude/ship-loop.local.md
 .claude/ship-progress.local.md
+
+# Smoke test (tests/smoke/): run logs are ignored; the build scenario folder is not a build output
+tests/smoke/logs/
+!tests/smoke/scenarios/build/

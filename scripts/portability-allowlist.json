@@ -1,0 +1,5 @@
+{
+  "_comment": "Today's violations, seeded once by U3 (KTD5). Entries may only be removed: an entry that no longer matches a violation fails the gate, and CI fails any entry added since the PR base. Both sections are empty as of phase 3; keep them that way.",
+  "skills": {},
+  "manifests": {}
+}

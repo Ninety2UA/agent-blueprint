@@ -1,0 +1,280 @@
+"""U4: scripts/sync-shared.py keeps snippet and shared-file copies equal to their owners (KTD3).
+
+Also checks that the authoring guide passes the gate itself and that it documents
+exactly the rules the gate enforces.
+"""
+import importlib.util
+import json
+import os
+import re
+import subprocess
+import sys
+import unittest
+
+from gate_helpers import REPO, SCRIPTS, Repo, run_gate
+
+OWNER = "skills/ab-writing-skills/references/capability-snippets.md"
+SKILL = "skills/ab-fixture/SKILL.md"
+REFERENCE = "skills/ab-fixture/references/guide.md"
+GUIDE = os.path.join(REPO, "skills", "ab-writing-skills", "references", "portable-authoring.md")
+
+
+def load(name, filename):
+    spec = importlib.util.spec_from_file_location(name, os.path.join(SCRIPTS, filename))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+SYNC = load("sync_shared", "sync-shared.py")
+GATE = load("check_portability", "check-portability.py")
+
+
+def real_snippets():
+    snips, _, _ = SYNC.snippets(REPO, SYNC.load_registry(REPO))
+    return snips
+
+
+class RealOwner(unittest.TestCase):
+    def test_owner_holds_the_eight_snippets(self):
+        self.assertEqual(sorted(real_snippets()), sorted([
+            "**Asking the user.**", "**Bundled scripts.**", "**Helper step.**", "**Lower effort.**",
+            "**No-commit mode.**", "**Provenance record.**", "**Tracking tasks.**", "**Working folder.**"]))
+
+    def test_every_snippet_is_one_line_paragraph(self):
+        for label, text in real_snippets().items():
+            self.assertNotIn("\n", text, label)
+
+    def test_repository_copies_match(self):
+        code, out = run_gate("sync-shared.py", REPO, "--check")
+        self.assertEqual(code, 0, out)
+
+    def test_authoring_guide_passes_every_rule(self):
+        found, _ = GATE.collect(REPO)
+        mine = sorted(k for k in found if k[0].startswith("skills/ab-writing-skills/"))
+        self.assertEqual(mine, [], "ab-writing-skills violations: %s" % mine)
+
+    def test_writing_skills_left_the_allowlist(self):
+        with open(os.path.join(SCRIPTS, "portability-allowlist.json"), encoding="utf-8") as fh:
+            allow = json.load(fh)
+        self.assertEqual([p for p in allow["skills"] if p.startswith("skills/ab-writing-skills/")], [])
+
+    def test_guide_rules_match_the_gate_rules(self):
+        documented = set(re.findall(r"^  ([a-z][a-z-]+) ", GATE.__doc__, re.MULTILINE))
+        with open(GUIDE, encoding="utf-8") as fh:
+            in_guide = set(re.findall(r"\[([a-z][a-z-]+)\]", fh.read()))
+        self.assertTrue(documented, "no rule ids parsed from check-portability.py")
+        self.assertEqual(in_guide, documented)
+
+
+class SyncTool(unittest.TestCase):
+    def setUp(self):
+        self.repo = Repo()
+        with open(os.path.join(REPO, OWNER), encoding="utf-8") as fh:
+            self.repo.write(OWNER.replace("ab-writing-skills", "ab-helper"), fh.read())
+        self.repo.registry({"snippet_owner": OWNER.replace("ab-writing-skills", "ab-helper"), "shared": []})
+        self.snips = real_snippets()
+        self.helper = self.snips["**Helper step.**"]
+
+    def tearDown(self):
+        self.repo.cleanup()
+
+    def paste(self, text, site="Prompt: `references/guide.md`. Inputs: the target."):
+        self.repo.edit(SKILL, "2. Use the", "\n%s\n\n%s\n\n2. Use the" % (text, site))
+
+    def test_one_byte_difference_fails_the_gate(self):
+        self.paste(self.helper[:-1] + "!")
+        code, out = run_gate("check-portability.py", self.repo.root)
+        self.assertEqual(code, 1, out)
+        self.assertIn("%s: [snippet-drift]" % SKILL, out)
+
+    def test_exact_copy_passes(self):
+        self.paste(self.helper)
+        code, out = run_gate("check-portability.py", self.repo.root)
+        self.assertEqual(code, 0, out)
+
+    def test_sync_rewrites_drift_and_keeps_the_site_line(self):
+        site = "Prompt: `references/guide.md`. Inputs: the target."
+        self.paste(self.helper.replace("if you can", "whenever possible"), site)
+        code, out = run_gate("sync-shared.py", self.repo.root, "--check")
+        self.assertEqual(code, 1, out)
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 0, out)
+        self.assertIn("synced %s" % SKILL, out)
+        text = self.repo.read(SKILL)
+        self.assertIn("\n%s\n\n%s\n" % (self.helper, site), text)
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 0, out)
+        self.assertIn("0 file(s) rewritten", out)
+        code, out = run_gate("sync-shared.py", self.repo.root, "--check")
+        self.assertEqual(code, 0, out)
+
+    def test_sync_keeps_list_indentation(self):
+        drifted = "   " + self.snips["**Tracking tasks.**"].replace("verified", "checked")
+        self.repo.edit(SKILL, "2. Use the", "2. Track it.\n\n%s\n\n3. Use the" % drifted)
+        run_gate("sync-shared.py", self.repo.root)
+        self.assertIn("\n   %s\n" % self.snips["**Tracking tasks.**"], self.repo.read(SKILL))
+
+    def test_run_in_snippet_needs_a_hand_fix(self):
+        self.repo.edit(SKILL, "2. Use the", "Some text first.\n%s\n\n2. Use the" % self.helper)
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 1, out)
+        self.assertIn("fix it by hand", out)
+
+    def test_site_line_right_under_a_snippet_needs_a_hand_fix(self):
+        site = "Prompt: `references/guide.md`. Inputs: the target."
+        self.repo.edit(SKILL, "2. Use the", "\n%s\n%s\n\n2. Use the" % (self.helper, site))
+        before = self.repo.read(SKILL)
+        code, out = run_gate("sync-shared.py", self.repo.root, "--check")
+        self.assertEqual(code, 1, out)
+        self.assertIn("[snippet-drift]", out)
+        self.assertIn("must be a paragraph of its own", out)
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 1, out)
+        self.assertIn("needs a hand fix", out)
+        self.assertEqual(self.repo.read(SKILL), before)
+
+    def test_four_backtick_fence_holding_a_fence_hides_only_itself(self):
+        drifted = self.helper.replace("if you can", "whenever possible")
+        example = "````markdown\n```text\nPrompt: x\n```\n\n%s\n````" % drifted
+        self.repo.edit(SKILL, "2. Use the", "\n%s\n\n%s\n\nPrompt: `references/guide.md`.\n\n2. Use the"
+                       % (example, drifted))
+        lines = self.repo.read(SKILL).split("\n")
+        outside = len(lines) - lines[::-1].index(drifted)
+        code, out = run_gate("sync-shared.py", self.repo.root, "--check")
+        self.assertEqual(code, 1, out)
+        self.assertEqual(out.count("[snippet-drift]"), 1, out)
+        self.assertIn("line %d: the **Helper step.** snippet differs" % outside, out)
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 0, out)
+        self.assertIn(example, self.repo.read(SKILL))
+
+    def test_snippet_on_a_list_item_line_is_reported(self):
+        self.repo.edit(SKILL, "2. Use the", "\n- %s\n\n1. %s\n\n2. Use the" % (self.helper, self.helper))
+        code, out = run_gate("sync-shared.py", self.repo.root, "--check")
+        self.assertEqual(code, 1, out)
+        self.assertEqual(out.count("must be a paragraph of its own"), 2, out)
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 1, out)
+        self.assertIn("needs a hand fix", out)
+
+    def test_owner_read_past_a_four_backtick_fence(self):
+        owner = OWNER.replace("ab-writing-skills", "ab-helper")
+        self.repo.edit(owner, "\n## helper-step", "\n````markdown\n```text\nexample\n```\n````\n\n## helper-step")
+        snips, _, _ = SYNC.snippets(self.repo.root, SYNC.load_registry(self.repo.root))
+        self.assertEqual(snips, self.snips)
+
+    def test_sync_fills_each_skills_name_and_version(self):
+        canon = self.snips["**Provenance record.**"]
+        self.assertIn("{{name}}", canon)
+        self.assertIn("{{version}}", canon)
+        self.repo.edit(SKILL, "  owner: gate-tests\n", '  owner: gate-tests\n  version: "1.2.3"\n')
+        self.paste(canon, "Then read the guide.")
+        code, out = run_gate("sync-shared.py", self.repo.root, "--check")
+        self.assertEqual(code, 1, out)
+        self.assertIn("**Provenance record.** snippet differs", out)
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 0, out)
+        filled = canon.replace("{{name}}", "ab-fixture").replace("{{version}}", "1.2.3")
+        self.assertIn("\n%s\n\nThen read the guide.\n" % filled, self.repo.read(SKILL))
+        code, out = run_gate("check-portability.py", self.repo.root)
+        self.assertEqual(code, 0, out)
+        self.repo.edit(SKILL, 'version: "1.2.3"', 'version: "1.2.4"')
+        code, out = run_gate("sync-shared.py", self.repo.root, "--check")
+        self.assertEqual(code, 1, "a version change leaves the old version in the copy: %s" % out)
+
+    def test_snippet_needing_a_missing_field_needs_a_hand_fix(self):
+        self.paste(self.snips["**Provenance record.**"], "Then read the guide.")
+        before = self.repo.read(SKILL)
+        code, out = run_gate("check-portability.py", self.repo.root)
+        self.assertEqual(code, 1, out)
+        self.assertIn("needs `metadata.version` in this skill's frontmatter", out)
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 1, out)
+        self.assertIn("needs a hand fix", out)
+        self.assertEqual(self.repo.read(SKILL), before)
+
+    def test_single_quoted_values_fill_without_their_quotes(self):
+        canon = self.snips["**Provenance record.**"]
+        self.repo.edit(SKILL, "name: ab-fixture\n", "name: 'ab-fixture'\n")
+        self.repo.edit(SKILL, "  owner: gate-tests\n", "  owner: gate-tests\n  version: '1.2.3'\n")
+        self.paste(canon, "Then read the guide.")
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 0, out)
+        filled = canon.replace("{{name}}", "ab-fixture").replace("{{version}}", "1.2.3")
+        self.assertIn("\n%s\n\nThen read the guide.\n" % filled, self.repo.read(SKILL))
+
+    def test_value_unsafe_in_the_shell_command_needs_a_hand_fix(self):
+        # The provenance command holds both values inside a single-quoted string, and the name in a file name.
+        self.paste(self.snips["**Provenance record.**"], "Then read the guide.")
+        text = self.repo.read(SKILL)
+        for name, version, field in (("ab-fixture", '"1.2 beta"', "`metadata.version`"),
+                                     ("ab-fixture", "1.2'x", "`metadata.version`"),
+                                     ("ab-fixture", '1.2"x', "`metadata.version`"),
+                                     ("ab-fixture", "1.2$(id)", "`metadata.version`"),
+                                     ("ab-fixture", "1.2`id`", "`metadata.version`"),
+                                     ("ab-fixture", "1.2%n", "`metadata.version`"),
+                                     ("ab-fixture", "1.2\\x", "`metadata.version`"),
+                                     ("'../ab-fixture'", "1.2.3", "`name`")):
+            with self.subTest(name=name, version=version):
+                self.repo.write(SKILL, text.replace("name: ab-fixture\n", "name: %s\n" % name, 1).replace(
+                    "  owner: gate-tests\n", "  owner: gate-tests\n  version: %s\n" % version, 1))
+                before = self.repo.read(SKILL)
+                code, out = run_gate("sync-shared.py", self.repo.root)
+                self.assertEqual(code, 1, out)
+                self.assertIn("needs a hand fix: %s:" % SKILL, out)
+                self.assertIn("snippet needs %s in this skill's frontmatter" % field, out)
+                self.assertEqual(self.repo.read(SKILL), before)
+
+    def test_crlf_frontmatter_still_fills(self):
+        canon = self.snips["**Provenance record.**"]
+        self.repo.edit(SKILL, "  owner: gate-tests\n", '  owner: gate-tests\n  version: "1.2.3"\n')
+        with open(self.repo.path(SKILL), "rb") as fh:
+            crlf = fh.read().replace(b"\n", b"\r\n")
+        with open(self.repo.path(SKILL), "wb") as fh:
+            fh.write(crlf)
+        self.repo.edit(REFERENCE, "names no host.\n", "names no host.\n\n%s\n" % canon)
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 0, out)
+        filled = canon.replace("{{name}}", "ab-fixture").replace("{{version}}", "1.2.3")
+        self.assertIn("\n%s\n" % filled, self.repo.read(REFERENCE))
+
+    def test_metadata_block_without_a_version_reads_quickly(self):
+        # The old version pattern took about 4x longer for each indented line it had to give up on.
+        self.repo.edit(SKILL, "  owner: gate-tests\n", "".join("    note%d: x\n" % i for i in range(40)))
+        self.paste(self.snips["**Provenance record.**"], "Then read the guide.")
+        try:
+            result = subprocess.run([sys.executable, os.path.join(SCRIPTS, "sync-shared.py"), self.repo.root,
+                                     "--check"], capture_output=True, text=True, timeout=1)
+        except subprocess.TimeoutExpired:
+            self.fail("sync-shared.py --check took over a second on a 40-line metadata block without a version")
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("needs `metadata.version` in this skill's frontmatter", result.stdout)
+
+    def test_owner_file_itself_is_not_a_copy(self):
+        code, out = run_gate("sync-shared.py", self.repo.root, "--check")
+        self.assertEqual(code, 0, out)
+
+    def test_sync_restores_a_shared_file_copy(self):
+        owner = "skills/ab-helper/references/agents/reviewer.md"
+        copy = "skills/ab-fixture/references/agents/reviewer.md"
+        self.repo.write(owner, "# Reviewer\n\n## Output\n\nFindings.\n")
+        self.repo.registry({"snippet_owner": OWNER.replace("ab-writing-skills", "ab-helper"),
+                            "shared": [{"owner": owner, "copies": [copy]}]})
+        code, out = run_gate("sync-shared.py", self.repo.root, "--check")
+        self.assertEqual(code, 1, out)
+        self.assertIn("copy is missing", out)
+        run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(self.repo.read(copy), self.repo.read(owner))
+
+    def test_owner_in_a_missing_skill_fails(self):
+        self.repo.registry({"shared": [{"owner": "skills/ab-gone/references/agents/x.md", "copies": []}]})
+        code, out = run_gate("sync-shared.py", self.repo.root)
+        self.assertEqual(code, 1, out)
+        code, out = run_gate("check-portability.py", self.repo.root)
+        self.assertEqual(code, 1, out)
+        self.assertIn("skills/ab-gone/references/agents/x.md: [owner-missing]", out)
+
+
+if __name__ == "__main__":
+    unittest.main()

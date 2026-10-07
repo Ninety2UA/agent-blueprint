@@ -123,7 +123,7 @@ Reducing tool calls helps **linearly**. Reducing skill body size helps **multipl
 - **Document review finds contradictions authors miss.** Plan drafts often contain a unit that adds a new field the plan's own scope boundary forbade — adversarial reviewers consistently catch this.
 - **Rubber-stamping risk is invisible without a preview gate.** A compact preview is cheap to implement and hard to misuse. Its absence is invisible until an interactive flow has been rubber-stamped in production.
 - **Contract tests that ossify prose become a hidden tax on iteration.** Every future wording improvement triggers a false-positive test break, training contributors to either skip wording improvements or mechanically update tests without thinking.
-- **Pipelines compound only if run in full.** Running brainstorm-then-build is not compound engineering. It is ad-hoc engineering with extra syntax. The compounding effect comes from stages catching each other's misses.
+- **Pipelines compound only if run in full.** Running brainstorm-then-build and skipping the rest is ad-hoc engineering with extra syntax. The compounding effect comes from stages catching each other's misses.
 
 ## When to Apply
 
