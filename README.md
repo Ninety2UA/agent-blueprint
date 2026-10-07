@@ -727,10 +727,10 @@ Before the release, a local smoke test (`tests/smoke/`) ran a sample project thr
 | Tool | Version tested | Result |
 |---|---|---|
 | Claude Code | 2.1.291 | Every check passes; with helpers switched off, the pipelines run inline as designed |
-| Codex | 0.160.0 | Every check that applies passes except review: in the recorded run Codex rated the planted `eval` critical without naming it, and in a second run it treated the option's "Python expression" help text as permission to run code (hooks, effort and upgrade do not apply to Codex) |
+| Codex | 0.160.0 | Every check that applies passes (hooks, effort and upgrade do not apply to Codex) |
 | Cursor CLI | 2026.10.01 | Every check that applies passes, in a profile with only the blueprint installed: on the test machine Cursor also lists the Claude Code plugin's copy beside the shared copy and caps its skill list |
-| Antigravity | 1.3.0 | Every check that applies passes, in a profile with only the blueprint installed, and review runs its helper steps inline. On a machine with many other skills, Antigravity leaves most of them out of the model's list |
-| Grok Build | 1.0.34 | Discovery, `AGENTS.md`, hooks and manual-only passed on an earlier commit; the free tier's usage limit stopped the pipeline checks and refused the rerun on the release commit |
+| Antigravity | 1.3.1 | Every check that applies passes, in a profile with only the blueprint installed; review and debug run their helper steps inline. On a machine with many other skills, Antigravity leaves most of them out of the model's list |
+| Grok Build | 1.0.34 | Discovery and manual-only pass on the release commit, and `AGENTS.md` and hooks passed on an earlier one; the free tier's usage limit stops the pipeline checks |
 | Pi, Hermes, Amp | Not installed on the test machine | Their install routes follow the vendor docs and have not been run yet |
 
 An evaluation then ran the same fixture tasks on v3.8.0 and v4.0.0 in Claude Code ([`docs/releases/v4.0.0-eval.md`](docs/releases/v4.0.0-eval.md)). Build, review and debug passed on both versions, with no task getting worse. v4 is slower and costs more per task (review took 7m21s instead of 3m08s), because a v4 pipeline writes a provenance record, runs reviews as a swarm with a validator, and takes debugging all the way to a regression test. The ship pipeline was not part of the evaluation: one run costs about $40 and nearly two hours, and the smoke test above already shows it passing end to end.

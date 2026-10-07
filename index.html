@@ -3547,10 +3547,10 @@
               </thead>
               <tbody>
                 <tr><td>Claude Code</td><td>2.1.291</td><td>Every check passes; with helpers switched off, the pipelines run inline as designed</td></tr>
-                <tr><td>Codex</td><td>0.160.0</td><td>Every check that applies passes except review: in the recorded run Codex rated the planted <code>eval</code> critical without naming it, and in a second run it treated the option's "Python expression" help text as permission to run code (hooks, effort and upgrade do not apply to Codex)</td></tr>
+                <tr><td>Codex</td><td>0.160.0</td><td>Every check that applies passes (hooks, effort and upgrade do not apply to Codex)</td></tr>
                 <tr><td>Cursor CLI</td><td>2026.10.01</td><td>Every check that applies passes, in a profile with only the blueprint installed: on the test machine Cursor also lists the Claude Code plugin's copy beside the shared copy and caps its skill list</td></tr>
-                <tr><td>Antigravity</td><td>1.3.0</td><td>Every check that applies passes, in a profile with only the blueprint installed, and review runs its helper steps inline. On a machine with many other skills, Antigravity leaves most of them out of the model's list</td></tr>
-                <tr><td>Grok Build</td><td>1.0.34</td><td>Discovery, <code>AGENTS.md</code>, hooks and manual-only passed on an earlier commit; the free tier's usage limit stopped the pipeline checks and refused the rerun on the release commit</td></tr>
+                <tr><td>Antigravity</td><td>1.3.1</td><td>Every check that applies passes, in a profile with only the blueprint installed; review and debug run their helper steps inline. On a machine with many other skills, Antigravity leaves most of them out of the model's list</td></tr>
+                <tr><td>Grok Build</td><td>1.0.34</td><td>Discovery and manual-only pass on the release commit, and <code>AGENTS.md</code> and hooks passed on an earlier one; the free tier's usage limit stops the pipeline checks</td></tr>
                 <tr><td>Pi, Hermes, Amp</td><td>Not installed on the test machine</td><td>Their install routes follow the vendor docs and have not been run yet</td></tr>
               </tbody>
             </table>
