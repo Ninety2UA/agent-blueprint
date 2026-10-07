@@ -3,7 +3,7 @@ name: ab-review-swarm
 description: "Reviews a change with specialized reviewers in parallel (quality, simplicity and tests always; security, performance, conventions, frontend, architecture, data and schema as the diff calls for), validates the findings and merges them into one prioritized P1/P2/P3 report. Use when a change is large (5+ files, several concerns, crossing modules) or consequential at any size (auth, money, data, a public contract, silent failures), before a production ship or major merge, or when asked for a full or multi-perspective review. Not for a quick single-perspective review of a small change (use ab-requesting-code-review)."
 argument-hint: "[optional: files or path to review] [--pr] [--full]"
 metadata:
-  version: "4.0.0"
+  version: "4.0.1"
 ---
 
 # Review Swarm — Multi-Agent Parallel Review
@@ -14,7 +14,7 @@ Start specialized review helpers in parallel on one change, validate their findi
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-review-swarm", "version": "4.0.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-review-swarm.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-review-swarm", "version": "4.0.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-review-swarm.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## Step 1: Determine Scope
 

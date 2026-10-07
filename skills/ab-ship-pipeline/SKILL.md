@@ -3,7 +3,7 @@ name: ab-ship-pipeline
 description: "Ships a feature end to end with no checkpoints: recorded assumptions, a verified and deepened plan, execution through ab-orchestrate, review until it converges, then commits and a PR body, tracked in .agent-blueprint/run/state.json. Use when the user wants a well-defined feature built hands-off, fire and forget, through to a pull request. Not for work the user approves stage by stage (ab-build-pipeline) or a change under three files (ab-quick-fix)."
 argument-hint: "<feature description> [--swarm] [--iterations N] [--convergence fast|deep|perfect] [--deploy] [--external]"
 metadata:
-  version: "4.0.0"
+  version: "4.0.1"
 ---
 
 # Ship Pipeline — Autonomous End-to-End
@@ -14,7 +14,7 @@ Announce at start: "Starting ship pipeline: autonomous, no checkpoints, a PR at 
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-ship-pipeline", "version": "4.0.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-ship-pipeline.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-ship-pipeline", "version": "4.0.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-ship-pipeline.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## Run state
 

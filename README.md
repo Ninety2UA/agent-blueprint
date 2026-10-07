@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="#whats-new-in-v400">What's new</a> ·
+  <a href="#whats-new-in-v401">What's new</a> ·
   <a href="#install">Install</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#unattended-runs">Unattended runs</a> ·
@@ -32,6 +32,10 @@
 A coding agent starts every session from nothing. It doesn't know how your project works, what was decided last week, or which problems were already solved, and when you switch to another tool, whatever the last one learned stays behind.
 
 Agent Blueprint gives the agent one way of working that is the same in every tool. Skills take a feature from design through review to a pull request. Helper prompts handle the analysis that needs a fresh context, such as a security review or a plan check. Project documents under `docs/` carry conventions, decisions and solved problems from one session to the next, so they are there whichever of the eight tools opens the repository next.
+
+## What's new in v4.0.1
+
+Cursor CLI and Amp no longer list every skill twice next to Claude Code. Both read Claude Code's plugin as well as `~/.agents/skills`, so with Claude Code and either of them installed, `install.sh` now leaves `~/.agents/skills` alone: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder (Hermes then needs no config edit), and the copy an earlier install left there is removed. Run `bash install.sh` again to switch.
 
 ## What's new in v4.0.0
 
@@ -87,7 +91,7 @@ Or install one tool at a time with the route in this table (`<checkout>` is the 
 | Hermes | `hermes` | `bash install.sh --only hermes`, then add `~/.agents/skills` under `skills.external_dirs` in `~/.hermes/config.yaml` (the installer prints the lines) | [hermes.md](docs/hosts/hermes.md) |
 | Amp | `amp` | `bash install.sh --only amp`, or nothing if Claude Code already has the plugin, because Amp reads Claude Code's install | [amp.md](docs/hosts/amp.md) |
 
-The shared copy is one copy of `skills/` in `~/.agents/skills`, read by Codex, Grok Build, Pi, Cursor CLI, Hermes and Amp. The installer records it in `~/.agents/skills/.agent-blueprint-install.json`, so running it again removes skills that were renamed or dropped since. Keep one route per tool. A tool that sees the skills twice lists every skill twice: Codex with both its plugin and the shared copy, and Cursor CLI or Grok Build next to a Claude Code install, which both can import. The support note for each tool says what to check before adding a route.
+The shared copy is one copy of `skills/` in `~/.agents/skills`, read by Codex, Grok Build, Pi, Cursor CLI, Hermes and Amp. The installer records it in `~/.agents/skills/.agent-blueprint-install.json`, so running it again removes skills that were renamed or dropped since. Cursor CLI and Amp also read Claude Code's plugin, so on a machine with Claude Code and either of them the installer writes no shared copy: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder (`~/.grok/skills`, `~/.pi/agent/skills`, `~/.hermes/skills`), and a shared copy an earlier install left is removed. Keep one route per tool: a tool that sees the skills twice lists every skill twice, Codex with both its plugin and the shared copy for one. The support note for each tool says what to check before adding a route.
 
 Installer options:
 

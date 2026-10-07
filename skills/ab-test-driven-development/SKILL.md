@@ -2,7 +2,7 @@
 name: ab-test-driven-development
 description: "Drives new code from tests with red-green-refactor: write one failing test, watch it fail for the expected reason, write the least code that passes, run the whole suite, then refactor while green. Code written before its test is deleted and rewritten from the test. Use when implementing a feature, fixing a bug, refactoring or changing behavior, before any implementation code and whether or not the user mentions tests. Not for backfilling tests on existing code that is not being changed (use ab-add-tests)."
 metadata:
-  version: "4.0.0"
+  version: "4.0.1"
 ---
 
 # Test-Driven Development (TDD)
@@ -13,7 +13,7 @@ Write the test first. Watch it fail. Write minimal code to pass. The skill is do
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-test-driven-development", "version": "4.0.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-test-driven-development.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-test-driven-development", "version": "4.0.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-test-driven-development.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## When to Use
 

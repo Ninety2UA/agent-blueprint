@@ -2090,7 +2090,7 @@
       <div class="hero__content">
         <div class="hero__badge">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-          v4.0.0 &middot; Agent Blueprint
+          v4.0.1 &middot; Agent Blueprint
         </div>
         <h1>Agent<br><span class="gradient-text">Blueprint</span></h1>
         <p class="hero__tagline">53 skills that take a coding agent from an idea to a reviewed pull request, in eight coding CLIs: Claude Code, Codex, Antigravity, Grok Build, Pi, Cursor CLI, Hermes and Amp.</p>
@@ -2323,7 +2323,7 @@
               </tbody>
             </table>
           </div>
-          <p>The shared copy is one copy of <code>skills/</code> in <code>~/.agents/skills</code>, read by Codex, Grok Build, Pi, Cursor CLI, Hermes and Amp. The installer records it in <code>~/.agents/skills/.agent-blueprint-install.json</code>, so running it again removes skills that were renamed or dropped since. Keep one route per tool. A tool that sees the skills twice lists every skill twice: Codex with both its plugin and the shared copy, and Cursor CLI or Grok Build next to a Claude Code install, which both can import. The support note for each tool says what to check before adding a route.</p>
+          <p>The shared copy is one copy of <code>skills/</code> in <code>~/.agents/skills</code>, read by Codex, Grok Build, Pi, Cursor CLI, Hermes and Amp. The installer records it in <code>~/.agents/skills/.agent-blueprint-install.json</code>, so running it again removes skills that were renamed or dropped since. Cursor CLI and Amp also read Claude Code's plugin, so on a machine with Claude Code and either of them the installer writes no shared copy: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder (<code>~/.grok/skills</code>, <code>~/.pi/agent/skills</code>, <code>~/.hermes/skills</code>), and a shared copy an earlier install left is removed. Keep one route per tool: a tool that sees the skills twice lists every skill twice, Codex with both its plugin and the shared copy for one. The support note for each tool says what to check before adding a route.</p>
           <p>Installer options:</p>
           <div class="code-block">
             <div class="code-block__header">
@@ -3564,6 +3564,11 @@
   <!-- ===== WHAT'S NEW ===== -->
   <section class="whats-new" id="whats-new">
     <div class="container">
+      <div class="section-header reveal">
+        <span class="new__badge">v4.0.1</span>
+        <h2>What's new in v4.0.1</h2>
+        <p>Cursor CLI and Amp no longer list every skill twice next to Claude Code. Both read Claude Code's plugin as well as <code>~/.agents/skills</code>, so with Claude Code and either of them installed, <code>install.sh</code> now leaves <code>~/.agents/skills</code> alone: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder (Hermes then needs no config edit), and the copy an earlier install left there is removed. Run <code>bash install.sh</code> again to switch.</p>
+      </div>
       <div class="section-header reveal">
         <span class="new__badge">v4.0.0</span>
         <h2>What's new in v4.0.0</h2>

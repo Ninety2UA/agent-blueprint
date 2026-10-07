@@ -2,7 +2,7 @@
 name: ab-iterative-refinement
 description: "Runs review-fix-review cycles on a change until quality converges: a deslop pass, then per iteration an ab-review-swarm review, findings routed by tier, fixes through ab-resolve-in-parallel, tests, build and a commit, until the convergence mode is met (fast: no P1, deep: no P1 or P2, perfect: none) or max_iterations (default 3) runs out. Use when ab-ship-pipeline or ab-build-pipeline reaches review, or when the user wants code polished past a single review pass. Not for a trivial change (one ab-review-swarm pass) or findings that need an architecture change (re-plan)."
 metadata:
-  version: "4.0.0"
+  version: "4.0.1"
 ---
 
 # Iterative Refinement
@@ -11,7 +11,7 @@ This skill takes an implemented change through review→fix→review cycles and 
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-iterative-refinement", "version": "4.0.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-iterative-refinement.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-iterative-refinement", "version": "4.0.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-iterative-refinement.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## Configuration
 

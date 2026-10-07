@@ -1,6 +1,6 @@
 {
   "name": "agent-blueprint",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "Production-grade development toolkit for AI-assisted engineering. 53 skills and 10 hooks covering the full development lifecycle \u2014 from brainstorming through verified deployment, with helper swarms, team work, wave orchestration, and knowledge compounding.",
   "author": {
     "name": "Ninety2UA"
