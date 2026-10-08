@@ -6,6 +6,11 @@
 // placeholder shows as written. It runs only for skills/<name>/SKILL.md (checked on the file
 // path), so README sections, release notes and hand-written pages keep their HTML.
 //
+// The same plugin keeps command flags intact. Satteri's smart punctuation runs while it parses,
+// so "node --prof" in prose reaches the plugin as "node –prof"; an en dash with whitespace (or
+// nothing) before it and a letter right after it is put back as the two hyphens it was. En
+// dashes between spaces or numbers stay, and code was never converted.
+//
 // Astro 7 renders Markdown with Satteri, which does not run markdown.remarkPlugins; the
 // integration adds the plugin to the processor's own mdastPlugins list, as Astro lets
 // integrations do in astro:config:setup.
@@ -20,6 +25,8 @@ import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { findRepoRoot } from '../site.mjs';
+
+const FLAG = /(^|\s)\u2013(?=[A-Za-z])/g;
 
 // Parents whose children are blocks: raw HTML there becomes a paragraph, elsewhere plain text.
 const FLOW_PARENTS = new Set(['root', 'blockquote', 'listItem', 'footnoteDefinition', 'containerDirective']);
@@ -38,6 +45,10 @@ export function escapeSkillHtml(skillsDir) {
           html(node, visit) {
             const text = { type: 'text', value: node.value };
             return FLOW_PARENTS.has(visit.parent(node)?.type ?? 'root') ? { type: 'paragraph', children: [text] } : text;
+          },
+          text(node, visit) {
+            const value = node.value.replace(FLAG, '$1--');
+            if (value !== node.value) visit.replaceNode(node, { type: 'text', value });
           },
         }
       : null;

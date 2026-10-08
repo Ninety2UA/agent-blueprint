@@ -52,3 +52,15 @@ test('the integration adds the plugin to the Satteri processor and refuses any o
   const other = { markdown: { processor: { name: 'unified', options: {} } } };
   assert.throws(() => escapeSkillHtmlIntegration({ skillsDir }).hooks['astro:config:setup']({ config: other }), /satteri/i);
 });
+
+test('a command flag in SKILL.md prose keeps its two hyphens', async () => {
+  const { markdownToHtml } = await import('satteri');
+  const factory = escapeSkillHtml(skillsDir);
+  const render = (md, file) =>
+    markdownToHtml(md, { mdastPlugins: [() => factory(factoryCtx(file))], hastPlugins: [], fileURL: file, features: { gfm: true, smartPunctuation: true } }).html;
+  const skill = url('skills', 'ab-performance-profiling', 'SKILL.md');
+  const out = render('Use a profiler (pprof, node --prof, etc.) between 1–2 runs, then decide – or stop.', skill);
+  assert.match(out, /node --prof/);
+  assert.match(out, /1–2 runs/);
+  assert.match(out, /decide – or stop/);
+});

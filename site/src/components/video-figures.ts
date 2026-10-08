@@ -156,3 +156,6 @@ function initFilm({ fig, v, play }: Figure) {
   seek.addEventListener('input', () => jump((Number(seek.value) / 1000) * dur()));
   show(0);
 }
+
+// A module, so the header can load it with a dynamic import.
+export {};
