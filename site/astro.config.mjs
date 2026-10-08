@@ -5,11 +5,16 @@ import sitemap from '@astrojs/sitemap';
 import pagefind from 'astro-pagefind';
 import tailwindcss from '@tailwindcss/vite';
 import interactionDirective from './src/directives/integration.mjs';
+import { SITE_URL } from './src/lib/site.mjs';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://agent-blueprint.dbenger.com',
+  site: SITE_URL,
   trailingSlash: 'always',
+  build: {
+    // One request fewer before first paint; the global CSS is about 10 KB gzipped.
+    inlineStylesheets: 'always',
+  },
   integrations: [react(), sitemap(), pagefind(), interactionDirective()],
   fonts: [
     {
