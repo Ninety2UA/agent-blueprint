@@ -34,8 +34,10 @@ const items = navItems(Astro.url.pathname);
 
 <script>
   import { requestSearch } from './search-event';
+  // The Cmd-K palette's small loader: React and the Pagefind index load on the first request.
+  import './search/loader';
 
-  // Search buttons only announce the request; the Cmd-K palette (U7) listens for it.
+  // Search buttons only announce the request; the palette's loader listens for it.
   document.addEventListener('click', (event) => {
     const button = (event.target as Element | null)?.closest<HTMLElement>('[data-open-search]');
     if (button) requestSearch(button);

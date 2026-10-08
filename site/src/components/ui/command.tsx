@@ -17,12 +17,44 @@ import { Icon } from "@/components/Icon"
 // set 12vh from the top, a 54 px search row over a hairline, mono item names, the
 // selected row on the sunk surface inside a strong hairline. Square, no shadow.
 
+// cmdk 1.1.1 recomputes aria-activedescendant only when its own key handling changes the
+// selection. A controlled `value`, or new results that replace the selected option's
+// element, leave the input naming an option that is no longer active or no longer exists.
+// The option cmdk marks aria-selected="true" is always the right one, so after every change
+// under the root the input and the list name that option's id. A MutationObserver runs in
+// the same task as the change, before assistive technology reads the attribute.
+function useActiveDescendant(root: React.RefObject<HTMLDivElement | null>) {
+  React.useLayoutEffect(() => {
+    const el = root.current
+    if (!el) return
+    const sync = () => {
+      const id = el.querySelector('[cmdk-item][aria-selected="true"]')?.id
+      for (const owner of el.querySelectorAll("[cmdk-input], [cmdk-list]")) {
+        if (!id) owner.removeAttribute("aria-activedescendant")
+        else if (owner.getAttribute("aria-activedescendant") !== id) owner.setAttribute("aria-activedescendant", id)
+      }
+    }
+    const observer = new MutationObserver(sync)
+    observer.observe(el, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["aria-selected", "aria-activedescendant"],
+    })
+    sync()
+    return () => observer.disconnect()
+  }, [root])
+}
+
 function Command({
   className,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive>) {
+}: Omit<React.ComponentProps<typeof CommandPrimitive>, "ref">) {
+  const root = React.useRef<HTMLDivElement>(null)
+  useActiveDescendant(root)
   return (
     <CommandPrimitive
+      ref={root}
       data-slot="command"
       className={cn(
         "flex size-full flex-col overflow-hidden bg-popover text-popover-foreground",
@@ -39,27 +71,31 @@ function CommandDialog({
   children,
   className,
   showCloseButton = false,
+  finalFocus,
   ...props
-}: Omit<React.ComponentProps<typeof Dialog>, "children"> & {
-  title?: string
-  description?: string
-  className?: string
-  showCloseButton?: boolean
-  children: React.ReactNode
-}) {
+}: Omit<React.ComponentProps<typeof Dialog>, "children"> &
+  Pick<React.ComponentProps<typeof DialogContent>, "finalFocus"> & {
+    title?: string
+    description?: string
+    className?: string
+    showCloseButton?: boolean
+    children: React.ReactNode
+  }) {
   return (
     <Dialog {...props}>
-      <DialogHeader className="sr-only">
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
-      </DialogHeader>
       <DialogContent
         className={cn(
-          "top-[12vh] max-h-[min(560px,calc(100dvh-120px))] w-[min(640px,calc(100vw-32px))] max-w-none translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-none",
+          "top-[12vh] flex max-h-[min(560px,calc(100dvh-120px))] w-[min(640px,calc(100vw-32px))] max-w-none translate-y-0 flex-col gap-0 overflow-hidden p-0 sm:max-w-none",
           className
         )}
         showCloseButton={showCloseButton}
+        finalFocus={finalFocus}
       >
+        {/* inside the popup, so the dialog's name and description come from its own content */}
+        <DialogHeader className="sr-only">
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
         {children}
       </DialogContent>
     </Dialog>
@@ -68,8 +104,12 @@ function CommandDialog({
 
 function CommandInput({
   className,
+  after,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Input>) {
+}: React.ComponentProps<typeof CommandPrimitive.Input> & {
+  /** shown at the end of the search row, such as the palette's esc control */
+  after?: React.ReactNode
+}) {
   return (
     <div
       data-slot="command-input-wrapper"
@@ -79,11 +119,12 @@ function CommandInput({
       <CommandPrimitive.Input
         data-slot="command-input"
         className={cn(
-          "h-[54px] w-full min-w-0 border-0 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+          "h-[54px] w-full min-w-0 border-0 bg-transparent font-sans text-base text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
         {...props}
       />
+      {after}
     </div>
   )
 }
