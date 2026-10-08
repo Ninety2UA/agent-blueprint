@@ -1,9 +1,10 @@
 // Video figures (ported from the approved f/src/video.js). Loops play while at least half
 // of them is on screen and pause when they leave it; the film plays once and does not
 // loop. A pause the reader asks for sticks until they press play. With reduced motion
-// nothing starts on its own: the poster shows with a play button. Without JavaScript the
-// native controls stay. Nothing calls play() before a figure is half visible, and every
-// video is preload="none", so no video bytes load before then.
+// nothing starts on its own: the poster shows with a play button, as it does when the
+// browser refuses to start a muted video by itself (data saver, low power mode). Without
+// JavaScript the native controls stay. Nothing calls play() before a figure is half
+// visible, and every video is preload="none", so no video bytes load before then.
 
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clock = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
@@ -28,12 +29,14 @@ document.querySelectorAll<HTMLElement>('[data-vfig]').forEach((fig) => {
   const big = fig.querySelector<HTMLButtonElement>('.vf-big');
   let userPaused = false;
   let inView = false;
+  let refused = false;
 
   const sync = () => {
     const playing = !v.paused && !v.ended;
+    if (playing) refused = false;
     const s = v.ended ? 'ended' : playing ? 'playing' : 'paused';
     fig.classList.toggle('is-playing', playing);
-    fig.classList.toggle('show-big', !playing && (reduced || userPaused || v.ended));
+    fig.classList.toggle('show-big', !playing && (reduced || userPaused || refused || v.ended));
     if (toggle) {
       toggle.dataset.state = s;
       const word = s === 'playing' ? 'Pause' : s === 'ended' ? 'Replay' : 'Play';
@@ -48,7 +51,11 @@ document.querySelectorAll<HTMLElement>('[data-vfig]').forEach((fig) => {
     }
   };
   const start = () => {
-    v.play().catch(() => sync());
+    v.play().catch((error: unknown) => {
+      // an AbortError only means a pause() came first, as when the figure leaves the screen
+      if ((error as DOMException | null)?.name === 'NotAllowedError') refused = true;
+      sync();
+    });
   };
   const ctl: Figure = {
     fig,
@@ -140,6 +147,8 @@ function initFilm({ fig, v, play }: Figure) {
     v.addEventListener(ev, () => {
       cancelAnimationFrame(raf);
       show(v.currentTime);
+      // a seek inside the buffer may not fire `playing` again; keep the readout moving
+      if (!v.paused && !v.ended) raf = requestAnimationFrame(loop);
     }),
   );
 

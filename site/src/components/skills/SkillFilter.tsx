@@ -12,7 +12,10 @@ import { Icon } from '../Icon';
 //
 // The state lives in the URL (?q=...&phase=...): a chip press or a clear adds a history
 // entry, typing adds one for its first character and then updates it in place, so Back and
-// Forward bring the text and the chip back together.
+// Forward bring the text and the chip back together. The cards follow every keystroke, but
+// the in-place URL update waits until typing pauses for 250 ms (Safari throws once a page
+// makes more than 100 history calls in 30 seconds). A chip press or leaving the box writes
+// it at once; Back drops it.
 
 export interface CatalogState {
   q: string;
@@ -50,6 +53,8 @@ export default function SkillFilter({ phases, total }: Props) {
   const current = useRef<CatalogState>({ q: '', phase: ALL });
   // true while the current history entry belongs to a run of typing
   const typing = useRef(false);
+  // the URL typing has yet to write into that entry, and the timer that writes it
+  const pending = useRef<{ url: URL; timer: number } | null>(null);
 
   const show = (state: CatalogState) => {
     current.current = state;
@@ -57,12 +62,26 @@ export default function SkillFilter({ phases, total }: Props) {
     window.abCatalog?.apply(state);
   };
 
+  const drop = () => {
+    if (pending.current) window.clearTimeout(pending.current.timer);
+    pending.current = null;
+  };
+
+  const flush = () => {
+    const url = pending.current?.url;
+    drop();
+    if (url && url.href !== location.href) history.replaceState(history.state, '', url);
+  };
+
   const commit = (state: CatalogState, how: 'push' | 'type') => {
     show(state);
     const url = urlFor(state);
-    if (url.href !== location.href) {
-      if (how === 'type' && typing.current) history.replaceState(history.state, '', url);
-      else history.pushState(history.state, '', url);
+    if (how === 'type' && typing.current) {
+      drop();
+      pending.current = { url, timer: window.setTimeout(flush, 250) };
+    } else {
+      flush();
+      if (url.href !== location.href) history.pushState(history.state, '', url);
     }
     typing.current = how === 'type';
   };
@@ -77,6 +96,8 @@ export default function SkillFilter({ phases, total }: Props) {
     else show(fromUrl);
 
     const onPop = () => {
+      // the entry that typing was updating is no longer the current one
+      drop();
       typing.current = false;
       const state = catalog.read(location.search);
       field.value = state.q;
@@ -93,6 +114,7 @@ export default function SkillFilter({ phases, total }: Props) {
     window.addEventListener('popstate', onPop);
     document.addEventListener('click', onClear);
     return () => {
+      drop();
       window.removeEventListener('popstate', onPop);
       document.removeEventListener('click', onClear);
     };
@@ -114,6 +136,7 @@ export default function SkillFilter({ phases, total }: Props) {
           aria-keyshortcuts="/"
           aria-controls="skill-cards"
           onInput={(event) => commit({ ...current.current, q: event.currentTarget.value }, 'type')}
+          onBlur={flush}
         />
         <kbd aria-hidden="true">/</kbd>
       </div>

@@ -108,8 +108,14 @@ const panels = await Promise.all(items.map((item) => Astro.slots.render(item.id)
 
     // a link to a panel's id opens its tab and brings it into view
     const fromHash = () => {
-      const target = location.hash.slice(1);
-      const tab = target && tabs.find((t) => t.getAttribute('aria-controls') === decodeURIComponent(target));
+      let target = '';
+      try {
+        target = decodeURIComponent(location.hash.slice(1));
+      } catch {
+        // a malformed escape such as #%E0 names no panel
+        return;
+      }
+      const tab = target && tabs.find((t) => t.getAttribute('aria-controls') === target);
       if (!tab) return;
       select(tab);
       panelOf(tab)?.scrollIntoView({ block: 'start' });
