@@ -3,7 +3,6 @@
    global.css. Loaded only by the two skills templates. */
 
 /* mono text outside code keeps its letters apart, as code does (no "fi" ligature in skill names) */
-.cat-count, .hp-skill, .crumbs, .steps .sm, .d-node b, .toc-src a, .card .card-name { font-variant-ligatures: none; }
 
 /* ---------- Catalog ---------- */
 .cat-head { padding: var(--s-7) 0 var(--s-6); }

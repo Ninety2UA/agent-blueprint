@@ -59,6 +59,8 @@
     line-height: 1.6;
     font-stretch: 100%;
     font-kerning: normal;
+    /* Azeret Mono joins fi and fl; skill names and paths must read letter by letter */
+    font-variant-ligatures: none;
     font-optical-sizing: auto;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -70,7 +72,7 @@
   h1, h2, h3, h4 { margin: 0; text-wrap: balance; font-weight: 650; }
   p { margin: 0; text-wrap: pretty; }
   ul, ol { margin: 0; padding: 0; }
-  code, kbd, pre, .mono { font-family: var(--font-mono); font-variant-ligatures: none; }
+  code, kbd, pre, .mono { font-family: var(--font-mono); }
   code { font-size: 0.88em; }
   ::selection { background: var(--accent); color: var(--on-accent); }
   :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: var(--r); }

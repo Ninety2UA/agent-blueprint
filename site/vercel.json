@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "trailingSlash": true,
+  "redirects": [
+    { "source": "/docs{/}?", "destination": "/docs/getting-started/", "permanent": true },
+    { "source": "/tutorials{/}?", "destination": "/tutorials/first-feature-new-project/", "permanent": true },
+    { "source": "/guides{/}?", "destination": "/guides/unattended-runs/", "permanent": true }
+  ]
+}
