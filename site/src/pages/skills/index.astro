@@ -18,7 +18,7 @@ const phaseBySlug = new Map(phases.map((p) => [p.slug, p]));
 const chips = phases.map((p) => ({ slug: p.slug, title: p.title, count: p.skills.length }));
 const description = `Search the ${counts.skills} Agent Blueprint skills by name or summary, filter them by phase, and browse the ${counts.helpers} helper prompts they start.`;
 ---
-<BaseLayout title="Skills: Agent Blueprint" description={description}>
+<BaseLayout title="Skills · Agent Blueprint" description={description}>
   {/* without JavaScript the filter cannot run; every card shows, so its controls are hidden */}
   <noscript slot="head"><style is:inline>.cat-tools{display:none!important}</style></noscript>
   <div class="wrap catalog" data-pagefind-body data-pagefind-filter="section:Skills">

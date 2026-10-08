@@ -84,7 +84,7 @@ const cells = [
 ];
 const plainSummary = skill.summary.replace(/\x60/g, ''); // \x60: a literal backtick trips the Astro compiler
 ---
-<BaseLayout title={`${skill.name}: Agent Blueprint`} description={plainSummary} sheet={`Skills / ${skill.name}`}>
+<BaseLayout title={`${skill.name} · Agent Blueprint skills`} description={plainSummary} sheet={`Skills / ${skill.name}`}>
   <div class="wrap skill" data-pagefind-body data-pagefind-filter="section:Skills">
     <nav class="crumbs" aria-label="Breadcrumb">
       <ol>
