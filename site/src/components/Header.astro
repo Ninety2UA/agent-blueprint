@@ -42,4 +42,8 @@ const items = navItems(Astro.url.pathname);
     const button = (event.target as Element | null)?.closest<HTMLElement>('[data-open-search]');
     if (button) requestSearch(button);
   });
+
+  // Video figures (loops, the film, the Kit's hero) load their player only on pages that have
+  // one, as a dynamic import, so no page waits on it before first paint.
+  if (document.querySelector('[data-vfig]')) import('./video-figures');
 </script>
