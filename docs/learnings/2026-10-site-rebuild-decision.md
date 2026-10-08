@@ -15,7 +15,7 @@ tags: [scope-decision, site, astro, vercel, dependencies, version-bump, media, g
 
 # The website moves into site/, built with Astro and served by Vercel
 
-> **Outcome (2026-10-08):** the website's source lives in `site/` on `main`. It is an Astro build that only maintainers run, its packages are listed in `site/package.json` and nowhere else, and Vercel hosts it at agent-blueprint.dbenger.com. Pages, counts, install routes and release notes are generated from the repository when the site is built. The videos and the README hero GIF are rendered once and committed. The old GitHub Pages address is switched off rather than forwarded. This record scopes the zero-dependency rule of `docs/learnings/2026-10-portability-decision.md` to the plugin, and says why changes to the site and to README images need no version bump. The plan behind it is `docs/plans/2026-10-08-1210-feat-site-rebuild-plan.md`.
+> **Outcome (2026-10-08):** the website's source lives in `site/` on `main`. It is an Astro build that only maintainers run, its packages are listed in `site/package.json` and nowhere else, and Vercel hosts it at agent-blueprint.dbenger.com. Pages, counts, install routes and release notes are generated from the repository when the site is built. The videos and the README hero GIF are rendered once and committed. The old GitHub Pages address is switched off rather than forwarded. This record scopes the zero-dependency rule of `docs/learnings/2026-10-portability-decision.md` to the plugin, and says why changes to the site and to README images need no version bump.
 
 ## Context
 

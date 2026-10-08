@@ -7,7 +7,7 @@
 //                   root-relative site URL, used to rewrite README anchor links).
 //   ANCHOR_FALLBACKS  [[RegExp, url]] for top-level README headings no page renders: a README link to
 //                   such a heading, or to anything under it, goes to the first matching URL; "/" otherwise.
-//   pageUrl(kind, slug)  the site URL of a Docs or Guides page.
+//   pageUrl(kind, slug)  the site URL of a Docs, Guides or Tutorials page.
 //
 // `headings` lists README heading texts exactly as written after the #s (inline code included). A page
 // renders each listed section with everything under it, except a subsection that another page lists

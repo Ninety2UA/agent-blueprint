@@ -7,9 +7,9 @@
   "ignoreCommand": "bash scripts/ignore-build.sh",
   "trailingSlash": true,
   "redirects": [
-    { "source": "/docs{/}?", "destination": "/docs/getting-started/", "permanent": true },
-    { "source": "/tutorials{/}?", "destination": "/tutorials/first-feature-new-project/", "permanent": true },
-    { "source": "/guides{/}?", "destination": "/guides/unattended-runs/", "permanent": true }
+    { "source": "/docs{/}?", "destination": "/docs/getting-started/", "permanent": false },
+    { "source": "/tutorials{/}?", "destination": "/tutorials/first-feature-new-project/", "permanent": false },
+    { "source": "/guides{/}?", "destination": "/guides/unattended-runs/", "permanent": false }
   ],
   "headers": [
     {
