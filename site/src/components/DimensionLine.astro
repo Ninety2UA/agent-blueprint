@@ -1,0 +1,19 @@
+---
+// A horizontal dimension line: extension lines at both ends, arrowheads, optional ticks
+// (fractions of the length, 0 to 1) and a label written above the middle. A `label`
+// slot replaces the label text; the default slot adds overlays (the film's progress
+// fill, playhead and seek control sit on one).
+interface Props {
+  label?: string;
+  ticks?: number[];
+  class?: string;
+}
+const { label, ticks = [], class: cls } = Astro.props;
+const hasLabel = label !== undefined || Astro.slots.has('label');
+---
+<div class:list={['dimline', cls]}>
+  <span class="dl-line" aria-hidden="true"></span>
+  {ticks.map((t) => <span class="dl-tick" style={`left:${(t * 100).toFixed(3)}%`} aria-hidden="true"></span>)}
+  <slot />
+  {hasLabel && <span class="dl-txt"><slot name="label">{label}</slot></span>}
+</div>

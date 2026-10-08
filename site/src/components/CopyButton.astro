@@ -1,0 +1,71 @@
+---
+// A copy control. It copies `text`, or the text of the element with id `from`, or,
+// inside a .cmd, the command lines without their "$ " prompts. "Copied" shows for
+// 1.8 s and the polite live region in BaseLayout announces the result.
+import { IC } from './icons';
+
+interface Props {
+  /** accessible name, e.g. "Copy install command" */
+  label: string;
+  text?: string;
+  /** id of an element whose text to copy */
+  from?: string;
+  class?: string;
+}
+const { label, text, from, class: cls } = Astro.props;
+---
+<button class:list={['copy-btn', cls]} type="button" aria-label={label} data-copy={text} data-copy-from={from}>
+  <Fragment set:html={IC.copy} /><Fragment set:html={IC.check} /><span class="copy-label">Copy</span>
+</button>
+
+<script>
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // older browsers and insecure origins: select a hidden copy and use the legacy command
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try {
+        ok = document.execCommand('copy');
+      } catch {
+        ok = false;
+      }
+      ta.remove();
+      return ok;
+    }
+  };
+
+  const timers = new WeakMap<HTMLElement, number>();
+
+  document.addEventListener('click', async (event) => {
+    const btn = (event.target as Element | null)?.closest<HTMLButtonElement>('.copy-btn');
+    if (!btn) return;
+    const src = btn.dataset.copyFrom ? document.getElementById(btn.dataset.copyFrom) : null;
+    const pre = btn.closest('.cmd')?.querySelector('pre');
+    const text =
+      btn.dataset.copy ??
+      (src ? (src.textContent ?? '').trim() : (pre?.innerText ?? '').replace(/^\$\s*/gm, '').trim());
+    const ok = await copyText(text);
+    const label = btn.querySelector('.copy-label');
+    btn.classList.toggle('is-copied', ok);
+    if (label) label.textContent = ok ? 'Copied' : 'Press ⌘C';
+    const live = document.getElementById('live');
+    if (live) live.textContent = ok ? 'Copied to the clipboard' : 'Copy failed, select the text instead';
+    clearTimeout(timers.get(btn));
+    timers.set(
+      btn,
+      window.setTimeout(() => {
+        btn.classList.remove('is-copied');
+        if (label) label.textContent = 'Copy';
+      }, 1800),
+    );
+  });
+</script>

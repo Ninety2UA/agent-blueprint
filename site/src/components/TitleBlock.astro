@@ -1,0 +1,30 @@
+---
+// A title block: labelled cells in an ink frame, the way a drawing records its facts.
+// `cols` is the grid template (default: equal cells that wrap); `attached` drops the
+// top border so the block sits under a sheet. A cell with `wide` spans every column;
+// `claim` marks a cell that states a current-state count or the version (KTD5).
+interface Cell {
+  label: string;
+  value: string;
+  code?: boolean;
+  wide?: boolean;
+  claim?: 'skills' | 'helpers' | 'hooks' | 'tools' | 'version';
+  class?: string;
+}
+interface Props {
+  cells: Cell[];
+  cols?: string;
+  attached?: boolean;
+  label?: string;
+  class?: string;
+}
+const { cells, cols, attached = false, label, class: cls } = Astro.props;
+---
+<dl class:list={['tblock', { attached }, cls]} style={cols ? `--tb-cols:${cols}` : undefined} aria-label={label}>
+  {cells.map((c) => (
+    <div class:list={[c.class, { w2: c.wide }]}>
+      <dt>{c.label}</dt>
+      <dd data-claim={c.claim}>{c.code ? <code>{c.value}</code> : c.value}</dd>
+    </div>
+  ))}
+</dl>

@@ -4,12 +4,13 @@ import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import pagefind from 'astro-pagefind';
 import tailwindcss from '@tailwindcss/vite';
+import interactionDirective from './src/directives/integration.mjs';
 
 // https://astro.build/config
 export default defineConfig({
   site: 'https://agent-blueprint.dbenger.com',
   trailingSlash: 'always',
-  integrations: [react(), sitemap(), pagefind()],
+  integrations: [react(), sitemap(), pagefind(), interactionDirective()],
   fonts: [
     {
       provider: fontProviders.local(),

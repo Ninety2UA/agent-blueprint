@@ -1,0 +1,94 @@
+---
+// The product film on a full drawing sheet: chapter buttons that seek and follow
+// playback, a progress line drawn as a dimension line, a title block under the sheet.
+// Chapters come from public/media/film-chapters.json and the length and frame size from
+// film.mp4 itself, both read at build time, so a re-render needs no edit here.
+// The film plays once, muted, never loops; video-figures.ts runs it.
+import '../styles/media.css';
+import chapters from '../../public/media/film-chapters.json';
+import DimensionLine from './DimensionLine.astro';
+import DrawingSheet from './DrawingSheet.astro';
+import { IC } from './icons';
+import { clock, mp4Facts } from './media';
+import TitleBlock from './TitleBlock.astro';
+
+interface Props {
+  /** figure number, in page order */
+  num: number;
+  /** prefix for the ids inside the player (seek control, chapter line) */
+  id?: string;
+}
+const { num, id = 'film' } = Astro.props;
+
+const SRC = '/media/film.mp4';
+const { duration, width, height } = mp4Facts('media/film.mp4');
+const chaps = chapters.map((c) => ({ label: String(c.label), start: Number(c.start) }));
+
+// What each chapter shows, keyed by its label in film-chapters.json (from the motion notes).
+const CHAPTER_TEXT: Record<string, string> = {
+  Idea: 'The cover sheet: the example request and the index of the sheets that follow.',
+  Design: '<code>ab-brainstorming</code> checks what the repository already answers, compares three approaches and saves the approved design under <code>docs/plans/</code>.',
+  Plan: '<code>ab-writing-plans</code> turns the design into four tasks, each with its file, what its test asserts and the tasks it waits for.',
+  Build: '<code>ab-orchestrate</code> runs the tasks in two waves with an integration check after each, and only the lead commits.',
+  Review: '<code>ab-review-swarm</code> sends the change to five reviewers and merges their findings into one P1/P2/P3 report. After the fixes, <code>ab-iterative-refinement</code> runs a second pass and no P1 is left.',
+  Verify: '<code>ab-verification-before-completion</code> runs the full command and reads the output and exit code before anything is called done.',
+  Ship: 'The outgoing commits and the pull request body pass a secret scan, then the pull request opens.',
+  Learn: '<code>ab-knowledge-compounding</code> writes the solution to <code>docs/solutions/</code> and <code>ab-session-wrap</code> updates <code>docs/context/STATUS.md</code>. The next session, in Codex, reads both with <code>ab-resume-session</code>. The film ends on the eight coding CLIs and the mark.',
+};
+const texts = JSON.stringify(Object.fromEntries(chaps.map((c) => [c.label, CHAPTER_TEXT[c.label] ?? ''])));
+const first = chaps[0].label;
+const length = clock(duration);
+
+const alt =
+  `Film, ${Math.floor(duration)} seconds, no sound: an example feature, Add CSV export to the reports page, drawn as a set of sheets ` +
+  'along one line. Design with ab-brainstorming, Plan with ab-writing-plans, Build in two waves with ab-orchestrate, ' +
+  'Review with ab-review-swarm and ab-iterative-refinement, Verify with ab-verification-before-completion, ' +
+  'Ship after a secret scan, and Learn with ab-knowledge-compounding and ab-session-wrap, read back in Codex by ' +
+  'ab-resume-session. It ends on the eight coding CLIs and the mark.';
+
+const cells = [
+  { label: 'Figure', value: String(num), class: 'ftb-fig' },
+  { label: 'Title', value: 'One feature, idea to pull request', class: 'ftb-title' },
+  { label: 'Example', value: 'Add CSV export to the reports page (invented)', class: 'ftb-ex' },
+  { label: 'Length', value: length, class: 'ftb-len' },
+  { label: 'Frame', value: `${width} × ${height}`, class: 'ftb-frame' },
+  { label: 'Sound', value: 'None', class: 'ftb-sound' },
+];
+---
+<figure class="vfig film" data-vfig data-film data-duration={duration.toFixed(2)} data-texts={texts}>
+  <DrawingSheet class="film-sheet">
+    <div class="vf-media">
+      <video muted playsinline preload="none" controls poster="/media/film-1280.jpg" width="1280" height="720" aria-label={alt}>
+        <source src={SRC} type="video/mp4" />
+      </video>
+      <button class="vf-big" type="button" data-vplay aria-label="Play the film"><Fragment set:html={IC.play} /><span>Play</span></button>
+    </div>
+    <div class="film-ctl">
+      <button class="vf-toggle" type="button" data-vplay aria-label="Pause the film" data-label="the film"><Fragment set:html={IC.pause} /><Fragment set:html={IC.play} /><Fragment set:html={IC.replay} /><span class="vf-state">Pause</span></button>
+      <DimensionLine ticks={chaps.slice(1).map((c) => c.start / duration)}>
+        <span class="fd-fill" aria-hidden="true"></span>
+        <span class="fd-head" aria-hidden="true"></span>
+        <input class="fd-seek" id={`${id}-seek`} type="range" min="0" max="1000" step="1" value="0" aria-label="Position in the film" aria-valuetext={`0:00 of ${length}`} />
+        <span slot="label" aria-hidden="true"><span data-cur>0:00</span> of {length}</span>
+      </DimensionLine>
+    </div>
+    <ol class="chapters" aria-label="Chapters">
+      {chaps.map((c) => (
+        <li>
+          <button class="chap" type="button" data-t={c.start} aria-describedby={`${id}-now`}>
+            <span class="mark" aria-hidden="true"></span><span class="cn">{c.label}</span><span class="ct">{clock(c.start)}</span>
+          </button>
+        </li>
+      ))}
+    </ol>
+    <p class="film-now" id={`${id}-now`} data-now><b>{first}</b> <span set:html={CHAPTER_TEXT[first] ?? ''} /></p>
+  </DrawingSheet>
+  <figcaption>
+    <TitleBlock class="film-tb" cells={cells} attached />
+    <slot />
+  </figcaption>
+</figure>
+
+<script>
+  import './video-figures';
+</script>

@@ -1,0 +1,30 @@
+---
+// A command shown as a real, copyable control (never a fake terminal). Each line is set
+// on its own row with an optional "$" prompt; the copy button copies `copy`, or the
+// lines without their prompts. Pass markup in the default slot instead of `lines` when a
+// command needs highlighted arguments (<span class="arg">).
+import CopyButton from './CopyButton.astro';
+
+interface Props {
+  lines?: string[];
+  /** text the copy button copies; defaults to the visible lines */
+  copy?: string;
+  /** accessible name of the command block, e.g. "Install command" */
+  label: string;
+  /** accessible name of the copy button, e.g. "Copy install command" */
+  copyLabel: string;
+  prompt?: boolean;
+  /** drafting trim marks at two corners, for the page's primary command */
+  trim?: boolean;
+  id?: string;
+  class?: string;
+}
+const { lines = [], copy, label, copyLabel, prompt = false, trim = false, id, class: cls } = Astro.props;
+const hasSlot = Astro.slots.has('default');
+---
+<div class:list={['cmd', { trim }, cls]} id={id}>
+  <pre tabindex="0" aria-label={label}><code>{hasSlot ? <slot /> : lines.map((line) => (
+    <span class="ln">{prompt && <span class="pr" aria-hidden="true">$</span>}{line}</span>
+  ))}</code></pre>
+  <CopyButton label={copyLabel} text={copy} />
+</div>

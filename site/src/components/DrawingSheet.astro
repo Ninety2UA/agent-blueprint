@@ -1,0 +1,14 @@
+---
+// A drawing sheet: an ink border with registration marks inside the margin corners.
+// The film sits on one; any figure that is the page's one large drawing can.
+import RegMarks from './RegMarks.astro';
+
+interface Props {
+  class?: string;
+}
+const { class: cls } = Astro.props;
+---
+<div class:list={['dsheet', cls]}>
+  <RegMarks place="inside" />
+  <slot />
+</div>

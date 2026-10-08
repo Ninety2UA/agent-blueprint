@@ -1,0 +1,26 @@
+---
+// The path-grid mark (Direction 4's concept, redrawn in 2A): a five-cell path through a
+// 3 by 3 grid on a 28 unit grid (8 unit cells, 2 unit gaps), so the 28 px header size
+// lands every edge on a whole pixel. Path cells are ink, the last one (the finished pull
+// request) is the accent, the four skipped cells are hairline outlines. Theme-aware
+// through tokens. `sw` is the outline width in grid units (1 = 1 px at 28 px).
+interface Props {
+  sw?: number;
+  class?: string;
+}
+const { sw = 1, class: cls = 'brand-mark' } = Astro.props;
+const PATH = ['0,0', '1,0', '1,1', '2,1', '2,2'];
+const cells = [0, 1, 2].flatMap((row) =>
+  [0, 1, 2].map((col) => ({ x: col * 10, y: row * 10, i: PATH.indexOf(`${col},${row}`) })),
+);
+const h = sw / 2;
+---
+<svg class={cls} viewBox="0 0 28 28" aria-hidden="true" focusable="false">
+  {cells.map(({ x, y, i }) =>
+    i >= 0 ? (
+      <rect class="mk-on" style={`--i:${i}`} x={x} y={y} width="8" height="8" fill={i === 4 ? 'var(--accent)' : 'var(--ink)'} />
+    ) : (
+      <rect x={x + h} y={y + h} width={8 - sw} height={8 - sw} fill="none" stroke="var(--mark-line)" stroke-width={sw} />
+    ),
+  )}
+</svg>

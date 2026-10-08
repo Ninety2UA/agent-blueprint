@@ -1,0 +1,50 @@
+---
+// Every page: metadata, the self-hosted fonts, the header, the page in <main>, the
+// title-block footer. Pages ship no framework JavaScript on load; islands hydrate on use.
+import { Font } from 'astro:assets';
+import '../styles/global.css';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { sectionOf } from '../components/nav';
+import { THEME_INIT } from '../components/theme';
+
+interface Props {
+  title: string;
+  description: string;
+  /** absolute URL; defaults to this page's URL on the site */
+  canonical?: string;
+  /** the footer's sheet name; defaults to the section, or "Home" */
+  sheet?: string;
+  mainClass?: string;
+}
+const { title, description, canonical, sheet, mainClass } = Astro.props;
+const canonicalURL = canonical ?? new URL(Astro.url.pathname, Astro.site).href;
+const sheetName = sheet ?? sectionOf(Astro.url.pathname) ?? 'Home';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
+    <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml" />
+    <script is:inline set:html={THEME_INIT} />
+    <Font cssVariable="--font-archivo" preload />
+    <Font cssVariable="--font-azeret" />
+    {/* Without JavaScript the tabs cannot switch, so every panel shows under its own
+        name, and the buttons that would do nothing (tabs, copy, theme, search, menu) are hidden. */}
+    <noscript><style is:inline>.tabpanel[hidden]{display:block!important}.tabpanel+.tabpanel{margin-top:var(--s-5)}.tp-name{display:block!important}.tablist,.copy-btn,[data-theme-toggle],[data-open-search],.menu-btn{display:none!important}</style></noscript>
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <Header />
+    <main id="main" class={mainClass}>
+      <slot />
+    </main>
+    <Footer sheet={sheetName} />
+    <div id="live" class="sr-only" aria-live="polite"></div>
+  </body>
+</html>
