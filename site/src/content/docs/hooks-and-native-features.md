@@ -1,5 +1,5 @@
 ---
-description: Which tools run Agent Blueprint's optional hooks, and how the blueprint uses each tool's native features as opt-ins.
+description: Which tools run Agent Blueprint's optional hooks, and how the blueprint uses the native features of Claude Code, Codex and Hermes.
 hostDocs: what-is-missing-or-different
 ---
 

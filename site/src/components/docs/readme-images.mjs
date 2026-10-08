@@ -9,7 +9,7 @@
 //                       span, so each diagram's link has a name of its own. An image that is already
 //                       inside a link stays as it is.
 
-const FULL_SIZE_HINT = '<span class="sr-only"> (opens the full-size image)</span>';
+const FULL_SIZE_HINT = '<span class="sr-only" data-pagefind-ignore> (opens the full-size image)</span>';
 
 const TAG = /(<[^>]+>)/;
 

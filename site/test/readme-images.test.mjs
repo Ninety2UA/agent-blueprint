@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { linkFullSize } from '../src/components/docs/readme-images.mjs';
 
 const IMG = '<img alt="One skills folder installed into eight tools" loading="lazy" decoding="async" width="1760" height="1194" src="/_astro/eight-tools.1HM_efZa_2iApiO.webp">';
-const HINT = '<span class="sr-only"> (opens the full-size image)</span>';
+const HINT = '<span class="sr-only" data-pagefind-ignore> (opens the full-size image)</span>';
 const link = (img, src) => `<a class="img-full" href="${src}">${img}${HINT}</a>`;
 
 test('linkFullSize wraps an image in a link to its own file and keeps the image as it is', () => {
