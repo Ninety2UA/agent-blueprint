@@ -1,0 +1,22 @@
+---
+// The Kit page's head: breadcrumbs, the title and the sheet index, a small title block that is
+// also the page's table of contents.
+import { INDEX } from './kit-data';
+---
+<section class="kit-head" aria-labelledby="kit-h">
+  <div class="wrap kit-head-in">
+    <div class="kh-l">
+      <nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">Home</a></li><li><span aria-current="page">Kit</span></li></ol></nav>
+      <h1 id="kit-h" class="h-display">Media kit.</h1>
+      <p class="lede">The film, four loops, the README header, the mark and a short description, for anyone writing about Agent Blueprint or adding it to a README.</p>
+    </div>
+    <nav class="kit-index" aria-label="Sheets on this page">
+      <p class="ki-h"><span>Sheet</span><span>Contents</span><span>Files</span></p>
+      <ol>
+        {INDEX.map((s, i) => (
+          <li><a href={`#${s.id}`}><span class="ki-n">{i + 1}</span><span class="ki-t">{s.title}</span><span class="ki-f">{s.files}</span></a></li>
+        ))}
+      </ol>
+    </nav>
+  </div>
+</section>

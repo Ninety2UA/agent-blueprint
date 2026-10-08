@@ -1,0 +1,29 @@
+---
+// A short description in two lengths, each in a copy control. Every count and the version come
+// from the repository and carry their data-claim, so the text stays true as the tree changes.
+import CopyButton from '../CopyButton.astro';
+import { LONG, SHORT, site } from './kit-data';
+
+const blurbs = [
+  { title: 'One line', copy: SHORT, label: 'Copy the one-line description' },
+  { title: 'One paragraph', copy: LONG, label: 'Copy the paragraph' },
+];
+---
+<section class="sec kit-sec" id="blurb" aria-labelledby="blurb-h">
+  <div class="wrap">
+    <div class="blurb-grid">
+      <div class="sec-head">
+        <h2 id="blurb-h" class="h-sec">A short description.</h2>
+        <p class="body">Two lengths, both true as of <span data-claim="version">{site.version}</span>. Change the wording if you like; keep the numbers as they are.</p>
+      </div>
+      <div class="blurbs">
+        {blurbs.map((b) => (
+          <div class="blurb">
+            <p class="lbl">{b.title}</p>
+            <div class="cmd prose"><p class="bl-t" set:html={b.copy.html} /><CopyButton label={b.label} text={b.copy.text} /></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>

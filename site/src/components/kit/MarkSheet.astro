@@ -1,0 +1,112 @@
+---
+// The mark: its construction at drawing scale (Fig. 6, which fills its path cell by cell when it
+// scrolls in), the mark at 16 to 128 px on light and dark (Fig. 7), the lockup with its clear space
+// (Fig. 8), and the logo files in site/public/brand.
+import FileTable from './FileTable.astro';
+import { markCells, PATH, smallMark } from './kit-data';
+
+// Construction: 10 px per grid unit, so a cell (8 units) is 80 and the pitch (10 units) is 100.
+const S = 10;
+const ox = 70;
+const oy = 70;
+const W = 280 + ox + 40;
+const H = 280 + oy + 80;
+const cells = markCells({ cell: 8 * S, step: 10 * S, sw: 1, animate: true });
+const nums = PATH.map(([c, r], i) => `<text class="cn${i === 4 ? ' on-acc' : ''}" x="${c * 10 * S + 10}" y="${r * 10 * S + 24}">${i + 1}</text>`).join('');
+const pts = PATH.map(([c, r]) => `${c * 10 * S + 4 * S},${r * 10 * S + 4 * S}`).join(' ');
+const dims =
+  // one cell over the first column
+  '<line class="ext" x1="0" y1="-8" x2="0" y2="-34"/><line class="ext" x1="80" y1="-8" x2="80" y2="-34"/>' +
+  '<line class="dim" x1="0" y1="-26" x2="80" y2="-26" marker-start="url(#kc-ah)" marker-end="url(#kc-ah)"/>' +
+  '<text class="dt" x="40" y="-34" text-anchor="middle">cell, x</text>' +
+  // the second gap
+  '<line class="ext" x1="180" y1="-8" x2="180" y2="-34"/><line class="ext" x1="200" y1="-8" x2="200" y2="-34"/>' +
+  '<line class="dim" x1="180" y1="-26" x2="200" y2="-26"/>' +
+  '<text class="dt" x="190" y="-34" text-anchor="middle">gap, x/4</text>' +
+  // the overall height on the left
+  '<line class="ext" x1="-8" y1="0" x2="-34" y2="0"/><line class="ext" x1="-8" y1="280" x2="-34" y2="280"/>' +
+  '<line class="dim" x1="-26" y1="0" x2="-26" y2="280" marker-start="url(#kc-ah)" marker-end="url(#kc-ah)"/>' +
+  '<text class="dt" x="-36" y="140" text-anchor="middle" transform="rotate(-90 -36 140)">3x + 2 gaps</text>';
+const construction =
+  '<defs><marker id="kc-ah" viewBox="0 0 8 8" refX="7.2" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0 1.2 L7.6 4 L0 6.8 Z" class="ah"/></marker></defs>' +
+  `<g aria-hidden="true">${cells}<polyline class="path" pathLength="1" points="${pts}"/>${nums}${dims}` +
+  `<text class="dt mut" x="0" y="${280 + 44}">1 to 5 in loop order</text></g>`;
+
+const SIZES = [16, 32, 64, 128];
+const tile = (px: number) =>
+  px < 24
+    ? `<svg viewBox="0 0 32 32" width="${px}" height="${px}" aria-hidden="true">${smallMark()}</svg>`
+    : `<svg viewBox="0 0 28 28" width="${px}" height="${px}" aria-hidden="true">${markCells({ sw: px >= 128 ? (1.5 * 28) / px : 28 / px })}</svg>`;
+const sheets = [
+  { theme: 'light', name: 'Light' },
+  { theme: 'dark', name: 'Dark' },
+];
+const lockupMark = markCells({ sw: 0.5 });
+---
+<section class="sec kit-sec" id="mark" aria-labelledby="mark-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="mark-h" class="h-sec">The mark.</h2>
+      <p class="body">A path through a 3 by 3 grid: five cells in loop order, from the top left to the finished pull request in the bottom right. The path is ink, its last cell takes the accent, and the four cells it skips are hairline outlines.</p>
+    </div>
+    <div class="mark-grid">
+      <div class="mk-l">
+        <figure class="mk-fig mk-cons" data-cons>
+          <svg class="kit-cons" viewBox={`${-ox} ${-oy} ${W} ${H}`} role="img" aria-labelledby="kc-t">
+            <title id="kc-t">Construction of the mark: a 3 by 3 grid of square cells. The path runs through five cells in loop order, numbered 1 to 5, from the top left to the bottom right. The fifth cell is red-orange. Each cell is x wide, the gaps are a quarter of x, the outlines are hairlines.</title>
+            <Fragment set:html={construction} />
+          </svg>
+          <figcaption class="vf-cap"><span><b>Fig. 6</b>Construction. The path starts top left and ends on the pull request.</span></figcaption>
+        </figure>
+        <FileTable files={['/brand/mark.svg', '/brand/mark-negative.svg', '/brand/mark-small.svg', '/brand/favicon.svg']} label="Logo files" />
+      </div>
+      <div class="mk-side">
+        <figure class="mk-fig mk-sizes">
+          {sheets.map(({ theme, name }) => (
+            <div class={`sz-sheet sz-${theme}`}>
+              <p class="sz-h">{name} background</p>
+              <ul class="sz-row" aria-label={`The mark at 16, 32, 64 and 128 pixels on a ${name.toLowerCase()} background`}>
+                {SIZES.map((px) => (
+                  <li class="sz" style={`--px:${px}px`}><div class="sz-m" set:html={tile(px)} /><span class="sz-dim" aria-hidden="true"></span><span class="sz-l">{px} px</span></li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <figcaption class="vf-cap"><span><b>Fig. 7</b>Sizes. Below 24 px use the small drawing: wider gaps and heavier outlines, so the grid still reads at 16 px.</span></figcaption>
+        </figure>
+      </div>
+      <figure class="mk-fig mk-lockup">
+        <div class="lk-draw" role="img" aria-label="The lockup: the mark, then the name Agent Blueprint one cell to its right. Clear space of one cell on every side, drawn as dimension lines.">
+          <div class="lk-clear" aria-hidden="true">
+            <div class="lk"><svg class="lk-mark" viewBox="0 0 28 28" set:html={lockupMark} /><span class="lk-name">Agent Blueprint</span></div>
+            <span class="kd kd-h kd-left"><i>x</i></span>
+            <span class="kd kd-v kd-top"><i>x</i></span>
+            <span class="kd kd-h kd-gap"><i>x</i></span>
+            <span class="kd kd-v kd-bottom"><i>x</i></span>
+            <span class="kd kd-h kd-right"><i>x</i></span>
+          </div>
+        </div>
+        <figcaption class="vf-cap"><span><b>Fig. 8</b>Lockup and clear space. x is one cell of the mark. The name is set in Archivo at width 116, weight 680.</span></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<script>
+  // The construction drawing fills its path cell by cell when it scrolls in (f/src/kit.js); with
+  // reduced motion, or when it is already on screen at load, it stays as drawn.
+  const cons = document.querySelector<SVGElement>('[data-cons] svg');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (cons && !reduced && 'IntersectionObserver' in window && cons.getBoundingClientRect().top > window.innerHeight) {
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        io.disconnect();
+        cons.classList.add('is-drawing');
+        setTimeout(() => cons.classList.remove('is-drawing'), 2400);
+      },
+      { threshold: 0.4 },
+    );
+    io.observe(cons);
+  }
+</script>

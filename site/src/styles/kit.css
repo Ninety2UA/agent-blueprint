@@ -1,0 +1,151 @@
+/* Kit: the brand's parts laid out as a drawing set (ported from the approved f/src/kit.css) */
+.crumbs ol { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--font-mono); font-size: 0.8125rem; color: var(--muted); }
+.crumbs li + li::before { content: "/"; margin-right: 6px; color: var(--hair-strong); }
+.crumbs a { text-decoration: none; color: var(--ink-2); }
+.crumbs a:hover { text-decoration: underline; }
+.crumbs [aria-current] { color: var(--ink); }
+
+.kit-head { border-bottom: 1px solid var(--hair); }
+.kit-head-in { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s-7); align-items: end; padding-block: var(--s-6) var(--s-8); }
+.kh-l .h-display { margin-top: var(--s-6); }
+.kh-l .lede { margin-top: var(--s-4); }
+/* sheet index: a small title block that is also the page's table of contents */
+.kit-index { border: 1px solid var(--ink); }
+.ki-h, .kit-index a { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; align-items: baseline; padding-inline: 16px; }
+.ki-h { padding-block: 9px; border-bottom: 1px solid var(--hair-strong); font-family: var(--font-mono); font-size: 0.6875rem; color: var(--muted); }
+.kit-index ol { list-style: none; }
+.kit-index li + li { border-top: 1px solid var(--hair); }
+.kit-index a { padding-block: 11px; text-decoration: none; transition: background-color 160ms; }
+.kit-index a:hover { background: var(--bg-sunk); }
+.kit-index a:hover .ki-t { text-decoration: underline; text-underline-offset: 0.25em; }
+.ki-n { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--muted); }
+.ki-t { font-weight: 620; font-stretch: 108%; }
+.ki-f { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+
+.sec { padding-block: var(--section) 0; }
+.sec-head { max-width: 760px; }
+.sec-head .body { margin-top: var(--s-4); }
+.kit-sec { scroll-margin-top: var(--head-h); }
+/* The loop gallery is laid out only when it comes near the screen, so its four posters are not
+   fetched with the page (their lazy loading counts from the layout). The containment clips paint
+   at the section's edge: 12 px of padding, taken back by the margin, keeps a focus ring there visible. */
+#loops { content-visibility: auto; contain-intrinsic-size: auto 1600px; padding-bottom: 12px; margin-bottom: -12px; }
+
+/* README header */
+.readme-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s-7) clamp(40px, 5vw, 72px); align-items: start; margin-top: var(--s-7); }
+.ghr-tabs { min-width: 0; }
+.ghr-tabs .tablist { margin-bottom: var(--s-4); }
+.ghr { border: 1px solid var(--hair-strong); border-radius: var(--r); background: var(--bg-raise); }
+.ghr-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--hair); font-family: var(--font-mono); font-size: 0.8125rem; color: var(--ink-2); }
+.ghr-bar svg { width: 16px; height: 16px; }
+.ghr-body { padding: clamp(12px, 2vw, 24px); }
+.ghr-body img.kit-neg { width: 100%; height: auto; background: var(--bg-sunk); }
+.ghr-vid .vf-media { border: 0; }
+.readme-use .h-sub { font-size: var(--t-lg); }
+.readme-use .cmd { margin-top: var(--s-4); }
+.cmd.wrap-cmd pre { font-size: 0.75rem; }
+.cmd.wrap-cmd .ln { white-space: pre-wrap; overflow-wrap: anywhere; padding-left: 0; text-indent: 0; }
+.readme-use .hint { margin-top: 10px; font-size: 0.875rem; color: var(--ink-2); max-width: 52ch; }
+.readme-use .files-wrap { margin-top: var(--s-6); }
+
+/* The film: its files sit under the title block */
+.kit-sec .film { margin-top: var(--s-7); }
+.film figcaption .files-wrap { margin-top: var(--s-5); }
+
+/* Loops */
+.loop-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-8) clamp(48px, 5vw, 80px); margin-top: calc(var(--s-7) + 8px); }
+
+/* Parts list of files next to a preview */
+.files-wrap { margin-top: var(--s-4); overflow-x: auto; }
+.files { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.files th, .files td { padding: 7px 14px 7px 0; text-align: left; vertical-align: baseline; white-space: nowrap; }
+.files thead th { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--ink); }
+.files tbody th { font-weight: 400; }
+.files tbody tr + tr > * { border-top: 1px solid var(--hair); }
+.files td { font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.files a { text-decoration: none; }
+.files a code { font-size: 0.8125rem; font-weight: 560; color: var(--ink); text-decoration: underline; text-decoration-color: var(--hair-strong); text-underline-offset: 0.25em; }
+.files a:hover code { text-decoration-color: currentColor; }
+
+/* The mark */
+.mark-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s-7) clamp(40px, 5vw, 72px); margin-top: var(--s-7); align-items: start; }
+.mk-fig { margin: 0; min-width: 0; }
+.mk-l { grid-row: span 2; min-width: 0; }
+.mk-l .files-wrap { margin-top: var(--s-6); }
+.kit-cons { width: 100%; height: auto; padding: clamp(12px, 2vw, 24px); border: 1px solid var(--hair-strong); overflow: visible; }
+.kit-cons .path { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.kit-cons .cn { font-family: var(--font-mono); font-size: 15px; font-weight: 600; fill: var(--bg); }
+.kit-cons .cn.on-acc { fill: var(--on-accent); }
+.kit-cons .dim { stroke: var(--accent); stroke-width: 1; }
+.kit-cons .ext { stroke: var(--hair-strong); stroke-width: 1; }
+.kit-cons .ah { fill: var(--accent); }
+.kit-cons .dt { font-family: var(--font-mono); font-size: 12px; fill: var(--ink-2); }
+.kit-cons .dt.mut { fill: var(--muted); }
+.kit-cons.is-drawing .mk-on { animation: mk-fill 520ms var(--ease-out) calc(120ms + var(--i) * 170ms) backwards; transform-box: fill-box; transform-origin: center; }
+.kit-cons.is-drawing .path { stroke-dasharray: 1 1; animation: path-draw 1100ms var(--ease-out) 200ms backwards; }
+@keyframes path-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+.sz-sheet { padding: 16px 20px 18px; border: 1px solid var(--hair-strong); }
+.sz-sheet + .sz-sheet { border-top: 0; }
+.sz-light { --ink: oklch(0.17 0 0); --ink-2: oklch(0.34 0 0); --accent: oklch(0.63 0.21 33); --mark-line: oklch(0.66 0 0); --mark-line-sm: oklch(0.6 0 0); --muted: oklch(0.45 0 0); background: oklch(0.985 0 0); color: oklch(0.17 0 0); }
+.sz-dark { --ink: oklch(0.96 0 0); --ink-2: oklch(0.85 0 0); --accent: oklch(0.68 0.19 35); --mark-line: oklch(0.52 0 0); --mark-line-sm: oklch(0.6 0 0); --muted: oklch(0.74 0 0); background: oklch(0.15 0 0); color: oklch(0.96 0 0); }
+.sz-h { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--muted); }
+.sz-row { list-style: none; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px 40px; margin-top: 14px; }
+.sz { display: grid; justify-items: start; gap: 8px; }
+.sz-m svg { display: block; }
+.sz-dim { width: var(--px); height: 7px; border-inline: 1px solid var(--ink-2); background: linear-gradient(var(--ink-2), var(--ink-2)) center / 100% 1px no-repeat; }
+.sz-l { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+
+/* lockup with clear space drawn as dimension lines; x is one cell of the mark */
+.mk-lockup { grid-column: 2; }
+.lk-draw { --m: clamp(40px, 6.4vw, 92px); --x: calc(var(--m) * 8 / 28); display: flex; justify-content: center; padding: clamp(20px, 3vw, 40px) 12px; border: 1px solid var(--hair-strong); overflow: hidden; }
+.lk-clear { position: relative; padding: var(--x); outline: 1px dashed var(--hair-strong); }
+.lk { display: flex; align-items: center; gap: var(--x); }
+.lk-mark { width: var(--m); height: var(--m); flex: none; }
+.lk-name { font-size: calc(var(--m) * 0.607); font-stretch: 116%; font-weight: 680; letter-spacing: -0.012em; line-height: 1; white-space: nowrap; }
+.kd { position: absolute; background: var(--accent); }
+.kd::before, .kd::after { content: ""; position: absolute; width: 5px; height: 5px; background: var(--accent); }
+.kd i { position: absolute; font: 500 11px/1 var(--font-mono); color: var(--ink-2); font-style: normal; }
+.kd-h { height: 1px; width: var(--x); }
+.kd-h::before { left: 0; top: -2px; clip-path: polygon(0 50%, 100% 0, 100% 100%); }
+.kd-h::after { right: 0; top: -2px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.kd-h i { left: 50%; bottom: 5px; transform: translateX(-50%); }
+.kd-v { width: 1px; height: var(--x); }
+.kd-v::before { top: 0; left: -2px; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.kd-v::after { bottom: 0; left: -2px; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.kd-v i { left: 6px; top: 50%; transform: translateY(-50%); }
+.kd-left { left: 0; top: 50%; }
+.kd-right { right: 0; top: 50%; }
+.kd-gap { left: calc(var(--x) + var(--m)); bottom: calc(var(--x) / 2); }
+.kd-top { top: 0; left: 62%; }
+.kd-bottom { bottom: 0; left: 84%; }
+
+/* Description */
+.blurb-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s-7) clamp(40px, 5vw, 72px); align-items: start; }
+.blurbs { display: grid; gap: var(--s-6); }
+.blurb .lbl { margin-bottom: 8px; }
+.cmd.prose .bl-t { flex: 1; min-width: 0; padding: 16px 18px; font-size: 1rem; line-height: 1.6; color: var(--ink); max-width: 70ch; }
+
+@media (max-width: 960px) {
+  .kit-head-in, .readme-grid, .mark-grid, .blurb-grid { grid-template-columns: minmax(0, 1fr); }
+  .mk-l { grid-row: auto; }
+  .mk-cons { max-width: 520px; }
+  .mk-lockup { grid-column: auto; }
+}
+@media (max-width: 760px) {
+  .loop-gallery { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .cmd.prose { flex-direction: column; }
+  .cmd.prose .copy-btn { border-left: 0; border-top: 1px solid var(--hair-strong); min-height: 40px; }
+  .sz-row { gap: 16px 24px; }
+  /* each file becomes two lines, the name and then its facts */
+  .files thead { display: none; }
+  .files tr { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; padding-block: 8px; }
+  .files tbody tr + tr { border-top: 1px solid var(--hair); }
+  .files tbody tr + tr > * { border-top: 0; }
+  .files th { flex: 1 0 100%; padding: 0 0 2px; }
+  .files td { padding: 0; }
+  .files td:empty { display: none; }
+  .files tbody { display: block; border-top: 1px solid var(--ink); }
+}

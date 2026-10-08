@@ -1,0 +1,79 @@
+---
+// The revision rail: every revision block, then the older releases with a link to each row. It
+// sticks beside the releases and follows the one in view; below 1000 px it is a sticky strip.
+import { releaseId } from './changelog.mjs';
+
+interface Release {
+  version: string;
+  date: string;
+}
+interface Props {
+  blocks: Release[];
+  older: Release[];
+}
+const { blocks, older } = Astro.props;
+const items = [
+  ...blocks.map((b) => ({ id: releaseId(b.version), name: b.version, date: b.date })),
+  ...(older.length ? [{ id: 'older', name: `${older[0].version} and older`, date: `${older[0].date} back to ${older.at(-1)!.version}` }] : []),
+];
+---
+<nav class="vrail" aria-label="Releases">
+  <p class="f">Revisions</p>
+  <ol class="vr-main">
+    {items.map((it, i) => (
+      <li>
+        <a href={`#${it.id}`} data-rail={it.id} aria-current={i === 0 ? 'true' : undefined}><span class="mk" aria-hidden="true"></span><span class="rn">{it.name}</span><span class="rd">{it.date}</span></a>
+        {it.id === 'older' && (
+          <ol class="vr-sub">
+            {older.map((r) => <li><a href={`#${releaseId(r.version)}`}>{r.version}</a></li>)}
+          </ol>
+        )}
+      </li>
+    ))}
+  </ol>
+</nav>
+
+<script>
+  // The rail follows the release in view, and the revision blocks settle in as they arrive
+  // (h/src/changelog.js).
+  import { reduced, reveal } from '../home/reveal';
+
+  const rail = document.querySelector<HTMLElement>('.vrail');
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('.vrail [data-rail]')];
+  const revs = [...document.querySelectorAll<HTMLElement>('[data-rev]')];
+  const setCurrent = (id: string) => {
+    links.forEach((a) => {
+      const on = a.dataset.rail === id;
+      if (on) a.setAttribute('aria-current', 'true');
+      else a.removeAttribute('aria-current');
+      // in the narrow strip, keep the current release in view
+      if (on && rail && rail.scrollWidth > rail.clientWidth) {
+        rail.scrollTo({ left: a.offsetLeft - 16, behavior: reduced() ? 'auto' : 'smooth' });
+      }
+    });
+  };
+  if ('IntersectionObserver' in window) {
+    const seen = new Map<string, boolean>();
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => seen.set(e.target.id, e.isIntersecting));
+        const first = revs.find((r) => seen.get(r.id));
+        if (first) setCurrent(first.id);
+      },
+      { rootMargin: '-30% 0px -55% 0px' },
+    );
+    revs.forEach((r) => io.observe(r));
+  }
+
+  // the revision head is ruled in first, then its entries follow
+  reveal(
+    revs.map((r) => r.querySelector('.rev-head, .older-tbl')).filter((el): el is Element => el !== null),
+    [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }],
+    { duration: 900 },
+  );
+  reveal([...document.querySelectorAll('.rev-groups > dd')], [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], {
+    duration: 640,
+    stagger: 70,
+    order: (i) => i % 4,
+  });
+</script>

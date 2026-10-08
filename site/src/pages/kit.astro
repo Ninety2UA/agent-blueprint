@@ -1,0 +1,36 @@
+---
+// Kit: the approved media kit (f/kit.html). The README hero with its Markdown, the film, the four
+// loops, the mark at several sizes on light and dark, and a description to copy. File facts come
+// from the files at build time; counts and the version from getSiteData().
+import FilmPlayer from '../components/FilmPlayer.astro';
+import Blurbs from '../components/kit/Blurbs.astro';
+import FileTable from '../components/kit/FileTable.astro';
+import KitHead from '../components/kit/KitHead.astro';
+import Loops from '../components/kit/Loops.astro';
+import MarkSheet from '../components/kit/MarkSheet.astro';
+import ReadmeHeader from '../components/kit/ReadmeHeader.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import '../styles/kit.css';
+
+const description = 'Media kit for Agent Blueprint: the README header, the film, four loops, the mark and a short description to copy.';
+---
+<BaseLayout title="Media kit · Agent Blueprint" description={description}>
+  <div data-pagefind-body data-pagefind-filter="section:Pages">
+    <KitHead />
+    <ReadmeHeader />
+    <section class="sec kit-sec" id="film" aria-labelledby="film-h">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2 id="film-h" class="h-sec">The film.</h2>
+          <p class="body">One example feature from the first request to the pull request, then what the next session keeps. The chapter times below come from <code>film-chapters.json</code>, so another player can offer the same jumps.</p>
+        </div>
+        <FilmPlayer num={1}>
+          <FileTable files={['/media/film.mp4', '/media/film-1280.jpg', '/media/film.jpg', '/media/film-chapters.json']} label="Film files" />
+        </FilmPlayer>
+      </div>
+    </section>
+    <Loops />
+    <MarkSheet />
+    <Blurbs />
+  </div>
+</BaseLayout>
