@@ -23,7 +23,9 @@
 .toc ol { list-style: none; display: grid; gap: 2px; margin-top: 10px; border-left: 1px solid var(--hair); }
 .toc ol a { display: block; padding: 5px 0 5px 14px; margin-left: -1px; border-left: 1px solid transparent; font-size: 0.875rem; line-height: 1.4; color: var(--muted); text-decoration: none; transition: color 160ms, border-color 160ms; }
 .toc ol a:hover { color: var(--ink); }
-.toc ol a.is-here { color: var(--ink); border-left-color: var(--ink); font-weight: 600; }
+/* the section being read: ink text and an ink rule, at the regular weight so a label never
+   rewraps and the items below never move when the marked item changes */
+.toc ol a.is-here { color: var(--ink); border-left-color: var(--ink); }
 
 /* previous and next, as in the skill page */
 .pn { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); margin-top: var(--s-8); padding-top: var(--s-5); border-top: 1px solid var(--ink); }

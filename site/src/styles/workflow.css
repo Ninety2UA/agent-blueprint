@@ -12,7 +12,7 @@
 .wf-skills { list-style: none; display: grid; gap: 4px; }
 .wf-skills a { color: var(--ink); text-decoration-color: var(--hair-strong); text-underline-offset: 0.22em; }
 .wf-skills a:hover { text-decoration-color: currentColor; }
-.wf-skills code { font-size: 0.8125rem; font-weight: 560; overflow-wrap: anywhere; }
+.wf-skills code { font-size: 0.8125rem; font-weight: 560; overflow-wrap: break-word; }
 /* skill names inside README text */
 .loop-text a, .pl-sum a, .gate-rule a { color: var(--ink); text-decoration-color: var(--hair-strong); text-underline-offset: 0.22em; }
 .loop-text a:hover, .pl-sum a:hover, .gate-rule a:hover { text-decoration-color: currentColor; }
@@ -66,7 +66,7 @@
 .chain-row { align-items: start; padding: 18px 0; border-bottom: 1px solid var(--hair); }
 .ch-arrow { display: block; margin-top: 5px; color: var(--ink-2); transform-origin: left; }
 .ch-arrow svg { display: block; }
-.chain-leaves code { font-size: 0.875rem; font-weight: 560; color: var(--ink); overflow-wrap: anywhere; }
+.chain-leaves code { font-size: 0.875rem; font-weight: 560; color: var(--ink); overflow-wrap: break-word; }
 .chain-leaves b { font-weight: 620; color: var(--ink); }
 .chain-what { display: block; margin-top: 6px; font-size: 0.9375rem; line-height: 1.5; color: var(--ink-2); }
 .chain-cut { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; margin: -2px 0 16px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-strong); }
@@ -84,7 +84,7 @@
 .pl-when { margin-top: 12px; font-size: 0.9375rem; line-height: 1.45; color: var(--ink); }
 .pl-when .lbl { display: block; margin-bottom: 2px; }
 .pl-sum { margin-top: 10px; font-size: 0.875rem; line-height: 1.55; color: var(--ink-2); }
-.pl-sum code { font-size: 0.8125rem; overflow-wrap: anywhere; }
+.pl-sum code { font-size: 0.8125rem; overflow-wrap: break-word; }
 .pl-legend { display: flex; align-items: center; gap: 8px; margin-top: var(--s-5); font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
 .pl-cp-key, .pl-cp { width: 8px; height: 8px; background: var(--accent); transform: rotate(45deg); }
 .pl-stages { list-style: none; margin-top: 14px; }
@@ -99,7 +99,7 @@
 .pl-opt { padding: 0 5px; border: 1px dashed var(--hair-strong); border-radius: var(--r); font-family: var(--font-mono); font-size: 0.625rem; font-weight: 500; color: var(--muted); }
 .pl-skills { gap: 2px; }
 .pl-note { font-size: 0.8125rem; line-height: 1.45; color: var(--muted); }
-.pl-note code { font-size: 0.75rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.pl-note code { font-size: 0.75rem; color: var(--ink-2); overflow-wrap: break-word; }
 /* the checkpoint after each stage of a supervised pipeline sits on the line below the stage */
 .pl-cp { position: absolute; left: 2.5px; bottom: 1px; }
 .has-cp .pl-stage { padding-bottom: 22px; }

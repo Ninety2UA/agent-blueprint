@@ -44,7 +44,7 @@
 .readme-use .h-sub { font-size: var(--t-lg); }
 .readme-use .cmd { margin-top: var(--s-4); }
 .cmd.wrap-cmd pre { font-size: 0.75rem; }
-.cmd.wrap-cmd .ln { white-space: pre-wrap; overflow-wrap: anywhere; padding-left: 0; text-indent: 0; }
+.cmd.wrap-cmd .ln { white-space: pre-wrap; overflow-wrap: break-word; padding-left: 0; text-indent: 0; }
 .readme-use .hint { margin-top: 10px; font-size: 0.875rem; color: var(--ink-2); max-width: 52ch; }
 .readme-use .files-wrap { margin-top: var(--s-6); }
 

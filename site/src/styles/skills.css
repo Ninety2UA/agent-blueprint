@@ -47,7 +47,7 @@
 .hp-intro { margin-bottom: var(--s-6); }
 .hp-group { display: grid; grid-template-columns: minmax(0, 16rem) minmax(0, 1fr); gap: var(--s-4) var(--s-7); padding: var(--s-5) 0 var(--s-6); border-top: 1px solid var(--hair); }
 .hp-head { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
-.hp-skill { font-family: var(--font-mono); font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.hp-skill { font-family: var(--font-mono); font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: break-word; }
 .hp-skill a { text-decoration: none; }
 .hp-skill a:hover { text-decoration: underline; text-underline-offset: 0.25em; }
 .hp-list { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5) var(--s-6); }
@@ -70,7 +70,7 @@
 .crumbs [aria-current] { color: var(--ink); }
 
 .skill-head { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s-7); align-items: end; padding: var(--s-6) 0 var(--s-7); border-bottom: 1px solid var(--ink); }
-.skill-name { margin-top: var(--s-4); font-size: clamp(2.25rem, 1.2rem + 3vw, 4rem); font-stretch: 118%; font-weight: 700; letter-spacing: -0.03em; line-height: 1.02; overflow-wrap: anywhere; }
+.skill-name { margin-top: var(--s-4); font-size: clamp(2.25rem, 1.2rem + 3vw, 4rem); font-stretch: 118%; font-weight: 700; letter-spacing: -0.03em; line-height: 1.02; overflow-wrap: break-word; }
 .sh-l .lede { margin-top: var(--s-4); max-width: 52ch; }
 .sh-cmd { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4) var(--s-6); margin-top: var(--s-6); }
 .sh-cmd .cmd { min-width: 260px; }
@@ -104,14 +104,14 @@
 .steps-lbl { margin-top: var(--s-5); }
 .steps { list-style: none; position: relative; margin-top: var(--s-5); display: grid; gap: var(--s-6); }
 .steps::before { content: ""; position: absolute; left: 13px; top: 14px; bottom: 14px; width: 1.5px; background: var(--ink); }
-.steps li { position: relative; padding-left: 52px; }
+.steps li { position: relative; min-width: 0; padding-left: 52px; } /* a long code token wraps, never widens the list */
 .steps .sm { position: absolute; left: 0; top: -2px; display: grid; place-items: center; width: 28px; height: 28px; border: 1.25px solid var(--ink); border-radius: 50%; background: var(--bg); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; letter-spacing: -0.02em; }
 .steps li.is-here .sm { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.steps h3 { font-size: 1.125rem; font-stretch: 110%; font-weight: 650; }
+.steps h3 { font-size: 1.125rem; font-stretch: 110%; font-weight: 650; overflow-wrap: break-word; } /* a path in a title wraps at a slash first */
 .steps h3 a { text-decoration: none; }
 .steps h3 a:hover { text-decoration: underline; text-underline-offset: 0.2em; }
 .steps p { margin-top: 6px; color: var(--ink-2); max-width: 66ch; }
-.steps code { font-size: 0.8125rem; overflow-wrap: anywhere; }
+.steps code { font-size: 0.8125rem; overflow-wrap: break-word; }
 
 /* helpers: the main session above the prompt files it starts */
 .disp { display: grid; gap: 30px; margin-top: var(--s-6); justify-items: start; }
@@ -123,7 +123,7 @@
 .d-group ul { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 28px; margin-top: 10px; }
 .d-group li { display: grid; gap: 2px; align-content: start; font-size: 0.875rem; min-width: 0; }
 .d-group li a { justify-self: start; text-decoration-color: var(--hair-strong); }
-.d-group li code { font-size: 0.8125rem; font-weight: 560; overflow-wrap: anywhere; }
+.d-group li code { font-size: 0.8125rem; font-weight: 560; overflow-wrap: break-word; }
 .d-group li span { color: var(--ink-2); font-size: 0.8125rem; line-height: 1.45; }
 
 .cards.rel { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: var(--s-5); }
@@ -131,7 +131,7 @@
 .pn a { display: grid; gap: 6px; padding: 14px 0; text-decoration: none; }
 .pn .lbl { display: inline-flex; align-items: center; gap: 8px; }
 .pn .lbl svg { width: 14px; height: 14px; }
-.pn code { font-size: 1rem; font-weight: 560; overflow-wrap: anywhere; }
+.pn code { font-size: 1rem; font-weight: 560; overflow-wrap: break-word; }
 .pn-next { grid-column: 2; text-align: right; justify-items: end; }
 .pn a:hover code { text-decoration: underline; text-underline-offset: 0.25em; }
 
@@ -141,14 +141,14 @@
 .toc ol { list-style: none; display: grid; gap: 2px; margin-top: 10px; border-left: 1px solid var(--hair); }
 .toc ol a { display: block; padding: 5px 0 5px 14px; margin-left: -1px; border-left: 1px solid transparent; font-size: 0.875rem; color: var(--muted); text-decoration: none; transition: color 160ms, border-color 160ms; }
 .toc ol a:hover { color: var(--ink); }
-.toc ol a.is-here { color: var(--ink); border-left-color: var(--ink); font-weight: 600; }
+.toc ol a.is-here { color: var(--ink); border-left-color: var(--ink); } /* regular weight, as in docs.css: no rewrap */
 .toc-src { margin-top: var(--s-6); display: grid; gap: 6px; }
 .toc-src a { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--ink-2); }
 
 /* ---------- SKILL.md as Markdown (the full body and the report section) ---------- */
 .prose { margin-top: var(--s-5); color: var(--ink-2); }
 .prose > * + * { margin-top: var(--s-4); }
-.prose :is(h3, h4, h5, h6) { margin-top: var(--s-6); color: var(--ink); font-stretch: var(--w-head); line-height: 1.25; scroll-margin-top: calc(var(--head-h) + 16px); }
+.prose :is(h3, h4, h5, h6) { margin-top: var(--s-6); color: var(--ink); font-stretch: var(--w-head); line-height: 1.25; scroll-margin-top: calc(var(--head-h) + 16px); overflow-wrap: break-word; }
 .prose h3 { font-size: 1.375rem; font-weight: 650; letter-spacing: -0.012em; }
 .prose h4 { font-size: 1.125rem; font-weight: 640; }
 .prose :is(h5, h6) { font-size: 1rem; font-weight: 640; }
@@ -159,14 +159,14 @@
 .prose strong { font-weight: 640; color: var(--ink); }
 .prose a { color: var(--ink); text-decoration-color: var(--hair-strong); }
 .prose a:hover { text-decoration-color: currentColor; }
-.prose code { padding: 1px 4px; border: 1px solid var(--hair); border-radius: var(--r); background: var(--bg-sunk); font-size: 0.85em; overflow-wrap: anywhere; }
+.prose code { padding: 1px 4px; border: 1px solid var(--hair); border-radius: var(--r); background: var(--bg-sunk); font-size: 0.85em; overflow-wrap: break-word; }
 /* code blocks in 2A ink: the highlighter's inline colors are set aside */
 .prose pre { padding: 14px 16px; border: 1px solid var(--hair-strong); border-radius: var(--r); background: var(--bg-sunk) !important; color: var(--ink) !important; overflow-x: auto; font-size: 0.8125rem; line-height: 1.7; scrollbar-width: thin; }
 .prose pre code { padding: 0; border: 0; background: none; font-size: inherit; overflow-wrap: normal; }
 .prose pre span { color: inherit !important; }
 .prose blockquote { margin-inline: 0; padding-left: var(--s-4); border-left: 2px solid var(--hair-strong); }
 .prose table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
-.prose :is(th, td) { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--hair); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.prose :is(th, td) { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--hair); text-align: left; vertical-align: top; overflow-wrap: break-word; }
 .prose th { border-bottom-color: var(--ink); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--muted); }
 .prose hr { border: 0; border-top: 1px solid var(--hair); }
 .skill-md { padding-top: var(--s-5); border-top: 1px solid var(--hair); }

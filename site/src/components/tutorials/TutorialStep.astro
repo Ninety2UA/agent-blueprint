@@ -5,6 +5,7 @@
 // The Markdown parts arrive as HTML from the tutorials collection (content.config.ts).
 import Cmd from '../Cmd.astro';
 import { linkSkills } from '../guides/guide-html.mjs';
+import { breakCodeAfterSlashes } from '../wrap-points.mjs';
 
 type Segment = { kind: 'md'; html: string } | { kind: 'cmd'; lang: 'prompt' | 'bash'; text: string };
 interface Props {
@@ -23,7 +24,8 @@ interface Props {
   names: string[];
 }
 const { n, step, names } = Astro.props;
-const link = (html: string) => linkSkills(html, names);
+// skill names linked; paths in inline code wrap at a slash on a phone (wrap-points.mjs)
+const link = (html: string) => breakCodeAfterSlashes(linkSkills(html, names));
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 // A placeholder such as <checkout> or <name> stands out, so the reader knows to fill it in.

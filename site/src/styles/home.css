@@ -199,7 +199,7 @@
 .note .art { margin-top: auto; padding-top: var(--s-3); }
 .note .vfig { margin-block: var(--s-2) var(--s-3); }
 .paths { list-style: none; display: grid; gap: 6px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-2); }
-.paths li { overflow-wrap: anywhere; }
+.paths li { overflow-wrap: break-word; }
 .paths b { font-weight: 600; color: var(--ink); }
 .paths-note { margin-top: 12px; }
 .note.n2 { background: var(--bg-sunk); }

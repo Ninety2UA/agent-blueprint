@@ -47,7 +47,11 @@
 .readme-section :not(pre) > code { padding: 0.08em 0.28em; border-radius: var(--r); background: var(--bg-sunk); color: var(--ink); font-size: 0.84em; overflow-wrap: break-word; }
 /* height: auto alone makes Chrome report a lazy image without dimensions; the ratio from the
    width and height attributes keeps the space reserved and the report away */
-.readme-section img { height: auto; aspect-ratio: attr(width type(<number>)) / attr(height type(<number>)); margin-top: var(--s-5); border: 1px solid var(--hair); }
+.readme-section img { height: auto; aspect-ratio: attr(width type(<number>)) / attr(height type(<number>)); margin-top: var(--s-5); border: 1px solid var(--hair); transition: border-color 160ms; }
+/* each diagram links to its own file, full size (readme-images.mjs): its labels are too small to
+   read in the page column on a phone */
+.readme-section .img-full { display: block; cursor: zoom-in; }
+.readme-section .img-full:hover img { border-color: var(--hair-strong); }
 
 /* Code blocks: one ink on the sunk surface, like the command controls (the highlighter's
    inline colors are set for a dark page and would not read on the 2A sheet). */
@@ -100,7 +104,7 @@ span.gs-hint { margin-top: 0; }
 .gs-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 28px; font-size: 0.9375rem; color: var(--ink-2); }
 .gs-facts b { display: block; margin-bottom: 2px; font-size: 0.875rem; font-weight: 600; color: var(--ink); }
 .gs-facts code, .gs-words code, .gs-hint code { font-size: 0.84em; }
-.gs-doc { font-family: var(--font-mono); font-size: 0.875rem; color: var(--ink); text-decoration-color: var(--hair-strong); overflow-wrap: anywhere; }
+.gs-doc { font-family: var(--font-mono); font-size: 0.875rem; color: var(--ink); text-decoration-color: var(--hair-strong); overflow-wrap: break-word; }
 .gs-doc:hover { text-decoration-color: currentColor; }
 
 /* where a README table gave way to the tabs */
@@ -114,8 +118,13 @@ span.gs-hint { margin-top: 0; }
   .gs-facts { grid-template-columns: minmax(0, 1fr); gap: 10px; }
 }
 @media (max-width: 640px) {
-  /* narrow tables wrap long commands and paths instead of scrolling sideways */
+  /* narrow tables wrap long commands and paths instead of scrolling sideways. A table sizes its
+     columns to their longest unbreakable word, so code in a cell may break anywhere; a path breaks
+     at a slash first (the <wbr>s from wrap-points.mjs) */
   .readme-section td code, .hooks-by-tool td code { overflow-wrap: anywhere; }
   .readme-section table, .hooks-by-tool table { font-size: 0.875rem; }
   .readme-section th, .readme-section td { padding-right: 10px; }
+  /* header labels at the title block's label size, so a long one (Requirements) does not widen
+     its column past the screen */
+  .readme-section th { font-size: 0.6875rem; }
 }

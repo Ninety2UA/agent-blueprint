@@ -7,7 +7,7 @@
 .t-intro ul { margin-top: var(--s-3); padding-left: 1.2em; max-width: 64ch; color: var(--ink-2); }
 .t-intro li + li { margin-top: 6px; }
 .t-intro li::marker { color: var(--muted); }
-.t-intro code { font-size: 0.85em; overflow-wrap: anywhere; }
+.t-intro code { font-size: 0.85em; overflow-wrap: break-word; }
 
 /* ---------- The recorded run, as a title block ---------- */
 .t-run-cap { margin-top: var(--s-6); margin-bottom: var(--s-2); }
@@ -31,7 +31,7 @@
   border: 1px solid var(--hair-strong); border-radius: var(--r); background: var(--bg-raise);
   color: var(--ink); text-decoration: none; transition: border-color 160ms, background-color 160ms;
 }
-.t-chip code { font-size: 0.8125rem; overflow-wrap: anywhere; }
+.t-chip code { font-size: 0.8125rem; overflow-wrap: break-word; }
 .t-chip:hover { border-color: var(--ink); }
 
 /* prose lists keep their own markers inside the steps' list */
@@ -42,7 +42,7 @@
 .t-lead .readme-section > :first-child { margin-top: 0; }
 .t-cmd .lbl { margin-bottom: 6px; }
 /* a long command wraps under itself instead of scrolling, so all of it is in view; copying is unchanged */
-.t-cmd .cmd .ln { white-space: pre-wrap; overflow-wrap: anywhere; padding-left: 2.1ch; text-indent: -2.1ch; }
+.t-cmd .cmd .ln { white-space: pre-wrap; overflow-wrap: break-word; padding-left: 2.1ch; text-indent: -2.1ch; }
 
 /* what happens, why it matters, checkpoint: a label column and the text, ruled between */
 .t-parts { margin-top: var(--s-5); border-bottom: 1px solid var(--hair); }

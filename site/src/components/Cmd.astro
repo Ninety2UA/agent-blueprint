@@ -2,8 +2,12 @@
 // A command shown as a real, copyable control (never a fake terminal). Each line is set
 // on its own row with an optional "$" prompt; the copy button copies `copy`, or the
 // lines without their prompts. Pass markup in the default slot instead of `lines` when a
-// command needs highlighted arguments (<span class="arg">).
+// command needs highlighted arguments (<span class="arg">). On a phone a long line wraps at
+// a slash inside a path or URL and never inside a flag such as --host (wrap-points.mjs); the
+// <wbr>s and spans this adds carry no text, so what the button copies is unchanged.
+import { escapeHtml } from '../lib/text.mjs';
 import CopyButton from './CopyButton.astro';
+import { breakAfterSlashes, keepFlagsWhole } from './wrap-points.mjs';
 
 interface Props {
   lines?: string[];
@@ -20,11 +24,12 @@ interface Props {
   class?: string;
 }
 const { lines = [], copy, label, copyLabel, prompt = false, trim = false, id, class: cls } = Astro.props;
-const hasSlot = Astro.slots.has('default');
+const wrapPoints = (html: string) => breakAfterSlashes(keepFlagsWhole(html));
+const slot = Astro.slots.has('default') ? wrapPoints(await Astro.slots.render('default')) : null;
 ---
 <div class:list={['cmd', { trim }, cls]} id={id}>
-  <pre tabindex="0" aria-label={label}><code>{hasSlot ? <slot /> : lines.map((line) => (
-    <span class="ln">{prompt && <span class="pr" aria-hidden="true">$</span>}{line}</span>
+  <pre tabindex="0" aria-label={label}><code>{slot !== null ? <Fragment set:html={slot} /> : lines.map((line) => (
+    <span class="ln">{prompt && <span class="pr" aria-hidden="true">$</span>}<Fragment set:html={wrapPoints(escapeHtml(line))} /></span>
   ))}</code></pre>
   <CopyButton label={copyLabel} text={copy} />
 </div>

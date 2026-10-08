@@ -2,8 +2,10 @@
 // One release as a drawing's revision block (h/changelog.html): a head with the revision, date,
 // description and type; the release notes split into labelled groups; links to the notes file and
 // the diff on GitHub. A release with no notes file shows its README summary instead. The heading is
-// the summary's headline.
+// the summary's headline. Paths in the notes' inline code wrap at a slash on a phone
+// (wrap-points.mjs).
 import { inlineCode } from '../../lib/text.mjs';
+import { breakCodeAfterSlashes } from '../wrap-points.mjs';
 import { headline, releaseId, releaseType, splitNotes } from './changelog.mjs';
 
 interface Props {
@@ -34,13 +36,13 @@ const links = [
     <div class="rc rc-desc"><span class="f">Description</span><h2 class="v rev-title" id={`h-${id}`} set:html={inlineCode(title)} /></div>
     <div class="rc rc-kind"><span class="f">Type</span><span class="v">{type}</span></div>
   </div>
-  {lede && <div class="rev-lede" set:html={lede} />}
+  {lede && <div class="rev-lede" set:html={breakCodeAfterSlashes(lede)} />}
   {notes && notes.groups.length > 0 && (
     <dl class="rev-groups">
       {notes.groups.map((g) => (
         <>
           <dt>{g.label}</dt>
-          <dd set:html={g.html} />
+          <dd set:html={breakCodeAfterSlashes(g.html)} />
         </>
       ))}
     </dl>

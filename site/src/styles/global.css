@@ -188,9 +188,11 @@ kbd { font-size: 0.6875rem; border: 1px solid var(--hair); border-radius: var(--
 .cmd pre { margin: 0; flex: 1; min-width: 0; overflow-x: auto; padding: 14px 16px; font-size: 0.8125rem; line-height: 1.75; color: var(--ink); scrollbar-width: thin; }
 .cmd .ln { display: block; white-space: pre; }
 .cmd .pr { color: var(--faint); user-select: none; margin-right: 1.1ch; }
-@media (max-width: 560px) { .cmd .ln { white-space: pre-wrap; overflow-wrap: anywhere; padding-left: 2.1ch; text-indent: -2.1ch; } .cmd .pr { margin-right: 1.1ch; } }
+@media (max-width: 560px) { .cmd .ln { white-space: pre-wrap; overflow-wrap: break-word; padding-left: 2.1ch; text-indent: -2.1ch; } .cmd .pr { margin-right: 1.1ch; } }
 .cmd .arg { color: var(--accent-strong); }
 :root[data-theme="dark"] .cmd .arg { color: var(--accent); }
+/* a flag such as --host or [--pr] never splits at its hyphens (wrap-points.mjs, in Cmd and TitleBlock) */
+.nowrap { white-space: nowrap; }
 .copy-btn {
   flex: none; display: inline-flex; align-items: center; gap: 8px; align-self: stretch;
   padding: 0 14px; border: 0; border-left: 1px solid var(--hair-strong); background: transparent;
@@ -228,7 +230,7 @@ kbd { font-size: 0.6875rem; border: 1px solid var(--hair); border-radius: var(--
 .card { position: relative; list-style: none; }
 .card a { display: flex; flex-direction: column; gap: 10px; height: 100%; padding: 20px 20px 18px; border: 1px solid var(--hair); border-radius: var(--r); background: var(--bg-raise); text-decoration: none; transition: border-color 200ms; }
 .card a:hover { border-color: var(--ink); }
-.card .card-name { font-family: var(--font-mono); font-size: 0.9375rem; font-weight: 560; letter-spacing: -0.01em; color: var(--ink); overflow-wrap: anywhere; }
+.card .card-name { font-family: var(--font-mono); font-size: 0.9375rem; font-weight: 560; letter-spacing: -0.01em; color: var(--ink); overflow-wrap: break-word; }
 .card .card-sum { font-size: 0.9375rem; line-height: 1.5; color: var(--ink-2); }
 .card .card-when { margin-top: auto; padding-top: 12px; border-top: 1px dashed var(--hair); font-size: 0.8125rem; line-height: 1.45; color: var(--muted); }
 .card .card-when b { font-weight: 600; color: var(--ink-2); }
@@ -295,7 +297,7 @@ kbd { font-size: 0.6875rem; border: 1px solid var(--hair); border-radius: var(--
 .tblock > div { padding: 10px 14px 12px; min-width: 0; background: var(--bg); }
 .tblock > .w2 { grid-column: 1 / -1; }
 .tblock dt { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--muted); }
-.tblock dd { margin: 2px 0 0; font-size: 0.9375rem; color: var(--ink); overflow-wrap: anywhere; }
+.tblock dd { margin: 2px 0 0; font-size: 0.9375rem; color: var(--ink); overflow-wrap: break-word; }
 .tblock dd code { font-size: 0.8125rem; }
 
 /* ---------- Footer: engineering title block ---------- */

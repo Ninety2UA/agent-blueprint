@@ -21,7 +21,8 @@ import SkillCard from '../../components/skills/SkillCard.astro';
 import { formatText, prepareBody, skillOutline, splitDescription } from '../../components/skills/outline.mjs';
 import { siteData } from '../../components/skills/data';
 import { findRepoRoot } from '../../lib/site.mjs';
-import { inlineCode } from '../../lib/text.mjs';
+import { breakAfterSlashes } from '../../components/wrap-points.mjs';
+import { escapeHtml, inlineCode } from '../../lib/text.mjs';
 import '../../styles/skills.css';
 
 export async function getStaticPaths() {
@@ -156,7 +157,7 @@ const plainSummary = skill.summary.replace(/\x60/g, ''); // \x60: a literal back
               {outline.steps.map((step) => (
                 <li>
                   <span class="sm" aria-hidden="true">{step.label}</span>
-                  <h3><a href={`#${step.id}`}>{step.title}</a></h3>
+                  <h3><a href={`#${step.id}`} set:html={breakAfterSlashes(escapeHtml(step.title))} /></h3>
                   {step.intro && <p set:html={step.intro} />}
                 </li>
               ))}
@@ -226,10 +227,11 @@ const plainSummary = skill.summary.replace(/\x60/g, ''); // \x60: a literal back
 
         <section id="skill-md" class="ss" aria-labelledby="skill-md-h">
           <h2 id="skill-md-h" class="h-sub">SKILL.md</h2>
-          <p class="body">The instructions the agent follows, from <code>skills/{skill.name}/SKILL.md</code>.</p>
+          {/* page chrome, kept out of search excerpts so they quote the skill's own text */}
+          <p class="body" data-pagefind-ignore>The instructions the agent follows, from <code>skills/{skill.name}/SKILL.md</code>.</p>
           <p class="src-links">
             <a class="link" href={skill.githubUrl} data-pagefind-ignore><span class="link-rule" aria-hidden="true"></span><span>Read SKILL.md on GitHub</span></a>
-            {refsUrl && <a class="link" href={refsUrl}><span class="link-rule" aria-hidden="true"></span><span>Its references/ folder</span></a>}
+            {refsUrl && <a class="link" href={refsUrl} data-pagefind-ignore><span class="link-rule" aria-hidden="true"></span><span>Its references/ folder</span></a>}
           </p>
           <div class="skill-md prose" set:html={body} />
         </section>

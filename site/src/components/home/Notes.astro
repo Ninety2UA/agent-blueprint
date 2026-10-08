@@ -1,12 +1,14 @@
 ---
 // Why the work holds up: four general notes on one sheet. Notes 3 and 4 carry the review
 // and handoff loops (Figs. 3 and 4) and share rows, so their figures line up.
+import { escapeHtml } from '../../lib/text.mjs';
 import { LOOPS } from '../kit/kit-data';
+import { breakAfterSlashes } from '../wrap-points.mjs';
 import VideoFigure from '../VideoFigure.astro';
 import { cap, helper, numberWord, site, skill } from './home-data';
 
 const { counts } = site;
-// three helper prompt files, shown by their real paths
+// three helper prompt files, shown by their real paths (a phone wraps them at a slash)
 const files = ['security-sentinel', 'plan-checker', 'implementer'].map((n) => {
   const path = helper(n).path;
   const cut = path.lastIndexOf('/') + 1;
@@ -26,7 +28,7 @@ const HANDOFF_ALT = LOOPS.find((l) => l.name === 'loop-handoff')!.alt;
         <p><span data-claim="helpers">{counts.helpers}</span> helper prompts live inside the skills that use them. A security review or a plan check runs in its own context, with only the inputs its prompt file names. Reviewers never see the author's claim that the work is correct.</p>
         <div class="art">
           <ul class="paths" aria-label={`${cap(numberWord(files.length))} of the ${counts.helpers} helper prompt files`}>
-            {files.map((f) => <li>{f.dir}<b>{f.file}</b></li>)}
+            {files.map((f) => <li><Fragment set:html={breakAfterSlashes(escapeHtml(f.dir))} /><wbr /><b>{f.file}</b></li>)}
           </ul>
           <p class="lbl paths-note">Where a tool has no subagents, the main session follows the same file and returns the same Output section.</p>
         </div>

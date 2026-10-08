@@ -8,6 +8,7 @@ import '../../styles/docs-pages.css';
 import '../../styles/tutorials.css';
 import TitleBlock from '../../components/TitleBlock.astro';
 import { linkSkills } from '../../components/guides/guide-html.mjs';
+import { breakCodeAfterSlashes } from '../../components/wrap-points.mjs';
 import { siteData } from '../../components/skills/data';
 import TutorialStep from '../../components/tutorials/TutorialStep.astro';
 import DocsLayout from '../../layouts/DocsLayout.astro';
@@ -58,7 +59,7 @@ const { prev, next } = tutorialsNeighbors(slug);
     <header class="dp-head">
       <p class="dp-crumb">Tutorials</p>
       <h1 id={OVERVIEW}>{label}</h1>
-      <div class="dp-intro t-intro" set:html={linkSkills(t.intro, names)} />
+      <div class="dp-intro t-intro" set:html={breakCodeAfterSlashes(linkSkills(t.intro, names))} />
       <p class="lbl t-run-cap">The recorded run</p>
       <TitleBlock class="t-run" label="The recorded run" cells={run} />
     </header>
@@ -67,7 +68,7 @@ const { prev, next } = tutorialsNeighbors(slug);
     </ol>
     <section class="t-recap" aria-labelledby={RECAP}>
       <h2 id={RECAP}>Recap: which skill produced what</h2>
-      <div class="readme-section" set:html={linkSkills(t.recap, names)} />
+      <div class="readme-section" set:html={breakCodeAfterSlashes(linkSkills(t.recap, names))} />
     </section>
   </div>
 </DocsLayout>

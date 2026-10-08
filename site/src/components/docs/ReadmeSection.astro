@@ -1,8 +1,12 @@
 ---
-// A docs page's README section: renders the section's <Content /> (the default slot) and, with
-// `drop`, replaces the listed tables with their pointers (section.mjs). Everything else is the
-// README's own text, so a README edit changes the page on the next build (R13).
+// A docs or guide page's README section: renders the section's <Content /> (the default slot) and,
+// with `drop`, replaces the listed tables with their pointers (section.mjs). Each image becomes a
+// link to its own file, so a diagram opens full size (readme-images.mjs), and paths in inline code
+// wrap at a slash on a phone (wrap-points.mjs). Everything else is the README's own text, so a
+// README edit changes the page on the next build (R13).
+import { linkFullSize } from './readme-images.mjs';
 import { dropTables } from './section.mjs';
+import { breakCodeAfterSlashes } from '../wrap-points.mjs';
 
 interface Props {
   drop?: { header: string[]; pointer: string }[];
@@ -10,4 +14,4 @@ interface Props {
 const { drop } = Astro.props;
 const html = await Astro.slots.render('default');
 ---
-<div class="readme-section"><Fragment set:html={drop?.length ? dropTables(html, drop) : html} /></div>
+<div class="readme-section"><Fragment set:html={linkFullSize(breakCodeAfterSlashes(drop?.length ? dropTables(html, drop) : html))} /></div>

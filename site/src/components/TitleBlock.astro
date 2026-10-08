@@ -2,7 +2,11 @@
 // A title block: labelled cells in an ink frame, the way a drawing records its facts.
 // `cols` is the grid template (default: equal cells that wrap); `attached` drops the
 // top border so the block sits under a sheet. A cell with `wide` spans every column;
-// `claim` marks a cell that states a current-state count or the version (KTD5).
+// `claim` marks a cell that states a current-state count or the version (KTD5). In a `code`
+// cell a flag such as [--pr] never splits across lines (keepFlagsWhole in wrap-points.mjs).
+import { escapeHtml } from '../lib/text.mjs';
+import { keepFlagsWhole } from './wrap-points.mjs';
+
 interface Cell {
   label: string;
   value: string;
@@ -24,7 +28,7 @@ const { cells, cols, attached = false, label, class: cls } = Astro.props;
   {cells.map((c) => (
     <div class:list={[c.class, { w2: c.wide }]}>
       <dt>{c.label}</dt>
-      <dd data-claim={c.claim}>{c.code ? <code>{c.value}</code> : c.value}</dd>
+      <dd data-claim={c.claim}>{c.code ? <code set:html={keepFlagsWhole(escapeHtml(c.value))} /> : c.value}</dd>
     </div>
   ))}
 </dl>

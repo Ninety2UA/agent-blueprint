@@ -71,7 +71,7 @@
 .rev-groups > dd > * + * { margin-top: var(--s-3); }
 /* the notes' lists, ruled as entries with a small square */
 .rev-groups ul { list-style: none; display: grid; gap: 12px; max-width: 70ch; }
-.rev-groups li { position: relative; padding-left: 22px; color: var(--ink-2); overflow-wrap: break-word; }
+.rev-groups li { position: relative; min-width: 0; padding-left: 22px; color: var(--ink-2); overflow-wrap: break-word; } /* a long path wraps, never widens the list */
 .rev-groups li::before { content: ""; position: absolute; left: 2px; top: 0.66em; width: 7px; height: 7px; border: 1.25px solid var(--ink); }
 .rev-groups strong { font-weight: 640; color: var(--ink); }
 .rev-groups code, .rev-lede code, .older-tbl code { font-size: 0.84em; color: var(--ink); }
