@@ -1,0 +1,15 @@
+---
+// The film, right after Detail A: one feature moving through the stations the diagram
+// above explains. FilmPlayer reads the chapters from film-chapters.json and uses
+// film-1280.jpg as the poster.
+import FilmPlayer from '../FilmPlayer.astro';
+---
+<section class="sec film-sec" id="film" aria-labelledby="film-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="film-h" class="h-sec">Watch one feature go from idea to pull request.</h2>
+      <p class="body">One example feature, from the first request to the pull request, then what the next session keeps from it. Pick a chapter to jump to it. The film has no sound.</p>
+    </div>
+    <FilmPlayer num={2} />
+  </div>
+</section>

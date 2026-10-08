@@ -1,0 +1,34 @@
+---
+// Hero: the headline, what the blueprint is, the install command, and the loop drawn as a
+// schematic beside it. The headline is the largest element above the fold and is plain
+// text, so it is the page's LCP element; the drawing is inline SVG that draws itself once.
+import Cmd from '../Cmd.astro';
+import { GET_STARTED } from '../nav';
+import { heroDrawing, heroDrawingMobile } from './hero-drawing';
+import { install, numberWord, site } from './home-data';
+
+const { counts, tools } = site;
+const columns = Array.from({ length: 12 }, (_, i) => i + 1);
+---
+<section class="hero hero-a" aria-labelledby="hero-title">
+  <div class="cgrid" aria-hidden="true"><div class="wrap cgrid-in">{columns.map((c) => <span data-c={c}></span>)}</div></div>
+  <div class="wrap hero-in">
+    <div class="hero-copy">
+      <h1 id="hero-title" class="h-display">Draw it up before your agent builds it.</h1>
+      <p class="lede"><span data-claim="skills">{counts.skills}</span> skills that take a coding agent from an idea to a reviewed pull request, in <span data-claim="tools">{numberWord(counts.tools)}</span> coding CLIs.</p>
+      <Cmd lines={install.lines} copy={install.copy} prompt trim label="Install command" copyLabel="Copy install command" />
+      <div class="cta-row">
+        <a class="btn btn-primary" href={GET_STARTED}>Get started</a>
+        <a class="btn btn-ghost" href="/skills/"><span>Browse the <span data-claim="skills">{counts.skills}</span> skills</span></a>
+      </div>
+    </div>
+    <figure class="hero-fig" data-hero>
+      <Fragment set:html={heroDrawing()} />
+      <Fragment set:html={heroDrawingMobile()} />
+      <ul class="tools-m" aria-label={`The ${numberWord(tools.length)} tools and their install ids`}>
+        <li class="tm-h">Parts list</li>
+        {tools.map((t) => <li><span>{t.name}</span><code>{t.id}</code></li>)}
+      </ul>
+    </figure>
+  </div>
+</section>

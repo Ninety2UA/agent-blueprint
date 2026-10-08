@@ -1,0 +1,26 @@
+---
+// Closing call to action: start with one feature, the install command, Get started and GitHub.
+import Cmd from '../Cmd.astro';
+import { IC } from '../icons';
+import { GET_STARTED } from '../nav';
+import { install, site, skill } from './home-data';
+
+const start = skill('ab-project-start').name;
+---
+<section class="sec closing" aria-labelledby="close-h">
+  <div class="wrap">
+    <div class="closing-in">
+      <div>
+        <h2 id="close-h" class="h-display">Start with one feature.</h2>
+        <p class="body">Install, open a session in your project and ask for <code>{start}</code>. It adds <code>AGENTS.md</code> and <code>docs/context/</code>, merging into the files you already have.</p>
+      </div>
+      <div>
+        <Cmd lines={install.lines} copy={install.copy} prompt label="Install command" copyLabel="Copy install command" />
+        <div class="cta-row">
+          <a class="btn btn-primary" href={GET_STARTED}>Get started</a>
+          <a class="btn btn-ghost" href={site.repoUrl}><Fragment set:html={IC.github} />Star on GitHub</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

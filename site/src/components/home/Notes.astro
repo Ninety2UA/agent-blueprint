@@ -1,0 +1,72 @@
+---
+// Why the work holds up: four general notes on one sheet. Notes 3 and 4 carry the review
+// and handoff loops (Figs. 3 and 4) and share rows, so their figures line up.
+import VideoFigure from '../VideoFigure.astro';
+import { cap, helper, numberWord, site, skill } from './home-data';
+
+const { counts } = site;
+// three helper prompt files, shown by their real paths
+const files = ['security-sentinel', 'plan-checker', 'implementer'].map((n) => {
+  const path = helper(n).path;
+  const cut = path.lastIndexOf('/') + 1;
+  return { dir: path.slice(0, cut), file: path.slice(cut) };
+});
+['ab-verification-before-completion', 'ab-iterative-refinement', 'ab-knowledge-compounding', 'ab-session-wrap', 'ab-resume-session'].forEach(skill);
+
+const REVIEW_ALT =
+  'Looping animation, no sound: the change fans out to five reviewers, three that always run and two the diff ' +
+  'calls for. Their findings merge into a report: pass 1 has P1 2, P2 3, P3 4. After the fixes, pass 2 has ' +
+  'P1 0, P2 1, P3 2. No P1 is left, so the loop stops.';
+const HANDOFF_ALT =
+  'Looping animation, no sound: session 1 in Claude Code finishes three of four tasks and ab-session-wrap writes ' +
+  'docs/context/STATUS.md and a docs/solutions/ entry. Session 2 in Codex runs ab-resume-session, reads both and ' +
+  'starts on task 4.';
+---
+<section class="sec notes" id="why" aria-labelledby="notes-h">
+  <div class="wrap">
+    <h2 id="notes-h" class="h-sec">Why the work holds up over a long project.</h2>
+    <div class="notes-grid">
+      <article class="note n1">
+        <div class="note-head"><span class="bub" aria-hidden="true">1</span><h3 class="h-sub">Helpers start with a fresh context.</h3></div>
+        <p><span data-claim="helpers">{counts.helpers}</span> helper prompts live inside the skills that use them. A security review or a plan check runs in its own context, with only the inputs its prompt file names. Reviewers never see the author's claim that the work is correct.</p>
+        <div class="art">
+          <ul class="paths" aria-label={`${cap(numberWord(files.length))} of the ${counts.helpers} helper prompt files`}>
+            {files.map((f) => <li>{f.dir}<b>{f.file}</b></li>)}
+          </ul>
+          <p class="lbl paths-note">Where a tool has no subagents, the main session follows the same file and returns the same Output section.</p>
+        </div>
+      </article>
+      <article class="note n2">
+        <div class="note-head"><span class="bub" aria-hidden="true">2</span><h3 class="h-sub">Evidence before any "done".</h3></div>
+        <p><code>ab-verification-before-completion</code> runs before anyone says tests pass, a build succeeds or a bug is fixed.</p>
+        <dl class="record art">
+          <dt>Names</dt><dd>The output that would prove the claim false</dd>
+          <dt>Runs</dt><dd>The full verification command, now</dd>
+          <dt>Reads</dt><dd>Its output and exit code</dd>
+          <dt>Ignores</dt><dd>A run from an earlier message</dd>
+        </dl>
+      </article>
+      <article class="note n3 has-fig">
+        <div class="note-head"><span class="bub" aria-hidden="true">3</span><h3 class="h-sub">Reviews run until findings converge.</h3></div>
+        <p><code>ab-iterative-refinement</code> reviews, fixes and reviews again. You choose where it stops; three rounds at most by default.</p>
+        <VideoFigure src="/media/loop-review.mp4" num={3} alt={REVIEW_ALT} label="the review animation" class="in-note">Two review passes, until no P1 is left</VideoFigure>
+        <dl class="record modes art" aria-label="Convergence modes">
+          <dt>fast</dt><dd>Stops when no P1 finding is left</dd>
+          <dt>deep</dt><dd>Stops when no P1 or P2 is left</dd>
+          <dt>perfect</dt><dd>Stops when no finding is left</dd>
+        </dl>
+      </article>
+      <article class="note n4 has-fig">
+        <div class="note-head"><span class="bub" aria-hidden="true">4</span><h3 class="h-sub">What one session learns, the next one reads.</h3></div>
+        <p><code>ab-knowledge-compounding</code> files each solved problem with its search terms. <code>ab-session-wrap</code> rewrites the status notes at the end of a session, and <code>ab-resume-session</code> reads them back and checks whether HEAD moved in between.</p>
+        <VideoFigure src="/media/loop-handoff.mp4" num={4} alt={HANDOFF_ALT} label="the handoff animation" class="in-note">Claude Code hands off to Codex</VideoFigure>
+        <dl class="tree art" aria-label="Project files that carry knowledge between sessions">
+          <div><dt>AGENTS.md</dt><dd>conventions every tool reads</dd></div>
+          <div><dt>docs/context/STATUS.md</dt><dd>written by ab-session-wrap, read by ab-resume-session</dd></div>
+          <div><dt>docs/solutions/</dt><dd>solved problems from ab-knowledge-compounding</dd></div>
+          <div><dt>docs/plans/</dt><dd>approved designs and their plans</dd></div>
+        </dl>
+      </article>
+    </div>
+  </div>
+</section>

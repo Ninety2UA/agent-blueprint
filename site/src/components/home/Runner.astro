@@ -1,0 +1,56 @@
+---
+// Unattended runs: the ship runner command with a host picker (one radio per tool), the
+// runner loop (Fig. 5), the five steps of a run and its exit codes.
+import Cmd from '../Cmd.astro';
+import VideoFigure from '../VideoFigure.astro';
+import HomeLink from './HomeLink.astro';
+import { HOST_NOTE_DEFAULT, HOST_NOTES, RUNNER_HOST, site, skill } from './home-data';
+
+const pipeline = skill('ab-ship-pipeline').name;
+const hosts = site.tools.map((t) => ({ id: t.id, ...(HOST_NOTES[t.id] ?? { note: HOST_NOTE_DEFAULT }) }));
+const first = hosts.find((h) => h.id === RUNNER_HOST);
+if (!first) throw new Error(`The runner's example host ${RUNNER_HOST} is not a tool in the README install table`);
+const FEATURE = 'add JWT authentication with refresh tokens';
+
+const RUNNER_ALT =
+  'Looping animation, no sound: the ship runner with --host codex. Each iteration is a fresh session on a new ' +
+  'sheet while .agent-blueprint/run/state.json carries over and its status, stage and iteration change. When the ' +
+  'status is done, the runner scans for secrets, pushes, and the pull request opens.';
+---
+<section class="sec runner" id="runner" aria-labelledby="run-h">
+  <div class="wrap">
+    <div class="runner-grid">
+      <div class="runner-l">
+        <div class="sec-head">
+          <h2 id="run-h" class="h-sec">Ship a feature with nobody watching.</h2>
+          <p class="body">The ship runner drives <code>{pipeline}</code> through your tool's headless mode. Every iteration is a new session with a clean context, and nothing is pushed until the runner's own secret scan has passed.</p>
+        </div>
+        <div class="runner-cmd">
+          <div class="host-pick" role="radiogroup" aria-label="Tool to run with">
+            <span class="lbl">--host</span>
+            {hosts.map((h) => (
+              <button class="host" type="button" role="radio" aria-checked={h.id === first.id ? 'true' : 'false'} tabindex={h.id === first.id ? 0 : -1} data-host={h.id} data-unguarded={h.unguarded ? '' : undefined}>{h.id}</button>
+            ))}
+          </div>
+          <Cmd label="Ship runner command" copyLabel="Copy runner command"><span class="ln"><span class="pr" aria-hidden="true">$</span>git switch -c feat/jwt-refresh</span><span class="ln"><span class="pr" aria-hidden="true">$</span>bash &lt;checkout&gt;/skills/{pipeline}/scripts/run.sh {'\\'}</span><span class="ln">{'    '}--host <span class="arg" data-host-arg>{first.id}</span><span data-allow-unguarded hidden={!first.unguarded}> --allow-unguarded</span> "{FEATURE}"</span></Cmd>
+          <p class="host-note" aria-live="polite">{hosts.map((h) => <span data-note-for={h.id} hidden={h.id !== first.id} set:html={h.note} />)}</p>
+        </div>
+      </div>
+      <VideoFigure src="/media/loop-runner.mp4" num={5} alt={RUNNER_ALT} label="the runner animation" class="in-runner">The ship runner, a fresh session per iteration</VideoFigure>
+    </div>
+    <ol class="flow" data-flow>
+      <li><span class="fm">1</span><h3>Preflight</h3><p>Checks the tool is installed and signed in, records the remote and branch it will push to, and refuses the default branch.</p></li>
+      <li class="loop-step"><span class="rep" aria-hidden="true"><span>each iteration</span></span><span class="fm">2</span><h3>A fresh session</h3><p>Every iteration is a new headless session. Between them the runner reads <code>.agent-blueprint/run/state.json</code>.</p></li>
+      <li><span class="fm">3</span><h3>Finish check</h3><p>Printed text never ends a run. The state file must say <code>done</code>, with new commits, a pull request body and a provenance record.</p></li>
+      <li><span class="fm">4</span><h3>Secret scan</h3><p>Every commit the push would publish, their messages and the pull request body, including any <code>.env</code> file a commit added.</p></li>
+      <li><span class="fm">5</span><h3>Publish</h3><p>Pushes exactly the commit it scanned to the recorded remote and branch, then opens or updates the pull request.</p></li>
+      <span class="flow-tracer" aria-hidden="true"></span>
+    </ol>
+    <p class="lbl exits-lbl" id="exits-h">Exit codes when a run ends</p>
+    <dl class="exits" aria-labelledby="exits-h">
+      <div><dt>0</dt><dd>published</dd></div><div><dt>1</dt><dd>usage or preflight</dd></div><div><dt>2</dt><dd>blocked</dd></div>
+      <div><dt>3</dt><dd>needs-human</dd></div><div><dt>4</dt><dd>iteration limit</dd></div><div><dt>130</dt><dd>interrupted</dd></div>
+    </dl>
+    <HomeLink href="/guides/unattended-runs/">Read the unattended runs guide</HomeLink>
+  </div>
+</section>

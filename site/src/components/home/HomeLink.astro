@@ -1,0 +1,8 @@
+---
+// A text link drawn with a leading rule that stretches on hover (the approved home.py link()).
+interface Props {
+  href: string;
+}
+const { href } = Astro.props;
+---
+<a class="link" href={href}><span class="link-rule" aria-hidden="true"></span><span><slot /></span></a>

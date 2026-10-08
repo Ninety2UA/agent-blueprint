@@ -1,0 +1,73 @@
+---
+// Detail A: the loop's stations as tabs, the pipelines as dimension lines under them, and
+// one panel per station with its skills. The Build panel carries the waves loop (Fig. 1).
+// Every panel is in the static HTML; without JavaScript the base layout shows them all.
+import VideoFigure from '../VideoFigure.astro';
+import HomeLink from './HomeLink.astro';
+import { cap, md, numberWord, PIPES, skill, skillHref, STATIONS } from './home-data';
+
+const WAVES_ALT =
+  'Looping animation, no sound: the lead line of ab-orchestrate. Tasks 1 and 2 run in parallel as wave 1, ' +
+  'an integration check follows and the lead commits them, then tasks 3 and 4 run as wave 2 and are checked. ' +
+  "Under it the ledger shows each task's file and status: waiting, running, done, committed by the lead.";
+
+// the stations a pipeline covers, as 0-based indexes
+const cover = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, k) => a - 1 + k).join(',');
+const list = (items: string[]) => items.map((x) => `<code>${x}</code>`).join(', ');
+---
+<section class="sec loop" id="loop" aria-labelledby="loop-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="sec-ref"><span class="bub" aria-hidden="true">A</span>Detail A of the drawing above</p>
+      <h2 id="loop-h" class="h-sec">{cap(numberWord(STATIONS.length))} stations from idea to pull request.</h2>
+      <p class="body">Each station has its own skills. Pick one to see them. The dimension lines under the stations show which pipeline runs which part of the loop.</p>
+    </div>
+    <div class="rail" role="tablist" aria-label="Stations of the loop">
+      {STATIONS.map((st, i) => (
+        <button class="station" type="button" role="tab" id={`st-tab-${i}`} aria-controls={`st-panel-${i}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1} data-i={i}>
+          <span class="mark" aria-hidden="true"></span><span class="nm">{st.name}</span><span class="ct">{st.skills.length} skills</span>
+        </button>
+      ))}
+      <span class="rail-cursor" aria-hidden="true"></span>
+    </div>
+    <div class="dims" aria-label="Pipelines and the stations they cover">
+      {PIPES.map((p) => (
+        <div class="pdim" style={`--a:${p.a};--b:${p.b}`} data-cover={cover(p.a, p.b)}>
+          <span class="dim-ext" style={`left:calc((${p.a} - 0.5) / 6 * 100%)`} aria-hidden="true"></span>
+          <span class="dim-ext" style={`left:calc((${p.b} - 0.5) / 6 * 100%)`} aria-hidden="true"></span>
+          <span class="dim-line" aria-hidden="true"></span>
+          <span class="dim-txt"><code>{p.name}</code>: {p.text}</span>
+        </div>
+      ))}
+    </div>
+    <div class="st-panels">
+      {STATIONS.map((st, i) => {
+        const fig = st.name === 'Build';
+        return (
+          <div class:list={['st-panel', 'tabpanel', { 'has-fig': fig }]} role="tabpanel" id={`st-panel-${i}`} aria-labelledby={`st-tab-${i}`} hidden={i !== 0}>
+            <div class="st-intro">
+              <h3 class="h-sub">{st.name}</h3>
+              <p class="body">{st.desc}</p>
+              {st.helpers.length > 0 ? (
+                <p class="st-helpers"><span class="lbl">Helper prompts at this station</span><Fragment set:html={list(st.helpers)} /></p>
+              ) : (
+                <p class="st-helpers"><span class="lbl">Files written here</span><Fragment set:html={list(st.files ?? [])} /></p>
+              )}
+            </div>
+            {fig && (
+              <VideoFigure src="/media/loop-waves.mp4" num={1} alt={WAVES_ALT} label="the waves animation" class="in-panel">
+                Team work in waves, <code>ab-orchestrate</code>
+              </VideoFigure>
+            )}
+            <ul class="st-skills">
+              {st.skills.map((n) => (
+                <li><a href={skillHref(n)}><code>{n}</code><span set:html={md(skill(n).summary)} /></a></li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+    <HomeLink href="/workflow/">How the workflow fits together</HomeLink>
+  </div>
+</section>
