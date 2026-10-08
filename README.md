@@ -742,10 +742,12 @@ An evaluation then ran the same fixture tasks on v3.8.0 and v4.0.0 in Claude Cod
 ## Release history
 
 <details>
-<summary>v2.3 to v3.8.0</summary>
+<summary>v2.3 to v4.0.1</summary>
 
 | Version | Date | What changed |
 |---|---|---|
+| v4.0.1 | 2026-10-07 | Cursor CLI and Amp no longer list every skill twice next to Claude Code. On a machine with Claude Code and either of them, `install.sh` writes no shared copy: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder, and the copy an earlier install left in `~/.agents/skills` is removed. |
+| v4.0.0 | 2026-10-07 | `claude-code-blueprint` becomes Agent Blueprint: one set of skills, each named with the `ab-` prefix, that installs natively in eight coding CLIs. Agents became helper prompts inside the skills that use them, `AGENTS.md` is the instructions file, and working files moved to `.agent-blueprint/`. Team work and the ship runner run in every tool, hooks are optional, new gates keep every skill portable, and `ab-migrate` cleans a v3 project. |
 | v3.8.0 | 2026-09-28 | Plans record decisions instead of code, and you review the saved plan before it runs. A security finding can be rejected only with a quoted refutation. Reviews start at the merge base and include untracked files. Opus 5.5 defaults documented. CI fails on frontmatter that isn't valid YAML and on references that don't resolve. |
 | v3.7.1 | 2026-09-12 | Four large skills split into a short `SKILL.md` plus references. Fixes to finishing a branch from a worktree and to detecting a moved HEAD when resuming. |
 | v3.7.0 | 2026-09-12 | A plan audit before a branch is finished, discarding work only on request, one rule for when an agent decides and when it asks, a fix loop that resumes the same implementer, tests that must be able to fail, and fetched text treated as data. |
