@@ -86,7 +86,7 @@ const plainSummary = skill.summary.replace(/\x60/g, ''); // \x60: a literal back
 ---
 <BaseLayout title={`${skill.name} · Agent Blueprint skills`} description={plainSummary} sheet={`Skills / ${skill.name}`}>
   <div class="wrap skill" data-pagefind-body data-pagefind-filter="section:Skills">
-    <nav class="crumbs" aria-label="Breadcrumb">
+    <nav class="crumbs" aria-label="Breadcrumb" data-pagefind-ignore>
       <ol>
         <li><a href="/skills/">Skills</a></li>
         <li><a href={`/skills/?phase=${phase.slug}`}>{phase.title}</a></li>
@@ -101,7 +101,7 @@ const plainSummary = skill.summary.replace(/\x60/g, ''); // \x60: a literal back
         <p class="lede" set:html={inlineCode(skill.summary)} />
         <div class="sh-cmd">
           <Cmd lines={[nameIn(tools[0])]} trim label={`Name the skill in ${tools[0].name}`} copyLabel="Copy skill command" />
-          <a class="link" href={skill.githubUrl}><span class="link-rule" aria-hidden="true"></span><span>Read SKILL.md on GitHub</span></a>
+          <a class="link" href={skill.githubUrl} data-pagefind-ignore><span class="link-rule" aria-hidden="true"></span><span>Read SKILL.md on GitHub</span></a>
         </div>
       </div>
       <TitleBlock class="sh-tb" cols="1fr 1fr" label="Skill data" cells={cells} />
@@ -196,7 +196,7 @@ const plainSummary = skill.summary.replace(/\x60/g, ''); // \x60: a literal back
         )}
 
         {skill.related.length > 0 && (
-          <section id="related" class="ss" aria-labelledby="related-h">
+          <section id="related" class="ss" aria-labelledby="related-h" data-pagefind-ignore>
             <h2 id="related-h" class="h-sub">Related skills in {phase.title}</h2>
             <ul class="cards rel">
               {skill.related.map((name) => {
@@ -208,7 +208,7 @@ const plainSummary = skill.summary.replace(/\x60/g, ''); // \x60: a literal back
         )}
 
         {(skill.prev || skill.next) && (
-          <nav class="pn" aria-label="Previous and next skill">
+          <nav class="pn" aria-label="Previous and next skill" data-pagefind-ignore>
             {skill.prev && (
               <a class="pn-prev" href={`/skills/${skill.prev}/`}>
                 <span class="lbl"><Fragment set:html={IC.arrowL} />Previous in {phaseOf(skill.prev).title}</span>
@@ -228,7 +228,7 @@ const plainSummary = skill.summary.replace(/\x60/g, ''); // \x60: a literal back
           <h2 id="skill-md-h" class="h-sub">SKILL.md</h2>
           <p class="body">The instructions the agent follows, from <code>skills/{skill.name}/SKILL.md</code>.</p>
           <p class="src-links">
-            <a class="link" href={skill.githubUrl}><span class="link-rule" aria-hidden="true"></span><span>Read SKILL.md on GitHub</span></a>
+            <a class="link" href={skill.githubUrl} data-pagefind-ignore><span class="link-rule" aria-hidden="true"></span><span>Read SKILL.md on GitHub</span></a>
             {refsUrl && <a class="link" href={refsUrl}><span class="link-rule" aria-hidden="true"></span><span>Its references/ folder</span></a>}
           </p>
           <div class="skill-md prose" set:html={body} />

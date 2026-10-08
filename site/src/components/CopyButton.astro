@@ -14,7 +14,7 @@ interface Props {
 }
 const { label, text, from, class: cls } = Astro.props;
 ---
-<button class:list={['copy-btn', cls]} type="button" aria-label={label} data-copy={text} data-copy-from={from}>
+<button class:list={['copy-btn', cls]} type="button" data-pagefind-ignore aria-label={label} data-copy={text} data-copy-from={from}>
   <Fragment set:html={IC.copy} /><Fragment set:html={IC.check} /><span class="copy-label">Copy</span>
 </button>
 
