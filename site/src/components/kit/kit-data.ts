@@ -10,10 +10,10 @@ import { numberWord } from '../number-word';
 
 const data = getSiteData();
 export const site = {
-  version: data.version as string,
-  repoUrl: data.repoUrl as string,
-  counts: data.counts as { skills: number; helpers: number; hooks: number; tools: number },
-  tools: (data.tools as { name: string }[]).map((t) => t.name),
+  version: data.version,
+  repoUrl: data.repoUrl,
+  counts: data.counts,
+  tools: data.tools.map((t) => t.name),
 };
 
 /** The README hero GIF: kept once in the repository, served into the build by pages/media/readme-hero.gif.ts. */

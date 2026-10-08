@@ -23,7 +23,7 @@
 //   checkStages(name, stages, skillMd)  throws when a stage skill is not named in the SKILL.md, or when
 //                          the SKILL.md has numbered "Stage N:" or "Step N:" headings and their count
 //                          differs from the stages listed.
-//   getWorkflow(root?)     { loop, gates, pipelines, chain, phases, counts }, everything checked.
+//   getWorkflow(root?)     a Workflow (the typedefs below), everything checked.
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -31,6 +31,56 @@ import { join } from 'node:path';
 import { getSection } from '../../lib/readme.mjs';
 import { findRepoRoot, getSiteData } from '../../lib/site.mjs';
 import { escapeHtml } from '../../lib/text.mjs';
+
+/** @import { Counts, Phase } from '../../lib/site.mjs' */
+/**
+ * @typedef {object} LoopStep  a step of "### The development loop".
+ * @property {number} n
+ * @property {string} name
+ * @property {boolean} optional
+ * @property {string} text  the step's Markdown after its name
+ * @property {string} html  that text as HTML, skill names linked
+ */
+/**
+ * @typedef {object} Gate  a row of the "Quality gates" table.
+ * @property {number} n
+ * @property {string} rule
+ * @property {string} enforcedBy
+ * @property {string} ruleHtml  the rule as HTML, skill names linked
+ * @property {string[]} skills  the skills the Enforced by cell names
+ */
+/**
+ * @typedef {object} Stage
+ * @property {string} label
+ * @property {string[]} skills
+ * @property {string} [note]  inline Markdown
+ * @property {boolean} [optional]  a stage a flag can skip
+ */
+/**
+ * @typedef {object} Pipeline  a row of the README "Pipelines" table.
+ * @property {string} name
+ * @property {string} when
+ * @property {string} summaryHtml
+ * @property {boolean} checkpoints
+ * @property {Stage[]} stages  empty for a pipeline PIPELINE_STAGES does not draw
+ */
+/**
+ * @typedef {object} ChainRow
+ * @property {string[]} from
+ * @property {string} leaves
+ * @property {string} what
+ * @property {string[]} to
+ * @property {boolean} [next]  what carries into the next session
+ */
+/**
+ * @typedef {object} Workflow
+ * @property {LoopStep[]} loop
+ * @property {Gate[]} gates
+ * @property {Pipeline[]} pipelines
+ * @property {ChainRow[]} chain
+ * @property {Phase[]} phases
+ * @property {Counts} counts
+ */
 
 const HERE = 'site/src/components/workflow/workflow-data.mjs';
 
@@ -190,6 +240,10 @@ export function checkStages(name, stages, skillMd) {
   }
 }
 
+/**
+ * @param {string} [root]
+ * @returns {Workflow}
+ */
 export function getWorkflow(root = findRepoRoot()) {
   const data = getSiteData(root);
   const readme = readFileSync(join(root, 'README.md'), 'utf8');

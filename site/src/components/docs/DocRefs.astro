@@ -12,7 +12,7 @@ interface Props {
   repoDoc?: string;
 }
 const { hostDocs, repoDoc } = Astro.props;
-const { tools, repoUrl } = getSiteData() as { tools: { name: string; hostDoc: string }[]; repoUrl: string };
+const { tools, repoUrl } = getSiteData();
 const blob = (path: string) => `${repoUrl}/blob/main/${path}`;
 const links = [
   ...(hostDocs ? tools.map((t) => ({ label: t.name, href: `${blob(t.hostDoc)}#${hostDocs}`, code: false })) : []),

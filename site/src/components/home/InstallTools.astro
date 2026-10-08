@@ -5,7 +5,8 @@
 // to name a skill in that tool, and its hooks and helpers from the support table.
 import Cmd from '../Cmd.astro';
 import Tabs from '../Tabs.astro';
-import { md, site, type Tool } from './home-data';
+import type { Tool } from '../../lib/site.mjs';
+import { md, site } from './home-data';
 
 const { tools, cloneLines, installCommand } = site;
 const clone = cloneLines.join(' && ');

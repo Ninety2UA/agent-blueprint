@@ -6,21 +6,12 @@
 // the footer's /docs/getting-started/#<tool id> links open that tab.
 import Cmd from '../Cmd.astro';
 import Tabs from '../Tabs.astro';
-import { getSiteData } from '../../lib/site.mjs';
+import { getSiteData, type Tool } from '../../lib/site.mjs';
 import { inlineCode } from '../../lib/text.mjs';
 import { routeSteps } from './route.mjs';
 import { INSTALL_TABS_ID } from './section.mjs';
 
-interface Tool {
-  name: string;
-  id: string;
-  route: string;
-  commands: string[];
-  hostDoc: string;
-  naming: { syntax: string | null; example: string };
-  support: { hooks: string; helpers: string; manualOnly: string };
-}
-const { tools, cloneCommand, repoUrl } = getSiteData() as { tools: Tool[]; cloneCommand: string; repoUrl: string };
+const { tools, cloneCommand, repoUrl } = getSiteData();
 const clone = cloneCommand.split('\n');
 // install.sh and <checkout> both mean the route runs from a clone of the repository
 const fromCheckout = (t: Tool) => t.commands.some((c) => c.includes('install.sh') || c.includes('<checkout>'));

@@ -6,46 +6,22 @@
 // draw, and the runner's note for each tool. Those name skills and helpers only; every
 // name is looked up in the repository data, so a renamed or removed skill stops the build
 // with a message that points at this file instead of shipping a broken link.
-import { getSiteData } from '../../lib/site.mjs';
+import { getSiteData, type Helper, type Phase, type Skill } from '../../lib/site.mjs';
 import { numberWord } from '../number-word';
-
-export interface Skill {
-  name: string;
-  phase: string;
-  summary: string;
-  when: string;
-}
-export interface Helper {
-  name: string;
-  path: string;
-}
-export interface Tool {
-  name: string;
-  id: string;
-  route: string;
-  commands: string[];
-  naming: { syntax: string | null; example: string };
-  support: { hooks: string; helpers: string; manualOnly: string };
-}
-export interface Phase {
-  slug: string;
-  title: string;
-  skills: string[];
-}
 
 const data = getSiteData();
 export const site = {
-  counts: data.counts as { skills: number; helpers: number; hooks: number; tools: number; phases: number },
-  repoUrl: data.repoUrl as string,
-  tools: data.tools as Tool[],
-  phases: data.phases as Phase[],
-  cloneLines: (data.cloneCommand as string).split('\n'),
-  installCommand: data.installCommand as string,
+  counts: data.counts,
+  repoUrl: data.repoUrl,
+  tools: data.tools,
+  phases: data.phases,
+  cloneLines: data.cloneCommand.split('\n'),
+  installCommand: data.installCommand,
 };
 
 const HERE = 'site/src/components/home/home-data.ts';
-const skillMap = new Map((data.skills as Skill[]).map((s) => [s.name, s]));
-const helperMap = new Map((data.helpers as Helper[]).map((h) => [h.name, h]));
+const skillMap = new Map(data.skills.map((s) => [s.name, s]));
+const helperMap = new Map(data.helpers.map((h) => [h.name, h]));
 
 /** A skill by name; fails the build when the repository has no such skill. */
 export function skill(name: string): Skill {

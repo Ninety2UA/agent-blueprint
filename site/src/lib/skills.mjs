@@ -1,11 +1,14 @@
 // skills.mjs: reads the skill tree and joins it with the README phase tables (KTD2). Plain Node.
 //
-// Counting follows scripts/check-drift.sh, so the site and the drift gate agree:
-//   skills   every file named SKILL.md under skills/
+// Counting:
+//   skills   folders under skills/ that hold a SKILL.md (listSkillFolders), the list the site builds one
+//            page per, so the count it states and the pages it builds cannot differ. A SKILL.md nested
+//            deeper inside a skill's folder is not a skill. scripts/check-drift.sh counts SKILL.md files,
+//            which gives the same number while no skill folder nests one.
 //   helpers  distinct prompt names under skills/*/references/agents/, companion notes left out
-//            (<prompt>-<topic>.md beside <prompt>.md; the gate's loop and is_companion() in
+//            (<prompt>-<topic>.md beside <prompt>.md; the drift gate's loop and is_companion() in
 //            tests/gates/test_prompt_files.py use the same rule)
-//   hooks    "command" entries in hooks/claude-code.json
+//   hooks    "command" entries in hooks/claude-code.json, as the drift gate counts them
 //
 // Exports
 //   listSkillFolders(root)          sorted folder names under skills/ that hold a SKILL.md.
@@ -17,7 +20,7 @@
 //   helperLister(root)              skill => listHelperFiles(root, skill), memoized: each folder is read once and
 //                                   its list reused. countHelperPrompts and joinSkills take one as `helpersOf`;
 //                                   without it they read the folders themselves.
-//   countSkillFiles(root), countHelperPrompts(root, helpersOf?), countHooks(root)  the drift gate's three counts.
+//   countHelperPrompts(root, helpersOf?), countHooks(root)  the helper and hook counts.
 //   joinSkills({ root, folders, phases, repoUrl, helpersOf? })
 //                                   [{ name, phase, summary, when, description, helpers, related, prev, next,
 //                                   githubUrl }] in phase-table order. phase is the phase slug, summary and
@@ -96,12 +99,6 @@ export function helperLister(root) {
     if (!lists.has(skill)) lists.set(skill, listHelperFiles(root, skill));
     return lists.get(skill);
   };
-}
-
-export function countSkillFiles(root) {
-  return readdirSync(join(root, 'skills'), { recursive: true, withFileTypes: true }).filter(
-    (d) => d.isFile() && d.name === 'SKILL.md',
-  ).length;
 }
 
 export function countHelperPrompts(root, helpersOf = (skill) => listHelperFiles(root, skill)) {

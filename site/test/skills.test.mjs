@@ -3,7 +3,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -78,6 +79,27 @@ test('getSiteData counts and version agree with the drift gate and plugin.json',
   assert.equal(data.counts.phases, data.phases.length);
   assert.equal(data.releases[0].version, data.version);
   assert.strictEqual(getSiteData(), data, 'getSiteData is memoized');
+});
+
+test('counts.skills is the number of skill pages, even when a skill folder nests a SKILL.md', () => {
+  const data = getSiteData();
+  assert.equal(data.counts.skills, data.skills.length);
+  // A SKILL.md inside a skill's own folder (a template under assets/) is not a skill: the site
+  // builds one page per top-level folder, so the count it claims follows the same rule.
+  const copy = mkdtempSync(join(tmpdir(), 'site-skills-'));
+  try {
+    for (const path of ['README.md', '.claude-plugin', 'skills', 'hooks']) {
+      cpSync(join(ROOT, path), join(copy, path), { recursive: true });
+    }
+    const nested = join(copy, 'skills', skillFolders[0], 'assets', 'template');
+    mkdirSync(nested, { recursive: true });
+    writeFileSync(join(nested, 'SKILL.md'), '---\nname: template\ndescription: A scaffold, not a skill.\n---\n');
+    const nestedData = getSiteData(copy);
+    assert.equal(nestedData.skills.length, skillFolders.length);
+    assert.equal(nestedData.counts.skills, nestedData.skills.length);
+  } finally {
+    rmSync(copy, { recursive: true, force: true });
+  }
 });
 
 test('each skill carries its phase, README summary, SKILL.md description, neighbors and related skills', () => {

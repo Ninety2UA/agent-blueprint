@@ -6,7 +6,7 @@ import { githubSlug } from '../../lib/readme.mjs';
 import { inlineCode } from '../../lib/text.mjs';
 
 const HEADING = 'Hooks in each tool';
-const { tools } = getSiteData() as { tools: { name: string; support: { hooks: string } }[] };
+const { tools } = getSiteData();
 ---
 <section class="hooks-by-tool" aria-labelledby={githubSlug(HEADING)}>
   <h2 id={githubSlug(HEADING)}>{HEADING}</h2>
