@@ -11,6 +11,11 @@
 //                             text is the page title, its subsections lifted one level so no heading
 //                             level is skipped: a guide that maps several README sections gets each
 //                             as an H2, and the first can repeat the H1 right above it.
+//   eagerFirstImage(html)     the section with its first <img> loaded eagerly and at high priority
+//                             (loading="lazy" becomes loading="eager" fetchpriority="high") when that
+//                             image comes before the section's first H2. Such an image sits right
+//                             under the short intro, in the first viewport, and is the page's largest
+//                             paint; the build marks every Markdown image lazy, which delays it.
 
 const SKIP = new Set(['a', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
 const TOKEN = /(<[^>]+>)/;
@@ -52,4 +57,11 @@ export function dropTitleHeading(html, title) {
   const section = end === -1 ? rest : rest.slice(0, end);
   const lifted = section.replace(/<(\/?)h([3-6])\b/g, (_, close, n) => `<${close}h${Number(n) - 1}`);
   return lifted + (end === -1 ? '' : rest.slice(end));
+}
+
+export function eagerFirstImage(html) {
+  const img = html.search(/<img\b/);
+  const h2 = html.search(/<h2\b/);
+  if (img === -1 || (h2 !== -1 && h2 < img)) return html;
+  return html.replace(/<img\b[^>]*>/, (tag) => tag.replace(/\sloading="lazy"/, ' loading="eager" fetchpriority="high"'));
 }

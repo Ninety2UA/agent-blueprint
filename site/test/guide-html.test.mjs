@@ -1,14 +1,14 @@
 // Tests for site/src/components/guides/guide-html.mjs: a guide's README section links each skill it
-// names in code to the skill's page, drops a first heading that repeats the page title, and the
-// skills a guide names are found in first-mention order. The hand-written intros link only to
-// skills that exist.
+// names in code to the skill's page, drops a first heading that repeats the page title, loads an
+// image that opens the section (before its first H2) eagerly, and the skills a guide names are found
+// in first-mention order. The hand-written intros link only to skills that exist.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { dropTitleHeading, linkSkills, skillsNamed } from '../src/components/guides/guide-html.mjs';
+import { dropTitleHeading, eagerFirstImage, linkSkills, skillsNamed } from '../src/components/guides/guide-html.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const NAMES = ['ab-orchestrate', 'ab-review-swarm', 'ab-ship-pipeline'];
@@ -57,6 +57,22 @@ test('dropTitleHeading removes a first H2 that repeats the page title and lifts 
   assert.equal(dropTitleHeading(html, 'Model and effort'), html);
   const later = '<p>Intro.</p><h2 id="x">Model and effort</h2>';
   assert.equal(dropTitleHeading(later, 'Model and effort'), later);
+});
+
+const img = (src) => `<img alt="${src}" loading="lazy" decoding="async" width="1760" height="458" src="/_astro/${src}.webp">`;
+
+test('eagerFirstImage loads the image that opens the section eagerly and at high priority, and only that one', () => {
+  const html = `<p>${img('loop')}</p>\n<p>${img('second')}</p><h2 id="how">How</h2><p>${img('later')}</p>`;
+  assert.equal(
+    eagerFirstImage(html),
+    '<p><img alt="loop" loading="eager" fetchpriority="high" decoding="async" width="1760" height="458" src="/_astro/loop.webp"></p>\n' +
+      `<p>${img('second')}</p><h2 id="how">How</h2><p>${img('later')}</p>`,
+  );
+});
+
+test('eagerFirstImage leaves a section whose first image comes after its first H2 lazy', () => {
+  const html = `<p>Helpers run.</p><h2 id="how">How helpers run</h2><p>${img('swarm')}</p><p>${img('later')}</p>`;
+  assert.equal(eagerFirstImage(html), html);
 });
 
 test('skillsNamed lists each known skill once, in the order the texts first name it', () => {

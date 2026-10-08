@@ -6,12 +6,12 @@
 //
 // Exports
 //   GUIDES                 [{ slug, label }] in reading order.
-//   guidesOrder()          [{ slug, label, href }] for every guide, in order.
+//   guidesOrder()          [{ slug, label, href, group }] for every guide, in order.
 //   guidesSidebar(slug)    DocsLayout's sidebar shape: one group of every guide, `slug` marked current.
 //   guidesNeighbors(slug)  { prev, next } as { label, href }, each undefined at the ends of the order.
-//                          Throws naming the slug when it is not a guide.
+// The three functions are section-order.mjs over one "Guides" group.
 
-import { pageUrl } from './readme-map.mjs';
+import { sectionOrder } from './section-order.mjs';
 
 export const GUIDES = [
   { slug: 'unattended-runs', label: 'Unattended runs' },
@@ -21,23 +21,8 @@ export const GUIDES = [
   { slug: 'session-continuity', label: 'Session continuity' },
 ];
 
-export function guidesOrder() {
-  return GUIDES.map(({ slug, label }) => ({ slug, label, href: pageUrl('guides', slug) }));
-}
-
-export function guidesSidebar(slug) {
-  return [
-    {
-      title: 'Guides',
-      items: guidesOrder().map((g) => ({ label: g.label, href: g.href, ...(g.slug === slug ? { current: true } : {}) })),
-    },
-  ];
-}
-
-export function guidesNeighbors(slug) {
-  const order = guidesOrder();
-  const i = order.findIndex((g) => g.slug === slug);
-  if (i === -1) throw new Error(`guides-order: "${slug}" is not a guide`);
-  const link = (g) => (g ? { label: g.label, href: g.href } : undefined);
-  return { prev: link(order[i - 1]), next: link(order[i + 1]) };
-}
+export const {
+  order: guidesOrder,
+  sidebar: guidesSidebar,
+  neighbors: guidesNeighbors,
+} = sectionOrder({ kind: 'guides', groups: [{ title: 'Guides', items: GUIDES }] });

@@ -1,12 +1,12 @@
 // Tests for site/src/lib/tutorials-order.mjs: the Tutorials section holds the three tutorials in
-// reading order, each with a content file, the section root and the header's Tutorials item open
-// the first one, and previous and next walk the three end to end.
+// reading order, each with a content file, and the section root and the header's Tutorials item open
+// the first one. Previous and next are walked in section-order.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { TUTORIALS, tutorialsNeighbors, tutorialsOrder, tutorialsSidebar } from '../src/lib/tutorials-order.mjs';
+import { TUTORIALS, tutorialsOrder, tutorialsSidebar } from '../src/lib/tutorials-order.mjs';
 
 const SITE = fileURLToPath(new URL('../', import.meta.url));
 const order = tutorialsOrder();
@@ -46,24 +46,4 @@ test('tutorialsSidebar is one group that marks only the current tutorial', () =>
     assert.deepEqual(groups[0].items.map((i) => i.href), order.map((o) => o.href));
     assert.deepEqual(groups[0].items.filter((i) => i.current), [{ label: t.label, href: t.href, current: true }]);
   }
-});
-
-test('previous and next walk the tutorials from the first to the last', () => {
-  const walk = (start, dir) => {
-    const seen = [start];
-    for (let n = tutorialsNeighbors(start)[dir]; n; ) {
-      const t = order.find((o) => o.href === n.href);
-      assert.ok(t, `${dir} link ${n.href} is not a tutorial`);
-      assert.equal(n.label, t.label);
-      seen.push(t.slug);
-      n = tutorialsNeighbors(t.slug)[dir];
-    }
-    return seen;
-  };
-  assert.deepEqual(walk(order[0].slug, 'next'), order.map((o) => o.slug));
-  assert.deepEqual(walk(order.at(-1).slug, 'prev'), order.map((o) => o.slug).reverse());
-});
-
-test('tutorialsNeighbors names an unknown page in its error', () => {
-  assert.throws(() => tutorialsNeighbors('no-such-tutorial'), /no-such-tutorial/);
 });
