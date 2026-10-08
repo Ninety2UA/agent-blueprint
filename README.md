@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/hero.gif" alt="Agent Blueprint: 53 skills that take a coding agent from an idea to a reviewed pull request, in eight coding CLIs" width="100%">
+  <img src="docs/images/hero.gif" alt="Agent Blueprint: 53 skills that take a coding agent from an idea to a reviewed pull request, in eight coding CLIs. A parts list names the eight tools with their install ids. Below it, a marker moves through six stages, each labeled with its skill: Design (ab-brainstorming), Plan (ab-writing-plans), Build (ab-orchestrate), Review (ab-review-swarm), Ship (ab-pr-workflow) and Learn (ab-knowledge-compounding). A dimension line over all six reads ab-build-pipeline, a checkpoint after each stage. After Learn, the marker returns to Design along a line labeled next session reads docs/." width="100%">
 </p>
 
 <p align="center">
@@ -22,10 +22,6 @@
 </p>
 
 ---
-
-<p align="center">
-  <img src="docs/images/overview.gif" alt="Agent Blueprint overview: skills, pipelines, helper prompts and team work in eight coding CLIs" width="90%">
-</p>
 
 ## Why Agent Blueprint
 
@@ -314,7 +310,8 @@ The repository checks itself against its own files, not against numbers someone 
 
 | Command | Checks |
 |---------|--------|
-| `bash scripts/check-drift.sh` | Count and version claims on every surface (manifests, README, website, promo source, `AGENTS.md`) match the tree: 53 skills, 10 hooks, 30 helper prompts, one version. It also fails when README.md or index.html brings back adoption or ecosystem wording |
+| `bash scripts/check-drift.sh` | Count and version claims in the manifests, the README, `AGENTS.md`, `index.html` and the README hero's source in `site/motion/readme-hero/` match the tree: 53 skills, 10 hooks, 30 helper prompts, one version. The site source in `site/src/` and the other motion sources in `site/motion/` state no literal skill, helper or hook count, and every skill sits in exactly one README phase table. It also fails when README.md, index.html or the site source brings back adoption or ecosystem wording |
+| `python3 scripts/check-site.py site/dist` | The built site against the tree: one page per skill, each helper prompt once on the Skills page, the counts and version the pages state, no `SKILL.md` in the build, no adoption or ecosystem wording, internal links that resolve, and a title, description and canonical link on every page. Build the site first with `npm ci` and `npm run build` in `site/`, which needs Node 22.12 or later |
 | `python3 scripts/check-skill-collisions.py` | Frontmatter YAML, `references/` pointers and § headings resolve, no near-duplicate descriptions |
 | `python3 scripts/check-portability.py` | The rules for all eight tools: agentskills frontmatter only, the `ab-` prefix, the 8,000-byte cap, no tool variables or cross-skill paths, no slash names, the manual-only pairing, no text Hermes would quarantine |
 | `python3 scripts/check-manifests.py` | Every manifest and every skill's `metadata.version` agree with the release |

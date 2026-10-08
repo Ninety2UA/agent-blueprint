@@ -283,28 +283,6 @@ if readme is not None:
             failures.append("README.md Helper Prompts Reference table: %d rows, skills ship %d helper prompts"
                             % (arows, PR))
 
-# docs/images/promo-video.html — source of the baked overview.gif (regenerated via
-# scripts/record-promo.js). Gating the source keeps the shipped GIF honest: scene 2
-# stat cards must match ground truth and use only current-state categories (the old
-# GIF shipped a defunct "27 Commands" card for months), and scene 6's install
-# terminal carries a TRIPLE claim.
-promo_rel = "docs/images/promo-video.html"
-promo = rd(promo_rel)
-check_triple("promo-video.html install terminal", promo_rel, promo)
-if promo is not None:
-    cards = re.findall(r'stat-number">(\d+)</div>\s*<div class="stat-label-txt">(\w+)<', promo)
-    if len(cards) < 2:
-        failures.append("%s: expected >=2 scene-2 stat cards, found %d — anchor changed, "
-                        "re-point the gate" % (promo_rel, len(cards)))
-    for num, lab in cards:
-        key = lab.lower()
-        if key not in GT:
-            failures.append("%s stat card '%s': not a current-state category — remove or "
-                            "rename the card (promo GIF must be re-rendered after)" % (promo_rel, lab))
-        elif int(num) != GT[key]:
-            failures.append("%s stat card '%s': expected %d, found %s — promo GIF source drifted"
-                            % (promo_rel, lab, GT[key], num))
-
 # site/motion/readme-hero/composition.html — source of the README's hero.gif and the site's
 # readme-hero video (site/motion/RENDER.md). Both bake the skill count in ("N skills that take
 # a coding agent ..."), so every count in the source must match the tree.

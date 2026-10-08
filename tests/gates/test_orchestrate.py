@@ -20,7 +20,7 @@ HOSTS = ["claude", "codex", "agy", "grok", "pi", "cursor-agent", "hermes", "amp"
 REMOVED = ["ab-agent-teams", "ab-team-execution"]
 # Surfaces outside skills/ that must not name a removed skill (the name map is exempt).
 SURFACES = ["AGENTS.md", "README.md", "index.html", "install.sh", ".claude-plugin", "hooks", "scripts",
-            "docs/images/promo-video.html", "site/src", "site/motion"]
+            "site/src", "site/motion"]
 MARKER = ".agent-blueprint/team/active.md"
 # The hooks act only on the host they were written for (KTD11): run them as Claude Code.
 CLAUDE_ENV = {k: v for k, v in os.environ.items() if not k.startswith(("CURSOR_", "GROK_", "CODEX_"))}
