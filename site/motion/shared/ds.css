@@ -1,0 +1,75 @@
+@font-face {
+  font-family: "Archivo";
+  src: url("assets/fonts/Archivo-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: block;
+}
+@font-face {
+  font-family: "Azeret Mono";
+  src: url("assets/fonts/AzeretMono-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: block;
+}
+:root {
+  --bg: oklch(0.985 0 0);
+  --bg-sunk: oklch(0.958 0 0);
+  --ink: oklch(0.17 0 0);
+  --ink-2: oklch(0.34 0 0);
+  --muted: oklch(0.45 0 0);
+  --faint: oklch(0.55 0 0);
+  --hair: oklch(0.87 0 0);
+  --hair-strong: oklch(0.76 0 0);
+  --construct: oklch(0.935 0 0);
+  --accent: oklch(0.63 0.21 33);
+  --accent-ink: oklch(0.54 0.2 33);
+  --sans: "Archivo", sans-serif;
+  --mono: "Azeret Mono", monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { margin: 0; overflow: hidden; background: var(--bg); }
+body { color: var(--ink); font-family: var(--sans); font-stretch: 100%; -webkit-font-smoothing: antialiased; }
+#root { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
+
+/* drawing primitives (SVG) */
+svg { overflow: visible; }
+svg text { fill: var(--ink); }
+.ln { stroke: var(--ink); stroke-width: 1.25; fill: none; }
+.ln-2 { stroke: var(--ink-2); stroke-width: 1; fill: none; }
+.datum { stroke: var(--ink); stroke-width: 1.5; fill: none; }
+.hair { stroke: var(--hair); stroke-width: 1; fill: none; }
+.hair-s { stroke: var(--hair-strong); stroke-width: 1; fill: none; }
+.ext { stroke: var(--hair-strong); stroke-width: 1; fill: none; }
+.dash { stroke: var(--ink-2); stroke-width: 1; fill: none; stroke-dasharray: 6 5; }
+.dash-h { stroke: var(--hair-strong); stroke-width: 1; fill: none; stroke-dasharray: 6 5; }
+.dim { stroke: var(--accent); stroke-width: 1.25; fill: none; }
+.acc { stroke: var(--accent); stroke-width: 1.5; fill: none; }
+.ah { fill: var(--accent); stroke: none; }
+.ahi { fill: var(--ink); stroke: none; }
+.ahm { fill: var(--ink-2); stroke: none; }
+.st-x { stroke: var(--ink); stroke-width: 1; }
+.st-ring { fill: var(--bg); stroke: var(--ink); stroke-width: 1.4; }
+.reg line, .reg circle { stroke: var(--ink); stroke-width: 1; fill: none; }
+.box { fill: var(--bg); stroke: var(--ink); stroke-width: 1.25; }
+.box-h { fill: var(--bg); stroke: var(--hair-strong); stroke-width: 1; }
+.box-sunk { fill: var(--bg-sunk); stroke: none; }
+.fill-ink { fill: var(--ink); stroke: none; }
+.fill-acc { fill: var(--accent); stroke: none; }
+.fill-bg { fill: var(--bg); stroke: none; }
+.tracer { fill: var(--accent); stroke: none; }
+.draw { stroke-dasharray: 1 1; }
+
+.t-mono { font-family: var(--mono); font-weight: 500; font-variant-ligatures: none; }
+.t-mono-b { font-family: var(--mono); font-weight: 600; font-variant-ligatures: none; }
+.t-sans { font-family: var(--sans); font-weight: 500; font-stretch: 100%; }
+.t-head { font-family: var(--sans); font-weight: 650; font-stretch: 112%; }
+svg text.mut { fill: var(--muted); }
+svg text.ink2 { fill: var(--ink-2); }
+svg text.acc-t { fill: var(--accent-ink); }
+svg text.bg-t { fill: var(--bg); }
+
+/* html text */
+.h-display { font-family: var(--sans); font-weight: 680; font-stretch: 118%; letter-spacing: -0.03em; line-height: 1.0; color: var(--ink); }
+.h-sub { font-family: var(--sans); font-weight: 420; font-stretch: 100%; color: var(--ink-2); line-height: 1.3; }
+.mono { font-family: var(--mono); font-weight: 500; font-variant-ligatures: none; }
+.muted { color: var(--muted); }

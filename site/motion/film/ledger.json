@@ -1,0 +1,5 @@
+{
+  "fps": 30,
+  "note": "One continuous camera: the world pans LEFT along a single datum (nudge curve, the tracer leads and the camera follows), then pulls back once (Z backward, the arrival) into the end card. No scene cuts, so there are no seam rows.",
+  "seams": []
+}

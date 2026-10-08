@@ -47,3 +47,7 @@ blueprint.local.md
 # Smoke test (tests/smoke/): run logs are ignored; the build scenario folder is not a build output
 tests/smoke/logs/
 !tests/smoke/scenarios/build/
+
+# Site build (site/): Astro's generated types and the HyperFrames working projects
+site/.astro/
+site/motion/.work/

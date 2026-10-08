@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1200, height=750" />
+<title>Review swarm loop</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+/*{{DS_CSS}}*/
+html, body { width: 1200px; height: 750px; }
+#stage { position: absolute; inset: 0; background: var(--bg); }
+#stage > svg { position: absolute; left: 0; top: 0; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="8" data-width="1200" data-height="750">
+  <div id="stage" class="clip" data-start="0" data-duration="8" data-track-index="0"></div>
+</div>
+<script>
+//{{DS_JS}}
+</script>
+<script>
+(function () {
+  // Shown at about 560 px wide: smallest text 24 px, main labels 30 px and up.
+  const { S, svg, T, L, P, R, station, draw, fill, swap, C } = DS;
+  function build() {
+    const tl = gsap.timeline({ paused: true });
+    const s = svg(document.getElementById("stage"), 1200, 750);
+    const CAP = ["A change goes to review", "Pass 1: reviewers in parallel", "Pass 2, after the fixes", "No P1 left, the loop stops"].map((t) =>
+      T(s, 40, 700, t, "t-sans ink2", 30));
+    CAP.forEach((e, k) => gsap.set(e, { opacity: k === 0 ? 1 : 0 }));
+
+    // the change
+    const CX0 = 40, CY0 = 256, CW = 156, CHh = 200;
+    T(s, CX0, CY0 - 18, "the change", "t-mono mut", 24);
+    R(s, CX0, CY0, CW, CHh, "box");
+    [[0.7, "ln-2"], [0.5, "hair-s"], [0.85, "ln"], [0.4, "hair-s"], [0.65, "ln"], [0.75, "ln-2"], [0.55, "ln"]].forEach(([w, c], j) =>
+      L(s, CX0 + 20, CY0 + 30 + j * 24, CX0 + 20 + (CW - 40) * w, CY0 + 30 + j * 24, c));
+    const OX = CX0 + CW, OY = CY0 + CHh / 2;
+
+    // reviewers: three always, two when the diff calls for them
+    const RXs = 300;
+    const ys = [140, 216, 292, 446, 522];
+    const names = ["code-reviewer", "code-simplicity-reviewer", "test-coverage-reviewer", "security-sentinel", "performance-oracle"];
+    T(s, RXs + 26, 388, "if the diff calls for them", "t-mono mut", 24);
+    ys.forEach((y, k) => P(s, `M${OX} ${OY} C${OX + 60} ${OY} ${RXs - 70} ${y} ${RXs - 13} ${y}`, k < 3 ? "hair-s" : "dash-h"));
+    const live = ys.map((y) => P(s, `M${OX} ${OY} C${OX + 60} ${OY} ${RXs - 70} ${y} ${RXs - 13} ${y}`, "ln"));
+    const revs = ys.map((y, k) => {
+      const st = station(s, RXs, y, 8, 15);
+      T(s, RXs + 26, y + 9, names[k], k < 3 ? "t-mono" : "t-mono ink2", 26);
+      return st;
+    });
+
+    // report
+    const PX = 830, PY = 208;
+    T(s, PX, 156, "Report", "t-head", 34);
+    const pcol = [PX + 155, PX + 275];
+    T(s, pcol[0], PY, "Pass 1", "t-mono mut", 24, "middle");
+    T(s, pcol[1], PY, "Pass 2", "t-mono mut", 24, "middle");
+    L(s, PX, PY + 18, PX + 335, PY + 18, "ln");
+    const rowY = [PY + 80, PY + 150, PY + 220];
+    ["P1", "P2", "P3"].forEach((p, k) => T(s, PX, rowY[k], p, "t-mono-b", 32));
+    [PY + 105, PY + 175].forEach((y) => L(s, PX, y, PX + 335, y, "hair"));
+    const v1 = ["2", "3", "4"].map((v, k) => T(s, pcol[0], rowY[k], v, "t-mono", 34, "middle"));
+    const v2 = ["0", "1", "2"].map((v, k) => T(s, pcol[1], rowY[k], v, k === 0 ? "t-mono-b acc-t" : "t-mono", 34, "middle"));
+    const p1box = R(s, pcol[1] - 40, rowY[0] - 36, 80, 48, "acc");
+    p1box.setAttribute("pathLength", 1);
+    // fan-in lines and findings (ink: the reviewers are the active element)
+    const FX = 736, MY = PY + 115;
+    ys.forEach((y) => P(s, `M${FX} ${y} C${FX + 40} ${y} ${PX - 60} ${MY} ${PX - 18} ${MY}`, "hair-s"));
+    const finds = [];
+    ys.forEach((y, k) => { for (let j = 0; j < (k < 3 ? 2 : 1); j++) finds.push({ y, el: R(s, 0, 0, 11, 11, "fill-ink") }); });
+    finds.forEach((f) => gsap.set(f.el, { attr: { x: FX - 5, y: f.y - 5.5 }, opacity: 0 }));
+    gsap.set(live, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+    gsap.set(v1.concat(v2), { opacity: 0 });
+    gsap.set(p1box, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+
+    function pass(t, list, vals, cap) {
+      swap(tl, CAP, cap, t);
+      draw(tl, live, t, 0.55, { stagger: 0.05, ease: "power2.out" });
+      revs.forEach((r) => fill(tl, r.ring, C.accent, t + 0.4, 0.2));
+      revs.forEach((r) => fill(tl, r.ring, C.bg, t + 1.2, 0.3));
+      tl.to(revs.map((r) => r.ring), { stroke: C.ink, duration: 0.3 }, t + 1.2);
+      list.forEach((f, j) => {
+        const tt = t + 1.0 + j * 0.06;
+        tl.fromTo(f.el, { opacity: 0 }, { opacity: 1, duration: 0.1, immediateRender: false }, tt);
+        tl.fromTo(f.el, { attr: { x: FX - 5, y: f.y - 5.5 } }, { attr: { x: PX - 24, y: MY - 5.5 }, duration: 0.7, ease: "power2.inOut", immediateRender: false }, tt);
+        tl.to(f.el, { opacity: 0, duration: 0.1 }, tt + 0.66);
+      });
+      tl.to(vals, { opacity: 1, duration: 0.35, stagger: 0.08, ease: "power2.out" }, t + 1.75);
+      tl.to(live, { opacity: 0.25, duration: 0.4 }, t + 1.75);
+    }
+    pass(0.3, finds, v1, 1);
+    tl.to(live, { strokeDashoffset: 1, opacity: 1, duration: 0.01 }, 2.6);
+    pass(2.65, finds.filter((_, j) => j % 3 !== 0), v2, 2);
+    tl.to(p1box, { strokeDashoffset: 0, duration: 0.5, ease: "expo.out" }, 4.5);
+    swap(tl, CAP, 3, 4.5);
+    // reset to the opening frame
+    tl.to(v1.concat(v2), { opacity: 0, duration: 0.45, ease: "power2.in" }, 6.9);
+    tl.to(p1box, { strokeDashoffset: -1, duration: 0.45, ease: "power2.in" }, 6.9);
+    tl.set(p1box, { strokeDashoffset: 1 }, 7.4);
+    tl.to(live, { opacity: 0, duration: 0.45 }, 6.95);
+    tl.set(live, { strokeDashoffset: 1, opacity: 1 }, 7.45);
+    swap(tl, CAP, 0, 7.15, 0.3);
+    window.__timelines["main"] = tl;
+  }
+  DS.fontsReady().then(build);
+})();
+</script>
+</body>
+</html>

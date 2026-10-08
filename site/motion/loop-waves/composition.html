@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1200, height=750" />
+<title>Waves loop</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+/*{{DS_CSS}}*/
+html, body { width: 1200px; height: 750px; }
+#stage { position: absolute; inset: 0; background: var(--bg); }
+#stage > svg { position: absolute; left: 0; top: 0; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="8" data-width="1200" data-height="750">
+  <div id="stage" class="clip" data-start="0" data-duration="8" data-track-index="0"></div>
+</div>
+<script>
+//{{DS_JS}}
+</script>
+<script>
+(function () {
+  // Shown at about 560 px wide: smallest text 24 px, main labels 30 px and up.
+  const { S, svg, T, L, P, R, station, head, draw, fill, swap, C } = DS;
+  function build() {
+    const tl = gsap.timeline({ paused: true });
+    const s = svg(document.getElementById("stage"), 1200, 750);
+
+    // ---- the wave diagram ----
+    const LY = 104;
+    const lead = station(s, 56, LY, 8, 15);
+    T(s, 40, LY - 36, "lead", "t-mono-b", 26);
+    L(s, 78, LY, 1150, LY, "datum");
+    head(s, 1162, LY, 0, 13, "ahi");
+    function lanePath(x0, x1, y) {
+      return `M${x0} ${LY} C${x0 + 36} ${LY} ${x0 + 32} ${y} ${x0 + 68} ${y} H${x1 - 68} C${x1 - 32} ${y} ${x1 - 36} ${LY} ${x1} ${LY}`;
+    }
+    const waves = [
+      { x0: 96, x1: 484, chk: 512, commits: [546, 574], tasks: [1, 2], label: "Wave 1" },
+      { x0: 600, x1: 988, chk: 1016, commits: [1050, 1078], tasks: [3, 4], label: "Wave 2" },
+    ].map((w) => {
+      const lanesY = [180, 250];
+      lanesY.forEach((y) => P(s, lanePath(w.x0, w.x1, y), "hair-s"));
+      const live = lanesY.map((y) => P(s, lanePath(w.x0, w.x1, y), "acc"));
+      w.tasks.forEach((n, k) => T(s, w.x0 + 92, lanesY[k] - 13, `task ${n}`, "t-mono", 24));
+      T(s, (w.x0 + w.x1) / 2 - 50, 314, w.label, "t-head", 32, "middle");
+      L(s, w.chk, 74, w.chk, 276, "dash-h");
+      const chkLive = L(s, w.chk, 74, w.chk, 276, "dash");
+      const chkLab = T(s, w.chk, 314, "integration check", "t-mono ink2", 24, "middle");
+      const commits = w.commits.map((x) => R(s, x - 8, LY - 8, 16, 16, "fill-ink"));
+      gsap.set(live, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+      gsap.set([chkLive].concat(commits), { opacity: 0 });
+      return Object.assign(w, { live, chkLive, chkLab, commits });
+    });
+
+    // ---- the ledger: task, file, status ----
+    const GX = 40, GW = 1120, GY = 452;
+    T(s, GX, 384, "Ledger", "t-head", 32);
+    ["Task", "File", "Status"].forEach((h, k) => T(s, [GX, GX + 96, GX + 640][k], GY - 12, h, "t-mono mut", 24));
+    L(s, GX, GY, GX + GW, GY, "ln");
+    const files = ["src/export/csv.ts", "src/reports/range.ts", "src/api/export.ts", "src/ui/ExportButton.tsx"];
+    const rows = files.map((f, k) => {
+      const y = GY + 54 + k * 54;
+      T(s, GX, y, String(k + 1), "t-mono-b", 28);
+      T(s, GX + 96, y, f, "t-mono", 28);
+      const st = [
+        T(s, GX + 640, y, "waiting", "t-mono mut", 28),
+        T(s, GX + 640, y, "running", "t-mono-b acc-t", 28),
+        T(s, GX + 640, y, "done", "t-mono", 28),
+        T(s, GX + 640, y, "committed by the lead", "t-mono-b", 28),
+      ];
+      st.forEach((e, j) => gsap.set(e, { opacity: j === 0 ? 1 : 0 }));
+      return st;
+    });
+
+    // ---- the run ----
+    waves.forEach((w, k) => {
+      const t = 0.4 + k * 1.95;
+      w.tasks.forEach((n) => swap(tl, rows[n - 1], 1, t + 0.05));
+      draw(tl, w.live, t, 1.0, { ease: "power2.inOut", stagger: 0.06 });
+      tl.to(w.live, { stroke: C.ink, strokeWidth: 1.25, duration: 0.3 }, t + 1.05);
+      w.tasks.forEach((n) => swap(tl, rows[n - 1], 2, t + 1.05));
+      tl.to(w.chkLive, { opacity: 1, duration: 0.3 }, t + 1.2);
+      tl.fromTo(w.chkLive, { attr: { y2: 74 } }, { attr: { y2: 276 }, duration: 0.45, ease: "expo.out", immediateRender: false }, t + 1.2);
+      w.commits.forEach((c, j) => {
+        tl.fromTo(c, { opacity: 0, scale: 0, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.35, ease: "expo.out", immediateRender: false }, t + 1.5 + j * 0.16);
+        swap(tl, rows[w.tasks[j] - 1], 3, t + 1.5 + j * 0.16);
+      });
+    });
+
+    // ---- reset to the opening frame ----
+    const R0 = 6.7;
+    const allLive = waves.flatMap((w) => w.live);
+    tl.to(allLive, { opacity: 0, duration: 0.45, ease: "power2.in" }, R0);
+    tl.set(allLive, { strokeDashoffset: 1, opacity: 1, stroke: C.accent, strokeWidth: 1.5 }, R0 + 0.5);
+    tl.to(waves.flatMap((w) => w.commits.concat([w.chkLive])), { opacity: 0, duration: 0.4, ease: "power2.in" }, R0);
+    rows.forEach((r) => swap(tl, r, 0, R0 + 0.2, 0.3));
+    window.__timelines["main"] = tl;
+  }
+  DS.fontsReady().then(build);
+})();
+</script>
+</body>
+</html>

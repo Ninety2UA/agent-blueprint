@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1200, height=750" />
+<title>Ship runner loop</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+/*{{DS_CSS}}*/
+html, body { width: 1200px; height: 750px; }
+#stage { position: absolute; inset: 0; background: var(--bg); }
+#stage > svg { position: absolute; left: 0; top: 0; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="8" data-width="1200" data-height="750">
+  <div id="stage" class="clip" data-start="0" data-duration="8" data-track-index="0"></div>
+</div>
+<script>
+//{{DS_JS}}
+</script>
+<script>
+(function () {
+  // Shown at about 560 px wide: smallest text 24 px, main labels 30 px and up.
+  const { S, svg, G, T, L, P, R, head, fileGlyph, draw, swap, C } = DS;
+  function build() {
+    const tl = gsap.timeline({ paused: true });
+    const s = svg(document.getElementById("stage"), 1200, 750);
+    T(s, 40, 58, 'run.sh --host codex "Add CSV export"', "t-mono", 26);
+
+    // ---- session sheets: one fresh session per iteration ----
+    const SX = 40, SY = 96, SW = 540, SH = 340;
+    const its = [
+      { n: 1, rows: ["ab-writing-plans", "plan check", "ab-deepen-plan"] },
+      { n: 2, rows: ["ab-orchestrate", "wave 1 committed", "wave 2 committed"] },
+      { n: 3, rows: ["ab-iterative-refinement", "ab-knowledge-compounding", "pr-body.md written"] },
+    ].map((it) => {
+      const g = G(s, 0, 0);
+      g.id = `it-${it.n}`;
+      R(g, SX + 0.5, SY + 0.5, SW, SH, "box");
+      T(g, SX + 30, SY + 66, `Iteration ${it.n}`, "t-head", 40);
+      T(g, SX + 30, SY + 108, "fresh session", "t-mono ink2", 26);
+      L(g, SX + 30, SY + 132, SX + SW - 30, SY + 132, "hair");
+      const rows = it.rows.map((r, k) => {
+        const y = SY + 186 + k * 52;
+        const tick = P(g, `M${SX + 30} ${y - 9} l8 8 l16 -18`, "ln");
+        const tx = T(g, SX + 66, y, r, "t-mono", 25);
+        return { tick, tx };
+      });
+      gsap.set(rows.map((r) => r.tx), { opacity: 0 });
+      gsap.set(rows.map((r) => r.tick), { strokeDasharray: "1 1", strokeDashoffset: 1 });
+      return { g, rows };
+    });
+    gsap.set(its[1].g, { opacity: 0, x: 110 });
+    gsap.set(its[2].g, { opacity: 0, x: 110 });
+
+    // ---- state.json carries over between sessions ----
+    const JX = 650, JY = 96;
+    fileGlyph(s, JX, JY, 44, 56);
+    T(s, JX + 62, JY + 22, ".agent-blueprint/run/", "t-mono ink2", 24);
+    T(s, JX + 62, JY + 54, "state.json", "t-mono-b", 30);
+    const keys = ['"status":', '"stage":', '"iteration":'];
+    keys.forEach((k, i) => T(s, JX, JY + 132 + i * 50, k, "t-mono ink2", 28));
+    const VX = JX + 236;
+    const vv = (arr, i) => arr.map((v) => T(s, VX, JY + 132 + i * 50, v, "t-mono", 28));
+    const status = vv(['"running"', '"done"'], 0);
+    const stage = vv(['"plan"', '"execute"', '"review"', '"ship"'], 1);
+    const iter = vv(["1", "2", "3"], 2);
+    [status, stage, iter].forEach((arr) => arr.forEach((e, k) => gsap.set(e, { opacity: k === 0 ? 1 : 0 })));
+    T(s, JX, JY + 300, "carries over to each new session", "t-sans ink2", 26);
+    head(s, JX - 14, JY + 182, 0, 11, "ahm");
+    L(s, SX + SW + 8, JY + 182, JX - 24, JY + 182, "ln-2");
+
+    function setVal(arr, i, t) {
+      swap(tl, arr, i, t, 0.3);
+      tl.fromTo(arr[i], { fill: C.accentInk }, { fill: C.ink, duration: 1.0, ease: "power2.in", immediateRender: false }, t + 0.15);
+    }
+
+    // ---- publish: secret scan, push, pull request ----
+    const PY = 598;
+    L(s, 40, PY, 336, PY, "hair-s");
+    const plLive = L(s, 40, PY, 336, PY, "datum");
+    R(s, 338, PY - 58, 30, 116, "box-h");
+    const gateLive = R(s, 338, PY - 58, 30, 116, "box");
+    T(s, 353, PY - 74, "secret scan", "t-head", 30, "middle");
+    const gc = T(s, 353, PY + 94, "clean", "t-mono-b", 26, "middle");
+    const sweep = L(s, 338, PY - 56, 368, PY - 56, "acc");
+    L(s, 368, PY, 620, PY, "hair-s");
+    const pushLive = L(s, 368, PY, 620, PY, "datum");
+    T(s, 494, PY - 16, "push", "t-mono ink2", 24, "middle");
+    const ph = head(s, 632, PY, 0, 12, "ahi");
+    R(s, 646, PY - 64, 514, 128, "box-h");
+    const prLive = R(s, 646, PY - 64, 514, 128, "box");
+    prLive.setAttribute("pathLength", 1);
+    const prT = T(s, 676, PY - 10, "Pull request", "t-head", 34);
+    const prS = T(s, 676, PY + 36, "feat(export): add CSV export", "t-mono", 24);
+    const tag = G(s, 0, 0);
+    R(tag, 1022, PY - 42, 112, 38, "acc");
+    T(tag, 1078, PY - 15, "opened", "t-mono-b acc-t", 24, "middle");
+    const tr = S("circle", { cx: 40, cy: PY, r: 7, class: "tracer" }, s);
+    gsap.set([plLive, pushLive], { strokeDasharray: "1 1", strokeDashoffset: 1 });
+    gsap.set([gateLive, gc, sweep, ph, tag, tr], { opacity: 0 });
+    gsap.set(prLive, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+    gsap.set([prT, prS], { opacity: 0.45 });
+
+    // ---- the run ----
+    function work(it, t) {
+      it.rows.forEach((r, k) => {
+        draw(tl, r.tick, t + k * 0.3, 0.35, { ease: "power2.out" });
+        tl.to(r.tx, { opacity: 1, duration: 0.35, ease: "power2.out" }, t + k * 0.3 + 0.05);
+      });
+    }
+    // cut-the-curve between sessions: exit accelerates left, entry decelerates in
+    function cut(a, b, t) {
+      tl.to(a.g, { x: -110, duration: 0.32, ease: "power4.in" }, t - 0.32);
+      tl.to(a.g, { opacity: 0, duration: 0.26, ease: "none" }, t - 0.28);
+      tl.fromTo(b.g, { x: 110, opacity: 0.35 }, { x: 0, opacity: 1, duration: 0.42, ease: "power4.out", immediateRender: false }, t);
+    }
+    work(its[0], 0.3);
+    cut(its[0], its[1], 1.6);
+    setVal(iter, 1, 1.6); setVal(stage, 1, 1.6);
+    work(its[1], 1.95);
+    cut(its[1], its[2], 3.15);
+    setVal(iter, 2, 3.15); setVal(stage, 2, 3.15);
+    work(its[2], 3.5);
+    setVal(stage, 3, 4.0);
+    setVal(status, 1, 4.25);
+    // the runner publishes
+    tl.to(tr, { opacity: 1, duration: 0.15 }, 4.6);
+    draw(tl, plLive, 4.6, 0.45, { ease: "power2.in" });
+    tl.fromTo(tr, { attr: { cx: 40 } }, { attr: { cx: 338 }, duration: 0.45, ease: "power2.in", immediateRender: false }, 4.6);
+    tl.to(tr, { opacity: 0, duration: 0.05 }, 5.05);
+    tl.to(gateLive, { opacity: 1, duration: 0.2 }, 5.0);
+    tl.to(sweep, { opacity: 1, duration: 0.08 }, 5.05);
+    tl.fromTo(sweep, { attr: { y1: PY - 56, y2: PY - 56 } }, { attr: { y1: PY + 56, y2: PY + 56 }, duration: 0.5, ease: "power1.inOut", immediateRender: false }, 5.05);
+    tl.to(sweep, { opacity: 0, duration: 0.12 }, 5.55);
+    tl.to(gc, { opacity: 1, duration: 0.3 }, 5.55);
+    draw(tl, pushLive, 5.65, 0.35, { ease: "power2.out" });
+    tl.to(ph, { opacity: 1, duration: 0.15 }, 5.9);
+    tl.to(prLive, { strokeDashoffset: 0, duration: 0.55, ease: "expo.out" }, 5.95);
+    tl.to([prT, prS], { opacity: 1, duration: 0.4 }, 6.0);
+    tl.fromTo(tag, { opacity: 0, scale: 0.6, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.4, ease: "expo.out", immediateRender: false }, 6.15);
+
+    // ---- reset: the runner clears its run files; the next run starts fresh ----
+    const R0 = 7.0;
+    tl.to([plLive, pushLive, gateLive, gc, ph, tag], { opacity: 0, duration: 0.35, ease: "power2.in" }, R0 - 0.3);
+    tl.set([plLive, pushLive], { strokeDashoffset: 1, opacity: 1 }, R0 + 0.1);
+    tl.to(prLive, { opacity: 0, duration: 0.35 }, R0 - 0.3);
+    tl.set(prLive, { strokeDashoffset: 1, opacity: 1 }, R0 + 0.1);
+    tl.to([prT, prS], { opacity: 0.45, duration: 0.35 }, R0 - 0.3);
+    its[0].rows.forEach((r) => { tl.set(r.tx, { opacity: 0 }, R0 - 0.4); tl.set(r.tick, { strokeDashoffset: 1 }, R0 - 0.4); });
+    cut(its[2], its[0], R0);
+    swap(tl, status, 0, R0, 0.3); swap(tl, stage, 0, R0, 0.3); swap(tl, iter, 0, R0, 0.3);
+    tl.set(its[1].g, { x: 110, opacity: 0 }, R0 + 0.5);
+    tl.set(its[2].g, { x: 110, opacity: 0 }, R0 + 0.5);
+    tl.set(its[1].rows.concat(its[2].rows).map((r) => r.tx), { opacity: 0 }, R0 + 0.5);
+    tl.set(its[1].rows.concat(its[2].rows).map((r) => r.tick), { strokeDashoffset: 1 }, R0 + 0.5);
+    window.__timelines["main"] = tl;
+  }
+  DS.fontsReady().then(build);
+})();
+</script>
+</body>
+</html>

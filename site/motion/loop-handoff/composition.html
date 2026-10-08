@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1200, height=750" />
+<title>Session handoff loop</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+/*{{DS_CSS}}*/
+html, body { width: 1200px; height: 750px; }
+#stage { position: absolute; inset: 0; background: var(--bg); }
+#stage > svg { position: absolute; left: 0; top: 0; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="8" data-width="1200" data-height="750">
+  <div id="stage" class="clip" data-start="0" data-duration="8" data-track-index="0"></div>
+</div>
+<script>
+//{{DS_JS}}
+</script>
+<script>
+(function () {
+  // Shown at about 560 px wide: smallest text 24 px, main labels 30 px and up.
+  const { S, svg, G, T, L, P, R, station, head, fileGlyph, draw, fill, swap, C } = DS;
+  function build() {
+    const tl = gsap.timeline({ paused: true });
+    const s = svg(document.getElementById("stage"), 1200, 750);
+    const CAP = ["Session 1 is working", "Session 1 ends and writes the handoff", "Session 2, in another tool, reads it first", "Session 2 picks up at task 4"].map((t) =>
+      T(s, 40, 704, t, "t-sans ink2", 30));
+    CAP.forEach((e, k) => gsap.set(e, { opacity: k === 0 ? 1 : 0 }));
+
+    // ---- the two sessions ----
+    function session(x, w, name, tool) {
+      const g = G(s, 0, 0);
+      R(g, x + 0.5, 40.5, w, 580, "box");
+      const st = station(g, x + 36, 96, 8, 15);
+      T(g, x + 62, 108, name, "t-head", 34);
+      T(g, x + 26, 156, tool, "t-mono ink2", 26);
+      L(g, x + 22, 182, x + w - 22, 182, "hair");
+      return { g, st, x, w };
+    }
+    const A = session(30, 300, "Session 1", "Claude Code");
+    const B = session(842, 328, "Session 2", "Codex");
+    // session 1: three tasks done, task 4 open
+    ["task 1", "task 2", "task 3", "task 4"].forEach((t, k) => {
+      const y = 236 + k * 50;
+      if (k < 3) P(A.g, `M${A.x + 26} ${y - 9} l8 8 l16 -18`, "ln");
+      else R(A.g, A.x + 28, y - 21, 20, 20, "box-h");
+      T(A.g, A.x + 62, y, t, k < 3 ? "t-mono" : "t-mono ink2", 26);
+    });
+    const aWrap = T(A.g, A.x + 26, 580, "ab-session-wrap", "t-mono-b", 24);
+    const bRes = T(B.g, B.x + 26, 236, "ab-resume-session", "t-mono-b", 24);
+    const bStart = T(B.g, B.x + 26, 310, "Start here:", "t-sans", 28);
+    const bBox = R(B.g, B.x + 28, 341, 20, 20, "box-h");
+    const bTick = P(B.g, `M${B.x + 26} ${352} l8 8 l16 -18`, "ln");
+    const bTask = T(B.g, B.x + 62, 362, "task 4", "t-mono-b", 28);
+    gsap.set(B.g, { opacity: 0.4 });
+    gsap.set([aWrap, bRes, bStart, bBox, bTask], { opacity: 0 });
+    gsap.set(bTick, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+    gsap.set(A.st.ring, { fill: C.accent, stroke: C.accent });
+
+    // ---- the two files under docs/ ----
+    const FX = 386, FW = 400;
+    function card(y, h, path1, path2, below) {
+      R(s, FX + 0.5, y + 0.5, FW, h, "box-h");
+      fileGlyph(s, FX + 20, y + 22, 36, 46);
+      T(s, FX + 72, y + 40, path1, "t-mono ink2", 24);
+      if (below) T(s, FX + 22, y + 110, path2, "t-mono-b", 24);
+      else T(s, FX + 72, y + 72, path2, "t-mono-b", 26);
+    }
+    card(40, 250, "docs/context/", "STATUS.md");
+    const st1 = T(s, FX + 22, 40 + 144, "Session Continuity", "t-head", 26);
+    const st2 = [T(s, FX + 22, 40 + 212, "Start here:", "t-sans", 26), T(s, FX + FW - 22, 40 + 212, "task 4", "t-mono-b", 26, "end")];
+    const hi = R(s, FX + 10, 40 + 178, FW - 20, 48, "acc");
+    hi.setAttribute("pathLength", 1);
+    card(330, 290, "docs/solutions/", "2026-10-08-csv-export.md", true);
+    const sol = [0, 1, 2].map((i) => L(s, FX + 22, 330 + 168 + i * 36, FX + FW - 22 - i * 70, 330 + 168 + i * 36, "hair-s"));
+    gsap.set([st1].concat(st2, sol), { opacity: 0 });
+    gsap.set(hi, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+
+    // write and read lines
+    const w1 = P(s, `M${A.x + A.w + 6} 330 C${FX - 30} 330 ${FX - 36} 165 ${FX - 14} 165`, "ln");
+    const w2 = P(s, `M${A.x + A.w + 6} 330 C${FX - 30} 330 ${FX - 36} 475 ${FX - 14} 475`, "ln");
+    const wh = [head(s, FX - 4, 165, 0, 11, "ahi"), head(s, FX - 4, 475, 0, 11, "ahi")];
+    const r1 = P(s, `M${FX + FW + 6} 165 C${B.x - 30} 165 ${B.x - 36} 330 ${B.x - 14} 330`, "ln");
+    const r2 = P(s, `M${FX + FW + 6} 475 C${B.x - 30} 475 ${B.x - 36} 330 ${B.x - 14} 330`, "ln");
+    const rh = head(s, B.x - 4, 330, 0, 11, "ahi");
+    gsap.set([w1, w2, r1, r2], { strokeDasharray: "1 1", strokeDashoffset: 1 });
+    gsap.set(wh.concat([rh]), { opacity: 0 });
+
+    // ---- the handoff ----
+    swap(tl, CAP, 1, 0.45);
+    tl.to(aWrap, { opacity: 1, duration: 0.4 }, 0.45);
+    draw(tl, [w1, w2], 0.75, 0.55, { ease: "power2.inOut", stagger: 0.08 });
+    tl.to(wh, { opacity: 1, duration: 0.15 }, 1.2);
+    tl.to([st1].concat(st2), { opacity: 1, duration: 0.35, stagger: 0.12 }, 1.25);
+    tl.to(sol, { opacity: 1, duration: 0.35, stagger: 0.1 }, 1.45);
+    // session 1 ends
+    fill(tl, A.st.ring, C.bg, 2.45, 0.3);
+    tl.to(A.st.ring, { stroke: C.ink, duration: 0.3 }, 2.45);
+    tl.to(A.g, { opacity: 0.4, duration: 0.45 }, 2.5);
+    // session 2 starts in another tool and reads first
+    swap(tl, CAP, 2, 2.8);
+    tl.to(B.g, { opacity: 1, duration: 0.45 }, 2.8);
+    fill(tl, B.st.ring, C.accent, 2.85, 0.25);
+    tl.to(bRes, { opacity: 1, duration: 0.4 }, 2.95);
+    draw(tl, [r1, r2], 3.15, 0.55, { ease: "power2.inOut", stagger: 0.08 });
+    tl.to(rh, { opacity: 1, duration: 0.15 }, 3.65);
+    // the start-here line is the active element; the session ring steps back to ink
+    fill(tl, B.st.ring, C.ink, 3.7, 0.3);
+    tl.to(hi, { strokeDashoffset: 0, duration: 0.5, ease: "expo.out" }, 3.75);
+    tl.to([bStart, bBox, bTask], { opacity: 1, duration: 0.35, stagger: 0.08 }, 4.0);
+    swap(tl, CAP, 3, 4.3);
+    tl.to(bBox, { opacity: 0, duration: 0.15 }, 4.6);
+    draw(tl, bTick, 4.62, 0.35, { ease: "power2.out" });
+
+    // ---- reset to the opening frame ----
+    const R0 = 6.7;
+    tl.to([st1, aWrap, bRes, bStart, bTask].concat(st2, sol, wh, [rh]), { opacity: 0, duration: 0.4, ease: "power2.in" }, R0);
+    tl.to([w1, w2, r1, r2, hi, bTick], { opacity: 0, duration: 0.4, ease: "power2.in" }, R0);
+    tl.set([w1, w2, r1, r2, hi, bTick], { strokeDashoffset: 1, opacity: 1 }, R0 + 0.45);
+    tl.to(B.g, { opacity: 0.4, duration: 0.45 }, R0 + 0.1);
+    fill(tl, B.st.ring, C.bg, R0 + 0.1, 0.3);
+    tl.to(B.st.ring, { stroke: C.ink, duration: 0.3 }, R0 + 0.1);
+    tl.to(A.g, { opacity: 1, duration: 0.45 }, R0 + 0.35);
+    fill(tl, A.st.ring, C.accent, R0 + 0.5, 0.25);
+    swap(tl, CAP, 0, R0 + 0.3, 0.3);
+    window.__timelines["main"] = tl;
+  }
+  DS.fontsReady().then(build);
+})();
+</script>
+</body>
+</html>
