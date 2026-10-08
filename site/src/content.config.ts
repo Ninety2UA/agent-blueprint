@@ -12,6 +12,10 @@
 //   releases  one entry per README release-history row, id = the version ("4.0.1"). data:
 //             { version, date, summary }; entries with docs/releases/v<version>-release-notes.md
 //             carry it as `body`, and render(entry) renders it.
+//   docs      the hand-written intro of each Docs page, src/content/docs/<slug>.md, id = the slug.
+//             data: { description, hostDocs?, repoDoc? }: the page's meta description, the heading
+//             anchor in each docs/hosts/<tool>.md the page links to, and a repository file it links
+//             to on GitHub. The page renders the intro above its README section (pages/docs/).
 
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
@@ -83,4 +87,13 @@ const releases = defineCollection({
   }),
 });
 
-export const collections = { skills, readme, releases };
+const docs = defineCollection({
+  loader: glob({ pattern: '*.md', base: new URL('./content/docs/', import.meta.url) }),
+  schema: z.object({
+    description: z.string(),
+    hostDocs: z.string().optional(),
+    repoDoc: z.string().optional(),
+  }),
+});
+
+export const collections = { skills, readme, releases, docs };

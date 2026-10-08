@@ -1,0 +1,7 @@
+---
+// /docs/ has no page of its own (R1): it sends readers to Getting started. In the static build,
+// Astro writes a redirect page (meta refresh, canonical to the target, noindex).
+import { GET_STARTED } from '../../components/nav';
+
+return Astro.redirect(GET_STARTED, 301);
+---

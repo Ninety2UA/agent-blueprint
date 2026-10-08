@@ -1,0 +1,28 @@
+---
+// The GitHub documents a docs page points to, listed under its intro (the intro's last sentence
+// introduces them): with `hostDocs`, each tool's support note at that heading anchor, tools and
+// files from getSiteData(); with `repoDoc`, one repository file.
+import { IC } from '../icons';
+import { getSiteData } from '../../lib/site.mjs';
+
+interface Props {
+  /** heading anchor inside each docs/hosts/<tool>.md, e.g. "smoke-status" */
+  hostDocs?: string;
+  /** repository path, e.g. "docs/upgrade/v4.md" */
+  repoDoc?: string;
+}
+const { hostDocs, repoDoc } = Astro.props;
+const { tools, repoUrl } = getSiteData() as { tools: { name: string; hostDoc: string }[]; repoUrl: string };
+const blob = (path: string) => `${repoUrl}/blob/main/${path}`;
+const links = [
+  ...(hostDocs ? tools.map((t) => ({ label: t.name, href: `${blob(t.hostDoc)}#${hostDocs}`, code: false })) : []),
+  ...(repoDoc ? [{ label: repoDoc, href: blob(repoDoc), code: true }] : []),
+];
+---
+{links.length > 0 && (
+  <ul class:list={['doc-refs', { 'doc-refs-one': links.length === 1 }]}>
+    {links.map((l) => (
+      <li><a href={l.href}>{l.code ? <code>{l.label}</code> : l.label}<Fragment set:html={IC.arrow} /></a></li>
+    ))}
+  </ul>
+)}

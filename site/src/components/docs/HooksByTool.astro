@@ -1,0 +1,19 @@
+---
+// Hooks and native features: the README support table's Hooks column, one row per tool, from
+// getSiteData() (R13), so the page states no hook count of its own.
+import { getSiteData } from '../../lib/site.mjs';
+import { githubSlug } from '../../lib/readme.mjs';
+import { inlineMarkdown } from './route.mjs';
+
+const HEADING = 'Hooks in each tool';
+const { tools } = getSiteData() as { tools: { name: string; support: { hooks: string } }[] };
+---
+<section class="hooks-by-tool" aria-labelledby={githubSlug(HEADING)}>
+  <h2 id={githubSlug(HEADING)}>{HEADING}</h2>
+  <table>
+    <thead><tr><th scope="col">Tool</th><th scope="col">Hooks</th></tr></thead>
+    <tbody>
+      {tools.map((t) => <tr><th scope="row">{t.name}</th><td set:html={inlineMarkdown(t.support.hooks)} /></tr>)}
+    </tbody>
+  </table>
+</section>
