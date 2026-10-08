@@ -259,6 +259,14 @@ class InternalLinks(CheckSiteTestCase):
         os.remove(os.path.join(self.site.dist, "media", "film.mp4"))
         self.assert_fails("index.html: broken link /media/film.mp4")
 
+    def test_a_link_that_climbs_out_of_the_build_fails(self):
+        # The tree's README.md sits beside dist: on disk the path names a file, the deployed site answers 404.
+        self.site.edit("skills/ab-skill-01/index.html", '<a href="/skills/">',
+                       '<a href="/../tree/README.md">Read me</a> <a href="/%2e%2e/tree/README.md">Again</a> '
+                       '<a href="/skills/">')
+        self.assert_fails("skills/ab-skill-01/index.html: broken link /../tree/README.md",
+                          "skills/ab-skill-01/index.html: broken link /%2e%2e/tree/README.md")
+
 
 class Metadata(CheckSiteTestCase):
     def test_a_page_without_title_description_or_canonical_fails(self):

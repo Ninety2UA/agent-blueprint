@@ -1,7 +1,8 @@
 // Checks on the built site (site/dist) for R1, R6, R7 and R8: every page has its own title and
 // description, the sitemap lists every page, the Changelog and Kit pages state what the repository
-// holds, and 404.html and llms.txt exist. CI runs these after `npm run build`; without a build the
-// tests are skipped and say so.
+// holds, and 404.html and llms.txt exist. One more holds the script budget: islands hydrate on first
+// interaction and nothing loads from another origin. CI runs these after `npm run build`; without a
+// build the tests are skipped and say so.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -108,4 +109,34 @@ test('404.html and llms.txt are built; llms.txt names every skill page', { skip 
   assert.ok(existsSync(join(dist, '404.html')), 'no 404.html');
   const llms = read('llms.txt');
   for (const s of site.skills) assert.ok(llms.includes(`(${site.siteUrl}/skills/${s.name}/)`), s.name);
+});
+
+// The script budget: React islands hydrate on first interaction (never client:load or client:idle),
+// so no page downloads framework JavaScript on load, and no page pulls a script or a stylesheet
+// from another origin.
+test('islands hydrate on interaction; no page loads a script or stylesheet from another origin', { skip }, () => {
+  const origin = new URL(site.siteUrl).origin;
+  const attr = (tag, name) => tag.match(new RegExp(`\\s${name}="([^"]*)"`))?.[1];
+  let islands = 0;
+  const problems = [];
+  for (const p of pages()) {
+    for (const [tag] of p.html.matchAll(/<astro-island\b[^>]*>/g)) {
+      islands += 1;
+      const client = attr(tag, 'client');
+      if (client !== 'interaction') problems.push(`${p.url}: an island with client="${client}"`);
+    }
+    for (const [tag] of p.html.matchAll(/<script\b[^>]*>/g)) {
+      const src = attr(tag, 'src');
+      if (src && new URL(src, site.siteUrl).origin !== origin) problems.push(`${p.url}: script ${src}`);
+    }
+    for (const [tag] of p.html.matchAll(/<link\b[^>]*>/g)) {
+      const href = attr(tag, 'href');
+      const rel = (attr(tag, 'rel') ?? '').toLowerCase().split(/\s+/);
+      if (rel.includes('stylesheet') && href && new URL(href, site.siteUrl).origin !== origin) {
+        problems.push(`${p.url}: stylesheet ${href}`);
+      }
+    }
+  }
+  assert.ok(islands > 0, 'no <astro-island> in the build: the header menu is one, so the pattern no longer matches');
+  assert.deepEqual(problems, [], 'islands that hydrate before interaction, or scripts and stylesheets from another origin');
 });

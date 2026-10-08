@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """check-site.py: the built-site gate (KTD5). Checks a built site folder against the repository tree.
 
-Ground truth comes from the tree, by the rules scripts/check-drift.sh uses:
-  skills         folders under skills/ that hold a SKILL.md
+Ground truth comes from the tree. Helper prompts, hooks and the version follow the rules
+scripts/check-drift.sh uses; the skill rule is this gate's own:
+  skills         folders under skills/ that hold a SKILL.md. check-drift.sh counts SKILL.md files, so the
+                 two agree while no skill nests a SKILL.md; the RealTree test in
+                 tests/gates/test_check_site.py cross-checks them
   helper prompts distinct file names under skills/*/references/agents/, companion notes left out
                  (<prompt>-<topic>.md beside <prompt>.md; is_companion() in tests/gates/test_prompt_files.py)
   hooks          "command" entries in hooks/claude-code.json
@@ -19,7 +22,8 @@ Checks on the built site:
   - no file named SKILL.md anywhere in the build output;
   - none of the adoption wording in adoption-denylist.json (beside this script), reported once per line;
   - every root-relative href and src resolves to a file in the build (a path ending in / means its
-    index.html); fragments, query strings, external URLs and mailto links are not checked;
+    index.html; a path that climbs out of the build fails); fragments, query strings, external URLs and
+    mailto links are not checked;
   - every page has a title, a meta description and a canonical link (404.html needs no canonical).
 Astro's _astro/ and Pagefind's pagefind/ folders hold no pages and are skipped, except by the SKILL.md check.
 
@@ -208,6 +212,8 @@ def skipped(rel):
 def resolves(dist, path):
     """Whether a root-relative path (fragment and query already removed) names a file in the build."""
     target = os.path.normpath(os.path.join(dist, unquote(path).lstrip("/")))
+    if os.path.commonpath([dist, target]) != dist:
+        return False
     if path.endswith("/"):
         return os.path.isfile(os.path.join(target, "index.html"))
     return os.path.isfile(target) or os.path.isfile(os.path.join(target, "index.html"))
