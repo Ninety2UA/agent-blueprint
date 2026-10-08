@@ -119,6 +119,9 @@ jobs:
       - name: Run ShellCheck on check-drift.sh
         run: shellcheck scripts/check-drift.sh
 
+      - name: Run ShellCheck on the site's Vercel ignore step
+        run: shellcheck site/scripts/ignore-build.sh
+
       - name: Run ShellCheck on hook handlers
         run: shellcheck hooks/handlers/*.sh
 
