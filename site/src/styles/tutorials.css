@@ -1,0 +1,69 @@
+/* Tutorial pages (pages/tutorials/): the intro, the recorded-run title block, the numbered steps
+   and the recap. The page head and the prose (.readme-section) share docs-pages.css; the portal
+   around them is docs.css. 2A tokens only. */
+
+/* ---------- Intro: a lede, then body-size paragraphs and the "you need" list ---------- */
+.t-intro > p:not(:first-child), .t-intro li { font-size: var(--t-base); line-height: 1.6; }
+.t-intro ul { margin-top: var(--s-3); padding-left: 1.2em; max-width: 64ch; color: var(--ink-2); }
+.t-intro li + li { margin-top: 6px; }
+.t-intro li::marker { color: var(--muted); }
+.t-intro code { font-size: 0.85em; overflow-wrap: anywhere; }
+
+/* ---------- The recorded run, as a title block ---------- */
+.t-run-cap { margin-top: var(--s-6); margin-bottom: var(--s-2); }
+.t-run { --tb-cols: repeat(3, minmax(0, 1fr)); }
+
+/* ---------- Steps ---------- */
+.t-steps { list-style: none; }
+.t-step { padding-top: var(--s-8); }
+.t-step-head { display: flex; align-items: flex-start; gap: 14px; }
+.t-step-head .bub { width: 32px; height: 32px; margin-top: 1px; font-size: 0.8125rem; }
+.t-step-head h2 { min-width: 0; font-size: var(--t-xl); font-stretch: var(--w-head); font-weight: 650; line-height: 1.2; letter-spacing: -0.012em; }
+
+/* time and skill chips, ruled like a spec line under the title */
+.t-meta { display: grid; gap: 10px; margin: var(--s-4) 0 0; padding-left: 46px; }
+.t-meta > div { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); align-items: baseline; gap: 12px; }
+.t-meta dt { font-family: var(--font-mono); font-size: var(--t-xs); color: var(--muted); }
+.t-meta dd { margin: 0; min-width: 0; font-size: 0.9375rem; color: var(--ink-2); }
+.t-skills { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.t-chip {
+  display: inline-flex; align-items: center; min-height: 30px; padding: 2px 9px;
+  border: 1px solid var(--hair-strong); border-radius: var(--r); background: var(--bg-raise);
+  color: var(--ink); text-decoration: none; transition: border-color 160ms, background-color 160ms;
+}
+.t-chip code { font-size: 0.8125rem; overflow-wrap: anywhere; }
+.t-chip:hover { border-color: var(--ink); }
+
+/* prose lists keep their own markers inside the steps' list */
+.t-step .readme-section ul { list-style-type: disc; }
+
+/* what to paste: Markdown runs and copyable commands */
+.t-lead { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); margin-top: var(--s-5); }
+.t-lead .readme-section > :first-child { margin-top: 0; }
+.t-cmd .lbl { margin-bottom: 6px; }
+/* a long command wraps under itself instead of scrolling, so all of it is in view; copying is unchanged */
+.t-cmd .cmd .ln { white-space: pre-wrap; overflow-wrap: anywhere; padding-left: 2.1ch; text-indent: -2.1ch; }
+
+/* what happens, why it matters, checkpoint: a label column and the text, ruled between */
+.t-parts { margin-top: var(--s-5); border-bottom: 1px solid var(--hair); }
+.t-part { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 6px var(--s-5); padding-block: 20px; border-top: 1px solid var(--hair); }
+.t-part h3 { padding-top: 3px; font-family: var(--font-mono); font-size: var(--t-xs); font-weight: 500; line-height: 1.5; color: var(--muted); }
+.t-part .readme-section { min-width: 0; }
+.t-part .readme-section > :first-child { margin-top: 0; }
+.t-part .readme-section h4 { margin-top: var(--s-6); padding-top: var(--s-4); border-top: 1px dashed var(--hair); }
+/* the checkpoint is the line to check against: ink label with a square to tick */
+.t-check h3 { display: flex; align-items: flex-start; gap: 8px; color: var(--ink); font-weight: 600; }
+.t-check h3::before { content: ""; flex: none; width: 11px; height: 11px; margin-top: 3px; border: 1px solid var(--ink); }
+.t-check .readme-section p { color: var(--ink); }
+
+/* ---------- Recap ---------- */
+.t-recap h2 { margin-top: var(--s-8); font-size: var(--t-xl); font-stretch: var(--w-head); font-weight: 650; line-height: 1.2; letter-spacing: -0.012em; }
+.t-recap .readme-section > :first-child { margin-top: var(--s-5); }
+.t-recap td:first-child { white-space: nowrap; }
+
+@media (max-width: 760px) {
+  .t-run { --tb-cols: repeat(2, minmax(0, 1fr)); }
+  .t-meta { padding-left: 0; }
+  .t-part { grid-template-columns: minmax(0, 1fr); padding-block: 16px; }
+  .t-recap td:first-child { white-space: normal; }
+}

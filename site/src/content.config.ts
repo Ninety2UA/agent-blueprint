@@ -19,14 +19,24 @@
 //   guides    the hand-written intro of each Guides page, src/content/guides/<slug>.md, id = the
 //             slug. data: { description }, the page's meta description. The page renders the
 //             intro above its README section (pages/guides/).
+//   tutorials one entry per tutorial of src/lib/tutorials-order.mjs, read from
+//             src/content/tutorials/<slug>.md by components/tutorials/tutorial-md.mjs, id = the slug.
+//             data: the run facts from the frontmatter (description, recorded, project, tool, model,
+//             mode, took), and intro, steps and recap with every Markdown part rendered to HTML. A
+//             step is { title, id, skills, time, lead, happens, why, checkpoint }; lead is a list of
+//             { kind: 'md', html } and { kind: 'cmd', lang, text } (a command to paste). A file that
+//             does not follow the tutorial form stops the build naming the file and the step.
 
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
+import { readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { parseTutorial } from './components/tutorials/tutorial-md.mjs';
 import { findRepoRoot, getReadmePages, getSiteData } from './lib/site.mjs';
+import { TUTORIALS } from './lib/tutorials-order.mjs';
 
 const root = findRepoRoot(fileURLToPath(new URL('.', import.meta.url)));
 
@@ -106,4 +116,65 @@ const guides = defineCollection({
   }),
 });
 
-export const collections = { skills, readme, releases, docs, guides };
+const tutorials = defineCollection({
+  loader: {
+    name: 'tutorials',
+    async load({ config, store, parseData, renderMarkdown }) {
+      store.clear();
+      const html = async (markdown: string) => (await renderMarkdown(markdown)).html;
+      for (const { slug } of TUTORIALS) {
+        const file = new URL(`./content/tutorials/${slug}.md`, import.meta.url);
+        const filePath = relative(fileURLToPath(config.root), fileURLToPath(file)).split(sep).join('/');
+        const { meta, intro, steps, recap } = parseTutorial(readFileSync(file, 'utf8'), filePath);
+        const rendered = [];
+        for (const { title, id, skills, time, lead, happens, why, checkpoint } of steps) {
+          rendered.push({
+            title,
+            id,
+            skills,
+            time,
+            lead: await Promise.all(lead.map(async (s) => (s.kind === 'md' ? { kind: s.kind, html: await html(s.md) } : s))),
+            happens: await html(happens),
+            why: await html(why),
+            checkpoint: await html(checkpoint),
+          });
+        }
+        const data = await parseData({
+          id: slug,
+          data: { ...meta, intro: await html(intro), steps: rendered, recap: await html(recap) },
+        });
+        store.set({ id: slug, data, filePath });
+      }
+    },
+  },
+  schema: z.object({
+    description: z.string(),
+    recorded: z.string(),
+    project: z.string(),
+    tool: z.string(),
+    model: z.string(),
+    mode: z.string(),
+    took: z.string(),
+    intro: z.string(),
+    steps: z.array(
+      z.object({
+        title: z.string(),
+        id: z.string(),
+        skills: z.array(z.string()),
+        time: z.string(),
+        lead: z.array(
+          z.discriminatedUnion('kind', [
+            z.object({ kind: z.literal('md'), html: z.string() }),
+            z.object({ kind: z.literal('cmd'), lang: z.enum(['prompt', 'bash']), text: z.string() }),
+          ]),
+        ),
+        happens: z.string(),
+        why: z.string(),
+        checkpoint: z.string(),
+      }),
+    ),
+    recap: z.string(),
+  }),
+});
+
+export const collections = { skills, readme, releases, docs, guides, tutorials };
