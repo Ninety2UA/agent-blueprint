@@ -16,6 +16,9 @@
 //             data: { description, hostDocs?, repoDoc? }: the page's meta description, the heading
 //             anchor in each docs/hosts/<tool>.md the page links to, and a repository file it links
 //             to on GitHub. The page renders the intro above its README section (pages/docs/).
+//   guides    the hand-written intro of each Guides page, src/content/guides/<slug>.md, id = the
+//             slug. data: { description }, the page's meta description. The page renders the
+//             intro above its README section (pages/guides/).
 
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
@@ -96,4 +99,11 @@ const docs = defineCollection({
   }),
 });
 
-export const collections = { skills, readme, releases, docs };
+const guides = defineCollection({
+  loader: glob({ pattern: '*.md', base: new URL('./content/guides/', import.meta.url) }),
+  schema: z.object({
+    description: z.string(),
+  }),
+});
+
+export const collections = { skills, readme, releases, docs, guides };

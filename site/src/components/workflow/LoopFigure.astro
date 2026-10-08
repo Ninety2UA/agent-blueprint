@@ -1,0 +1,51 @@
+---
+// Fig. 1: the README's development loop drawn on a sheet. The steps sit on one datum line; a
+// return line on the left carries what the last step records back to the first, the way the
+// home page's drawing does. Every step's text is the README's own, with skill names linked.
+import DrawingSheet from '../DrawingSheet.astro';
+import TitleBlock from '../TitleBlock.astro';
+import { Num, wf } from './data';
+
+const { loop, pipelines, gates, counts } = wf;
+---
+<section class="wf-sec" id="loop" aria-labelledby="loop-h">
+  <div class="wrap">
+    <div class="wf-sec-head">
+      <p class="sec-ref"><span class="bub" aria-hidden="true">1</span>Fig. 1</p>
+      <h2 id="loop-h" class="h-sec">Every feature takes the same loop.</h2>
+      <p class="body">{Num(loop.length)} steps, from getting oriented to merging the branch, each with its own skills. The loop closes through <code>docs/</code>: what one feature records there, the next session reads first.</p>
+    </div>
+    <figure class="wf-fig" aria-labelledby="loop-h">
+      <DrawingSheet class="loop-sheet">
+        <div class="loop-wrap" data-draw>
+          <p class="loop-back" aria-hidden="true">next session{' '}<br />reads <code>docs/</code></p>
+          <ol class="loop">
+            {loop.map((step, i) => (
+              <li class:list={['loop-step', { 'is-opt': step.optional }]} style={`--i:${i}`}>
+                <span class="loop-mark" aria-hidden="true"></span>
+                <span class="loop-ret" aria-hidden="true"></span>
+                <h3 class="loop-name">
+                  <span class="loop-n" aria-hidden="true">{step.n}</span>{step.name}
+                  {step.optional && <span class="loop-opt"><span class="sr-only">, </span>optional</span>}
+                </h3>
+                <p class="loop-text" set:html={step.html} />
+              </li>
+            ))}
+          </ol>
+        </div>
+      </DrawingSheet>
+      <TitleBlock
+        attached
+        label="About this drawing"
+        cells={[
+          { label: 'Drawing', value: 'The development loop' },
+          { label: 'Steps', value: String(loop.length) },
+          { label: 'Pipelines', value: String(pipelines.length) },
+          { label: 'Quality gates', value: String(gates.length) },
+          { label: 'Skills', value: String(counts.skills), claim: 'skills' },
+          { label: 'Source', value: 'README.md', code: true },
+        ]}
+      />
+    </figure>
+  </div>
+</section>

@@ -1,0 +1,24 @@
+---
+// The skills a guide names, as the site's skill cards, in the order the guide first names them.
+// The heading sits directly in the page's .dpage, so it takes the docs pages' H2 style.
+// Summaries, phases and "use when" lines come from getSiteData(), so they follow the README.
+import SkillCard from '../skills/SkillCard.astro';
+import { siteData } from '../skills/data';
+
+interface Props {
+  id: string;
+  names: string[];
+}
+const { id, names } = Astro.props;
+const { skills, phases } = siteData();
+const bySlug = new Map(phases.map((p) => [p.slug, p]));
+const cards = names.map((name) => {
+  const skill = skills.find((s) => s.name === name);
+  if (!skill) throw new Error(`Guides: no skill named ${name}`);
+  return skill;
+});
+---
+<h2 id={id}>Skills in this guide</h2>
+<ul class="cards g-cards">
+  {cards.map((s) => <SkillCard name={s.name} phase={bySlug.get(s.phase)!} summary={s.summary} when={s.when} />)}
+</ul>

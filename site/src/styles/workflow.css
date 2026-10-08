@@ -1,0 +1,158 @@
+/* Workflow page (pages/workflow.astro): the page head with its sheet index, Fig. 1 the loop,
+   Fig. 2 the hand-off chain, Fig. 3 the pipelines, Fig. 4 the quality gates, and the phase map.
+   2A tokens only; the sheet, registration marks, title block and dimension line are global.css. */
+
+.wf-sec { padding-top: var(--section); }
+.wf-sec-head { max-width: 760px; }
+.wf-sec-head .body { margin-top: var(--s-4); }
+.wf-sec-head code, .wf-head code { font-size: 0.875em; }
+.wf-fig { margin: var(--s-6) 0 0; }
+
+/* skill names as links, one per line */
+.wf-skills { list-style: none; display: grid; gap: 4px; }
+.wf-skills a { color: var(--ink); text-decoration-color: var(--hair-strong); text-underline-offset: 0.22em; }
+.wf-skills a:hover { text-decoration-color: currentColor; }
+.wf-skills code { font-size: 0.8125rem; font-weight: 560; overflow-wrap: anywhere; }
+/* skill names inside README text */
+.loop-text a, .pl-sum a, .gate-rule a { color: var(--ink); text-decoration-color: var(--hair-strong); text-underline-offset: 0.22em; }
+.loop-text a:hover, .pl-sum a:hover, .gate-rule a:hover { text-decoration-color: currentColor; }
+
+/* ---------- Page head: title, lede, sheet index ---------- */
+.wf-head { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: var(--s-7); align-items: end; padding-top: clamp(40px, 5vw, 80px); }
+.wf-crumb { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--muted); }
+.wf-title { margin-top: var(--s-3); max-width: 15em; font-size: clamp(2.375rem, 1.55rem + 2.7vw, 3.75rem); font-stretch: var(--w-display); font-weight: 680; line-height: 1.03; letter-spacing: -0.03em; text-wrap: balance; }
+.wf-head .lede { margin-top: var(--s-5); max-width: 56ch; }
+.wf-index ol { list-style: none; margin-top: 8px; border-top: 1px solid var(--ink); }
+.wf-index li { border-bottom: 1px solid var(--hair); }
+.wf-index a { display: flex; align-items: baseline; gap: 14px; min-height: 40px; padding: 9px 0; font-size: 0.9375rem; color: var(--ink-2); text-decoration: none; }
+.wf-index a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 0.25em; }
+.wf-index-n { flex: none; width: 1.5ch; font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+
+/* ---------- Fig. 1: the loop, a datum with a return line ---------- */
+.loop-sheet { padding: clamp(28px, 3.6vw, 52px) clamp(18px, 3vw, 44px); }
+/* --ret is the gutter that holds the return line and its label; --rx is where the return line runs, from the steps' left edge */
+.loop-wrap { position: relative; --mk: 28px; --ret: 150px; --rx: -30px; }
+.loop { list-style: none; padding-left: var(--ret); }
+.loop-step { position: relative; display: grid; grid-template-columns: var(--mk) minmax(0, 12.5rem) minmax(0, 1fr); column-gap: var(--s-5); padding-bottom: var(--s-6); }
+.loop-step:last-child { padding-bottom: 0; }
+/* the datum from this station down to the next, with an arrowhead at the next ring */
+.loop-step:not(:last-child)::before { content: ""; position: absolute; left: calc(var(--mk) / 2 - 0.75px); top: calc(var(--mk) / 2); bottom: calc(var(--mk) / -2); width: 1.5px; background: var(--ink); transform-origin: top; }
+.loop-step:not(:last-child)::after { content: ""; position: absolute; left: calc(var(--mk) / 2 - 4.5px); bottom: -6px; width: 9px; height: 8px; background: var(--ink); clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.loop-mark { position: relative; z-index: 1; grid-row: 1 / span 2; width: var(--mk); height: var(--mk); }
+.loop-mark::before { content: ""; position: absolute; inset: 7px; z-index: 1; border: 1.25px solid var(--ink); border-radius: 50%; background: var(--bg); }
+.loop-mark::after { content: ""; position: absolute; inset: 0; background: linear-gradient(var(--ink), var(--ink)) center / 1px 100% no-repeat, linear-gradient(var(--ink), var(--ink)) center / 100% 1px no-repeat; }
+.loop-step.is-opt .loop-mark::before { border-style: dashed; }
+.loop-step:first-child .loop-mark::before { background: var(--accent); border-color: var(--accent); }
+.loop-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding-top: 1px; font-size: 1.1875rem; font-stretch: 112%; font-weight: 640; line-height: 1.3; }
+.loop-n { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+.loop-opt { padding: 0 6px; border: 1px dashed var(--hair-strong); border-radius: var(--r); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; color: var(--muted); }
+.loop-text { max-width: 64ch; padding-top: 3px; color: var(--ink-2); }
+.loop-text code { font-size: 0.84em; }
+/* a skill name stays on one line where the column is wide enough for the longest */
+@media (min-width: 1024px) { .loop-text a { white-space: nowrap; } }
+/* the return line: up the gutter from the last station to the first, entering it with an arrow */
+.loop-ret { position: absolute; left: var(--rx); top: 0; bottom: 0; border-left: 1px solid var(--ink-2); }
+.loop-step:first-child .loop-ret { top: calc(var(--mk) / 2); width: calc(-1 * var(--rx) + 6px); border-top: 1px solid var(--ink-2); }
+.loop-step:first-child .loop-ret::after { content: ""; position: absolute; right: -1px; top: -5px; width: 8px; height: 9px; background: var(--ink-2); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.loop-step:last-child .loop-ret { bottom: auto; height: calc(var(--mk) / 2); width: calc(-1 * var(--rx) + 7px); border-bottom: 1px solid var(--ink-2); }
+.loop-back { position: absolute; top: 50%; left: 0; width: calc(var(--ret) + var(--rx) - 12px); transform: translateY(-50%); text-align: right; font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.45; color: var(--muted); }
+.loop-back code { font-size: inherit; color: var(--ink-2); }
+
+/* ---------- Fig. 2: the chain, skill to file to skill ---------- */
+.chain { margin-top: var(--s-6); }
+.chain-head, .chain-row { display: grid; grid-template-columns: minmax(0, 4fr) 40px minmax(0, 5fr) 40px minmax(0, 4fr); column-gap: var(--s-4); }
+.chain-head { padding-bottom: 8px; border-bottom: 1px solid var(--ink); font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+.chain-rows { list-style: none; }
+.chain-row { align-items: start; padding: 18px 0; border-bottom: 1px solid var(--hair); }
+.ch-arrow { display: block; margin-top: 5px; color: var(--ink-2); transform-origin: left; }
+.ch-arrow svg { display: block; }
+.chain-leaves code { font-size: 0.875rem; font-weight: 560; color: var(--ink); overflow-wrap: anywhere; }
+.chain-leaves b { font-weight: 620; color: var(--ink); }
+.chain-what { display: block; margin-top: 6px; font-size: 0.9375rem; line-height: 1.5; color: var(--ink-2); }
+.chain-cut { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; margin: -2px 0 16px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-strong); }
+.chain-cut::after { content: ""; flex: 1; border-top: 1px dashed var(--hair-strong); }
+
+/* ---------- Fig. 3: the pipelines, each a line of its stages ---------- */
+.pl-sheet { padding: clamp(40px, 3.6vw, 52px) clamp(18px, 3vw, 44px) clamp(18px, 2vw, 28px); }
+/* the pipelines share rows (subgrid), so their names, summaries and stage lines start level */
+.pl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); column-gap: var(--s-6); }
+.pl { display: grid; grid-row: span 6; grid-template-rows: subgrid; row-gap: 0; align-content: start; min-width: 0; padding: 14px 0 var(--s-6); border-top: 1px solid var(--ink); }
+.pl > * { align-self: start; }
+.pl-name code { font-size: 1rem; font-weight: 620; }
+.pl-name a { color: var(--ink); text-decoration-color: var(--hair-strong); text-underline-offset: 0.22em; }
+.pl-name a:hover { text-decoration-color: currentColor; }
+.pl-when { margin-top: 12px; font-size: 0.9375rem; line-height: 1.45; color: var(--ink); }
+.pl-when .lbl { display: block; margin-bottom: 2px; }
+.pl-sum { margin-top: 10px; font-size: 0.875rem; line-height: 1.55; color: var(--ink-2); }
+.pl-sum code { font-size: 0.8125rem; overflow-wrap: anywhere; }
+.pl-legend { display: flex; align-items: center; gap: 8px; margin-top: var(--s-5); font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+.pl-cp-key, .pl-cp { width: 8px; height: 8px; background: var(--accent); transform: rotate(45deg); }
+.pl-stages { list-style: none; margin-top: 14px; }
+.pl-stage { position: relative; display: grid; gap: 3px; padding: 0 0 18px 30px; }
+.pl-stage:last-child { padding-bottom: 0; }
+/* the line from this stage's tick to the next one's */
+.pl-stage::before { content: ""; position: absolute; left: 6px; top: 9px; bottom: -9px; width: 1px; background: var(--ink-2); transform-origin: top; }
+.pl-stage:last-child::before { display: none; }
+.pl-tick { position: absolute; left: 0; top: 8.5px; width: 13px; height: 1.5px; background: var(--ink); }
+.pl-stage.is-opt .pl-tick { background: linear-gradient(90deg, var(--ink) 55%, transparent 0) 0 0 / 4.4px 100%; }
+.pl-label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 0.9375rem; font-weight: 620; line-height: 1.25; color: var(--ink); }
+.pl-opt { padding: 0 5px; border: 1px dashed var(--hair-strong); border-radius: var(--r); font-family: var(--font-mono); font-size: 0.625rem; font-weight: 500; color: var(--muted); }
+.pl-skills { gap: 2px; }
+.pl-note { font-size: 0.8125rem; line-height: 1.45; color: var(--muted); }
+.pl-note code { font-size: 0.75rem; color: var(--ink-2); overflow-wrap: anywhere; }
+/* the checkpoint after each stage of a supervised pipeline sits on the line below the stage */
+.pl-cp { position: absolute; left: 2.5px; bottom: 1px; }
+.has-cp .pl-stage { padding-bottom: 22px; }
+.has-cp .pl-stage:last-child::before { display: block; bottom: 5px; }
+.pl-more { margin-top: var(--s-5); font-size: 0.875rem; }
+
+/* ---------- Fig. 4: the quality gates ---------- */
+.gates { list-style: none; border-top: 1px solid var(--ink); }
+.gate { display: grid; grid-template-columns: 56px minmax(0, 1fr) minmax(0, 19.5rem); gap: var(--s-5); align-items: center; padding: 18px 0; border-bottom: 1px solid var(--hair); }
+.gate .gate-n { width: 34px; height: 34px; font-size: 0.8125rem; }
+.gate-rule { font-size: clamp(1.125rem, 1rem + 0.45vw, 1.375rem); font-stretch: 108%; font-weight: 600; line-height: 1.3; letter-spacing: -0.008em; text-wrap: balance; }
+.gate-by .lbl { display: block; margin-bottom: 3px; }
+
+/* ---------- Every skill, by phase ---------- */
+.ph-dim { margin-top: var(--s-6); }
+.ph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: var(--s-6) var(--s-5); margin-top: var(--s-3); }
+.ph { min-width: 0; padding-top: 10px; border-top: 1px solid var(--ink); }
+.ph-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: 1rem; font-stretch: 110%; font-weight: 640; line-height: 1.3; }
+.ph-h a { color: var(--ink); text-decoration: none; }
+.ph-h a:hover { text-decoration: underline; text-underline-offset: 0.25em; }
+.ph-n { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+.ph-skills { margin-top: 10px; gap: 3px; }
+
+/* ---------- Lines draw once as a figure scrolls in (draw.ts adds .is-drawing) ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .is-drawing .loop-step::before, .is-drawing .pl-stage::before { animation: wf-down 560ms var(--ease-out) calc(var(--i, 0) * 90ms + 120ms) backwards; }
+  .is-drawing .loop-ret, .is-drawing .loop-back { animation: wf-fade 700ms var(--ease-out) 640ms backwards; }
+  .is-drawing .ch-arrow { animation: wf-right 520ms var(--ease-out) calc(var(--i, 0) * 80ms + 160ms) backwards; }
+  @keyframes wf-down { from { transform: scaleY(0); } }
+  @keyframes wf-right { from { transform: scaleX(0); opacity: 0; } }
+  @keyframes wf-fade { from { opacity: 0; } }
+}
+
+/* ---------- Narrow screens ---------- */
+@media (max-width: 1023px) {
+  .wf-head { grid-template-columns: minmax(0, 1fr); gap: var(--s-6); }
+  .wf-index { max-width: 420px; }
+  .loop-step { grid-template-columns: var(--mk) minmax(0, 1fr); }
+  .loop-name, .loop-text { grid-column: 2; }
+  .loop-text { padding-top: 6px; }
+  .gate { grid-template-columns: 48px minmax(0, 1fr); row-gap: 10px; }
+  .gate-by { grid-column: 2; }
+}
+@media (max-width: 760px) {
+  .loop-wrap { --ret: 44px; --rx: -26px; }
+  .loop-step { column-gap: var(--s-3); }
+  /* the label turns to run up the return line */
+  .loop-back { left: 0; width: auto; writing-mode: vertical-rl; transform: translateY(-50%) rotate(180deg); text-align: center; }
+  .loop-back br { display: none; }
+  .chain-head { display: none; }
+  .chain-row { grid-template-columns: minmax(0, 1fr); row-gap: 8px; }
+  .ch-arrow { position: relative; height: 30px; margin: 0; padding-left: 22px; transform-origin: top; }
+  .ch-arrow svg { position: absolute; left: 0; top: 0; width: 30px; height: 10px; transform: translate(10px, 0) rotate(90deg); transform-origin: 0 0; }
+  .ch-arrow::after { content: attr(data-label); font-family: var(--font-mono); font-size: 0.75rem; line-height: 30px; color: var(--muted); }
+  .is-drawing .ch-arrow { animation-name: wf-down; }
+}

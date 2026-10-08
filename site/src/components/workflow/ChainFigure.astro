@@ -1,0 +1,46 @@
+---
+// Fig. 2: how the skills chain. Each row is a skill, what it leaves in the repository, and the
+// skills that read it; the last rows carry into the next session. Rows come from CHAIN in
+// workflow-data.mjs, checked against the skills on every build.
+import SkillLinks from './SkillLinks.astro';
+import { wf } from './data';
+
+const { chain } = wf;
+// a drawn arrow between the columns; when the row stacks on narrow screens it turns downward and
+// shows its label, since the column heads are gone
+const ARROW =
+  '<svg viewBox="0 0 40 10" width="40" height="10" aria-hidden="true"><path d="M0 5H33" stroke="currentColor" stroke-width="1"/>' +
+  '<path d="M32 1.6 39.4 5 32 8.4Z" fill="currentColor"/></svg>';
+const firstNext = chain.findIndex((row) => row.next);
+---
+<section class="wf-sec" id="chain" aria-labelledby="chain-h">
+  <div class="wrap">
+    <div class="wf-sec-head">
+      <p class="sec-ref"><span class="bub" aria-hidden="true">2</span>Fig. 2</p>
+      <h2 id="chain-h" class="h-sec">Each skill leaves something the next one reads.</h2>
+      <p class="body">Each skill ends by leaving something the next one starts from: a design, a plan, commits, review findings, a handoff note. Most of it is files in your repository, so a new session or a different tool can pick up where the last one stopped.</p>
+    </div>
+    <figure class="wf-fig chain" aria-labelledby="chain-h" data-draw>
+      <div class="chain-head" aria-hidden="true"><span>Skill</span><span></span><span>Leaves</span><span></span><span>Read by</span></div>
+      <ol class="chain-rows">
+        {chain.map((row, i) => (
+          <li class:list={['chain-row', { 'is-next': row.next, 'is-first-next': i === firstNext }]} style={`--i:${i}`}>
+            {i === firstNext && <p class="chain-cut">Into the next session</p>}
+            <SkillLinks names={row.from} class="chain-from" />
+            <span class="ch-arrow" data-label="leaves" aria-hidden="true" set:html={ARROW} />
+            <p class="chain-leaves">
+              <span class="sr-only">leaves </span>
+              {row.leaves.includes('/') ? <code>{row.leaves}</code> : <b>{row.leaves}</b>}
+              <span class="sr-only">, </span><span class="chain-what">{row.what}</span>
+            </p>
+            <span class="ch-arrow" data-label="read by" aria-hidden="true" set:html={ARROW} />
+            <div class="chain-to">
+              <span class="sr-only">Read by</span>
+              <SkillLinks names={row.to} />
+            </div>
+          </li>
+        ))}
+      </ol>
+    </figure>
+  </div>
+</section>
