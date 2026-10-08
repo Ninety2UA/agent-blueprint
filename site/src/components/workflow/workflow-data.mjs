@@ -30,10 +30,9 @@ import { join } from 'node:path';
 
 import { getSection } from '../../lib/readme.mjs';
 import { findRepoRoot, getSiteData } from '../../lib/site.mjs';
+import { escapeHtml } from '../../lib/text.mjs';
 
 const HERE = 'site/src/components/workflow/workflow-data.mjs';
-
-const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 export function inlineHtml(text, isSkill) {
   return text

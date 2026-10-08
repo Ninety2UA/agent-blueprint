@@ -8,10 +8,18 @@ export interface VideoFacts {
   height: number;
 }
 
+const facts = new Map<string, VideoFacts>();
+
 // Reads an MP4's length and frame size at build time from its own boxes (mvhd and the
 // first video tkhd), so a re-render changes the page with no edit under site/. Paths are
-// relative to site/public, where the media live.
+// relative to site/public, where the media live. Each file is read once per build.
 export function mp4Facts(publicPath: string): VideoFacts {
+  let f = facts.get(publicPath);
+  if (!f) facts.set(publicPath, (f = readMp4Facts(publicPath)));
+  return f;
+}
+
+function readMp4Facts(publicPath: string): VideoFacts {
   const fd = openSync(join(process.cwd(), 'public', publicPath), 'r');
   try {
     const read = (pos: number, len: number) => {

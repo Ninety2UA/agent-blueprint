@@ -5,7 +5,6 @@ import { test } from 'node:test';
 
 import {
   formatText,
-  inlineCode,
   parseStep,
   prepareBody,
   skillOutline,
@@ -168,10 +167,6 @@ test('splitDescription separates what it does, when to use it and what it is not
   const noNot = splitDescription('Backs every claim. Use before saying work is done. A run from an earlier message does not count.');
   assert.deepEqual(noNot.use, ['Before saying work is done', 'A run from an earlier message does not count']);
   assert.equal(noNot.not, null);
-});
-
-test('inlineCode escapes HTML and turns backticks into code', () => {
-  assert.equal(inlineCode('Keeps `docs/<x>.md` & more'), 'Keeps <code>docs/&lt;x&gt;.md</code> &amp; more');
 });
 
 test('formatText escapes HTML and sets the names of known skills as code', () => {

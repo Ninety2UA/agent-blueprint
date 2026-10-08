@@ -118,7 +118,12 @@ const panels = await Promise.all(items.map((item) => Astro.slots.render(item.id)
     window.addEventListener('hashchange', fromHash);
 
     requestAnimationFrame(() => place(current()));
-    window.addEventListener('resize', () => place(current()));
+    // one measurement per frame while the window is resized
+    let frame = 0;
+    window.addEventListener('resize', () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => place(current()));
+    });
     document.fonts?.ready.then(() => place(current()));
   };
 

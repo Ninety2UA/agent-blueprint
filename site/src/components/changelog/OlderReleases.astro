@@ -1,7 +1,7 @@
 ---
 // The releases older than the oldest one with a notes file: one ruled revision row each, with the
 // README summary. A version with a git tag (x.y.z) links to its GitHub release.
-import { inlineMarkdown } from '../docs/route.mjs';
+import { inlineCode } from '../../lib/text.mjs';
 import { releaseId } from './changelog.mjs';
 
 interface Props {
@@ -23,7 +23,7 @@ const { releases, repoUrl } = Astro.props;
           <tr id={releaseId(r.version)} data-release={r.version}>
             <th scope="row"><span class="rv">{/^\d+\.\d+\.\d+$/.test(r.version) ? <a href={`${repoUrl}/releases/tag/v${r.version}`}>{r.version}</a> : r.version}</span></th>
             <td class="dt"><time datetime={r.date}>{r.date}</time></td>
-            <td set:html={inlineMarkdown(r.summary)} />
+            <td set:html={inlineCode(r.summary)} />
           </tr>
         ))}
       </tbody>

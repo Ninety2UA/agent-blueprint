@@ -5,6 +5,7 @@
 import { join } from 'node:path';
 
 import { findRepoRoot, getSiteData } from '../../lib/site.mjs';
+import { escapeHtml, listJoin } from '../../lib/text.mjs';
 import { numberWord } from '../number-word';
 
 const data = getSiteData();
@@ -18,9 +19,6 @@ export const site = {
 /** The README hero GIF: kept once in the repository, served into the build by pages/media/readme-hero.gif.ts. */
 export const README_GIF = { file: join(findRepoRoot(), 'docs', 'images', 'hero.gif'), href: '/media/readme-hero.gif' };
 
-const listJoin = (items: string[]) => `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
-const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
 /**
  * A text with current-state counts, as plain text for the copy button and as HTML in which each
  * count carries its data-claim (KTD5). Parts are strings, or [claim, text] pairs.
@@ -33,7 +31,7 @@ export interface Claimed {
 function claimed(parts: Part[]): Claimed {
   return {
     text: parts.map((p) => (typeof p === 'string' ? p : p[1])).join(''),
-    html: parts.map((p) => (typeof p === 'string' ? esc(p) : `<span data-claim="${p[0]}">${esc(p[1])}</span>`)).join(''),
+    html: parts.map((p) => (typeof p === 'string' ? escapeHtml(p) : `<span data-claim="${p[0]}">${escapeHtml(p[1])}</span>`)).join(''),
   };
 }
 

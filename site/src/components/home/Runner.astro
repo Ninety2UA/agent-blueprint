@@ -2,6 +2,7 @@
 // Unattended runs: the ship runner command with a host picker (one radio per tool), the
 // runner loop (Fig. 5), the five steps of a run and its exit codes.
 import Cmd from '../Cmd.astro';
+import { LOOPS } from '../kit/kit-data';
 import VideoFigure from '../VideoFigure.astro';
 import HomeLink from './HomeLink.astro';
 import { HOST_NOTE_DEFAULT, HOST_NOTES, RUNNER_HOST, site, skill } from './home-data';
@@ -12,10 +13,7 @@ const first = hosts.find((h) => h.id === RUNNER_HOST);
 if (!first) throw new Error(`The runner's example host ${RUNNER_HOST} is not a tool in the README install table`);
 const FEATURE = 'add JWT authentication with refresh tokens';
 
-const RUNNER_ALT =
-  'Looping animation, no sound: the ship runner with --host codex. Each iteration is a fresh session on a new ' +
-  'sheet while .agent-blueprint/run/state.json carries over and its status, stage and iteration change. When the ' +
-  'status is done, the runner scans for secrets, pushes, and the pull request opens.';
+const RUNNER_ALT = LOOPS.find((l) => l.name === 'loop-runner')!.alt;
 ---
 <section class="sec runner" id="runner" aria-labelledby="run-h">
   <div class="wrap">

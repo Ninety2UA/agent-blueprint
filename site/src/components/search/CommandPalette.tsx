@@ -105,15 +105,14 @@ function PaletteBody({ initialQuery, onClose }: { initialQuery: string; onClose(
   // Until the first results arrive, the index is still loading: Pagefind's init() can
   // resolve before its files are in, and the first search waits for them.
   const shown = q && results ? results : null;
-  const message = failed
-    ? 'Search could not load. Check the connection, then open it again.'
-    : !index || (q && !results)
-      ? 'Loading the search index…'
-      : !q
-        ? 'Type a skill name, a command or a topic.'
-        : shown?.total === 0
-          ? `No results for “${shown.query}”. Try a skill name such as review or plan.`
-          : null;
+  const status = () => {
+    if (failed) return 'Search could not load. Check the connection, then open it again.';
+    if (!index || (q && !results)) return 'Loading the search index…';
+    if (!q) return 'Type a skill name, a command or a topic.';
+    if (shown?.total === 0) return `No results for “${shown.query}”. Try a skill name such as review or plan.`;
+    return null;
+  };
+  const message = status();
   const count = shown && shown.total > 0 ? shown.total : 0;
   const shownCount = shown ? shown.groups.reduce((n, g) => n + g.pages.length, 0) : 0;
 

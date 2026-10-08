@@ -3,7 +3,7 @@
 // description and type; the release notes split into labelled groups; links to the notes file and
 // the diff on GitHub. A release with no notes file shows its README summary instead. The heading is
 // the summary's headline.
-import { inlineMarkdown } from '../docs/route.mjs';
+import { inlineCode } from '../../lib/text.mjs';
 import { headline, releaseId, releaseType, splitNotes } from './changelog.mjs';
 
 interface Props {
@@ -21,7 +21,7 @@ const id = releaseId(version);
 const type = releaseType(version);
 const title = headline(summary);
 const notes = notesHtml ? splitNotes(notesHtml) : null;
-const lede = notes ? notes.lede : `<p>${inlineMarkdown(summary)}</p>`;
+const lede = notes ? notes.lede : `<p>${inlineCode(summary)}</p>`;
 const links = [
   notes && { text: 'Release notes', href: `${repoUrl}/blob/main/docs/releases/v${version}-release-notes.md` },
   previous && /^\d+\.\d+\.\d+$/.test(previous) && { text: 'Full diff on GitHub', href: `${repoUrl}/compare/v${previous}...v${version}` },
@@ -31,7 +31,7 @@ const links = [
   <div class="rev-head">
     <div class="rc rc-rev"><span class="f">Rev</span><span class="v"><svg class="delta" viewBox="0 0 20 18" aria-hidden="true"><path d="M10 1.5 18.5 16.5H1.5Z" /></svg><span class="rev-n">{version}</span></span></div>
     <div class="rc rc-date"><span class="f">Date</span><time class="v" datetime={date}>{date}</time></div>
-    <div class="rc rc-desc"><span class="f">Description</span><h2 class="v rev-title" id={`h-${id}`} set:html={inlineMarkdown(title)} /></div>
+    <div class="rc rc-desc"><span class="f">Description</span><h2 class="v rev-title" id={`h-${id}`} set:html={inlineCode(title)} /></div>
     <div class="rc rc-kind"><span class="f">Type</span><span class="v">{type}</span></div>
   </div>
   {lede && <div class="rev-lede" set:html={lede} />}

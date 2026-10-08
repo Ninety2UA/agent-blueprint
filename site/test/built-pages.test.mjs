@@ -19,8 +19,12 @@ const decode = (s) =>
   s.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n))).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
     .replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 
-// Every page Astro wrote, by its URL path; redirect stubs (meta refresh) are not pages.
-function pages() {
+// Every page Astro wrote, by its URL path; redirect stubs (meta refresh) are not pages. Read on the
+// first call (a skipped run never reads site/dist) and shared by the tests after it.
+let built;
+const pages = () => (built ??= readPages());
+
+function readPages() {
   const out = [];
   const walk = (dir) => {
     for (const name of readdirSync(dir)) {

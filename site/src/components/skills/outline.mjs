@@ -23,8 +23,9 @@
 //   splitDescription(text)       { what, use: [clause], not } from a SKILL.md description: the sentences
 //                                before "Use ...", the "Use ..." clauses (split on semicolons) and any
 //                                later sentence, and the "Not ..." sentence (null without one).
-//   inlineCode(text)             README cell text as HTML: escaped, `code` spans as <code>.
 //   formatText(text, names)      text as HTML: escaped, every name in `names` (a Set) as <code>.
+
+import { capitalize, escapeHtml } from '../../lib/text.mjs';
 
 /** @typedef {{ depth: number; slug: string; text: string }} Heading */
 /** @typedef {{ label: string; title: string; id: string; intro: string | null }} Step */
@@ -165,7 +166,6 @@ export function prepareBody(html, headings) {
   });
 }
 
-const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const clause = (s) => capitalize(s.trim().replace(/^(?:and|or)\s+/, '').replace(/[.;]\s*$/, '').trim());
 
 /** @param {string} text @returns {{ what: string; use: string[]; not: string | null }} */
@@ -181,13 +181,6 @@ export function splitDescription(text) {
     else use.push(clause(s));
   }
   return { what: sentences.slice(0, first).join(' '), use, not };
-}
-
-const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-/** @param {string} text @returns {string} */
-export function inlineCode(text) {
-  return escapeHtml(text).replace(/`([^`]+)`/g, '<code>$1</code>');
 }
 
 /** @param {string} text @param {Set<string>} names @returns {string} */

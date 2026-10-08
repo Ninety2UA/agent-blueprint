@@ -1,0 +1,22 @@
+---
+// The section's pages as the sidebar lists them, by group, the current one marked. DocsLayout
+// shows it twice: in the sticky sidebar and in the disclosure that replaces it below 1024 px.
+export interface SidebarGroup {
+  title?: string;
+  items: { label: string; href: string; current?: boolean }[];
+}
+interface Props {
+  groups: SidebarGroup[];
+  /** accessible name of the sidebar; the nav is "<label> pages" */
+  label: string;
+}
+const { groups, label } = Astro.props;
+---
+<nav class="sb-nav" aria-label={`${label} pages`}>
+  {groups.map((group) => (
+    <div class="sb-group">
+      {group.title && <p class="sb-h">{group.title}</p>}
+      <ul>{group.items.map((item) => <li><a href={item.href} aria-current={item.current ? 'page' : undefined}>{item.label}</a></li>)}</ul>
+    </div>
+  ))}
+</nav>

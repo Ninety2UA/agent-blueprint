@@ -1,22 +1,14 @@
 // Tests for site/src/components/docs/route.mjs: README table cells shown in the Getting started
-// install tabs. Inline code renders as <code> with everything else escaped, and an install route
-// becomes its commands (one copyable block each) with the README's own words between them.
+// install tabs. An install route becomes its commands (one copyable block each) with the README's
+// own words between them.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { inlineMarkdown, routeSteps } from '../src/components/docs/route.mjs';
+import { routeSteps } from '../src/components/docs/route.mjs';
 import { getSiteData } from '../src/lib/site.mjs';
 
 const { tools } = getSiteData();
 const tool = (id) => tools.find((t) => t.id === id);
-
-test('inlineMarkdown renders code spans and escapes HTML, inside code too', () => {
-  assert.equal(
-    inlineMarkdown('add `~/.agents/skills` to <b>x</b> & "y"'),
-    'add <code>~/.agents/skills</code> to &lt;b&gt;x&lt;/b&gt; &amp; &quot;y&quot;',
-  );
-  assert.equal(inlineMarkdown('`agy plugin install <checkout>`'), '<code>agy plugin install &lt;checkout&gt;</code>');
-});
 
 test('every command of every route becomes one command step, in table order', () => {
   for (const t of tools) {

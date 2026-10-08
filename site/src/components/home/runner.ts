@@ -44,6 +44,11 @@ if (flow && !reduced()) {
     if (last) flow.style.setProperty('--run', `${last.getBoundingClientRect().left - flow.getBoundingClientRect().left + 14}px`);
   };
   setRun();
-  window.addEventListener('resize', setRun);
+  // one measurement per frame while the window is resized
+  let frame = 0;
+  window.addEventListener('resize', () => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(setRun);
+  });
   new IntersectionObserver(([e]) => flow.classList.toggle('is-live', e.isIntersecting), { threshold: 0.4 }).observe(flow);
 }

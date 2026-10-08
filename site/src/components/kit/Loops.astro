@@ -1,6 +1,7 @@
 ---
 // Four loops: the home page's loops as a 2 by 2 gallery (Figs. 2 to 5), each with its files. The
 // length and frame size in the text come from the files, so a re-render needs no edit here.
+import { capitalize } from '../../lib/text.mjs';
 import { mp4Facts } from '../media';
 import { numberWord } from '../number-word';
 import VideoFigure from '../VideoFigure.astro';
@@ -16,7 +17,7 @@ const seconds = numberWord(Math.round(duration));
   <div class="wrap">
     <div class="sec-head">
       <h2 id="loops-h" class="h-sec">Four loops.</h2>
-      <p class="body">{seconds.charAt(0).toUpperCase() + seconds.slice(1)} seconds each, made to repeat without a visible seam. Each one shows a single mechanism from the home page. They are {width} by {height} with a poster frame, drawn to be read at about 560 px wide.</p>
+      <p class="body">{capitalize(seconds)} seconds each, made to repeat without a visible seam. Each one shows a single mechanism from the home page. They are {width} by {height} with a poster frame, drawn to be read at about 560 px wide.</p>
     </div>
     <div class="loop-gallery">
       {LOOPS.map((l, i) => (

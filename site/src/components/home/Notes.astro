@@ -1,6 +1,7 @@
 ---
 // Why the work holds up: four general notes on one sheet. Notes 3 and 4 carry the review
 // and handoff loops (Figs. 3 and 4) and share rows, so their figures line up.
+import { LOOPS } from '../kit/kit-data';
 import VideoFigure from '../VideoFigure.astro';
 import { cap, helper, numberWord, site, skill } from './home-data';
 
@@ -13,14 +14,8 @@ const files = ['security-sentinel', 'plan-checker', 'implementer'].map((n) => {
 });
 ['ab-verification-before-completion', 'ab-iterative-refinement', 'ab-knowledge-compounding', 'ab-session-wrap', 'ab-resume-session'].forEach(skill);
 
-const REVIEW_ALT =
-  'Looping animation, no sound: the change fans out to five reviewers, three that always run and two the diff ' +
-  'calls for. Their findings merge into a report: pass 1 has P1 2, P2 3, P3 4. After the fixes, pass 2 has ' +
-  'P1 0, P2 1, P3 2. No P1 is left, so the loop stops.';
-const HANDOFF_ALT =
-  'Looping animation, no sound: session 1 in Claude Code finishes three of four tasks and ab-session-wrap writes ' +
-  'docs/context/STATUS.md and a docs/solutions/ entry. Session 2 in Codex runs ab-resume-session, reads both and ' +
-  'starts on task 4.';
+const REVIEW_ALT = LOOPS.find((l) => l.name === 'loop-review')!.alt;
+const HANDOFF_ALT = LOOPS.find((l) => l.name === 'loop-handoff')!.alt;
 ---
 <section class="sec notes" id="why" aria-labelledby="notes-h">
   <div class="wrap">

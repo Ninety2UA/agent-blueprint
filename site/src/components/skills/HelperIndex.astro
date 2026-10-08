@@ -3,8 +3,8 @@
 // reference", grouped under the skill that owns it, in the phase tables' skill order. Each
 // entry carries data-helper="<prompt name>" once, which the built-site gate checks against
 // the tree.
+import { inlineCode } from '../../lib/text.mjs';
 import { siteData } from './data';
-import { inlineCode } from './outline.mjs';
 
 const { helpers, skills, phases, repoUrl, counts } = siteData();
 const phaseTitle = new Map(phases.map((p) => [p.slug, p.title]));

@@ -14,8 +14,11 @@
 //                                   cannot read or a block scalar (| or >), rather than guess.
 //   listHelperFiles(root, skill)    [{ name, path }] for the helper prompts in skills/<skill>/references/agents/,
 //                                   sorted by name, companion notes left out; path is repository-relative.
-//   countSkillFiles(root), countHelperPrompts(root), countHooks(root)  the drift gate's three counts.
-//   joinSkills({ root, folders, phases, repoUrl })
+//   helperLister(root)              skill => listHelperFiles(root, skill), memoized: each folder is read once and
+//                                   its list reused. countHelperPrompts and joinSkills take one as `helpersOf`;
+//                                   without it they read the folders themselves.
+//   countSkillFiles(root), countHelperPrompts(root, helpersOf?), countHooks(root)  the drift gate's three counts.
+//   joinSkills({ root, folders, phases, repoUrl, helpersOf? })
 //                                   [{ name, phase, summary, when, description, helpers, related, prev, next,
 //                                   githubUrl }] in phase-table order. phase is the phase slug, summary and
 //                                   when the README row's cells, description the SKILL.md frontmatter's,
@@ -87,15 +90,23 @@ export function listHelperFiles(root, skill) {
     .map((name) => ({ name, path: `skills/${skill}/references/agents/${name}.md` }));
 }
 
+export function helperLister(root) {
+  const lists = new Map();
+  return (skill) => {
+    if (!lists.has(skill)) lists.set(skill, listHelperFiles(root, skill));
+    return lists.get(skill);
+  };
+}
+
 export function countSkillFiles(root) {
   return readdirSync(join(root, 'skills'), { recursive: true, withFileTypes: true }).filter(
     (d) => d.isFile() && d.name === 'SKILL.md',
   ).length;
 }
 
-export function countHelperPrompts(root) {
+export function countHelperPrompts(root, helpersOf = (skill) => listHelperFiles(root, skill)) {
   const skills = readdirSync(join(root, 'skills'), { withFileTypes: true }).filter((d) => d.isDirectory());
-  return new Set(skills.flatMap((d) => listHelperFiles(root, d.name).map((h) => h.name))).size;
+  return new Set(skills.flatMap((d) => helpersOf(d.name).map((h) => h.name))).size;
 }
 
 export function countHooks(root) {
@@ -106,7 +117,7 @@ export function countHooks(root) {
     .filter((hook) => hook.type === 'command').length;
 }
 
-export function joinSkills({ root, folders, phases, repoUrl }) {
+export function joinSkills({ root, folders, phases, repoUrl, helpersOf = (skill) => listHelperFiles(root, skill) }) {
   const listed = new Set(phases.flatMap((p) => p.skills.map((s) => s.name)));
   const missing = folders.filter((name) => !listed.has(name));
   if (missing.length) {
@@ -122,7 +133,7 @@ export function joinSkills({ root, folders, phases, repoUrl }) {
       summary: row.summary,
       when: row.when,
       description: frontmatter.description,
-      helpers: listHelperFiles(root, row.name),
+      helpers: helpersOf(row.name),
       related: phase.skills.map((s) => s.name).filter((name) => name !== row.name),
       prev: i > 0 ? order[i - 1].row.name : null,
       next: i < order.length - 1 ? order[i + 1].row.name : null,

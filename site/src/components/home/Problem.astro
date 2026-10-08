@@ -1,6 +1,7 @@
 ---
 // The problem: an agent starts every session from nothing. The tools are drawn as a scale
 // bar, one segment per tool, each linking to its install route.
+import { listJoin } from '../../lib/text.mjs';
 import { GET_STARTED } from '../nav';
 import HomeLink from './HomeLink.astro';
 import { md, numberWord, site } from './home-data';
@@ -19,8 +20,7 @@ const parts = hooked.map((h, i) => {
   const n = h.n === most ? `<span data-claim="hooks">${h.n}</span>` : String(h.n);
   return i === 0 ? `${md(h.name)} gets ${n} hook handlers` : `${md(h.name)} ${n}`;
 });
-const joined = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0];
-const hooks = `Hooks are optional: ${joined}, and the other ${numberWord(tools.length - hooked.length)} run every pipeline without them.`;
+const hooks = `Hooks are optional: ${listJoin(parts)}, and the other ${numberWord(tools.length - hooked.length)} run every pipeline without them.`;
 ---
 <section class="sec problem" id="problem" aria-labelledby="problem-h">
   <div class="wrap">

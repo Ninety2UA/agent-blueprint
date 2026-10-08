@@ -69,13 +69,8 @@ export function phase(slug: string): Phase {
 
 export const skillHref = (name: string) => `/skills/${skill(name).name}/`;
 
-const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-/** README one-liners keep `code`: escape the text, then render the code spans. */
-export const md = (s: string) => escapeHtml(s).replace(/`([^`]+)`/g, '<code>$1</code>');
-
-/** "eight" -> "Eight" */
-export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+// md: README one-liners keep `code` (escaped text, then the code spans). cap: "eight" -> "Eight".
+export { capitalize as cap, inlineCode as md } from '../../lib/text.mjs';
 export { numberWord };
 
 /** The install command: the clone lines with the installer on the last one, as the footer shows it. */

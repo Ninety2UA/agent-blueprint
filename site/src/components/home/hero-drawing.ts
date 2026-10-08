@@ -2,9 +2,8 @@
 // real station, skill name or tool from the site data. Classes map to the CSS tokens in
 // home.css, so the drawings follow the light and dark themes. Each element carries its
 // own draw-on delay (--d); the .is-drawing class on the <svg> plays the entrance once.
+import { escapeHtml, listJoin } from '../../lib/text.mjs';
 import { numberWord, site, STATIONS } from './home-data';
-
-const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const markers = (p: string) => `
 <defs>
@@ -28,12 +27,9 @@ const drawLine = (x1: number, y1: number, x2: number, y2: number, cls: string, d
   `<line class="${cls} draw" pathLength="1" style="--d:${d}ms;--dur:${dur}ms" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
 
 const text = (x: number, y: number, s: string, cls: string, d: number, anchor = 'start') =>
-  `<text class="${cls} fade" style="--d:${d}ms" x="${x}" y="${y}"${anchor === 'start' ? '' : ` text-anchor="${anchor}"`}>${esc(s)}</text>`;
+  `<text class="${cls} fade" style="--d:${d}ms" x="${x}" y="${y}"${anchor === 'start' ? '' : ` text-anchor="${anchor}"`}>${escapeHtml(s)}</text>`;
 
-const stationList = () => {
-  const names = STATIONS.map((s) => s.name);
-  return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
-};
+const stationList = () => listJoin(STATIONS.map((s) => s.name));
 
 /** The schematic beside the hero copy: the stations on one datum, the two full pipelines
  *  as dimensions, the return loop that carries docs/ to the next session, and the tools

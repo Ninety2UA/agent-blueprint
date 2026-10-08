@@ -1,22 +1,15 @@
 // route.mjs: README install-table cells for the Getting started tabs. Plain Node, so the tests
-// in site/test/docs-route.test.mjs import it directly.
+// in site/test/docs-route.test.mjs import it directly. The other cells render through inlineCode() in
+// ../../lib/text.mjs: `code` spans become <code>, everything else is escaped (README cells name
+// placeholders such as <checkout>).
 //
-//   inlineMarkdown(text)          the cell as HTML: `code` spans become <code>, everything else is
-//                                 escaped (README cells name placeholders such as <checkout>).
 //   routeSteps(route, commands)   the Install route cell split at its commands:
 //                                 [{ kind: 'cmd', text }  one per command, in order, shown copyable
 //                                  { kind: 'text', html } the README's words between them, inline code kept]
 //                                 A comma that joined the words to the command before them is dropped
 //                                 (", then" reads "then" under a command block).
 
-const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-export function inlineMarkdown(text) {
-  return text
-    .split(/(`[^`]+`)/)
-    .map((part) => (/^`[^`]+`$/.test(part) ? `<code>${escapeHtml(part.slice(1, -1))}</code>` : escapeHtml(part)))
-    .join('');
-}
+import { inlineCode } from '../../lib/text.mjs';
 
 /**
  * @param {string} route
@@ -28,7 +21,7 @@ export function routeSteps(route, commands) {
   const steps = [];
   let words = '';
   const flush = () => {
-    const html = inlineMarkdown(words.trim().replace(/^,\s*/, ''));
+    const html = inlineCode(words.trim().replace(/^,\s*/, ''));
     if (html) steps.push({ kind: 'text', html });
     words = '';
   };

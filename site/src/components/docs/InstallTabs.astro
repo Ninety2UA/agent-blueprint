@@ -7,7 +7,8 @@
 import Cmd from '../Cmd.astro';
 import Tabs from '../Tabs.astro';
 import { getSiteData } from '../../lib/site.mjs';
-import { inlineMarkdown, routeSteps } from './route.mjs';
+import { inlineCode } from '../../lib/text.mjs';
+import { routeSteps } from './route.mjs';
 import { INSTALL_TABS_ID } from './section.mjs';
 
 interface Tool {
@@ -62,9 +63,9 @@ const namesCheckout = (t: Tool) => t.commands.some((c) => c.includes('<checkout>
           <dt>Support</dt>
           <dd>
             <div class="gs-facts">
-              <p><b>Hooks</b><span set:html={inlineMarkdown(t.support.hooks)} /></p>
-              <p><b>Helpers</b><span set:html={inlineMarkdown(t.support.helpers)} /></p>
-              <p><b>Manual-only skills</b><span set:html={inlineMarkdown(t.support.manualOnly)} /></p>
+              <p><b>Hooks</b><span set:html={inlineCode(t.support.hooks)} /></p>
+              <p><b>Helpers</b><span set:html={inlineCode(t.support.helpers)} /></p>
+              <p><b>Manual-only skills</b><span set:html={inlineCode(t.support.manualOnly)} /></p>
             </div>
           </dd>
           <dt>Support note</dt>

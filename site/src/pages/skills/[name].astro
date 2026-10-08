@@ -16,10 +16,12 @@ import Cmd from '../../components/Cmd.astro';
 import Tabs from '../../components/Tabs.astro';
 import TitleBlock from '../../components/TitleBlock.astro';
 import { IC } from '../../components/icons';
+import { skillsNamed } from '../../components/guides/guide-html.mjs';
 import SkillCard from '../../components/skills/SkillCard.astro';
-import { formatText, inlineCode, prepareBody, skillOutline, splitDescription } from '../../components/skills/outline.mjs';
+import { formatText, prepareBody, skillOutline, splitDescription } from '../../components/skills/outline.mjs';
 import { siteData } from '../../components/skills/data';
 import { findRepoRoot } from '../../lib/site.mjs';
+import { inlineCode } from '../../lib/text.mjs';
 import '../../styles/skills.css';
 
 export async function getStaticPaths() {
@@ -47,9 +49,7 @@ const outline = skillOutline(html, headings);
 const body = prepareBody(html, headings);
 const desc = splitDescription(skill.description);
 const use = desc.use.length ? desc.use : [skill.when];
-const alternatives = [...new Set((desc.not ?? '').match(/\bab-[a-z0-9]+(?:-[a-z0-9]+)*/g) ?? [])].filter(
-  (name) => names.has(name) && name !== skill.name,
-);
+const alternatives = skillsNamed([desc.not ?? ''], names).filter((name) => name !== skill.name);
 
 const argumentHint = entry.data['argument-hint'] as string | undefined;
 const manualOnly = entry.data['disable-model-invocation'] === true;

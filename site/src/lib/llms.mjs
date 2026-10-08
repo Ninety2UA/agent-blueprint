@@ -6,6 +6,8 @@
 //                        ([{ label, href }], components/nav.ts). Home comes first, then each section,
 //                        then one list of skills per README phase, in phase order.
 
+import { listJoin } from './text.mjs';
+
 // What each section holds, keyed by its header label. A section missing here is listed without a note.
 const SECTION_NOTES = {
   Home: 'What Agent Blueprint is, the loop from idea to pull request, the film and the install command',
@@ -17,8 +19,6 @@ const SECTION_NOTES = {
   Kit: 'The film, the loops, the README header, the mark and a short description to copy',
   Changelog: 'Every release, newest first',
 };
-
-const listJoin = (items) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`);
 
 export function llmsTxt(site, nav) {
   const { siteUrl, counts, tools, phases, skills, version, repoUrl } = site;

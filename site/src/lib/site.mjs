@@ -4,8 +4,8 @@
 // Exports
 //   SITE_URL                 the production origin (astro.config.mjs `site` holds the same value).
 //   findRepoRoot(start?)     the nearest folder at or above `start` that holds .claude-plugin/plugin.json and
-//                            README.md. The default start is this module's folder, which also works from a
-//                            bundled build chunk because the build output stays inside site/.
+//                            README.md, memoized per start. The default start is this module's folder, which
+//                            also works from a bundled build chunk because the build output stays inside site/.
 //   getSiteData(root?)       synchronous and memoized per root:
 //     { version, repoUrl, siteUrl,
 //       counts: { skills, helpers, hooks, tools, phases },  skills/helpers/hooks follow scripts/check-drift.sh
@@ -29,20 +29,19 @@ import { fileURLToPath } from 'node:url';
 
 import { extractPages, parseHelpers, parseInstall, parsePhases, parseReleases } from './readme.mjs';
 import { ANCHOR_FALLBACKS, README_PAGES } from './readme-map.mjs';
-import {
-  countHelperPrompts,
-  countHooks,
-  countSkillFiles,
-  joinSkills,
-  listHelperFiles,
-  listSkillFolders,
-} from './skills.mjs';
+import { countHelperPrompts, countHooks, countSkillFiles, helperLister, joinSkills, listSkillFolders } from './skills.mjs';
 
 export const SITE_URL = 'https://agent-blueprint.dbenger.com';
 
+const roots = new Map();
+
 export function findRepoRoot(start = dirname(fileURLToPath(import.meta.url))) {
+  if (roots.has(start)) return roots.get(start);
   for (let dir = start; ; dir = dirname(dir)) {
-    if (existsSync(join(dir, '.claude-plugin', 'plugin.json')) && existsSync(join(dir, 'README.md'))) return dir;
+    if (existsSync(join(dir, '.claude-plugin', 'plugin.json')) && existsSync(join(dir, 'README.md'))) {
+      roots.set(start, dir);
+      return dir;
+    }
     if (dirname(dir) === dir) throw new Error(`No repository root (.claude-plugin/plugin.json) at or above ${start}`);
   }
 }
@@ -71,14 +70,16 @@ export function getSiteData(root = findRepoRoot()) {
   const folders = listSkillFolders(root);
   const phases = parsePhases(readme);
   const install = parseInstall(readme);
-  const usedBy = (name) => folders.filter((skill) => listHelperFiles(root, skill).some((h) => h.name === name));
+  // each skill's references/agents/ is read once, for the count, the skills and usedBy
+  const helpersOf = helperLister(root);
+  const usedBy = (name) => folders.filter((skill) => helpersOf(skill).some((h) => h.name === name));
   const data = {
     version: plugin.version,
     repoUrl,
     siteUrl: SITE_URL,
     counts: {
       skills: countSkillFiles(root),
-      helpers: countHelperPrompts(root),
+      helpers: countHelperPrompts(root, helpersOf),
       hooks: countHooks(root),
       tools: install.tools.length,
       phases: phases.length,
@@ -87,7 +88,7 @@ export function getSiteData(root = findRepoRoot()) {
     installCommand: install.installCommand,
     tools: install.tools,
     phases: phases.map(({ slug, title, skills }) => ({ slug, title, skills: skills.map((s) => s.name) })),
-    skills: joinSkills({ root, folders, phases, repoUrl }),
+    skills: joinSkills({ root, folders, phases, repoUrl, helpersOf }),
     helpers: parseHelpers(readme).map((helper) => ({ ...helper, usedBy: usedBy(helper.name) })),
     releases: parseReleases(readme).map((release) => ({ ...release, notes: readReleaseNotes(root, release.version) })),
   };

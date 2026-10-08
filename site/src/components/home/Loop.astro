@@ -2,14 +2,12 @@
 // Detail A: the loop's stations as tabs, the pipelines as dimension lines under them, and
 // one panel per station with its skills. The Build panel carries the waves loop (Fig. 1).
 // Every panel is in the static HTML; without JavaScript the base layout shows them all.
+import { LOOPS } from '../kit/kit-data';
 import VideoFigure from '../VideoFigure.astro';
 import HomeLink from './HomeLink.astro';
 import { cap, md, numberWord, PIPES, skill, skillHref, STATIONS } from './home-data';
 
-const WAVES_ALT =
-  'Looping animation, no sound: the lead line of ab-orchestrate. Tasks 1 and 2 run in parallel as wave 1, ' +
-  'an integration check follows and the lead commits them, then tasks 3 and 4 run as wave 2 and are checked. ' +
-  "Under it the ledger shows each task's file and status: waiting, running, done, committed by the lead.";
+const WAVES_ALT = LOOPS.find((l) => l.name === 'loop-waves')!.alt;
 
 // the stations a pipeline covers, as 0-based indexes
 const cover = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, k) => a - 1 + k).join(',');

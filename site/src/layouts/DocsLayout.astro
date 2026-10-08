@@ -5,15 +5,12 @@
 // above the page.
 import '../styles/docs.css';
 import { IC } from '../components/icons';
+import SidebarNav, { type SidebarGroup } from '../components/SidebarNav.astro';
 import BaseLayout from './BaseLayout.astro';
 
 interface Link {
   label: string;
   href: string;
-}
-interface SidebarGroup {
-  title?: string;
-  items: (Link & { current?: boolean })[];
 }
 interface Props {
   title: string;
@@ -36,27 +33,13 @@ const { title, description, canonical, sheet, sidebar, headings = [], prev, next
   <div class="portal">
     <aside class="side" aria-label={sidebarLabel}>
       <button class="sb-search" type="button" data-open-search><Fragment set:html={IC.search} /><span>Search</span><kbd aria-hidden="true">⌘K</kbd></button>
-      <nav class="sb-nav" aria-label={`${sidebarLabel} pages`}>
-        {sidebar.map((group) => (
-          <div class="sb-group">
-            {group.title && <p class="sb-h">{group.title}</p>}
-            <ul>{group.items.map((item) => <li><a href={item.href} aria-current={item.current ? 'page' : undefined}>{item.label}</a></li>)}</ul>
-          </div>
-        ))}
-      </nav>
+      <SidebarNav groups={sidebar} label={sidebarLabel} />
     </aside>
 
     <div class="portal-main">
       <details class="sb-mobile">
         <summary>Browse the pages<Fragment set:html={IC.chevron} /></summary>
-        <nav class="sb-nav" aria-label={`${sidebarLabel} pages`}>
-          {sidebar.map((group) => (
-            <div class="sb-group">
-              {group.title && <p class="sb-h">{group.title}</p>}
-              <ul>{group.items.map((item) => <li><a href={item.href} aria-current={item.current ? 'page' : undefined}>{item.label}</a></li>)}</ul>
-            </div>
-          ))}
-        </nav>
+        <SidebarNav groups={sidebar} label={sidebarLabel} />
       </details>
       <article class="doc">
         <slot />
