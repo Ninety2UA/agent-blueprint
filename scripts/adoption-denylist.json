@@ -1,0 +1,23 @@
+{
+  "about": [
+    "Adoption and ecosystem wording that the public surfaces must not carry: the README, index.html, the site source (site/src/, site/motion/) and the built site.",
+    "scripts/check-drift.sh and scripts/check-site.py both read this file; edit it here only.",
+    "Each phrase is a case-insensitive regular expression. A space in a phrase matches any run of 'gap' (whitespace and line breaks, &nbsp;, inline tags, Markdown emphasis), so a soft wrap, <em>imported</em> from or what&nbsp;we took still match.",
+    "A match must start and end at a word edge: no letter or digit beside it, and a lone _ counts as an edge (Markdown emphasis) while a class like x__y does not."
+  ],
+  "gap": "(?:\\s|&(?:nbsp|#160|#x0*a0);|</?[a-z][^<>]*>|[*_`])+",
+  "phrases": [
+    "(?:patterns?|concepts?|ideas?) (?:absorbed|adopted|borrowed|grafted|imported|taken)",
+    "(?:absorbed|adopted|borrowed|grafted|imported|incorporated) (?:[a-z0-9-]+ )?(?:patterns?|concepts?|ideas?)",
+    "what we took",
+    "import nothing",
+    "(?:imported|adopted) from",
+    "how does this compare",
+    "(?:repos|repositories) (?:were )?analy[sz]ed",
+    "analy[sz]ed \\d+ (?:repos|repositories|projects|frameworks)",
+    "watched (?:repos|repositories)",
+    "ecosystem(?:-| )(?:wide|analysis|imports?|delta sweep|data|refresh|table|guide|repos?)",
+    "gstack|superpowers|get-shit-done|gsd-core|gsd-2|oh-my-claudecode|claude-mem|claude-squad",
+    "everything-claude-code|compound(?:-| )engineering|ralphy?"
+  ]
+}

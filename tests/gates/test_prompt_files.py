@@ -185,14 +185,17 @@ class CompanionRuleCrossCheck(unittest.TestCase):
         self.assertEqual(names, [os.path.basename(p) for p in paths if not expected[p]])
 
 
-def run_drift_with(rel_path, extra):
-    """Runs the drift gate on a copy of the repository with `extra` appended to one file."""
+def run_drift_on_copy(change):
+    """Runs the drift gate on a copy of the repository after change(copy root) edits it.
+
+    The copy leaves out git data and the site's build output and caches (node_modules, dist, .astro).
+    """
     root = tempfile.mkdtemp()
     try:
         copy = os.path.join(root, "repo")
-        shutil.copytree(REPO, copy, symlinks=True, ignore=shutil.ignore_patterns(".git", "node_modules"))
-        with open(os.path.join(copy, rel_path), "a", encoding="utf-8") as fh:
-            fh.write(extra)
+        shutil.copytree(REPO, copy, symlinks=True,
+                        ignore=shutil.ignore_patterns(".git", "node_modules", "dist", ".astro"))
+        change(copy)
         result = subprocess.run(["bash", os.path.join(copy, "scripts", "check-drift.sh"), copy],
                                 capture_output=True, text=True, timeout=120)
         return result.returncode, result.stdout + result.stderr
@@ -200,9 +203,27 @@ def run_drift_with(rel_path, extra):
         shutil.rmtree(root)
 
 
+def run_drift_with(rel_path, extra):
+    """Runs the drift gate on a copy of the repository with `extra` appended to one file."""
+    def append(copy):
+        with open(os.path.join(copy, rel_path), "a", encoding="utf-8") as fh:
+            fh.write(extra)
+    return run_drift_on_copy(append)
+
+
 def appended_line(rel_path, extra, marker):
     """The line number where `marker` starts once run_drift_with appends `extra` to rel_path."""
     return (read(os.path.join(REPO, rel_path)) + extra[:extra.index(marker)]).count("\n") + 1
+
+
+def edit_copy(copy, rel_path, pattern, replacement):
+    """Replaces the first match of `pattern` (multiline) in one file of a repository copy."""
+    path = os.path.join(copy, rel_path)
+    text, n = re.subn(pattern, replacement, read(path), count=1, flags=re.MULTILINE)
+    if n != 1:
+        raise AssertionError("%s no longer matches %r" % (rel_path, pattern))
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(text)
 
 
 class DriftGateAgentCount(unittest.TestCase):
@@ -220,12 +241,53 @@ class DriftGateAgentCount(unittest.TestCase):
 
 
 class DriftGateHero(unittest.TestCase):
-    """The README's animated hero bakes its numbers into a GIF, so the gate reads the hero's source."""
+    """The README hero bakes its skill count into a GIF and a video, so the gate reads the hero's source."""
 
     def test_a_wrong_skill_count_in_the_hero_source_fails(self):
-        code, out = run_drift_with("docs/images/hero/hero.html", "\n<!-- 54 skills -->\n")
+        hero = "site/motion/readme-hero/composition.html"
+        code, out = run_drift_on_copy(lambda copy: edit_copy(copy, hero, r"\b\d+ skills that take a coding agent",
+                                                             "54 skills that take a coding agent"))
         self.assertNotEqual(code, 0, out)
-        self.assertIn("docs/images/hero/hero.html: claims 54 skills", out)
+        self.assertIn(hero + ": claims 54 skills", out)
+
+
+class DriftGateSiteSource(unittest.TestCase):
+    """site/src/ and the film and loop compositions state no literal count (KTD4); the hero is checked above."""
+
+    def test_a_literal_count_in_the_site_source_or_a_loop_fails(self):
+        cases = (("site/src/components/Footer.astro", "\n<p>53 skills and 30 helper prompts</p>\n", "<p>",
+                  ("53 skills", "30 helper prompts")),
+                 ("site/motion/loop-review/composition.html", "\n<!-- 10 hooks -->\n", "<!--", ("10 hooks",)))
+
+        def append(copy):
+            for rel_path, extra, _marker, _counts in cases:
+                with open(os.path.join(copy, rel_path), "a", encoding="utf-8") as fh:
+                    fh.write(extra)
+        code, out = run_drift_on_copy(append)
+        self.assertNotEqual(code, 0, out)
+        for rel_path, extra, marker, counts in cases:
+            for count in counts:
+                self.assertIn("%s:%d: literal count '%s'" % (rel_path, appended_line(rel_path, extra, marker), count),
+                              out)
+        self.assertNotIn("readme-hero/composition.html:", out)
+
+
+class DriftGatePhaseTables(unittest.TestCase):
+    """Every skill folder sits in exactly one README phase table, which the site is built from."""
+
+    ROW = r"^\| \[ab-quick-fix\]\(skills/ab-quick-fix/\) \|.*\n"
+
+    def test_a_skill_folder_missing_from_the_phase_tables_fails(self):
+        code, out = run_drift_on_copy(lambda copy: edit_copy(copy, "README.md", self.ROW, ""))
+        self.assertNotEqual(code, 0, out)
+        self.assertIn("README.md Skills reference: skill folder ab-quick-fix is in no phase table", out)
+
+    def test_a_skill_folder_in_two_phase_tables_fails(self):
+        dup = "| [ab-quick-fix](skills/ab-quick-fix/) | Listed again | Never |\n"
+        code, out = run_drift_on_copy(lambda copy: edit_copy(copy, "README.md", r"^(\| \[ab-migrate\]\(.*\n)",
+                                                             r"\1" + dup))
+        self.assertNotEqual(code, 0, out)
+        self.assertIn("README.md Skills reference: skill folder ab-quick-fix has 2 rows (Pipelines, Meta)", out)
 
 
 # Lines the v4 rewrite removed from README.md and index.html, verbatim.
@@ -274,6 +336,15 @@ class DriftGateAdoption(unittest.TestCase):
                   "what&nbsp;we took'"))
         for rel_path, extra, marker, match in cases:
             with self.subTest(rel_path=rel_path, match=match):
+                self.assert_claim(rel_path, extra, marker, match)
+
+    def test_a_claim_in_the_site_source_fails(self):
+        cases = (("site/src/components/Footer.astro", "\n<p>Patterns adopted from the gstack project.</p>\n", "<p>",
+                  "Patterns adopted'"),
+                 ("site/motion/film/composition.html", "\n<!-- what we took from claude-squad -->\n", "<!--",
+                  "what we took'"))
+        for rel_path, extra, marker, match in cases:
+            with self.subTest(rel_path=rel_path):
                 self.assert_claim(rel_path, extra, marker, match)
 
     def test_two_claims_on_one_line_fail_once(self):

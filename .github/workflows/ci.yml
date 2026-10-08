@@ -209,6 +209,40 @@ jobs:
       - name: Gate unit tests
         run: python3 -m unittest discover -s tests/gates -v
 
+  # The site is built from the skills and the README, so any pull request can change it.
+  # check-site.py runs inside `npm run build` (the same command Vercel runs), so a failing
+  # built-site check fails this job and the deployment alike.
+  site:
+    name: Site
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install site dependencies
+        run: npm ci
+
+      - name: Type-check the site
+        run: npx astro check
+
+      - name: Build the site and run the built-site gate
+        run: npm run build
+
+      # The quoted glob: the bare folder form fails on Node 22 and later.
+      - name: Site data tests
+        working-directory: .
+        run: node --test 'site/test/**/*.test.mjs'
+
   plugin-validate:
     name: Plugin Validate
     runs-on: ubuntu-latest
