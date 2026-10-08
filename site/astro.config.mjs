@@ -32,7 +32,12 @@ export default defineConfig({
             weight: '400 700',
             stretch: '100% 120%',
             style: 'normal',
-            display: 'swap',
+            // block, not swap: the display headings run at 118% width, which the Arial fallback
+            // cannot match, so a late swap reflowed the home hero by 37 px (CLS 0.24 on a cold
+            // Slow 4G load). optional removed the shift but showed the fallback on a cold Fast 4G
+            // load. With block the text waits for this preloaded file: on cold Fast 4G the hero is
+            // set in Archivo with CLS 0 and LCP about 0.5 s; on Slow 4G CLS stays under 0.06.
+            display: 'block',
             src: ['./src/assets/fonts/Archivo-var.woff2'],
           },
         ],
