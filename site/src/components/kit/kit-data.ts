@@ -55,9 +55,9 @@ export const LONG = claimed([
   ['skills', `${skills} skills`],
   ' that take an AI coding agent from an idea to a reviewed pull request. They work the same way in ',
   ['tools', toolsWord],
-  ` coding CLIs: ${listJoin(site.tools)}. Skills carry a feature from design through review to a pull request, and `,
+  ` coding CLIs: ${listJoin(site.tools)}. The skills hold `,
   ['helpers', `${helpers} helper prompts`],
-  ' run the checks that need a fresh context. Project documents under docs/ carry decisions and solved problems ' +
+  ' for the checks that need a fresh context. Project documents under docs/ carry decisions and solved problems ' +
     'from one session to the next. Agent Blueprint is MIT licensed: ',
   site.repoUrl.replace(/^https:\/\//, ''),
 ]);

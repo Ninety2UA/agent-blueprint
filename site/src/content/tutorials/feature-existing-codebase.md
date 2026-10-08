@@ -123,7 +123,7 @@ The commit went through a short-lived branch again: `docs: add codebase map and 
 
 ### Why it matters
 
-The design and plan that follow start from the map's file paths and concerns, not from guesses. Here the crash it found became the first decision of the pipeline.
+The design and plan that follow start from the map's file paths and concerns. Here the crash it found became the first decision of the pipeline.
 
 ### Checkpoint
 

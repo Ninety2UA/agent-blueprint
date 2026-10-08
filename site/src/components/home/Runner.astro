@@ -21,7 +21,7 @@ const RUNNER_ALT = LOOPS.find((l) => l.name === 'loop-runner')!.alt;
       <div class="runner-l">
         <div class="sec-head">
           <h2 id="run-h" class="h-sec">Ship a feature with nobody watching.</h2>
-          <p class="body">The ship runner drives <code>{pipeline}</code> through your tool's headless mode. Every iteration is a new session with a clean context, and nothing is pushed until the runner's own secret scan has passed.</p>
+          <p class="body">The ship runner drives <code>{pipeline}</code> through your tool's headless mode and pushes nothing until its own secret scan has passed.</p>
         </div>
         <div class="runner-cmd">
           <div class="host-pick" role="radiogroup" aria-label="Tool to run with">
@@ -38,7 +38,7 @@ const RUNNER_ALT = LOOPS.find((l) => l.name === 'loop-runner')!.alt;
     </div>
     <ol class="flow" data-flow>
       <li><span class="fm">1</span><h3>Preflight</h3><p>Checks the tool is installed and signed in, records the remote and branch it will push to, and refuses the default branch.</p></li>
-      <li class="loop-step"><span class="rep" aria-hidden="true"><span>each iteration</span></span><span class="fm">2</span><h3>A fresh session</h3><p>Every iteration is a new headless session. Between them the runner reads <code>.agent-blueprint/run/state.json</code>.</p></li>
+      <li class="loop-step"><span class="rep" aria-hidden="true"><span>each iteration</span></span><span class="fm">2</span><h3>A fresh session</h3><p>Every iteration is a new headless session with a clean context. Between them the runner reads <code>.agent-blueprint/run/state.json</code>.</p></li>
       <li><span class="fm">3</span><h3>Finish check</h3><p>Printed text never ends a run. The state file must say <code>done</code>, with new commits, a pull request body and a provenance record.</p></li>
       <li><span class="fm">4</span><h3>Secret scan</h3><p>Every commit the push would publish, their messages and the pull request body, including any <code>.env</code> file a commit added.</p></li>
       <li><span class="fm">5</span><h3>Publish</h3><p>Pushes exactly the commit it scanned to the recorded remote and branch, then opens or updates the pull request.</p></li>

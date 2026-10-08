@@ -74,7 +74,7 @@ The installer finds the tools on your `PATH` and gives each one its route:
 bash install.sh
 ```
 
-Or install one tool at a time with the route in this table (`<checkout>` is the folder you cloned):
+Or install one tool at a time with its own route (`<checkout>` is the folder you cloned):
 
 | Tool | Command | Install route | Support note |
 |---|---|---|---|
@@ -195,7 +195,7 @@ Each tool runs with the least privilege that still finishes a run: Claude Code `
    ```
 
 4. Refresh the project files. Run `ab-project-start` in the migrated project. It adds the v4 files the project lacks and keeps every section your `AGENTS.md` already has.
-5. Use the new names. `/build-pipeline` is now `ab-build-pipeline`, and every other skill gained the same prefix. The full map, the folder changes and what happened to each v3 instruction rule are in [`docs/upgrade/v4.md`](docs/upgrade/v4.md).
+5. Use the new names. `/build-pipeline` is now `ab-build-pipeline`, and the other skills gained the same prefix. The exceptions are `agent-teams` and `team-execution`, which merged into `ab-orchestrate`, and `migrate-to-plugin`, which became `ab-migrate`. The full map, the folder changes and what happened to each v3 instruction rule are in [`docs/upgrade/v4.md`](docs/upgrade/v4.md).
 
 ## Update
 
@@ -359,7 +359,7 @@ Five helpers research a topic in parallel before planning: past learnings, frame
 
 ### Knowledge loop (`ab-knowledge-compounding`)
 
-Each solved problem becomes a searchable document in `docs/solutions/`. `ab-brainstorming` and `ab-deep-research` search it before new work, so the project stops repeating its mistakes.
+Each solved problem becomes a searchable document in `docs/solutions/`, which `ab-brainstorming` and `ab-deep-research` search before new work.
 
 <p align="center">
   <img src="docs/images/knowledge-loop.png" alt="Knowledge loop: solve, record, search, plan, repeat" width="90%">
@@ -618,7 +618,7 @@ The blueprint uses a tool's native features only as opt-ins: no pipeline depends
 | Fast mode (Claude Code) | Opt-in only | Opus 5.5, Opus 5 and Opus 4.8; research preview, pricing subject to change |
 | Session limits (Claude Code) | Swarms and research stay within the native limits: since CLI 2.1.224 there is no per-session subagent total, only a concurrency cap and a nesting depth; `host-limits.tsv` records the other tools' limits | 20 concurrent subagents by default (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`), spawn depth 3 (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`), 200 web searches per session |
 | Native injection hardening (Claude Code Agent tool) | Adds to the blueprint's own read and write scanners (Claude Code and Codex hooks) and the data markers helpers wrap around external text, which cover the main-session reads and writes native hardening does not see | None |
-| Bundled `/deep-research` workflow (Claude Code) | Claude Code bundles a web-search workflow of that name; the blueprint's research swarm is `ab-deep-research`, so the two no longer share a name | None |
+| Bundled `/deep-research` workflow (Claude Code) | Claude Code bundles a web-search workflow of that name; the blueprint's research swarm is `ab-deep-research`, so the two names do not collide | None |
 | Hermes skill security scan | Skills, prompt files and instruction files carry none of the phrases Hermes treats as injection, no instruction to edit the instructions file by name, and no HTML comments; the portability gate checks the same | Runs on every skill Hermes installs or indexes |
 
 ### Adjusting quality gates
@@ -627,7 +627,7 @@ The gates are written into the skill files. To relax one (for example, no code r
 
 ## Documentation structure
 
-The scaffold includes example docs in each category, so you can see the expected format right away. They are marked as examples; delete them when you start your project.
+The scaffold includes example docs in `docs/decisions/`, `docs/plans/`, `docs/specs/` and `docs/research/`, so you can see the expected format right away. They are marked as examples; delete them when you start your project.
 
 | Example file | Shows how to write |
 |-------------|----------------------|
@@ -788,7 +788,7 @@ Yes. The blueprint installs in your tool and adds no engine files to your projec
 <details>
 <summary><strong>Do I need all the skills?</strong></summary>
 
-No. A skill runs when a request matches its description or when you name it. If you never do test-driven development, `ab-test-driven-development` never runs. You can also delete any skill folder you don't want; the blueprint works with any subset.
+No. A skill runs when a request matches its description or when you name it. If you never do test-driven development, `ab-test-driven-development` never runs. You can also delete any skill folder you don't want, as long as no pipeline or other skill you keep runs it.
 </details>
 
 <details>

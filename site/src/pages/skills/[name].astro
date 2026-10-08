@@ -168,7 +168,7 @@ const plainSummary = skill.summary.replace(/\x60/g, ''); // \x60: a literal back
         {skill.helpers.length > 0 && (
           <section id="helpers" class="ss" aria-labelledby="helpers-h">
             <h2 id="helpers-h" class="h-sub">Helpers it starts</h2>
-            <p class="body">Each helper is a prompt file in <code>references/agents/</code>. It runs in its own context, with only the inputs its prompt file names.</p>
+            <p class="body">Each helper is a prompt file in <code>references/agents/</code>. Where the tool has subagents, the helper runs in its own context with only the inputs the file names; elsewhere the main session follows the file itself.</p>
             <div class="disp">
               <div class="d-node d-main"><span class="lbl">Main session</span><b>{skill.name}</b></div>
               <div class="d-fan">

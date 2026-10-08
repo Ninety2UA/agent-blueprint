@@ -14,7 +14,7 @@ const groups = skills
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
 ---
 <div class="hp">
-  <p class="body hp-intro"><span data-claim="helpers">{counts.helpers}</span> helper prompts live inside the skills that use them. A security review or a plan check runs in its own context, with only the inputs its prompt file names.</p>
+  <p class="body hp-intro"><span data-claim="helpers">{counts.helpers}</span> helper prompts live inside the skills that use them. Where the tool has subagents, a security review or a plan check runs in its own context, with only the inputs its prompt file names. Elsewhere the main session follows the same file.</p>
   {groups.map(({ skill, helpers: own }) => (
     <section class="hp-group" aria-labelledby={`hp-${skill.name}`}>
       <header class="hp-head">
