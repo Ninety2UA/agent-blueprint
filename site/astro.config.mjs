@@ -27,8 +27,10 @@ export default defineConfig({
       options: {
         variants: [
           {
-            weight: '100 900',
-            stretch: '62% 125%',
+            // Instanced to the ranges the site and the motion sources use (weights 400 to 700,
+            // widths 100% to 120%): 55 KB instead of 90 KB for the one preloaded file.
+            weight: '400 700',
+            stretch: '100% 120%',
             style: 'normal',
             display: 'swap',
             src: ['./src/assets/fonts/Archivo-var.woff2'],
@@ -44,7 +46,7 @@ export default defineConfig({
       options: {
         variants: [
           {
-            weight: '100 900',
+            weight: '400 700',
             style: 'normal',
             display: 'swap',
             src: ['./src/assets/fonts/AzeretMono-var.woff2'],
