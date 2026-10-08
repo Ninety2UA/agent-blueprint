@@ -1,0 +1,52 @@
+---
+// The skills catalog (R1, R3): every skill as a static card, a search box with the "/"
+// shortcut, phase chips with counts, a live "N of total" count, an empty state that clears
+// the filter, and a second tab with the helper prompts grouped by owning skill. The filter
+// (SkillFilter.tsx) is the page's only island and hydrates on first use; the cards never
+// enter React. Every count comes from siteData().
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Tabs from '../../components/Tabs.astro';
+import CatalogScript from '../../components/skills/CatalogScript.astro';
+import HelperIndex from '../../components/skills/HelperIndex.astro';
+import SkillCard from '../../components/skills/SkillCard.astro';
+import SkillFilter from '../../components/skills/SkillFilter';
+import { siteData } from '../../components/skills/data';
+import '../../styles/skills.css';
+
+const { skills, phases, counts } = siteData();
+const phaseBySlug = new Map(phases.map((p) => [p.slug, p]));
+const chips = phases.map((p) => ({ slug: p.slug, title: p.title, count: p.skills.length }));
+const description = `Search the ${counts.skills} Agent Blueprint skills by name or summary, filter them by phase, and browse the ${counts.helpers} helper prompts they start.`;
+---
+<BaseLayout title="Skills: Agent Blueprint" description={description}>
+  {/* without JavaScript the filter cannot run; every card shows, so its controls are hidden */}
+  <noscript slot="head"><style is:inline>.cat-tools{display:none!important}</style></noscript>
+  <div class="wrap catalog" data-pagefind-body data-pagefind-filter="section:Skills">
+    <header class="cat-head">
+      <h1 class="cat-title"><span data-claim="skills">{counts.skills}</span> skills, sorted by phase.</h1>
+      <p class="body">Every name starts with <code>ab-</code>, which keeps them apart from other skill packs in a shared skills folder. Search by name or summary, or pick a phase.</p>
+    </header>
+
+    <Tabs id="catalog" label="Catalog" hashTarget class="cat-tabs" items={[{ id: 'skills', label: 'Skills' }, { id: 'helpers', label: 'Helper prompts' }]}>
+      <Fragment slot="skills">
+        <div class="cat-tools">
+          <SkillFilter client:interaction phases={chips} total={counts.skills} />
+          <p class="cat-count" aria-live="polite"><span data-count>{skills.length}</span> of <span data-claim="skills">{counts.skills}</span> skills</p>
+        </div>
+        <ul class="cards cat-cards" id="skill-cards" data-cards>
+          {skills.map((s) => (
+            <SkillCard name={s.name} phase={phaseBySlug.get(s.phase)!} summary={s.summary} when={s.when} level={2} filterable />
+          ))}
+        </ul>
+        <div class="cat-empty" data-empty hidden>
+          <p>No skill matches “<span data-empty-q></span>”<span data-empty-in></span>.</p>
+          <a class="btn btn-ghost btn-sm" href="/skills/" data-catalog-clear>Clear the search and filter</a>
+        </div>
+        <CatalogScript />
+      </Fragment>
+      <Fragment slot="helpers">
+        <HelperIndex />
+      </Fragment>
+    </Tabs>
+  </div>
+</BaseLayout>

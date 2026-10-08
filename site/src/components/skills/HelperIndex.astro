@@ -1,0 +1,44 @@
+---
+// The catalog's Helper prompts tab: every helper prompt from the README "Helper prompts
+// reference", grouped under the skill that owns it, in the phase tables' skill order. Each
+// entry carries data-helper="<prompt name>" once, which the built-site gate checks against
+// the tree.
+import { siteData } from './data';
+import { inlineCode } from './outline.mjs';
+
+const { helpers, skills, phases, repoUrl, counts } = siteData();
+const phaseTitle = new Map(phases.map((p) => [p.slug, p.title]));
+const groups = skills
+  .map((skill) => ({ skill, helpers: helpers.filter((h) => h.skill === skill.name) }))
+  .filter((g) => g.helpers.length > 0);
+const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
+---
+<div class="hp">
+  <p class="body hp-intro"><span data-claim="helpers">{counts.helpers}</span> helper prompts live inside the skills that use them. A security review or a plan check runs in its own context, with only the inputs its prompt file names.</p>
+  {groups.map(({ skill, helpers: own }) => (
+    <section class="hp-group" aria-labelledby={`hp-${skill.name}`}>
+      <header class="hp-head">
+        <h2 id={`hp-${skill.name}`} class="hp-skill"><a href={`/skills/${skill.name}/`}>{skill.name}</a></h2>
+        <span class="phase">{phaseTitle.get(skill.phase)}</span>
+        <span class="lbl">{plural(own.length, 'prompt')}</span>
+      </header>
+      <ul class="hp-list">
+        {own.map((h) => {
+          const others = h.usedBy.filter((name: string) => name !== skill.name);
+          return (
+            <li data-helper={h.name}>
+              <a class="hp-name" href={`${repoUrl}/blob/main/${h.path}`}><code>{h.name}</code></a>
+              <span class="hp-sum" set:html={inlineCode(h.summary)} />
+              <span class="hp-when"><b>When it runs:</b> <Fragment set:html={inlineCode(h.when)} /></span>
+              {others.length > 0 && (
+                <span class="hp-also">Also used by {others.map((name: string, i: number) => (
+                  <Fragment>{i > 0 && (i === others.length - 1 ? ' and ' : ', ')}<a href={`/skills/${name}/`}><code>{name}</code></a></Fragment>
+                ))}</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  ))}
+</div>
