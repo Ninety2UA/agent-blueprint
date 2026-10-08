@@ -2,9 +2,11 @@
    pieces framed as drawing sheets, never as cards. Loaded only by pages that show one. */
 .vfig { position: relative; margin: 0; min-width: 0; }
 .vf-media { position: relative; aspect-ratio: 1200 / 750; border: 1px solid var(--hair-strong); background: var(--bg-sunk); }
-.vf-media video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.vf-media video { position: relative; display: block; width: 100%; height: 100%; object-fit: cover; }
+/* the poster sits behind the idle video; the playing video covers it */
+.vf-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 /* the negative print: in the dark theme the light drawings are shown in negative, like the page */
-:root[data-theme="dark"] .vf-media video, :root[data-theme="dark"] .kit-neg { filter: invert(0.93) hue-rotate(180deg); }
+:root[data-theme="dark"] .vf-media video, :root[data-theme="dark"] .vf-poster, :root[data-theme="dark"] .kit-neg { filter: invert(0.93) hue-rotate(180deg); }
 
 .vf-cap { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); margin-top: 14px; font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.5; color: var(--muted); }
 .vf-cap b { margin-right: 1.6ch; font-weight: 600; color: var(--ink); }

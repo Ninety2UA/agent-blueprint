@@ -9,7 +9,9 @@ import chapters from '../../public/media/film-chapters.json';
 import DimensionLine from './DimensionLine.astro';
 import DrawingSheet from './DrawingSheet.astro';
 import { IC } from './icons';
+import { getSiteData } from '../lib/site.mjs';
 import { clock, mp4Facts } from './media';
+import { numberWord } from './number-word';
 import TitleBlock from './TitleBlock.astro';
 
 interface Props {
@@ -21,6 +23,7 @@ interface Props {
 const { num, id = 'film' } = Astro.props;
 
 const SRC = '/media/film.mp4';
+const tools = numberWord(getSiteData().counts.tools);
 const { duration, width, height } = mp4Facts('media/film.mp4');
 const chaps = chapters.map((c) => ({ label: String(c.label), start: Number(c.start) }));
 
@@ -33,7 +36,7 @@ const CHAPTER_TEXT: Record<string, string> = {
   Review: '<code>ab-review-swarm</code> sends the change to five reviewers and merges their findings into one P1/P2/P3 report. After the fixes, <code>ab-iterative-refinement</code> runs a second pass and no P1 is left.',
   Verify: '<code>ab-verification-before-completion</code> runs the full command and reads the output and exit code before anything is called done.',
   Ship: 'The outgoing commits and the pull request body pass a secret scan, then the pull request opens.',
-  Learn: '<code>ab-knowledge-compounding</code> writes the solution to <code>docs/solutions/</code> and <code>ab-session-wrap</code> updates <code>docs/context/STATUS.md</code>. The next session, in Codex, reads both with <code>ab-resume-session</code>. The film ends on the eight coding CLIs and the mark.',
+  Learn: `<code>ab-knowledge-compounding</code> writes the solution to <code>docs/solutions/</code> and <code>ab-session-wrap</code> updates <code>docs/context/STATUS.md</code>. The next session, in Codex, reads both with <code>ab-resume-session</code>. The film ends on the ${tools} coding CLIs and the mark.`,
 };
 const texts = JSON.stringify(Object.fromEntries(chaps.map((c) => [c.label, CHAPTER_TEXT[c.label] ?? ''])));
 const first = chaps[0].label;
@@ -44,7 +47,7 @@ const alt =
   'along one line. Design with ab-brainstorming, Plan with ab-writing-plans, Build in two waves with ab-orchestrate, ' +
   'Review with ab-review-swarm and ab-iterative-refinement, Verify with ab-verification-before-completion, ' +
   'Ship after a secret scan, and Learn with ab-knowledge-compounding and ab-session-wrap, read back in Codex by ' +
-  'ab-resume-session. It ends on the eight coding CLIs and the mark.';
+  `ab-resume-session. It ends on the ${tools} coding CLIs and the mark.`;
 
 const cells = [
   { label: 'Figure', value: String(num), class: 'ftb-fig' },
@@ -58,7 +61,8 @@ const cells = [
 <figure class="vfig film" data-vfig data-film data-duration={duration.toFixed(2)} data-texts={texts}>
   <DrawingSheet class="film-sheet">
     <div class="vf-media">
-      <video muted playsinline preload="none" controls poster="/media/film-1280.jpg" width="1280" height="720" aria-label={alt}>
+      <img class="vf-poster" src="/media/film-1280.jpg" width="1280" height="720" alt="" loading="lazy" decoding="async" />
+      <video muted playsinline preload="none" controls width="1280" height="720" aria-label={alt}>
         <source src={SRC} type="video/mp4" />
       </video>
       <button class="vf-big" type="button" data-vplay aria-label="Play the film"><Fragment set:html={IC.play} /><span>Play</span></button>
