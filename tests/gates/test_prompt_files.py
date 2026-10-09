@@ -302,10 +302,10 @@ REMOVED_ADOPTION_LINES = (
     ("README.md", "### What's New in v3.5.0 — Ecosystem Delta Sweep"),
     (SITE_HOME, "        <h2>Ecosystem Analysis</h2>"),
     (SITE_HOME, '            <tr><td>Compound Eng.</td><td>25.0K</td><td><span class="eco-verdict '
-                   'eco-verdict--adopted">Patterns adopted</span></td></tr>'),
+                'eco-verdict--adopted">Patterns adopted</span></td></tr>'),
     (SITE_HOME, "        <p>Ecosystem imports &mdash; twenty-one ideas from seven watched repositories grafted "
-                   "onto existing skills and agents; no new components, every idea re-implemented in the "
-                   "blueprint's own words, provenance recorded</p>"),
+                "onto existing skills and agents; no new components, every idea re-implemented in the "
+                "blueprint's own words, provenance recorded</p>"),
 )
 
 
