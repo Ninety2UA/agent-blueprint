@@ -55,11 +55,11 @@ Options: the approaches, at most three. Default when nobody answers: the recomme
 
 ### 5. Present the design
 
-Present the chosen approach's design in sections (architecture, components, data flow, error handling, testing), each scaled to its complexity: a few sentences, up to 200-300 words when nuanced. After each section ask whether it looks right, and go back to clarify when something does not fit.
+Present the chosen approach's design in sections (architecture, components, data flow, error handling, testing), each scaled to its complexity: a few sentences, up to 200-300 words when nuanced. Write each section out in full in your reply before you ask about it; the user can approve only what they have read, so a heading or a one-line summary is not a section. After each section ask whether it looks right, and go back to clarify when something does not fit.
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-Options: approve, revise (say what), or return to step 4. Default when nobody answers: approve the design as presented and log it as a decision. This is the hard gate's unattended path; the plan is still checked before anything executes.
+Ask for approval only once every section is in the conversation. Options: approve, revise (say what), or return to step 4. Default when nobody answers: approve the design as presented and log it as a decision. This is the hard gate's unattended path; the plan is still checked before anything executes.
 
 ### 6. Write and commit the design doc
 
