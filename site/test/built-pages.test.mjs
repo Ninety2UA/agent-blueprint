@@ -1,8 +1,8 @@
 // Checks on the built site (site/dist) for R1, R6, R7 and R8: every page has its own title and
 // description, the sitemap lists every page, the Changelog and Kit pages state what the repository
-// holds, and 404.html and llms.txt exist. One more holds the script budget: islands hydrate on first
-// interaction and nothing loads from another origin. CI runs these after `npm run build`; without a
-// build the tests are skipped and say so.
+// holds, 404.html and llms.txt exist, and robots.txt names the sitemap. One more holds the script
+// budget: islands hydrate on first interaction and nothing loads from another origin. CI runs these
+// after `npm run build`; without a build the tests are skipped and say so.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -80,6 +80,14 @@ test('the sitemap lists every page except the 404, with the canonical URL', { sk
     const canonical = p.html.match(/<link rel="canonical" href="([^"]+)"/)?.[1];
     assert.equal(canonical, `${site.siteUrl}${p.url}`, p.url);
   }
+});
+
+test('robots.txt allows every crawler and names the sitemap index on the production origin', { skip }, () => {
+  assert.ok(existsSync(join(dist, 'robots.txt')), 'no robots.txt');
+  const lines = read('robots.txt').split('\n');
+  assert.ok(lines.includes('User-agent: *'), lines.join('\n'));
+  assert.ok(lines.includes('Allow: /'), lines.join('\n'));
+  assert.ok(lines.includes(`Sitemap: ${site.siteUrl}/sitemap-index.xml`), lines.join('\n'));
 });
 
 test('the Changelog lists every README release, newest first, with its date', { skip }, () => {

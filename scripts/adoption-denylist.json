@@ -1,6 +1,6 @@
 {
   "about": [
-    "Adoption and ecosystem wording that the public surfaces must not carry: the README, index.html, the site source (site/src/, site/motion/) and the built site.",
+    "Adoption and ecosystem wording that the public surfaces must not carry: the README, the site source (site/src/, site/motion/) and the built site.",
     "scripts/check-drift.sh and scripts/check-site.py both read this file; edit it here only.",
     "Each phrase is a case-insensitive regular expression. A space in a phrase matches any run of 'gap' (whitespace and line breaks, &nbsp;, inline tags, Markdown emphasis), so a soft wrap, <em>imported</em> from or what&nbsp;we took still match.",
     "A match must start and end at a word edge: no letter or digit beside it, and a lone _ counts as an edge (Markdown emphasis) while a class like x__y does not."
