@@ -265,10 +265,29 @@ def site_files():
 SITE_FILES = list(site_files())
 LITERAL_COUNT = re.compile(r"(?<![\w.])\d+\+?(?:\s|&nbsp;|&#160;)+(?:skills|helper[ -]prompts|helpers|hooks|"
                            r"hook handlers)\b", re.IGNORECASE)
+# The same counts spelled out ("ten hooks", "fifty-three skills") fail too. Tutorials report what one
+# recorded run did ("each task got three helpers"), so there a spelled-out count fails only from ten
+# up, which covers every total the tree ships.
+UNITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
+         "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"]
+TENS = ["twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
+WORD_COUNT = re.compile(r"(?<![\w-])((?:%s)(?:[- ](?:%s))?|%s)(?:\s|&nbsp;|&#160;)+(?:skills|helper[ -]prompts|"
+                        r"helpers|hooks|hook handlers)\b"
+                        % ("|".join(TENS), "|".join(UNITS[1:10]), "|".join(UNITS)), re.IGNORECASE)
+
+def word_value(phrase):
+    parts = re.split(r"[- ]", phrase.lower())
+    if parts[0] in TENS:
+        return 20 + 10 * TENS.index(parts[0]) + (UNITS.index(parts[1]) if len(parts) > 1 else 0)
+    return UNITS.index(parts[0])
+
 for rel, text in SITE_FILES:
     if rel.startswith("site/motion/readme-hero/"):
         continue
-    for m in LITERAL_COUNT.finditer(text):
+    hits = list(LITERAL_COUNT.finditer(text))
+    floor = 10 if rel.startswith("site/src/content/tutorials/") else 0
+    hits += [m for m in WORD_COUNT.finditer(text) if word_value(m.group(1)) >= floor]
+    for m in sorted(hits, key=lambda hit: hit.start()):
         failures.append("%s:%d: literal count '%s'; render counts from site data (KTD4), and keep them out of "
                         "the film and the loops"
                         % (rel, text.count("\n", 0, m.start()) + 1, " ".join(m.group(0).split())))
