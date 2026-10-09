@@ -14,26 +14,29 @@ const path = require('path');
 const { detectHost } = require('./host');
 
 // Standard injection patterns -- superset of prompt-guard.js plus
-// summarisation-survival shapes ("retain this through compression", etc.)
+// summarisation-survival shapes ("retain this through compression", etc.). Each word-led pattern
+// refuses a letter or digit just before it, so "Blueprint instructions" or "react as a" is not a
+// finding; an underscore is allowed there (Markdown emphasis), and the output verbs also match with a
+// "re" prefix ("reprint").
 const INJECTION_PATTERNS = [
-  /ignore\s+(all\s+)?previous\s+instructions/i,
-  /ignore\s+(all\s+)?above\s+instructions/i,
-  /disregard\s+(all\s+)?previous/i,
-  /forget\s+(all\s+)?(your\s+)?instructions/i,
-  /override\s+(system|previous)\s+(prompt|instructions)/i,
-  /you\s+are\s+now\s+(?:a|an|the)\s+/i,
-  /pretend\s+(?:you(?:'re| are)\s+|to\s+be\s+)/i,
-  /act\s+as\s+(?:a|an|the)\s+/i,
-  /from\s+now\s+on,?\s+you\s+(?:are|will|should|must)/i,
-  /(?:print|output|reveal|show|display|repeat)\s+(?:your\s+)?(?:system\s+)?(?:prompt|instructions)/i,
+  /(?<![A-Za-z0-9])ignore\s+(all\s+)?previous\s+instructions/i,
+  /(?<![A-Za-z0-9])ignore\s+(all\s+)?above\s+instructions/i,
+  /(?<![A-Za-z0-9])disregard\s+(all\s+)?previous/i,
+  /(?<![A-Za-z0-9])forget\s+(all\s+)?(your\s+)?instructions/i,
+  /(?<![A-Za-z0-9])override\s+(system|previous)\s+(prompt|instructions)/i,
+  /(?<![A-Za-z0-9])you\s+are\s+now\s+(?:a|an|the)\s+/i,
+  /(?<![A-Za-z0-9])pretend\s+(?:you(?:'re| are)\s+|to\s+be\s+)/i,
+  /(?<![A-Za-z0-9])act\s+as\s+(?:a|an|the)\s+/i,
+  /(?<![A-Za-z0-9])from\s+now\s+on,?\s+you\s+(?:are|will|should|must)/i,
+  /(?<![A-Za-z0-9])(?:re)?(?:print|output|reveal|show|display|repeat)\s+(?:your\s+)?(?:system\s+)?(?:prompt|instructions)/i,
   /<\/?(?:system|assistant|human)>/i,
   /\[SYSTEM\]/i,
   /\[INST\]/i,
   /<<\s*SYS\s*>>/i,
   // Summarisation-survival shapes
-  /(?:retain|preserve|keep)\s+(?:these|this|the\s+following)\s+(?:rules|instructions|directives)\s+(?:through|across|during)\s+(?:summari[sz]ation|compression)/i,
-  /(?:permanent|persistent|immutable|inviolable)\s+(?:rule|instruction|directive|policy)/i,
-  /(?:do\s+not|never)\s+(?:summari[sz]e|compress|remove|forget)\s+(?:this|these|the\s+following)/i,
+  /(?<![A-Za-z0-9])(?:retain|preserve|keep)\s+(?:these|this|the\s+following)\s+(?:rules|instructions|directives)\s+(?:through|across|during)\s+(?:summari[sz]ation|compression)/i,
+  /(?<![A-Za-z0-9])(?:permanent|persistent|immutable|inviolable)\s+(?:rule|instruction|directive|policy)/i,
+  /(?<![A-Za-z0-9])(?:do\s+not|never)\s+(?:summari[sz]e|compress|remove|forget)\s+(?:this|these|the\s+following)/i,
 ];
 
 // Invisible Unicode characters -- zero-width chars, directional overrides,
