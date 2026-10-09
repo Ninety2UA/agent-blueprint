@@ -1,20 +1,43 @@
 // Tests for site/src/components/wrap-points.mjs: where code wraps on a phone. A command shown in a
 // .cmd control gets a <wbr> after each slash inside a path or URL, so it wraps at a slash instead
-// of inside a name, and its flags (--host, [--pr]) stay whole, as in a title block's code cells.
-// The text (what the copy button copies, what a reader selects) stays exactly the same.
+// of inside a name; a segment of that path with a hyphen in it (agent-blueprint.git) stays whole,
+// since Chrome would otherwise break after the hyphen; and its flags (--host, [--pr]) stay whole,
+// as in a title block's code cells. The text (what the copy button copies, what a reader selects)
+// stays exactly the same.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { breakAfterSlashes, breakCodeAfterSlashes, keepFlagsWhole } from '../src/components/wrap-points.mjs';
 
 const text = (html) => html.replace(/<[^>]+>/g, '');
+const whole = (s) => `<span class="nowrap">${s}</span>`;
 
 test('breakAfterSlashes puts a <wbr> after each slash in a URL and a path', () => {
   assert.equal(
     breakAfterSlashes('git clone https://github.com/Ninety2UA/agent-blueprint.git'),
-    'git clone https://<wbr>github.com/<wbr>Ninety2UA/<wbr>agent-blueprint.git',
+    `git clone https://<wbr>github.com/<wbr>Ninety2UA/<wbr>${whole('agent-blueprint.git')}`,
   );
-  assert.equal(breakAfterSlashes('docs/hosts/claude-code.md'), 'docs/<wbr>hosts/<wbr>claude-code.md');
+  assert.equal(breakAfterSlashes('docs/hosts/claude-code.md'), `docs/<wbr>hosts/<wbr>${whole('claude-code.md')}`);
+});
+
+test('breakAfterSlashes keeps each segment of a path or URL that holds a hyphen whole', () => {
+  assert.equal(
+    breakAfterSlashes('bash &lt;checkout&gt;/skills/ab-ship-pipeline/scripts/run.sh'),
+    `bash &lt;checkout&gt;/<wbr>skills/<wbr>${whole('ab-ship-pipeline')}/<wbr>scripts/<wbr>run.sh`,
+  );
+  assert.equal(breakAfterSlashes('git switch -c feat/jwt-refresh'), `git switch -c feat/<wbr>${whole('jwt-refresh')}`);
+  assert.equal(breakAfterSlashes('/usr/local-bin/x'), `/usr/<wbr>${whole('local-bin')}/<wbr>x`);
+  assert.equal(breakAfterSlashes('.agent-blueprint/run/'), `${whole('.agent-blueprint')}/<wbr>run/`);
+  // a word with no slash inside it is not a path: its hyphens are left to keepFlagsWhole and the browser
+  for (const s of ['cd agent-blueprint', '--allow-unguarded', '/ab-review-swarm', 'docs-site/']) {
+    assert.equal(breakAfterSlashes(s), s);
+  }
+});
+
+test('breakAfterSlashes keeps the clone command text and the copied text byte-identical', () => {
+  const line = 'git clone https://github.com/Ninety2UA/agent-blueprint.git';
+  assert.equal(text(breakAfterSlashes(line)), line);
+  assert.equal(text(breakAfterSlashes(keepFlagsWhole(line))), line);
 });
 
 test('breakAfterSlashes leaves a slash that starts or ends a word alone', () => {

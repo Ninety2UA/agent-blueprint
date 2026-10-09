@@ -43,6 +43,36 @@
   --drop-shadow-*: initial;
 }
 
+/* ---------- Archivo fallback faces ----------
+   Archivo is font-display: block (astro.config.mjs). Until the preloaded file arrives, Chrome lays
+   the page out, invisibly, in the next family of --font-archivo, which is this one; if its widths
+   differ, lines break differently and the page shifts when Archivo lands. Each face is local Arial
+   (Liberation Sans on Linux has the same metrics) scaled to Archivo at the weights and widths the
+   stylesheets use, measured in the browser on the site's own text. Arial cannot stretch, so each
+   font-stretch band gets its own scale; the browser picks the face whose font-stretch and
+   font-weight ranges hold the element's values. At 100% width Archivo's space is 25 to 29% narrower
+   than Arial's while its letters are 1 to 9% wider, so those bands give the space (U+20) a face of
+   its own; the body band also gives the digits one, because the ch unit (max-width: 68ch) is the
+   width of "0" and Archivo's digits are 3% wider than Arial's. Every override
+   is Archivo's own ascent 0.878, descent 0.210 and line gap 0, divided by the face's size-adjust.
+   Test: site/test/font-fallbacks.test.mjs. */
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:400 509;font-stretch:100% 102%;unicode-range:U+0-1F,U+21-2F,U+3A-10FFFF;size-adjust:100.8%;ascent-override:87.1%;descent-override:20.83%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:400 509;font-stretch:100% 102%;unicode-range:U+30-39;size-adjust:103.03%;ascent-override:85.22%;descent-override:20.38%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:400 509;font-stretch:100% 102%;unicode-range:U+20;size-adjust:75.22%;ascent-override:116.72%;descent-override:27.92%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:510 579;font-stretch:100% 102%;unicode-range:U+0-1F,U+21-10FFFF;size-adjust:104.05%;ascent-override:84.38%;descent-override:20.18%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:510 579;font-stretch:100% 102%;unicode-range:U+20;size-adjust:73.01%;ascent-override:120.26%;descent-override:28.76%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:580 669;font-stretch:100% 102%;unicode-range:U+0-1F,U+21-10FFFF;size-adjust:106.4%;ascent-override:82.52%;descent-override:19.74%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:580 669;font-stretch:100% 102%;unicode-range:U+20;size-adjust:71.7%;ascent-override:122.45%;descent-override:29.29%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:670 700;font-stretch:100% 102%;unicode-range:U+0-1F,U+21-10FFFF;size-adjust:109.3%;ascent-override:80.33%;descent-override:19.21%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:670 700;font-stretch:100% 102%;unicode-range:U+20;size-adjust:70.69%;ascent-override:124.2%;descent-override:29.71%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:400 700;font-stretch:103% 106%;size-adjust:106.6%;ascent-override:82.36%;descent-override:19.7%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:400 700;font-stretch:107% 109%;size-adjust:111.5%;ascent-override:78.74%;descent-override:18.83%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:400 700;font-stretch:110% 111%;size-adjust:115.1%;ascent-override:76.28%;descent-override:18.24%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:400 700;font-stretch:112% 114%;size-adjust:116.3%;ascent-override:75.49%;descent-override:18.06%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:400 700;font-stretch:115% 117%;size-adjust:125.6%;ascent-override:69.9%;descent-override:16.72%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:400 689;font-stretch:118% 120%;size-adjust:126.5%;ascent-override:69.41%;descent-override:16.6%;line-gap-override:0%}
+@font-face{font-family:"Archivo Fallback";src:local("Arial"),local("Liberation Sans"),local("Helvetica");font-weight:690 700;font-stretch:118% 120%;size-adjust:128%;ascent-override:68.59%;descent-override:16.41%;line-gap-override:0%}
+
 /* ---------- Base ----------
    Element defaults sit in the base layer, under Tailwind's utilities, so the islands'
    utility classes win over them; every 2A class below is unlayered and wins over both. */

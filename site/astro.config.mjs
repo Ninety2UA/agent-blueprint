@@ -23,7 +23,12 @@ export default defineConfig({
       provider: fontProviders.local(),
       name: 'Archivo',
       cssVariable: '--font-archivo',
-      fallbacks: ['ui-sans-serif', 'system-ui', 'sans-serif'],
+      // "Archivo Fallback" is the set of metric-matched Arial faces in src/styles/global.css, one
+      // per font-stretch band, so the layout made before Archivo arrives already has Archivo's
+      // line breaks. Astro's generated fallback is one Arial face for every width; it left the
+      // 118% headings a line short and body text a line long (CLS up to 0.06 on cold Slow 4G).
+      fallbacks: ['Archivo Fallback', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      optimizedFallbacks: false,
       options: {
         variants: [
           {
@@ -32,11 +37,10 @@ export default defineConfig({
             weight: '400 700',
             stretch: '100% 120%',
             style: 'normal',
-            // block, not swap: the display headings run at 118% width, which the Arial fallback
-            // cannot match, so a late swap reflowed the home hero by 37 px (CLS 0.24 on a cold
-            // Slow 4G load). optional removed the shift but showed the fallback on a cold Fast 4G
-            // load. With block the text waits for this preloaded file: on cold Fast 4G the hero is
-            // set in Archivo with CLS 0 and LCP about 0.5 s; on Slow 4G CLS stays under 0.06.
+            // block, not swap: until this preloaded file arrives the text is laid out invisibly
+            // in the fallback faces, so a slow connection never shows Arial at the wrong width.
+            // optional showed the fallback on a cold Fast 4G load. On cold Fast 4G the hero is set
+            // in Archivo with CLS 0 and LCP about 0.5 s.
             display: 'block',
             src: ['./src/assets/fonts/Archivo-var.woff2'],
           },
