@@ -1,0 +1,74 @@
+---
+// One page per tutorial (R1, R5): the intro and the facts of the recorded run it was written from,
+// then the numbered steps (components/tutorials/TutorialStep.astro), then the recap of which skill
+// produced what. The text is src/content/tutorials/<slug>.md, read by the tutorials collection.
+// Sidebar, previous and next follow lib/tutorials-order.mjs; the contents list the steps.
+import { getEntry } from 'astro:content';
+import '../../styles/docs-pages.css';
+import '../../styles/tutorials.css';
+import TitleBlock from '../../components/TitleBlock.astro';
+import { linkSkills } from '../../components/guides/guide-html.mjs';
+import { breakCodeAfterSlashes } from '../../components/wrap-points.mjs';
+import { siteData } from '../../components/skills/data';
+import TutorialStep from '../../components/tutorials/TutorialStep.astro';
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import { tutorialsNeighbors, tutorialsOrder, tutorialsSidebar } from '../../lib/tutorials-order.mjs';
+
+export function getStaticPaths() {
+  return tutorialsOrder().map((tutorial) => ({ params: { slug: tutorial.slug }, props: { tutorial } }));
+}
+
+interface Props {
+  tutorial: { slug: string; label: string; href: string };
+}
+const { slug, label } = Astro.props.tutorial;
+
+const entry = await getEntry('tutorials', slug);
+if (!entry) throw new Error(`tutorials: no entry for "${slug}"; add src/content/tutorials/${slug}.md`);
+const t = entry.data;
+const names = siteData().skills.map((s) => s.name);
+
+const OVERVIEW = 'overview';
+const RECAP = 'recap';
+const toc = [
+  { id: OVERVIEW, text: 'Overview' },
+  ...t.steps.map((s) => ({ id: s.id, text: s.title })),
+  { id: RECAP, text: 'Recap' },
+];
+const run = [
+  { label: 'Recorded', value: t.recorded },
+  { label: 'Project', value: t.project },
+  { label: 'Tool', value: t.tool },
+  { label: 'Model', value: t.model },
+  { label: 'Permission mode', value: t.mode, code: true },
+  { label: 'Took', value: t.took },
+];
+const { prev, next } = tutorialsNeighbors(slug);
+---
+<DocsLayout
+  title={`${label} · Agent Blueprint tutorials`}
+  description={t.description}
+  sheet={`Tutorials / ${label}`}
+  sidebar={tutorialsSidebar(slug)}
+  sidebarLabel="Tutorials"
+  headings={toc}
+  prev={prev}
+  next={next}
+>
+  <div class="dpage tpage" data-pagefind-body data-pagefind-filter="section:Tutorials">
+    <header class="dp-head">
+      <p class="dp-crumb">Tutorials</p>
+      <h1 id={OVERVIEW}>{label}</h1>
+      <div class="dp-intro t-intro" set:html={breakCodeAfterSlashes(linkSkills(t.intro, names))} />
+      <p class="lbl t-run-cap">The recorded run</p>
+      <TitleBlock class="t-run" label="The recorded run" cells={run} />
+    </header>
+    <ol class="t-steps">
+      {t.steps.map((step, i) => <TutorialStep n={i + 1} step={step} names={names} />)}
+    </ol>
+    <section class="t-recap" aria-labelledby={RECAP}>
+      <h2 id={RECAP}>Recap: which skill produced what</h2>
+      <div class="readme-section" set:html={breakCodeAfterSlashes(linkSkills(t.recap, names))} />
+    </section>
+  </div>
+</DocsLayout>

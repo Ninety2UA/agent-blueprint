@@ -1,0 +1,41 @@
+---
+// Light and dark theme. The first paint is set by the inline script in BaseLayout
+// (stored choice, else the system preference); this button switches and stores it.
+import { IC } from './icons';
+---
+<button class="icon-btn" type="button" data-theme-toggle aria-label="Dark theme" aria-pressed="false">
+  <Fragment set:html={IC.theme} />
+</button>
+
+<script>
+  import { THEME_KEY } from './theme';
+
+  const root = document.documentElement;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const buttons = document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]');
+
+  const sync = () => {
+    const dark = root.dataset.theme === 'dark';
+    buttons.forEach((b) => b.setAttribute('aria-pressed', String(dark)));
+  };
+
+  const setTheme = (theme: 'light' | 'dark') => {
+    const apply = () => {
+      root.dataset.theme = theme;
+      sync();
+    };
+    // the page wipes into its negative, like turning the drawing over
+    if (document.startViewTransition && !reduced.matches) document.startViewTransition(apply);
+    else apply();
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      /* storage unavailable: the choice lasts for this page only */
+    }
+  };
+
+  sync();
+  buttons.forEach((b) =>
+    b.addEventListener('click', () => setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark')),
+  );
+</script>

@@ -1,0 +1,17 @@
+---
+// Renders its default slot (a guide's README section) with every skill the text names in code
+// linked to the skill's page, without a first heading that repeats the page title, and with an
+// image that opens the section loaded eagerly (guide-html.mjs). The README stays the source of the
+// words.
+import { dropTitleHeading, eagerFirstImage, linkSkills } from './guide-html.mjs';
+
+interface Props {
+  /** every skill name */
+  names: string[];
+  /** the page title, the H1 above the section */
+  title: string;
+}
+const { names, title } = Astro.props;
+const html = await Astro.slots.render('default');
+---
+<Fragment set:html={linkSkills(eagerFirstImage(dropTitleHeading(html, title)), names)} />

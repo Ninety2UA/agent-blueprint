@@ -1,6 +1,6 @@
 # Agent Blueprint — Maintainer Instructions
 
-This repository is the Agent Blueprint plugin. The repository root is the plugin root, so everything here ships to users: keep maintainer-only material in `docs/`, the gates in `scripts/` and the tests in `tests/`. The current state of the work, and where the last session stopped, is in `docs/context/STATUS.md`; read it first.
+This repository is the Agent Blueprint plugin. The repository root is the plugin root, so everything here ships to users: keep maintainer-only material in `docs/`, the website in `site/`, the gates in `scripts/` and the tests in `tests/`. The current state of the work, and where the last session stopped, is in `docs/context/STATUS.md`; read it first.
 
 ## Philosophy
 
@@ -19,6 +19,9 @@ tests/gates/                             # Unit tests for the gates and the skil
 docs/upgrade/                            # The v3-to-v4 name map and upgrade notes
 docs/learnings/, docs/plans/             # Historical records; they keep the old project name
 docs/images/                             # README and site images (not installed into projects)
+site/                                    # The website's source, an Astro build only maintainers run; its dependencies live in site/package.json
+site/src/                                # Pages and components; skills, counts, install routes and releases come from the repository at build time
+site/motion/                             # HyperFrames sources of the site videos and the README hero GIF; RENDER.md says when to re-render
 AGENTS.md                                # This file; CLAUDE.md is a symlink to it
 install.sh                               # Installer and scaffold helper
 ```
@@ -31,7 +34,10 @@ Run these before you push; CI runs the same set on every pull request.
 
 | Command | Checks |
 |---------|--------|
-| `bash scripts/check-drift.sh` | Count and version claims on every surface match the tree, and README.md and index.html say nothing about adopting ideas from other projects or analyzing them |
+| `bash scripts/check-drift.sh` | Count and version claims on every surface match the tree, the README hero's source in `site/motion/readme-hero/` included. The rest of `site/motion/` and all of `site/src/` state no literal skill, helper or hook count, every skill sits in exactly one README phase table, and README.md, index.html, `site/src/` and `site/motion/` say nothing about adopting ideas from other projects or analyzing them |
+| `npx astro check` (in `site/`) | Type errors in the site's `.astro` and TypeScript files, under Astro's strict settings. Run it after `npm ci` in `site/` |
+| `python3 scripts/check-site.py site/dist` | The built site against the tree: one page per skill, each helper prompt once on the Skills page, the counts and version the pages state, no `SKILL.md` in the build, the adoption denylist, internal links, and a title, description and canonical link on every page. Build the site first with `npm ci` and `npm run build` in `site/`, which needs Node 22.12 or later |
+| `node --test 'site/test/**/*.test.mjs'` | The site's data modules against the tree, such as the README, SKILL.md, release and tutorial parsers, each section's page order and llms.txt. On the built pages: a title and description of their own, the sitemap, the Changelog and Kit pages, islands that hydrate only on first interaction, and no script or stylesheet from another origin. Run it from the repository root with the glob quoted, after the site build: without `site/dist` the built-page tests skip |
 | `python3 scripts/check-skill-collisions.py` | Frontmatter YAML, `references/` pointers and § headings resolve, no near-duplicate descriptions |
 | `python3 scripts/check-portability.py` | The portability rules for all eight hosts (see the ab-writing-skills skill's `references/portable-authoring.md`) |
 | `python3 scripts/check-manifests.py` | Every host manifest and every skill's `metadata.version` agree with the release |
@@ -51,7 +57,7 @@ The allowlist in `scripts/portability-allowlist.json` only shrinks: a fixed viol
 
 ## Releasing
 
-Bump the version in `.claude-plugin/plugin.json`, the marketplace entry and every skill's `metadata.version` together (the manifest gate holds them equal) whenever plugin content changes on the default branch, then run `python3 scripts/sync-shared.py`, which writes the new version into each pipeline skill's provenance command. Installed plugin caches only re-sync when the version changes, so an unbumped release never reaches users.
+Bump the version in `.claude-plugin/plugin.json`, the marketplace entry and every skill's `metadata.version` together (the manifest gate holds them equal) whenever plugin content changes on the default branch, then run `python3 scripts/sync-shared.py`, which writes the new version into each pipeline skill's provenance command. Installed plugin caches only re-sync when the version changes, so an unbumped release never reaches users. Changes under `site/` and to the README's images need no bump, because no installed skill or hook changes with them (`docs/learnings/2026-10-site-rebuild-decision.md`).
 
 ## How to work
 
@@ -71,6 +77,7 @@ Format: `type(scope): brief description`, with a body that says why. Types: `fea
 - Hook definitions nest twice: `"hooks": [{"hooks": [...]}]`. Missing the inner array fails silently.
 - Hook scripts use `execFileSync`, never `execSync`, so no argument reaches a shell.
 - A regular-file `CLAUDE.md` at a plugin root fails `claude plugin validate --strict`; it has to stay a symlink to `AGENTS.md`.
+- Install the plugin locally only from a clean checkout or worktree. The Codex plugin route and the Antigravity copy take ignored files too, such as `site/node_modules`, where some npm packages ship `SKILL.md` files of their own (dotenv and get-tsconfig do) that those tools could pick up as skills.
 - Headless `claude -p` refuses to read plugin files outside the working directory unless it runs with `--permission-mode auto` or `--add-dir <plugin root>`; the ship runner and the smoke test use the first.
 - A Stop hook that blocks does not reset the context; only a fresh session does, which is why the ship runner starts one per iteration.
 - Every helper in a team wave owns specific files and only the lead commits; two helpers editing one file lose each other's work.

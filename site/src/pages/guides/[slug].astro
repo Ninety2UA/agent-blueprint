@@ -1,0 +1,74 @@
+---
+// One page per guide (R1): the hand-written intro (content/guides/<slug>.md), then the README
+// section(s) the guide maps to (readme collection, R13) with every skill it names linked to the
+// skill's page and without a first heading that repeats the title, then those skills as cards. A README edit changes the guide on the next build.
+// Sidebar, previous and next follow lib/guides-order.mjs; the contents list the README part's H2
+// headings, as they stand on the page, between "Overview" and the skills.
+import { getEntry, render } from 'astro:content';
+import '../../styles/docs-pages.css';
+import '../../styles/guides.css';
+import ReadmeSection from '../../components/docs/ReadmeSection.astro';
+import GuideSkills from '../../components/guides/GuideSkills.astro';
+import SkillLinked from '../../components/guides/SkillLinked.astro';
+import { skillsNamed } from '../../components/guides/guide-html.mjs';
+import { siteData } from '../../components/skills/data';
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import { guidesNeighbors, guidesOrder, guidesSidebar } from '../../lib/guides-order.mjs';
+
+export function getStaticPaths() {
+  return guidesOrder().map((guide) => ({ params: { slug: guide.slug }, props: { guide } }));
+}
+
+interface Props {
+  guide: { slug: string; label: string; href: string };
+}
+const { slug, label } = Astro.props.guide;
+
+const intro = await getEntry('guides', slug);
+if (!intro) throw new Error(`guides: no intro for "${slug}"; add src/content/guides/${slug}.md`);
+const section = await getEntry('readme', slug);
+if (!section) throw new Error(`guides: no README section for "${slug}"; map it in src/lib/readme-map.mjs`);
+const { Content: Intro } = await render(intro);
+const { Content, headings } = await render(section);
+
+const names = siteData().skills.map((s) => s.name);
+// The contents list the README part's H2s as they stand on the page. When the part opens with an H2
+// that repeats the title, SkillLinked drops it and lifts its H3s to H2 (guide-html.mjs), so the list
+// does the same.
+const contents = (hs: typeof headings) => {
+  const repeats = /^\s*## /.test(section.body ?? '') && hs[0]?.depth === 2 && hs[0].text === label;
+  if (!repeats) return hs.filter((h) => h.depth === 2);
+  const end = hs.findIndex((h, i) => i > 0 && h.depth === 2);
+  const lifted = hs.slice(1, end === -1 ? undefined : end).filter((h) => h.depth === 3);
+  return [...lifted, ...(end === -1 ? [] : hs.slice(end).filter((h) => h.depth === 2))];
+};
+const named = skillsNamed([intro.body ?? '', section.body ?? ''], names);
+const OVERVIEW = 'overview';
+const SKILLS = 'skills-in-this-guide';
+const toc = [
+  { id: OVERVIEW, text: 'Overview' },
+  ...contents(headings).map((h) => ({ id: h.slug, text: h.text })),
+  ...(named.length ? [{ id: SKILLS, text: 'Skills in this guide' }] : []),
+];
+const { prev, next } = guidesNeighbors(slug);
+---
+<DocsLayout
+  title={`${label} · Agent Blueprint guides`}
+  description={intro.data.description}
+  sheet={`Guides / ${label}`}
+  sidebar={guidesSidebar(slug)}
+  sidebarLabel="Guides"
+  headings={toc}
+  prev={prev}
+  next={next}
+>
+  <div class="dpage gpage" data-pagefind-body data-pagefind-filter="section:Guides">
+    <header class="dp-head">
+      <p class="dp-crumb">Guides</p>
+      <h1 id={OVERVIEW}>{label}</h1>
+      <div class="dp-intro"><Intro /></div>
+    </header>
+    <ReadmeSection><SkillLinked names={names} title={label}><Content /></SkillLinked></ReadmeSection>
+    {named.length > 0 && <GuideSkills id={SKILLS} names={named} />}
+  </div>
+</DocsLayout>

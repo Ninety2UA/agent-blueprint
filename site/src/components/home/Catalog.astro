@@ -1,0 +1,46 @@
+---
+// Catalog preview: a dozen featured skills as cards, with phase chips that filter them.
+// Chip counts are each phase's size in the README; the live count names how many of the
+// featured skills the filter shows.
+import HomeLink from './HomeLink.astro';
+import { cap, FEATURED, md, numberWord, phase, site, skillHref } from './home-data';
+
+const { counts } = site;
+const featured = numberWord(FEATURED.length);
+// the README phases that have a featured skill, in README order
+const chips = site.phases.filter((p) => FEATURED.some((s) => s.phase === p.slug));
+---
+<section class="sec catalog" id="catalog" aria-labelledby="cat-h" data-catalog>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="cat-h" class="h-sec"><span data-claim="skills">{counts.skills}</span> skills, sorted by phase.</h2>
+      <p class="body">{cap(featured)} to start with. Every name starts with <code>ab-</code>, which keeps them apart from other skill packs in a shared skills folder.</p>
+    </div>
+    <div class="cat-bar">
+      <div class="chips" role="group" aria-label="Filter by phase">
+        <button class="chip" type="button" aria-pressed="true" data-phase="all" data-label="All">All<span class="n" data-claim="skills">{counts.skills}</span></button>
+        {chips.map((p) => (
+          <button class="chip" type="button" aria-pressed="false" data-phase={p.slug} data-label={p.title}>{p.title}<span class="n">{p.skills.length}</span></button>
+        ))}
+      </div>
+      <p class="cat-count" aria-live="polite" data-count data-total={counts.skills}>{FEATURED.length} featured of <span data-claim="skills">{counts.skills}</span></p>
+    </div>
+    <ul class="cards">
+      {FEATURED.map((s) => (
+        <li class="card" data-phase={s.phase} style={`view-transition-name:c-${s.name}`}>
+          <a href={skillHref(s.name)}>
+            <span class="phase">{phase(s.phase).title}</span>
+            <h3 class="card-name">{s.name}</h3>
+            <p class="card-sum" set:html={md(s.summary)} />
+            <p class="card-when"><b>Use when:</b> <Fragment set:html={md(s.when)} /></p>
+          </a>
+        </li>
+      ))}
+    </ul>
+    <p class="cat-empty" data-empty hidden>No featured skill in this phase yet. <button class="chip" type="button" data-phase-reset>Show all {featured}</button></p>
+    <div class="cat-foot">
+      <HomeLink href="/skills/">See all <span data-claim="skills">{counts.skills}</span> skills</HomeLink>
+      <p class="lbl">Search them all from any page with ⌘K</p>
+    </div>
+  </div>
+</section>

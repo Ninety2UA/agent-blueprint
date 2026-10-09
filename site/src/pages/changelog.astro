@@ -1,0 +1,52 @@
+---
+// Changelog: every release of the README release history, newest first, in the revision-block
+// layout of the approved h/changelog.html drawn in the 2A tokens. Releases with a notes file in
+// docs/releases/ render those notes from the `releases` collection; older ones are table rows.
+import { getCollection } from 'astro:content';
+
+import OlderReleases from '../components/changelog/OlderReleases.astro';
+import Revision from '../components/changelog/Revision.astro';
+import RevisionRail from '../components/changelog/RevisionRail.astro';
+import { changelog, releaseId } from '../components/changelog/changelog.mjs';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getSiteData } from '../lib/site.mjs';
+import '../styles/changelog.css';
+
+const { version, repoUrl, releases } = getSiteData();
+const { blocks, older } = changelog(releases);
+const notes = new Map((await getCollection('releases')).map((e) => [e.id, e.rendered?.html]));
+const current = releases.find((r: { version: string }) => r.version === version);
+if (!current) throw new Error(`.claude-plugin/plugin.json is at ${version}, which the README release history does not list.`);
+
+const description = 'Every Agent Blueprint release, newest first: what changed, what was fixed and what you need to do.';
+---
+<BaseLayout title="Changelog · Agent Blueprint" description={description}>
+  <div data-pagefind-body data-pagefind-filter="section:Pages">
+    <header class="cl-head">
+      <div class="wrap cl-head-in">
+        <div class="cl-title">
+          <h1 class="h-display">Changelog</h1>
+          <p class="lede">Every release of Agent Blueprint, newest first: what changed, what was fixed and what you need to do.</p>
+          <div class="cl-links">
+            <a class="link" href={`${repoUrl}/releases.atom`}><span class="link-rule" aria-hidden="true"></span><span>RSS feed</span></a>
+            <a class="link" href={`${repoUrl}/releases`}><span class="link-rule" aria-hidden="true"></span><span>GitHub Releases</span></a>
+          </div>
+        </div>
+        <dl class="cl-tb">
+          <div class="cur"><dt>Current revision</dt><dd><a href={`#${releaseId(version)}`} data-claim="version">{version}</a></dd></div>
+          <div><dt>Released</dt><dd><time datetime={current.date}>{current.date}</time></dd></div>
+          <div><dt>License</dt><dd>MIT</dd></div>
+        </dl>
+      </div>
+    </header>
+    <div class="wrap cl-body">
+      <RevisionRail blocks={blocks} older={older} />
+      <div class="cl-main">
+        {blocks.map((r) => (
+          <Revision version={r.version} date={r.date} summary={r.summary} notesHtml={notes.get(r.version)} previous={r.previous} repoUrl={repoUrl} />
+        ))}
+        {older.length > 0 && <OlderReleases releases={older} repoUrl={repoUrl} />}
+      </div>
+    </div>
+  </div>
+</BaseLayout>

@@ -1,0 +1,66 @@
+---
+// The footer as an engineering title block: the mark and what the blueprint is, the
+// Product, Install by tool and Resources groups, the install command, the license and
+// the revision. Counts, tools, the version and the commands come from the repository
+// through getSiteData(); nothing here is typed by hand.
+//
+// "Install by tool" links to /docs/getting-started/#<tool id>: the Getting started page
+// renders its install tabs with <Tabs hashTarget>, so each panel's id is the tool id
+// (claude, codex, agy, grok, pi, cursor-agent, hermes, amp) and the link opens that tab.
+import { getSiteData } from '../lib/site.mjs';
+import Cmd from './Cmd.astro';
+import Mark from './Mark.astro';
+import { GET_STARTED, NAV } from './nav';
+import { numberWord } from './number-word';
+
+interface Props {
+  /** the sheet name in the bottom row, e.g. "Home" or "Skills / ab-review-swarm" */
+  sheet: string;
+}
+const { sheet } = Astro.props;
+const { version, repoUrl, counts, cloneCommand, installCommand, tools } = getSiteData();
+
+const PRODUCT = ['Skills', 'Workflow', 'Tutorials', 'Guides', 'Kit', 'Changelog'];
+const product = PRODUCT.map((label) => NAV.find((n) => n.label === label)!);
+const clone: string[] = cloneCommand.split('\n');
+const installLines = [...clone.slice(0, -1), `${clone.at(-1)} && ${installCommand}`];
+const resources = [
+  { label: 'GitHub', href: repoUrl },
+  { label: 'Contributing', href: `${repoUrl}/blob/main/CONTRIBUTING.md` },
+  { label: 'License', href: `${repoUrl}/blob/main/LICENSE` },
+  { label: 'Release notes', href: `${repoUrl}/tree/main/docs/releases` },
+];
+---
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="tb">
+      <div class="tb-title">
+        <span class="f">Title</span>
+        <a href="/" aria-label="Agent Blueprint home"><Mark sw={0.64} /></a>
+        <span class="tb-name">Agent Blueprint</span>
+        <p><span data-claim="skills">{counts.skills}</span> skills that take a coding agent from an idea to a reviewed pull request, in <span data-claim="tools">{numberWord(counts.tools)}</span> coding CLIs.</p>
+      </div>
+      <nav class="tb-col" aria-label="Product">
+        <span class="f">Product</span>
+        <ul>{product.map((n) => <li><a href={n.href}>{n.label}</a></li>)}</ul>
+      </nav>
+      <nav class="tb-col tb-tools" aria-label="Install by tool">
+        <span class="f">Install by tool</span>
+        <ul>{tools.map((t: { name: string; id: string }) => <li><a href={`${GET_STARTED}#${t.id}`}>{t.name}</a></li>)}</ul>
+      </nav>
+      <nav class="tb-col tb-last" aria-label="Resources">
+        <span class="f">Resources</span>
+        <ul>{resources.map((r) => <li><a href={r.href}>{r.label}</a></li>)}</ul>
+      </nav>
+      <div class="tb-install">
+        <span class="f">Install</span>
+        <Cmd lines={installLines} copy={[...clone, installCommand].join(' && ')} prompt label="Install command" copyLabel="Copy install command" />
+      </div>
+      <div class="tb-meta tb-last">
+        <div><span class="f">License</span><span class="v">MIT</span></div>
+        <div><span class="f">Revision</span><a class="v" href="/changelog/" data-claim="version">{version}</a></div>
+      </div>
+      <div class="tb-bottom"><span>Released under the MIT License. Source and issues on GitHub.</span><span class="sheet">Sheet: {sheet}</span></div>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,11 @@
+---
+// Registration marks (a crosshair with a small ring) at the four corners of the
+// positioned parent: `outside` sets them in the margin just outside a hairline frame,
+// `inside` sets them inside a sheet's margin.
+interface Props {
+  place?: 'outside' | 'inside';
+}
+const { place = 'outside' } = Astro.props;
+const side = place === 'outside' ? 'out' : 'in';
+---
+{['tl', 'tr', 'bl', 'br'].map((corner) => <span class={`reg ${side} ${corner}`} aria-hidden="true"></span>)}

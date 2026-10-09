@@ -1,0 +1,41 @@
+---
+// A parts list of files next to a preview: each file is a download link with its format, frame
+// size, length and size, all read from the file at build time (files.mjs; MP4s through mp4Facts).
+// `files` are site paths: /media/... and /brand/... are in site/public, and the README GIF is the
+// repository's docs/images/hero.gif, served by pages/media/readme-hero.gif.ts.
+import { join } from 'node:path';
+
+import { findRepoRoot } from '../../lib/site.mjs';
+import { mp4Facts } from '../media';
+import { fileFacts } from './files.mjs';
+import { README_GIF } from './kit-data';
+
+interface Props {
+  files: string[];
+  /** the table's caption, for screen readers */
+  label: string;
+}
+const { files, label } = Astro.props;
+const publicDir = join(findRepoRoot(), 'site', 'public');
+
+const rows = files.map((href) => {
+  const facts = fileFacts(href === README_GIF.href ? README_GIF.file : join(publicDir, href));
+  if (href.endsWith('.mp4')) {
+    const video = mp4Facts(href.slice(1));
+    facts.frame = `${video.width} × ${video.height}`;
+    facts.length = `${video.duration.toFixed(1)} s`;
+  }
+  return { href, name: href.split('/').pop(), ...facts };
+});
+---
+<div class="files-wrap">
+  <table class="files">
+    <caption class="sr-only">{label}</caption>
+    <thead><tr><th scope="col">File</th><th scope="col">Format</th><th scope="col">Frame</th><th scope="col">Length</th><th scope="col">Size</th></tr></thead>
+    <tbody>
+      {rows.map((r) => (
+        <tr><th scope="row"><a href={r.href} download><code>{r.name}</code></a></th><td>{r.format}</td><td>{r.frame}</td><td>{r.length}</td><td>{r.size}</td></tr>
+      ))}
+    </tbody>
+  </table>
+</div>

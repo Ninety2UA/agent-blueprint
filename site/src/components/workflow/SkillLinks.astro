@@ -1,0 +1,13 @@
+---
+// Skill names as a list of links to their pages, in mono, one per line or wrapped inline.
+import { skillHref } from './data';
+
+interface Props {
+  names: string[];
+  class?: string;
+}
+const { names, class: cls } = Astro.props;
+---
+<ul class:list={['wf-skills', cls]}>
+  {names.map((name) => <li><a href={skillHref(name)}><code>{name}</code></a></li>)}
+</ul>

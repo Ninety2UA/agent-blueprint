@@ -1,0 +1,31 @@
+---
+// Every skill by its README phase, as a parts list under one dimension line. A phase name opens
+// the catalog filtered to that phase; a skill name opens its page.
+import DimensionLine from '../DimensionLine.astro';
+import SkillLinks from './SkillLinks.astro';
+import { numberWord, wf } from './data';
+
+const { phases, counts } = wf;
+---
+<section class="wf-sec" id="phases" aria-labelledby="phases-h">
+  <div class="wrap">
+    <div class="wf-sec-head">
+      <h2 id="phases-h" class="h-sec">Every skill, by phase.</h2>
+      <p class="body">The README sorts every skill into a phase. A skill's name opens its page, and a phase opens the catalog filtered to it.</p>
+    </div>
+    <DimensionLine class="ph-dim">
+      <Fragment slot="label"><span data-claim="skills">{counts.skills}</span> skills, {numberWord(phases.length)} phases</Fragment>
+    </DimensionLine>
+    <div class="ph-grid">
+      {phases.map((phase) => (
+        <section class="ph" aria-labelledby={`ph-${phase.slug}`}>
+          <h3 class="ph-h" id={`ph-${phase.slug}`}>
+            <a href={`/skills/?phase=${phase.slug}`}>{phase.title}</a>
+            <span class="ph-n"><span class="sr-only">, </span>{phase.skills.length}<span class="sr-only"> skills</span></span>
+          </h3>
+          <SkillLinks names={phase.skills} class="ph-skills" />
+        </section>
+      ))}
+    </div>
+  </div>
+</section>

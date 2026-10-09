@@ -1,0 +1,49 @@
+---
+// Global header: brand, the seven sections (the current one marked on every page under
+// it), search, GitHub, the theme toggle and Get started. Below 960 px the nav moves into
+// the mobile menu island, which hydrates only when its button is first used.
+import { getSiteData } from '../lib/site.mjs';
+import { IC } from './icons';
+import Mark from './Mark.astro';
+import MobileMenu from './MobileMenu';
+import ThemeToggle from './ThemeToggle.astro';
+import { GET_STARTED, navItems } from './nav';
+
+const { repoUrl } = getSiteData();
+const items = navItems(Astro.url.pathname);
+---
+<header class="site-head">
+  <div class="wrap head-row">
+    <a class="brand" href="/" aria-label="Agent Blueprint home"><Mark /><span class="brand-name">Agent Blueprint</span></a>
+    <nav class="nav" aria-label="Main">
+      <ul>
+        {items.map((item) => <li><a href={item.href} aria-current={item.current}>{item.label}</a></li>)}
+      </ul>
+    </nav>
+    <div class="head-actions">
+      <button class="search-btn" type="button" data-open-search>
+        <Fragment set:html={IC.search} /><span class="search-label">Search</span><kbd aria-hidden="true">⌘K</kbd>
+      </button>
+      <a class="icon-btn gh-link" href={repoUrl} aria-label="Agent Blueprint on GitHub"><Fragment set:html={IC.github} /></a>
+      <ThemeToggle />
+      <a class="btn btn-primary btn-sm" href={GET_STARTED}>Get started</a>
+      <MobileMenu client:interaction items={items} getStarted={GET_STARTED} repoUrl={repoUrl} />
+    </div>
+  </div>
+</header>
+
+<script>
+  import { requestSearch } from './search-event';
+  // The Cmd-K palette's small loader: React and the Pagefind index load on the first request.
+  import './search/loader';
+
+  // Search buttons only announce the request; the palette's loader listens for it.
+  document.addEventListener('click', (event) => {
+    const button = (event.target as Element | null)?.closest<HTMLElement>('[data-open-search]');
+    if (button) requestSearch(button);
+  });
+
+  // Video figures (loops, the film, the Kit's hero) load their player only on pages that have
+  // one, as a dynamic import, so no page waits on it before first paint.
+  if (document.querySelector('[data-vfig]')) import('./video-figures');
+</script>

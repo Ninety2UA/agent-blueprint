@@ -1,0 +1,255 @@
+---
+// One page per skill folder (R2), after the approved Direction 2 skill page: the header with
+// the summary, the command and a title block; when to use it (from the description); how to
+// name it in each tool; what it does (the step headings of its SKILL.md); the helpers it
+// starts (only when it has prompt files in references/agents/); what you get back (only when
+// its SKILL.md has a report section); related skills; previous and next; then the full
+// SKILL.md body, rendered as plain Markdown with raw HTML shown as text
+// (src/lib/markdown/escape-skill-html.mjs). Everything comes from the repository.
+import type { MarkdownHeading } from 'astro';
+import { getCollection } from 'astro:content';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Cmd from '../../components/Cmd.astro';
+import Tabs from '../../components/Tabs.astro';
+import TitleBlock from '../../components/TitleBlock.astro';
+import { IC } from '../../components/icons';
+import { skillsNamed } from '../../components/guides/guide-html.mjs';
+import SkillCard from '../../components/skills/SkillCard.astro';
+import { formatText, prepareBody, skillOutline, splitDescription } from '../../components/skills/outline.mjs';
+import { siteData } from '../../components/skills/data';
+import { findRepoRoot } from '../../lib/site.mjs';
+import { breakAfterSlashes } from '../../components/wrap-points.mjs';
+import { escapeHtml, inlineCode } from '../../lib/text.mjs';
+import '../../styles/skills.css';
+
+export async function getStaticPaths() {
+  const bySkill = new Map(siteData().skills.map((s) => [s.name, s]));
+  const entries = await getCollection('skills');
+  return entries.map((entry) => {
+    const skill = bySkill.get(entry.id);
+    if (!skill) throw new Error(`skills/${entry.id}/SKILL.md: no row for it in the README phase tables`);
+    if (!entry.rendered) throw new Error(`skills/${entry.id}/SKILL.md: the Markdown body was not rendered`);
+    return { params: { name: entry.id }, props: { entry, skill } };
+  });
+}
+
+const { entry, skill } = Astro.props;
+const { version, repoUrl, tools, phases, skills, helpers } = siteData();
+const names = new Set(skills.map((s) => s.name));
+const skillByName = new Map(skills.map((s) => [s.name, s]));
+const phaseBySlug = new Map(phases.map((p) => [p.slug, p]));
+const phase = phaseBySlug.get(skill.phase)!;
+const phaseOf = (name: string) => phaseBySlug.get(skillByName.get(name)!.phase)!;
+
+const html = entry.rendered!.html;
+const headings = (entry.rendered!.metadata?.headings ?? []) as MarkdownHeading[];
+const outline = skillOutline(html, headings);
+const body = prepareBody(html, headings);
+const desc = splitDescription(skill.description);
+const use = desc.use.length ? desc.use : [skill.when];
+const alternatives = skillsNamed([desc.not ?? ''], names).filter((name) => name !== skill.name);
+
+const argumentHint = entry.data['argument-hint'] as string | undefined;
+const manualOnly = entry.data['disable-model-invocation'] === true;
+// the naming table's example names one skill; a tool without a command takes that phrase with this skill's name
+const named = tools.find((t) => t.naming.syntax !== null)!;
+const exampleSkill = named.naming.example.slice(named.naming.syntax!.length);
+const nameIn = (tool: (typeof tools)[number]) =>
+  tool.naming.syntax !== null ? `${tool.naming.syntax}${skill.name}` : tool.naming.example.replace(exampleSkill, skill.name);
+
+const helperInfo = new Map(helpers.map((h) => [h.name, h]));
+const refsUrl = existsSync(join(findRepoRoot(), 'skills', skill.name, 'references'))
+  ? `${repoUrl}/tree/main/skills/${skill.name}/references`
+  : null;
+
+const toc = [
+  { id: 'use', label: 'Use it when' },
+  { id: 'name', label: 'Name it in your tool' },
+  { id: 'steps', label: 'What it does' },
+  ...(skill.helpers.length ? [{ id: 'helpers', label: 'Helpers it starts' }] : []),
+  ...(outline.report ? [{ id: 'report', label: 'What you get back' }] : []),
+  ...(skill.related.length ? [{ id: 'related', label: 'Related skills' }] : []),
+  { id: 'skill-md', label: 'SKILL.md' },
+];
+const cells = [
+  { label: 'Skill', value: skill.name, code: true, wide: true },
+  { label: 'Phase', value: `${phase.title}, ${phases.indexOf(phase) + 1} of ${phases.length}` },
+  { label: 'Version', value: version, code: true, claim: 'version' as const },
+  ...(argumentHint ? [{ label: 'Arguments', value: argumentHint, code: true, wide: true }] : []),
+  { label: 'Starts', value: manualOnly ? 'Only when named' : 'When named, or on a matching request' },
+  { label: 'Helpers', value: skill.helpers.length ? `${skill.helpers.length} prompt file${skill.helpers.length === 1 ? '' : 's'}` : 'None' },
+  { label: 'File', value: `skills/${skill.name}/SKILL.md`, code: true, wide: true },
+];
+const plainSummary = skill.summary.replace(/\x60/g, ''); // \x60: a literal backtick trips the Astro compiler
+---
+<BaseLayout title={`${skill.name} · Agent Blueprint skills`} description={plainSummary} sheet={`Skills / ${skill.name}`}>
+  <div class="wrap skill" data-pagefind-body data-pagefind-filter="section:Skills">
+    <nav class="crumbs" aria-label="Breadcrumb" data-pagefind-ignore>
+      <ol>
+        <li><a href="/skills/">Skills</a></li>
+        <li><a href={`/skills/?phase=${phase.slug}`}>{phase.title}</a></li>
+        <li><span aria-current="page">{skill.name}</span></li>
+      </ol>
+    </nav>
+
+    <header class="skill-head">
+      <div class="sh-l">
+        <span class="phase">{phase.title}</span>
+        <h1 class="skill-name">{skill.name}</h1>
+        <p class="lede" set:html={inlineCode(skill.summary)} />
+        <div class="sh-cmd">
+          <Cmd lines={[nameIn(tools[0])]} trim label={`Name the skill in ${tools[0].name}`} copyLabel="Copy skill command" />
+          <a class="link" href={skill.githubUrl} data-pagefind-ignore><span class="link-rule" aria-hidden="true"></span><span>Read SKILL.md on GitHub</span></a>
+        </div>
+      </div>
+      <TitleBlock class="sh-tb" cols="1fr 1fr" label="Skill data" cells={cells} />
+    </header>
+
+    <div class="skill-body">
+      <article class="skill-main">
+        <section id="use" class="ss" aria-labelledby="use-h">
+          <h2 id="use-h" class="h-sub">Use it when</h2>
+          <div class:list={['use-grid', { solo: !desc.not }]}>
+            <ul class="marks">{use.map((item) => <li set:html={formatText(item, names)} />)}</ul>
+            {desc.not && (
+              <div class="use-not">
+                <p class="lbl">Pick another skill</p>
+                <p set:html={formatText(desc.not, names)} />
+                {alternatives.map((name) => (
+                  <a class="use-alt" href={`/skills/${name}/`}>
+                    <code>{name}</code>
+                    <span set:html={inlineCode(skillByName.get(name)!.summary)} />
+                    <Fragment set:html={IC.arrow} />
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section id="name" class="ss" aria-labelledby="name-h">
+          <h2 id="name-h" class="h-sub">Name it in your tool</h2>
+          <p class="body">
+            {manualOnly
+              ? 'This skill is manual-only: it runs only when you name it.'
+              : 'Every tool also picks a skill on its own when your request matches its description. Naming it picks it for sure.'}
+          </p>
+          <Tabs id="name-it" label="Tools" class="invoke" items={tools.map((t) => ({ id: t.id, label: t.name }))}>
+            {tools.map((t) => (
+              <Fragment slot={t.id}>
+                <Cmd lines={[nameIn(t)]} label={`How to name the skill in ${t.name}`} copyLabel={`Copy for ${t.name}`} />
+                {t.naming.syntax === null && <p class="hint">Ask for it in plain words.</p>}
+                {manualOnly && <p class="hint">Manual-only skills in {t.name}: <Fragment set:html={inlineCode(t.support.manualOnly)} />.</p>}
+              </Fragment>
+            ))}
+          </Tabs>
+        </section>
+
+        <section id="steps" class="ss" aria-labelledby="steps-h">
+          <h2 id="steps-h" class="h-sub">What it does</h2>
+          {desc.what && <p class="body" set:html={formatText(desc.what, names)} />}
+          {outline.kind === 'sections' && <p class="lbl steps-lbl">The sections of its SKILL.md</p>}
+          {outline.steps.length > 0 && (
+            <ol class:list={['steps', { 'is-sections': outline.kind === 'sections' }]}>
+              {outline.steps.map((step) => (
+                <li>
+                  <span class="sm" aria-hidden="true">{step.label}</span>
+                  <h3><a href={`#${step.id}`} set:html={breakAfterSlashes(escapeHtml(step.title))} /></h3>
+                  {step.intro && <p set:html={step.intro} />}
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+
+        {skill.helpers.length > 0 && (
+          <section id="helpers" class="ss" aria-labelledby="helpers-h">
+            <h2 id="helpers-h" class="h-sub">Helpers it starts</h2>
+            <p class="body">Each helper is a prompt file in <code>references/agents/</code>. Where the tool has subagents, the helper runs in its own context with only the inputs the file names; elsewhere the main session follows the file itself.</p>
+            <div class="disp">
+              <div class="d-node d-main"><span class="lbl">Main session</span><b>{skill.name}</b></div>
+              <div class="d-fan">
+                <div class="d-group">
+                  <p class="lbl">Prompt files in references/agents/</p>
+                  <ul>
+                    {skill.helpers.map((h) => (
+                      <li>
+                        <a href={`${repoUrl}/blob/main/${h.path}`}><code>{h.name}</code></a>
+                        {helperInfo.has(h.name) && <span set:html={inlineCode(helperInfo.get(h.name)!.summary)} />}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {outline.report && (
+          <section id="report" class="ss" aria-labelledby="report-h">
+            <h2 id="report-h" class="h-sub">What you get back</h2>
+            <p class="body">As its SKILL.md defines it, under <a href={`#${outline.report.id}`}>{outline.report.title}</a>.</p>
+            <div class="report-md prose" set:html={outline.report.html} />
+          </section>
+        )}
+
+        {skill.related.length > 0 && (
+          <section id="related" class="ss" aria-labelledby="related-h" data-pagefind-ignore>
+            <h2 id="related-h" class="h-sub">Related skills in {phase.title}</h2>
+            <ul class="cards rel">
+              {skill.related.map((name) => {
+                const s = skillByName.get(name)!;
+                return <SkillCard name={name} phase={phase} summary={s.summary} when={s.when} level={3} />;
+              })}
+            </ul>
+          </section>
+        )}
+
+        {(skill.prev || skill.next) && (
+          <nav class="pn" aria-label="Previous and next skill" data-pagefind-ignore>
+            {skill.prev && (
+              <a class="pn-prev" href={`/skills/${skill.prev}/`}>
+                <span class="lbl"><Fragment set:html={IC.arrowL} />Previous in {phaseOf(skill.prev).title}</span>
+                <code>{skill.prev}</code>
+              </a>
+            )}
+            {skill.next && (
+              <a class="pn-next" href={`/skills/${skill.next}/`}>
+                <span class="lbl">Next in {phaseOf(skill.next).title}<Fragment set:html={IC.arrow} /></span>
+                <code>{skill.next}</code>
+              </a>
+            )}
+          </nav>
+        )}
+
+        <section id="skill-md" class="ss" aria-labelledby="skill-md-h">
+          <h2 id="skill-md-h" class="h-sub">SKILL.md</h2>
+          {/* page chrome, kept out of search excerpts so they quote the skill's own text */}
+          <p class="body" data-pagefind-ignore>The instructions the agent follows, from <code>skills/{skill.name}/SKILL.md</code>.</p>
+          <p class="src-links">
+            <a class="link" href={skill.githubUrl} data-pagefind-ignore><span class="link-rule" aria-hidden="true"></span><span>Read SKILL.md on GitHub</span></a>
+            {refsUrl && <a class="link" href={refsUrl} data-pagefind-ignore><span class="link-rule" aria-hidden="true"></span><span>Its references/ folder</span></a>}
+          </p>
+          <div class="skill-md prose" set:html={body} />
+        </section>
+      </article>
+
+      <aside class="toc" aria-label="On this page">
+        <p class="lbl">On this page</p>
+        <ol>{toc.map((t) => <li><a href={`#${t.id}`}>{t.label}</a></li>)}</ol>
+        <div class="toc-src">
+          <p class="lbl">Source</p>
+          <a href={skill.githubUrl}>SKILL.md</a>
+          {refsUrl && <a href={refsUrl}>references/</a>}
+        </div>
+      </aside>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import '../../components/skills/skill-page';
+</script>

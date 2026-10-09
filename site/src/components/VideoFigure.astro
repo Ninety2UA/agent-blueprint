@@ -1,0 +1,43 @@
+---
+// A looping figure: hairline frame, registration marks outside the corners, a mono
+// caption with its figure number and a pause control. The video is muted, inline and
+// preload="none", so the page loads no video bytes until the figure is half on screen.
+// The poster is a lazy <img> behind the video rather than the video's poster attribute,
+// which Chrome fetches during parsing even for figures far below the fold or in hidden panels; video-figures.ts plays and pauses it (see there for the rules).
+import '../styles/media.css';
+import { IC } from './icons';
+import RegMarks from './RegMarks.astro';
+
+interface Props {
+  /** path under public/, e.g. "/media/loop-review.mp4"; the poster is the .jpg beside it */
+  src: string;
+  /** figure number, in page order */
+  num: number;
+  /** what the video shows, with its real names and numbers: the text alternative */
+  alt: string;
+  /** names the video in the controls: "Pause the review animation" */
+  label: string;
+  poster?: string;
+  width?: number;
+  height?: number;
+  loop?: boolean;
+  class?: string;
+}
+const { src, num, alt, label, poster = src.replace(/\.mp4$/, '.jpg'), width = 1200, height = 750, loop = true, class: cls } = Astro.props;
+const capId = `cap-${src.split('/').pop()!.replace(/\.\w+$/, '')}-${num}`;
+---
+<figure class:list={['vfig', cls]} data-vfig>
+  <div class="vf-media">
+    <RegMarks />
+    <img class="vf-poster" src={poster} width={width} height={height} alt="" loading="lazy" decoding="async" />
+    <video muted playsinline loop={loop} preload="none" controls width={width} height={height} aria-label={alt} aria-describedby={capId}>
+      <source src={src} type="video/mp4" />
+    </video>
+    <button class="vf-big" type="button" data-vplay aria-label={`Play ${label}`}><Fragment set:html={IC.play} /><span>Play</span></button>
+  </div>
+  <figcaption class="vf-cap">
+    <span id={capId}><b>Fig. {num}</b><slot /></span>
+    <button class="vf-toggle" type="button" data-vplay aria-label={`Pause ${label}`} data-label={label}><Fragment set:html={IC.pause} /><Fragment set:html={IC.play} /><Fragment set:html={IC.replay} /><span class="vf-state">Pause</span></button>
+  </figcaption>
+  <slot name="after" />
+</figure>

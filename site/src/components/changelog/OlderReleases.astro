@@ -1,0 +1,33 @@
+---
+// The releases older than the oldest one with a notes file: one ruled revision row each, with the
+// README summary. A version with a git tag (x.y.z) links to its GitHub release.
+import { inlineCode } from '../../lib/text.mjs';
+import { releaseId } from './changelog.mjs';
+
+interface Props {
+  releases: { version: string; date: string; summary: string }[];
+  repoUrl: string;
+}
+const { releases, repoUrl } = Astro.props;
+---
+<section class="rev rev-older" id="older" aria-labelledby="h-older" data-rev>
+  <div class="older-head">
+    <h2 id="h-older" class="h-sub">{releases[0].version} and older</h2>
+    <p>Version 3 shipped as <code>claude-code-blueprint</code>, a Claude Code plugin. One row per release.</p>
+  </div>
+  <div class="tbl-wrap">
+    <table class="older-tbl">
+      <thead><tr><th scope="col">Rev</th><th scope="col">Date</th><th scope="col">What changed</th></tr></thead>
+      <tbody>
+        {releases.map((r) => (
+          <tr id={releaseId(r.version)} data-release={r.version}>
+            <th scope="row"><span class="rv">{/^\d+\.\d+\.\d+$/.test(r.version) ? <a href={`${repoUrl}/releases/tag/v${r.version}`}>{r.version}</a> : r.version}</span></th>
+            <td class="dt"><time datetime={r.date}>{r.date}</time></td>
+            <td set:html={inlineCode(r.summary)} />
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="cl-note">Each tagged version links to its page on GitHub.</p>
+</section>

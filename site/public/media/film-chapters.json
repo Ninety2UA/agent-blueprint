@@ -1,0 +1,10 @@
+[
+  {"label": "Idea", "start": 0},
+  {"label": "Design", "start": 4.6},
+  {"label": "Plan", "start": 11.4},
+  {"label": "Build", "start": 17.8},
+  {"label": "Review", "start": 25.6},
+  {"label": "Verify", "start": 34.2},
+  {"label": "Ship", "start": 40.6},
+  {"label": "Learn", "start": 46.6}
+]

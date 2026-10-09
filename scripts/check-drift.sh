@@ -7,8 +7,12 @@
 # then compared against every hardcoded claim in the manifests, docs, installer,
 # and website. Any mismatch prints "LOCATION: expected X, found Y" and the script
 # exits non-zero. This replaces manual count sweeps, which drifted three times.
-# It also fails README.md and index.html when they bring back adoption or
-# ecosystem wording (the ADOPTION denylist at the end).
+# The site source is checked too: site/src/ and the film and loop compositions in
+# site/motion/ carry no literal skill, helper-prompt or hook count (KTD4), and the
+# README hero composition's "N skills" sentence matches the tree. Every skill folder
+# must sit in exactly one README phase table. It also fails README.md, index.html,
+# site/src/ and site/motion/ when they bring back adoption or ecosystem wording (the
+# denylist in scripts/adoption-denylist.json, shared with scripts/check-site.py).
 #
 # Usage: check-drift.sh [repo-root]
 #   repo-root defaults to the parent of this script's directory, so CI
@@ -113,11 +117,12 @@ echo ""
 # The checker anchors each claim narrowly so frozen changelog text (README
 # "What's New" entries, older index.html new__badge spans) is never gated —
 # only current-state claims. A missing anchor is reported as drift, not skipped.
-python3 - "$REPO_ROOT" "$SKILLS" "$PROMPTS" "$HOOKS" <<'PY'
+python3 - "$REPO_ROOT" "$SKILLS" "$PROMPTS" "$HOOKS" "$SCRIPT_DIR/adoption-denylist.json" <<'PY'
 import json, os, re, sys
 
 repo = sys.argv[1]
 SK, PR, HK = int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])
+DENYLIST = sys.argv[5]
 GT = {"skills": SK, "hooks": HK}   # current-state count claims; agents are no longer counted
 
 failures = []
@@ -278,32 +283,10 @@ if readme is not None:
             failures.append("README.md Helper Prompts Reference table: %d rows, skills ship %d helper prompts"
                             % (arows, PR))
 
-# docs/images/promo-video.html — source of the baked overview.gif (regenerated via
-# scripts/record-promo.js). Gating the source keeps the shipped GIF honest: scene 2
-# stat cards must match ground truth and use only current-state categories (the old
-# GIF shipped a defunct "27 Commands" card for months), and scene 6's install
-# terminal carries a TRIPLE claim.
-promo_rel = "docs/images/promo-video.html"
-promo = rd(promo_rel)
-check_triple("promo-video.html install terminal", promo_rel, promo)
-if promo is not None:
-    cards = re.findall(r'stat-number">(\d+)</div>\s*<div class="stat-label-txt">(\w+)<', promo)
-    if len(cards) < 2:
-        failures.append("%s: expected >=2 scene-2 stat cards, found %d — anchor changed, "
-                        "re-point the gate" % (promo_rel, len(cards)))
-    for num, lab in cards:
-        key = lab.lower()
-        if key not in GT:
-            failures.append("%s stat card '%s': not a current-state category — remove or "
-                            "rename the card (promo GIF must be re-rendered after)" % (promo_rel, lab))
-        elif int(num) != GT[key]:
-            failures.append("%s stat card '%s': expected %d, found %s — promo GIF source drifted"
-                            % (promo_rel, lab, GT[key], num))
-
-# docs/images/hero/hero.html — source of the README's animated hero.gif (rendered by
-# scripts/record-hero.js). The GIF bakes its skill count in, so every count in the source
-# must match the tree.
-hero_rel = "docs/images/hero/hero.html"
+# site/motion/readme-hero/composition.html — source of the README's hero.gif and the site's
+# readme-hero video (site/motion/RENDER.md). Both bake the skill count in ("N skills that take
+# a coding agent ..."), so every count in the source must match the tree.
+hero_rel = "site/motion/readme-hero/composition.html"
 hero = rd(hero_rel)
 if hero is not None:
     hero_counts = re.findall(r"\b(\d+) skills\b", hero)
@@ -311,9 +294,70 @@ if hero is not None:
         failures.append("%s: no 'N skills' claim found — anchor text changed, re-point the gate" % hero_rel)
     for num in hero_counts:
         if int(num) != SK:
-            failures.append("%s: claims %s skills, the tree ships %d — fix it, then re-render "
-                            "docs/images/hero.gif" % (hero_rel, num, SK))
-    no_agent_count("hero.html", hero_rel, hero)
+            failures.append("%s: claims %s skills, the tree ships %d — fix it, then re-render the README "
+                            "hero as site/motion/RENDER.md says" % (hero_rel, num, SK))
+    no_agent_count("README hero composition", hero_rel, hero)
+
+# Site source (KTD4): site/src/ and the film and loop compositions in site/motion/ state no
+# literal skill, helper-prompt or hook count. Pages render counts from site data; the film and
+# the loops state none, so a new skill never forces a re-render. The README hero is checked
+# above instead. Generated HyperFrames projects (.work/) are git-ignored and skipped.
+def site_files():
+    """(repo-relative path, text) of every text file under site/src/ and site/motion/."""
+    for top in ("site/src", "site/motion"):
+        base = os.path.join(repo, top)
+        if not os.path.isdir(base):
+            failures.append("%s/: not found — the site source moved, re-point the gate" % top)
+            continue
+        for root, dirs, files in os.walk(base):
+            dirs[:] = sorted(d for d in dirs if d not in (".work", "node_modules"))
+            for name in sorted(files):
+                path = os.path.join(root, name)
+                try:
+                    with open(path, encoding="utf-8") as fh:
+                        text = fh.read()
+                except (UnicodeDecodeError, OSError):
+                    continue                     # fonts and other binary assets
+                yield os.path.relpath(path, repo).replace(os.sep, "/"), text
+
+SITE_FILES = list(site_files())
+LITERAL_COUNT = re.compile(r"(?<![\w.])\d+\+?(?:\s|&nbsp;|&#160;)+(?:skills|helper[ -]prompts|helpers|hooks|"
+                           r"hook handlers)\b", re.IGNORECASE)
+for rel, text in SITE_FILES:
+    if rel.startswith("site/motion/readme-hero/"):
+        continue
+    for m in LITERAL_COUNT.finditer(text):
+        failures.append("%s:%d: literal count '%s'; render counts from site data (KTD4), and keep them out of "
+                        "the film and the loops"
+                        % (rel, text.count("\n", 0, m.start()) + 1, " ".join(m.group(0).split())))
+
+# README phase tables: every skill folder sits in exactly one row of the "## Skills reference"
+# tables. The site's catalog and skill pages are built from those tables, so a folder missing from
+# them (or listed twice) breaks the site build; this says so without Node.
+readme = rd("README.md")
+if readme is not None:
+    ref = re.search(r"^## Skills reference\n(.*?)(?=^## |\Z)", readme, re.MULTILINE | re.DOTALL)
+    rows = {}
+    phase = None
+    for line in (ref.group(1) if ref else "").splitlines():
+        if line.startswith("### "):
+            phase = line[4:].strip()
+        else:
+            row = re.match(r"\|\s*\[([^\]]+)\]\(skills/[^)]*\)\s*\|", line)
+            if row and phase:
+                rows.setdefault(row.group(1), []).append(phase)
+    if not rows:
+        failures.append("README.md Skills reference: no phase-table rows found — anchor changed, re-point the gate")
+    else:
+        folders = sorted(d for d in os.listdir(os.path.join(repo, "skills"))
+                         if os.path.isfile(os.path.join(repo, "skills", d, "SKILL.md")))
+        for name in folders:
+            phases = rows.get(name, [])
+            if not phases:
+                failures.append("README.md Skills reference: skill folder %s is in no phase table" % name)
+            elif len(phases) > 1:
+                failures.append("README.md Skills reference: skill folder %s has %d rows (%s); expected one"
+                                % (name, len(phases), ", ".join(phases)))
 
 claude_md = rd("AGENTS.md")  # canonical; CLAUDE.md is a symlink to it
 check_single("AGENTS.md layout", "AGENTS.md", claude_md, r"(\d+) skills, each a folder", "skills")
@@ -397,29 +441,25 @@ if readme is not None:
             failures.append("README nav What's-New anchor: expected %s, found %s"
                             % (expected, nm.group(1)))
 
-# ── PUBLIC-SURFACE WORDING (README.md, index.html) ──
+# ── PUBLIC-SURFACE WORDING (README.md, index.html, site/src/, site/motion/) ──
 # No adoption or ecosystem claims on the public surfaces: the README and the site say what
-# the blueprint does, not where its ideas came from. The phrases and project names below
-# belonged to the removed comparison and import sections; any of them coming back fails.
+# the blueprint does, not where its ideas came from. The phrases and project names in
+# scripts/adoption-denylist.json belonged to the removed comparison and import sections; any of
+# them coming back fails. scripts/check-site.py reads the same file for the built site.
 # A space in a phrase matches any run of whitespace (line breaks included), &nbsp;, inline
 # tags and Markdown emphasis, so a soft wrap, <em>imported</em> from or what&nbsp;we took
 # still fails. A lone _ counts as a word edge (Markdown emphasis); a class like x__y does not.
 # The whole file is searched; a hit is reported at the line where it starts, once per line.
-ADOPTION_GAP = r"(?:\s|&(?:nbsp|#160|#x0*a0);|</?[a-z][^<>]*>|[*_`])+"
-ADOPTION_PHRASES = (
-    r"(?:patterns?|concepts?|ideas?) (?:absorbed|adopted|borrowed|grafted|imported|taken)",
-    r"(?:absorbed|adopted|borrowed|grafted|imported|incorporated) (?:[a-z0-9-]+ )?(?:patterns?|concepts?|ideas?)",
-    r"what we took", r"import nothing", r"(?:imported|adopted) from", r"how does this compare",
-    r"(?:repos|repositories) (?:were )?analy[sz]ed", r"analy[sz]ed \d+ (?:repos|repositories|projects|frameworks)",
-    r"watched (?:repos|repositories)",
-    r"ecosystem(?:-| )(?:wide|analysis|imports?|delta sweep|data|refresh|table|guide|repos?)",
-    r"gstack|superpowers|get-shit-done|gsd-core|gsd-2|oh-my-claudecode|claude-mem|claude-squad",
-    r"everything-claude-code|compound(?:-| )engineering|ralphy?",
-)
-ADOPTION = re.compile(r"(?<![a-z0-9])(?<!\w_)(?:%s)(?![a-z0-9])(?!_\w)"
-                      % "|".join(p.replace(" ", ADOPTION_GAP) for p in ADOPTION_PHRASES), re.IGNORECASE)
-for rel in ("README.md", "index.html"):
-    text = rd(rel)
+try:
+    with open(DENYLIST, encoding="utf-8") as fh:
+        denylist = json.load(fh)
+    ADOPTION = re.compile(r"(?<![a-z0-9])(?<!\w_)(?:%s)(?![a-z0-9])(?!_\w)"
+                          % "|".join(p.replace(" ", denylist["gap"]) for p in denylist["phrases"]), re.IGNORECASE)
+except (OSError, ValueError, KeyError, TypeError) as exc:
+    failures.append("scripts/adoption-denylist.json: cannot read the denylist (%s)" % exc)
+    ADOPTION = None
+surfaces = [(rel, rd(rel)) for rel in ("README.md", "index.html")] + SITE_FILES if ADOPTION else []
+for rel, text in surfaces:
     if text is None:
         continue
     reported = set()

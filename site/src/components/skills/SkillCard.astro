@@ -1,0 +1,30 @@
+---
+// One skill card (the approved 2A card: phase chip, name, one-line summary, "use when" line),
+// used by the catalog and by the related skills on a skill page. In the catalog it carries what
+// the filter matches on: data-phase and data-text, the name and summary in lower case.
+import { inlineCode } from '../../lib/text.mjs';
+
+interface Props {
+  name: string;
+  /** phase slug and title */
+  phase: { slug: string; title: string };
+  summary: string;
+  when: string;
+  /** heading level of the name: 2 in the catalog, 3 under a section heading */
+  level?: 2 | 3;
+  /** mark the card for the catalog filter */
+  filterable?: boolean;
+}
+const { name, phase, summary, when, level = 3, filterable = false } = Astro.props;
+const Name = level === 2 ? 'h2' : 'h3';
+// \x60 is the backtick: a literal one here trips the Astro compiler's frontmatter scanner
+const text = (name + ' ' + summary.replace(/\x60/g, '')).toLowerCase();
+---
+<li class="card" data-skill-card={filterable ? '' : undefined} data-phase={filterable ? phase.slug : undefined} data-text={filterable ? text : undefined}>
+  <a href={`/skills/${name}/`}>
+    <span class="phase">{phase.title}</span>
+    <Name class="card-name">{name}</Name>
+    <p class="card-sum" set:html={inlineCode(summary)} />
+    <p class="card-when"><b>Use when:</b> <Fragment set:html={inlineCode(when)} /></p>
+  </a>
+</li>

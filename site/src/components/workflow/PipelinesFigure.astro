@@ -1,0 +1,76 @@
+---
+// Fig. 3: the pipelines side by side on one sheet, each drawn as a vertical line of its stages
+// with the skill each stage runs. The pipelines, their summaries and "use it for" lines come from
+// the README's Pipelines table; the stages from PIPELINE_STAGES, checked against each SKILL.md.
+import DrawingSheet from '../DrawingSheet.astro';
+import { guidesOrder } from '../../lib/guides-order.mjs';
+import SkillLinks from './SkillLinks.astro';
+import { md, Num, skillHref, wf } from './data';
+
+const { pipelines } = wf;
+
+// the guide that explains a pipeline further
+const GUIDE_FOR: Record<string, string> = { 'ab-ship-pipeline': 'unattended-runs', 'ab-orchestrate': 'team-work-and-swarms' };
+const guides = new Map(guidesOrder().map((g) => [g.slug, g]));
+const guideOf = (name: string) => {
+  const slug = GUIDE_FOR[name];
+  if (!slug) return undefined;
+  const guide = guides.get(slug);
+  if (!guide) throw new Error(`Workflow page: no guide "${slug}" in src/lib/guides-order.mjs`);
+  return guide;
+};
+---
+<section class="wf-sec" id="pipelines" aria-labelledby="pipelines-h">
+  <div class="wrap">
+    <div class="wf-sec-head">
+      <p class="sec-ref"><span class="bub" aria-hidden="true">3</span>Fig. 3</p>
+      <h2 id="pipelines-h" class="h-sec">{Num(pipelines.length)} pipelines run the skills in order for you.</h2>
+      <p class="body">A pipeline is a skill that starts other skills, stage by stage. Pick one by how much of the work you want to watch. Each line below is one pipeline's stages, with the skill each stage runs.</p>
+    </div>
+    <figure class="wf-fig" aria-labelledby="pipelines-h">
+      <DrawingSheet class="pl-sheet">
+        <div class="pl-grid" data-draw>
+          {pipelines.map((p) => {
+            const guide = guideOf(p.name);
+            return (
+              <article class:list={['pl', { 'has-cp': p.checkpoints }]} aria-labelledby={`pl-${p.name}`}>
+                <h3 class="pl-name" id={`pl-${p.name}`}><a href={skillHref(p.name)}><code>{p.name}</code></a></h3>
+                <p class="pl-when"><span class="lbl">Use it for</span>{p.when}</p>
+                <p class="pl-sum" set:html={p.summaryHtml} />
+                {p.stages.length > 0 && (
+                  <>
+                    <p class="pl-legend">
+                      {p.checkpoints ? (
+                        <><span class="pl-cp-key" aria-hidden="true"></span>A checkpoint after every stage</>
+                      ) : (
+                        <>{Num(p.stages.length)} stages</>
+                      )}
+                    </p>
+                    <ol class="pl-stages">
+                      {p.stages.map((stage, i) => (
+                        <li class:list={['pl-stage', { 'is-opt': stage.optional }]} style={`--i:${i}`}>
+                          <span class="pl-tick" aria-hidden="true"></span>
+                          <span class="pl-label">
+                            {stage.label}
+                            {stage.optional && <span class="pl-opt"><span class="sr-only">, </span>optional</span>}
+                          </span>
+                          {stage.skills.length > 0 ? (
+                            <SkillLinks names={stage.skills} class="pl-skills" />
+                          ) : (
+                            <span class="pl-note" set:html={md(stage.note ?? '')} />
+                          )}
+                          {p.checkpoints && <span class="pl-cp" aria-hidden="true"></span>}
+                        </li>
+                      ))}
+                    </ol>
+                  </>
+                )}
+                {guide && <a class="link pl-more" href={guide.href}><span class="link-rule" aria-hidden="true"></span><span>{guide.label} guide</span></a>}
+              </article>
+            );
+          })}
+        </div>
+      </DrawingSheet>
+    </figure>
+  </div>
+</section>

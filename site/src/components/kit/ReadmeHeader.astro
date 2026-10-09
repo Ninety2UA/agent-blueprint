@@ -1,0 +1,68 @@
+---
+// Use it in your README: the hero in a README frame with GIF and MP4 tabs, the Markdown to paste
+// (its counts marked as claims), and the files. The GIF's size and length come from the file the
+// README shows; the MP4's from its own boxes.
+import Cmd from '../Cmd.astro';
+import { IC } from '../icons';
+import { mp4Facts } from '../media';
+import { numberWord } from '../number-word';
+import Tabs from '../Tabs.astro';
+import FileTable from './FileTable.astro';
+import { fileFacts } from './files.mjs';
+import { ALT, README_GIF, SNIPPET, site } from './kit-data';
+
+const video = mp4Facts('media/readme-hero.mp4');
+const seconds = numberWord(Math.round(video.duration));
+const [gifW, gifH] = fileFacts(README_GIF.file).frame.split(' × ').map(Number);
+const label = 'the README loop';
+const bar = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3.5h12M2 8h12M2 12.5h8" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>';
+const gifAlt =
+  `${ALT}. The drawing: six stations on one line under ab-build-pipeline, the ${numberWord(site.counts.tools)} tools as a ` +
+  'parts list, and a red-orange tracer walking from Design to Learn and back.';
+---
+<section class="sec kit-sec" id="readme" aria-labelledby="readme-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="readme-h" class="h-sec">Use it in your README.</h2>
+      <p class="body">A {seconds}-second loop of the station drawing, sized for the top of a GitHub README. The GIF works anywhere Markdown shows an image; the MP4 is the same loop for pages that play video.</p>
+    </div>
+    <div class="readme-grid">
+      <Tabs id="rp" label="Preview format" items={[{ id: 'gif', label: 'GIF' }, { id: 'mp4', label: 'MP4' }]} class="ghr-tabs">
+        <Fragment slot="gif">
+          <div class="ghr">
+            <p class="ghr-bar"><Fragment set:html={bar} /><span>README.md</span></p>
+            <div class="ghr-body">
+              <img class="kit-neg" src={README_GIF.href} width={gifW} height={gifH} style={`aspect-ratio:${gifW} / ${gifH}`} loading="lazy" decoding="async" alt={gifAlt} />
+            </div>
+          </div>
+        </Fragment>
+        <Fragment slot="mp4">
+          <div class="ghr">
+            <p class="ghr-bar"><Fragment set:html={bar} /><span>README.md</span></p>
+            <div class="ghr-body">
+              <figure class="vfig ghr-vid" data-vfig>
+                <div class="vf-media" style={`aspect-ratio:${video.width} / ${video.height}`}>
+                  <img class="vf-poster" src="/media/readme-hero.jpg" width={video.width} height={video.height} alt="" loading="lazy" decoding="async" />
+                  <video muted playsinline loop preload="none" controls width={video.width} height={video.height} aria-label={`${ALT}. Looping animation, no sound.`}>
+                    <source src="/media/readme-hero.mp4" type="video/mp4" />
+                  </video>
+                  <button class="vf-big" type="button" data-vplay aria-label={`Play ${label}`}><Fragment set:html={IC.play} /><span>Play</span></button>
+                </div>
+                <figcaption class="vf-cap">
+                  <span>Same loop as MP4</span>
+                  <button class="vf-toggle" type="button" data-vplay aria-label={`Pause ${label}`} data-label={label}><Fragment set:html={IC.pause} /><Fragment set:html={IC.play} /><Fragment set:html={IC.replay} /><span class="vf-state">Pause</span></button>
+                </figcaption>
+              </figure>
+            </div>
+          </div>
+        </Fragment>
+      </Tabs>
+      <div class="readme-use">
+        <h3 class="h-sub">Paste this at the top.</h3>
+        <Cmd label="Markdown for the README header" copyLabel="Copy the markdown" copy={SNIPPET.text} class="wrap-cmd"><span class="ln" set:html={SNIPPET.html} /></Cmd>
+        <p class="hint">Save <code>readme-hero.gif</code> next to your README, or change the path to wherever you keep images. The image links to the repository.</p>
+        <FileTable files={[README_GIF.href, '/media/readme-hero.mp4', '/media/readme-hero.jpg']} label="README header files" />
+      </div>
+    </div>
+  </div>
+</section>

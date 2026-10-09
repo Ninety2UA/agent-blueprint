@@ -1,0 +1,69 @@
+---
+// One page per Docs entry of the sidebar (R1, R4): the hand-written intro (content/docs/<slug>.md),
+// the GitHub documents it points to, then the README section(s) the page maps to (readme collection,
+// R13). Getting started opens on the install tabs and leaves out the README tables they replace;
+// Hooks and native features adds the hooks of each tool. Sidebar, previous and next follow
+// lib/docs-sidebar.mjs; the on-page contents list every H2 on the page.
+import { getEntry, render } from 'astro:content';
+import '../../styles/docs-pages.css';
+import DocRefs from '../../components/docs/DocRefs.astro';
+import HooksByTool from '../../components/docs/HooksByTool.astro';
+import InstallTabs from '../../components/docs/InstallTabs.astro';
+import ReadmeSection from '../../components/docs/ReadmeSection.astro';
+import { INSTALL_TABLES, INSTALL_TABS_ID } from '../../components/docs/section.mjs';
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import { docsNeighbors, docsOrder, docsSidebar } from '../../lib/docs-sidebar.mjs';
+import { githubSlug } from '../../lib/readme.mjs';
+
+export function getStaticPaths() {
+  return docsOrder().map((page) => ({ params: { slug: page.slug }, props: { page } }));
+}
+
+interface Props {
+  page: { slug: string; label: string; href: string; group: string };
+}
+const { page } = Astro.props;
+const { slug, label, group } = page;
+
+const intro = await getEntry('docs', slug);
+if (!intro) throw new Error(`docs: no intro for "${slug}"; add src/content/docs/${slug}.md`);
+const section = await getEntry('readme', slug);
+if (!section) throw new Error(`docs: no README section for "${slug}"; map it in src/lib/readme-map.mjs`);
+const { Content: Intro } = await render(intro);
+const { Content, headings } = await render(section);
+
+const installTabs = slug === 'getting-started';
+const hooks = slug === 'hooks-and-native-features';
+// Below a section of the page's own, the README part needs a heading of its own too.
+const lead = hooks ? section.data.headings[0] : undefined;
+
+const toc = [
+  ...(installTabs ? [{ id: INSTALL_TABS_ID, text: 'Install by tool' }] : []),
+  ...(hooks ? [{ id: githubSlug('Hooks in each tool'), text: 'Hooks in each tool' }] : []),
+  ...(lead ? [{ id: githubSlug(lead), text: lead }] : []),
+  ...headings.filter((h) => h.depth === 2).map((h) => ({ id: h.slug, text: h.text })),
+];
+const { prev, next } = docsNeighbors(slug);
+---
+<DocsLayout
+  title={`${label} · Agent Blueprint docs`}
+  description={intro.data.description}
+  sheet={`Docs / ${label}`}
+  sidebar={docsSidebar(slug)}
+  headings={toc}
+  prev={prev}
+  next={next}
+>
+  <div class="dpage" data-pagefind-body data-pagefind-filter="section:Docs">
+    <header class="dp-head">
+      <p class="dp-crumb">Docs<span aria-hidden="true">/</span>{group}</p>
+      <h1>{label}</h1>
+      <div class="dp-intro"><Intro /></div>
+      <DocRefs hostDocs={intro.data.hostDocs} repoDoc={intro.data.repoDoc} />
+    </header>
+    {installTabs && <InstallTabs />}
+    {hooks && <HooksByTool />}
+    {lead && <h2 id={githubSlug(lead)}>{lead}</h2>}
+    <ReadmeSection drop={installTabs ? INSTALL_TABLES : undefined}><Content /></ReadmeSection>
+  </div>
+</DocsLayout>

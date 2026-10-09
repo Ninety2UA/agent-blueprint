@@ -1,0 +1,77 @@
+/* Video figures and the film (ported from the approved f/src/media.css): the motion
+   pieces framed as drawing sheets, never as cards. Loaded only by pages that show one. */
+.vfig { position: relative; margin: 0; min-width: 0; }
+.vf-media { position: relative; aspect-ratio: 1200 / 750; border: 1px solid var(--hair-strong); background: var(--bg-sunk); }
+.vf-media video { position: relative; display: block; width: 100%; height: 100%; object-fit: cover; }
+/* the poster sits behind the idle video; the playing video covers it */
+.vf-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* the negative print: in the dark theme the light drawings are shown in negative, like the page */
+:root[data-theme="dark"] .vf-media video, :root[data-theme="dark"] .vf-poster, :root[data-theme="dark"] .kit-neg { filter: invert(0.93) hue-rotate(180deg); }
+
+.vf-cap { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); margin-top: 14px; font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.5; color: var(--muted); }
+.vf-cap b { margin-right: 1.6ch; font-weight: 600; color: var(--ink); }
+.vf-cap code { font-size: inherit; color: var(--ink-2); }
+
+.vf-toggle { flex: none; display: none; align-items: center; gap: 7px; height: 30px; padding: 0 11px 0 9px; border: 1px solid var(--hair-strong); border-radius: var(--r); background: transparent; font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-2); cursor: pointer; transition: border-color 160ms, color 160ms; }
+.vf-toggle:hover { border-color: var(--ink); color: var(--ink); }
+.vf-toggle svg { width: 14px; height: 14px; display: none; }
+.vf-toggle[data-state="playing"] .ic-pause, .vf-toggle[data-state="paused"] .ic-play, .vf-toggle[data-state="ended"] .ic-replay { display: block; }
+.vjs .vf-toggle { display: inline-flex; }
+
+.vf-big { position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none; align-items: center; gap: 10px; height: 48px; padding: 0 18px 0 14px; border: 1px solid var(--ink); border-radius: var(--r); background: var(--bg); color: var(--ink); font-family: var(--font-mono); font-size: 0.8125rem; cursor: pointer; transition: background-color 160ms, color 160ms; }
+.vf-big svg { width: 18px; height: 18px; }
+.vf-big:hover { background: var(--ink); color: var(--bg); }
+.vjs.show-big:not(.is-playing) .vf-big { display: inline-flex; animation: big-in 320ms var(--ease-out); }
+@keyframes big-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- The film: a full drawing sheet ---------- */
+.film .vf-media { aspect-ratio: 16 / 9; border-color: transparent; background: var(--bg); } /* the film is a drawing on the sheet itself */
+
+.film-ctl { display: none; align-items: flex-end; gap: var(--s-5); margin-top: var(--s-5); }
+.vjs .film-ctl { display: flex; }
+.film-ctl .vf-toggle { height: 34px; }
+/* progress drawn as a dimension line, with a tick at every chapter start */
+.film-ctl .dimline { flex: 1; }
+.fd-fill { position: absolute; left: 0; right: 0; bottom: 10px; height: 3px; background: var(--accent); transform: scaleX(0); transform-origin: left; }
+.fd-head { position: absolute; left: 0; bottom: 4px; width: 2px; height: 17px; margin-left: -1px; background: var(--accent); }
+.film-ctl .dl-txt [data-cur] { color: var(--ink); font-weight: 600; }
+.fd-seek { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.dimline:has(.fd-seek:focus-visible) { outline: 2px solid var(--focus); outline-offset: 4px; }
+
+.chapters { list-style: none; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); margin-top: var(--s-5); border-top: 1px solid var(--hair); }
+.chap { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; width: 100%; padding: 14px 6px 4px 0; border: 0; border-radius: var(--r); background: transparent; text-align: left; cursor: pointer; }
+.chap .mark { position: relative; grid-row: span 2; width: 22px; height: 22px; }
+.chap .mark::before { content: ""; position: absolute; inset: 5px; z-index: 1; border: 1.25px solid var(--ink); border-radius: 50%; background: var(--bg); transition: background-color 300ms var(--ease-out), border-color 300ms; }
+.chap .mark::after { content: ""; position: absolute; inset: 0; background: linear-gradient(var(--ink), var(--ink)) center / 1px 100% no-repeat, linear-gradient(var(--ink), var(--ink)) center / 100% 1px no-repeat; }
+.chap .cn { font-weight: 600; font-stretch: 110%; font-size: 0.9375rem; line-height: 1.2; color: var(--ink-2); }
+.chap .ct { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chap:hover .cn { color: var(--ink); text-decoration: underline; text-underline-offset: 0.25em; }
+.chap[aria-current="step"] .cn { color: var(--ink); font-weight: 680; }
+.chap[aria-current="step"] .mark::before { background: var(--accent); border-color: var(--accent); }
+.film-now { margin-top: var(--s-4); padding-top: var(--s-4); border-top: 1px dashed var(--hair); font-size: 0.9375rem; color: var(--ink-2); min-height: 3.2em; }
+.film-now span { display: inline; max-width: 92ch; }
+.film-now b { margin-right: 1ch; font-weight: 680; font-stretch: 110%; color: var(--ink); }
+
+/* title block under the sheet */
+.film-tb { --tb-cols: minmax(0, 0.55fr) minmax(0, 1.5fr) minmax(0, 1.9fr) minmax(0, 0.6fr) minmax(0, 0.8fr) minmax(0, 0.6fr); }
+.film-tb .ftb-fig dd { font-family: var(--font-mono); font-weight: 600; }
+
+@media (max-width: 900px) {
+  .chapters { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .film-tb { --tb-cols: minmax(0, 1fr) minmax(0, 1fr); }
+  .film-tb .ftb-title { order: -2; grid-column: 1 / -1; }
+  .film-tb .ftb-ex { order: -1; grid-column: 1 / -1; }
+  .film-tb .ftb-len { order: 1; }
+  .film-tb .ftb-frame { order: 2; }
+  .film-tb .ftb-sound { order: 3; }
+}
+@media (max-width: 560px) {
+  .film-ctl { gap: var(--s-3); }
+  .film-ctl .vf-state { display: none; }
+  .film-ctl .dl-txt { font-size: 0.6875rem; padding: 0 6px; }
+  .chap { padding-right: 2px; column-gap: 6px; }
+  .chap .cn { font-size: 0.8125rem; }
+  .chap .mark { width: 18px; height: 18px; }
+  .chap .mark::before { inset: 4px; }
+  .vf-big { height: 40px; padding: 0 14px 0 10px; }
+}

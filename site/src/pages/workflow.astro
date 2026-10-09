@@ -1,0 +1,55 @@
+---
+// Workflow (R1): the development loop as a concept page. The loop and the quality gates are the
+// README's Workflow section; the pipelines, phases and counts come from getSiteData(); the
+// hand-off chain and the pipeline stages are checked against the skills on every build
+// (components/workflow/workflow-data.mjs). No framework JavaScript: one small script draws the
+// figures' lines as they scroll in.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ChainFigure from '../components/workflow/ChainFigure.astro';
+import GatesFigure from '../components/workflow/GatesFigure.astro';
+import LoopFigure from '../components/workflow/LoopFigure.astro';
+import PhaseMap from '../components/workflow/PhaseMap.astro';
+import PipelinesFigure from '../components/workflow/PipelinesFigure.astro';
+import { numberWord, wf } from '../components/workflow/data';
+import '../styles/workflow.css';
+
+const { loop, pipelines, gates } = wf;
+const index = [
+  { href: '#loop', text: 'The development loop' },
+  { href: '#chain', text: 'What each skill leaves' },
+  { href: '#pipelines', text: 'The pipelines' },
+  { href: '#gates', text: 'Quality gates' },
+  { href: '#phases', text: 'Skills by phase' },
+];
+const description =
+  `How a feature moves through Agent Blueprint: the ${numberWord(loop.length)}-step development loop, what each skill leaves ` +
+  `for the next, the ${numberWord(pipelines.length)} pipelines and the ${numberWord(gates.length)} quality gates.`;
+---
+<BaseLayout title="Workflow · Agent Blueprint" description={description} sheet="Workflow">
+  <div class="wf" data-pagefind-body data-pagefind-filter="section:Pages">
+    <header class="wrap wf-head">
+      <div class="wf-head-copy">
+        <p class="wf-crumb">Workflow</p>
+        <h1 class="wf-title">How a feature moves from idea to pull request.</h1>
+        <p class="lede">Each skill hands its work to the next through your repository, and the loop they form is the same for every feature. The drawings below show that loop, what each skill leaves behind, the {numberWord(pipelines.length)} pipelines that run long stretches of it for you, and the {numberWord(gates.length)} quality gates.</p>
+      </div>
+      <nav class="wf-index" aria-label="On this page">
+        <p class="lbl">Sheet index</p>
+        <ol>
+          {index.map((item, i) => (
+            <li><a href={item.href}><span class="wf-index-n" aria-hidden="true">{i + 1}</span>{item.text}</a></li>
+          ))}
+        </ol>
+      </nav>
+    </header>
+    <LoopFigure />
+    <ChainFigure />
+    <PipelinesFigure />
+    <GatesFigure />
+    <PhaseMap />
+  </div>
+</BaseLayout>
+
+<script>
+  import '../components/workflow/draw';
+</script>

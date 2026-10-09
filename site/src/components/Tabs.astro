@@ -1,0 +1,137 @@
+---
+// WAI-ARIA tabs. Every panel is in the static HTML, so search indexes every tool's
+// commands; inactive panels carry `hidden` from the first paint, so nothing shifts when
+// the script starts. Without JavaScript, the <noscript> style in BaseLayout lists every
+// panel under its own name and hides the tab buttons.
+//
+// Panels come from named slots, one per item id:
+//   <Tabs id="name-it" label="Tools" items={[{ id: 'claude', label: 'Claude Code' }, ...]}>
+//     <Fragment slot="claude">...</Fragment>
+//   </Tabs>
+//
+// With `hashTarget`, each panel's id is the bare item id, so a link to `#<item id>` (the
+// footer's "Install by tool" links to /docs/getting-started/#<tool id>) opens that tab.
+interface Item {
+  id: string;
+  label: string;
+}
+interface Props {
+  id: string;
+  /** accessible name of the tab list */
+  label: string;
+  items: Item[];
+  /** index of the tab selected on load */
+  selected?: number;
+  hashTarget?: boolean;
+  class?: string;
+}
+const { id, label, items, selected = 0, hashTarget = false, class: cls } = Astro.props;
+const panelId = (item: Item) => (hashTarget ? item.id : `${id}-${item.id}`);
+const tabId = (item: Item) => `${id}-tab-${item.id}`;
+const panels = await Promise.all(items.map((item) => Astro.slots.render(item.id)));
+---
+<div class:list={['tabs', cls]} data-tabs>
+  <div class="tablist" role="tablist" aria-label={label}>
+    {items.map((item, i) => (
+      <button
+        class="tab"
+        type="button"
+        role="tab"
+        id={tabId(item)}
+        aria-controls={panelId(item)}
+        aria-selected={i === selected ? 'true' : 'false'}
+        tabindex={i === selected ? 0 : -1}
+      >{item.label}</button>
+    ))}
+    <span class="tab-ink" aria-hidden="true"></span>
+  </div>
+  {items.map((item, i) => (
+    <div class="tabpanel" role="tabpanel" id={panelId(item)} aria-labelledby={tabId(item)} hidden={i !== selected}>
+      <p class="tp-name">{item.label}</p>
+      <Fragment set:html={panels[i]} />
+    </div>
+  ))}
+</div>
+
+<script>
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  const initTabs = (root: HTMLElement) => {
+    const list = root.querySelector<HTMLElement>('[role="tablist"]')!;
+    const tabs = [...list.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const ink = list.querySelector<HTMLElement>('.tab-ink');
+    const panelOf = (t: HTMLElement) => document.getElementById(t.getAttribute('aria-controls') ?? '');
+    const current = () => tabs.find((t) => t.getAttribute('aria-selected') === 'true') ?? tabs[0];
+
+    // the ink bar slides under the selected tab
+    const place = (t: HTMLElement) => {
+      if (ink) ink.style.transform = `translateX(${t.offsetLeft}px) scaleX(${t.offsetWidth})`;
+    };
+
+    const select = (t: HTMLButtonElement, focus = false) => {
+      tabs.forEach((x) => {
+        const on = x === t;
+        x.setAttribute('aria-selected', String(on));
+        x.tabIndex = on ? 0 : -1;
+        const p = panelOf(x);
+        if (!p) return;
+        p.hidden = !on;
+        if (on) {
+          p.classList.remove('is-in');
+          void p.offsetWidth;
+          p.classList.add('is-in');
+        }
+      });
+      place(t);
+      if (focus) t.focus();
+      if (list.scrollWidth > list.clientWidth) {
+        t.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reduced.matches ? 'auto' : 'smooth' });
+      }
+    };
+
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => select(t));
+      t.addEventListener('keydown', (e) => {
+        const last = tabs.length - 1;
+        const next =
+          e.key === 'ArrowRight' || e.key === 'ArrowDown' ? (i + 1) % tabs.length
+          : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? (i - 1 + tabs.length) % tabs.length
+          : e.key === 'Home' ? 0
+          : e.key === 'End' ? last
+          : null;
+        if (next !== null) {
+          e.preventDefault();
+          select(tabs[next], true);
+        }
+      });
+    });
+
+    // a link to a panel's id opens its tab and brings it into view
+    const fromHash = () => {
+      let target = '';
+      try {
+        target = decodeURIComponent(location.hash.slice(1));
+      } catch {
+        // a malformed escape such as #%E0 names no panel
+        return;
+      }
+      const tab = target && tabs.find((t) => t.getAttribute('aria-controls') === target);
+      if (!tab) return;
+      select(tab);
+      panelOf(tab)?.scrollIntoView({ block: 'start' });
+    };
+    fromHash();
+    window.addEventListener('hashchange', fromHash);
+
+    requestAnimationFrame(() => place(current()));
+    // one measurement per frame while the window is resized
+    let frame = 0;
+    window.addEventListener('resize', () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => place(current()));
+    });
+    document.fonts?.ready.then(() => place(current()));
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-tabs]').forEach(initTabs);
+</script>

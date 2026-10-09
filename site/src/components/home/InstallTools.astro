@@ -1,0 +1,69 @@
+---
+// Install for the tools you use: one tab per row of the README install table, built with
+// the shared Tabs. Each panel shows the tool's command (cloning first when the route
+// needs the checkout), the README's route text when it says more than the command, how
+// to name a skill in that tool, and its hooks and helpers from the support table.
+import Cmd from '../Cmd.astro';
+import Tabs from '../Tabs.astro';
+import type { Tool } from '../../lib/site.mjs';
+import { md, site } from './home-data';
+
+const { tools, cloneLines, installCommand } = site;
+const clone = cloneLines.join(' && ');
+
+function panel(tool: Tool) {
+  // the installer's route when the table has one, else the route's own commands
+  const installer = tool.commands.find((c) => c.startsWith(`${installCommand} `));
+  const shown = installer ? [installer] : tool.commands;
+  const needsCheckout = shown.some((c) => c.startsWith(installCommand) || c.includes('<checkout>'));
+  const lines = needsCheckout ? [clone, ...shown] : shown;
+  // the route text, unless it only joins the commands the block already shows
+  const rest = tool.route.replace(/`([^`]+)`/g, (m, code) => (shown.includes(code) ? '' : m)).replace(/\b(then|and)\b|[\s,.;]/g, '');
+  const route = rest ? md(tool.route.endsWith('.') ? tool.route : `${tool.route}.`) : needsCheckout ? null : 'No clone needed.';
+  const hooks = /^none\b/i.test(tool.support.hooks) ? 'None. Every pipeline runs without them.' : md(tool.support.hooks);
+  return { lines, copy: lines.join(' && '), route, hooks, helpers: md(tool.support.helpers) };
+}
+const panels = tools.map((t) => ({ tool: t, ...panel(t) }));
+---
+<section class="sec tools" id="tools" aria-labelledby="tools-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="tools-h" class="h-sec">Install for the tools you use.</h2>
+      <p class="body">Run <code>{installCommand}</code> in the checkout and it finds the tools on your <code>PATH</code> and gives each one its route. To set up one tool, pick it here.</p>
+    </div>
+    <Tabs id="install" label="Tools" items={tools.map((t) => ({ id: t.id, label: t.name }))}>
+      {panels.map((p) => (
+        <Fragment slot={p.tool.id}>
+          <dl class="spec">
+            <dt>Install</dt>
+            <dd>
+              <Cmd lines={p.lines} copy={p.copy} prompt label={`Install command for ${p.tool.name}`} copyLabel={`Copy install command for ${p.tool.name}`} />
+              {p.route && <p class="hint" set:html={p.route} />}
+            </dd>
+            <dt>Name a skill</dt>
+            <dd>
+              {p.tool.naming.syntax ? (
+                <Fragment>
+                  <p class="say">{p.tool.naming.example}</p>
+                  <p class="hint">Or describe the task: every tool also picks a skill on its own when your request matches its description.</p>
+                </Fragment>
+              ) : (
+                <Fragment>
+                  <p class="say-plain">Ask in plain words: "{p.tool.naming.example}".</p>
+                  <p class="hint">{p.tool.name} has no command for invoking a skill, so name it in the request.</p>
+                </Fragment>
+              )}
+            </dd>
+            <dt>Support</dt>
+            <dd>
+              <div class="facts">
+                <p><b>Hooks</b><Fragment set:html={p.hooks} /></p>
+                <p><b>Helpers</b><Fragment set:html={p.helpers} /></p>
+              </div>
+            </dd>
+          </dl>
+        </Fragment>
+      ))}
+    </Tabs>
+  </div>
+</section>

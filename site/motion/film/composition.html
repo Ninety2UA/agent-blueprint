@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1920, height=1080" />
+<title>Agent Blueprint: one feature from idea to pull request</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+/*{{DS_CSS}}*/
+html, body { width: 1920px; height: 1080px; }
+#stage { position: absolute; inset: 0; background: var(--bg); }
+#world { position: absolute; left: 0; top: 0; width: 14000px; height: 1080px; transform-origin: 0 0; }
+#world-svg { position: absolute; left: 0; top: 0; }
+.sheet { position: absolute; top: 96px; width: 1600px; height: 760px; }
+.sheet > svg { position: absolute; left: 0; top: 0; }
+.sheet .name { position: absolute; left: 70px; top: 54px; font-size: 104px; white-space: nowrap; }
+.sheet .desc { position: absolute; left: 74px; top: 178px; font-size: 30px; width: 1400px; white-space: nowrap; }
+.sheet .kicker { position: absolute; left: 74px; top: 84px; font-size: 26px; }
+.sheet .request { position: absolute; left: 70px; top: 134px; width: 900px; font-size: 92px; line-height: 1.02; }
+#overview, #endcard, #hud { position: absolute; inset: 0; }
+#endcard .line { position: absolute; left: 1210px; top: 432px; width: 560px; font-size: 40px; line-height: 1.1; font-stretch: 112%; font-weight: 640; letter-spacing: -0.02em; }
+#endcard .word { position: absolute; left: 152px; top: 712px; font-size: 112px; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="59.5" data-width="1920" data-height="1080">
+  <div id="stage" class="clip" data-start="0" data-duration="59.5" data-track-index="0">
+    <div id="world"></div>
+    <div id="overview"></div>
+    <div id="endcard"></div>
+  </div>
+</div>
+<script>
+//{{DS_JS}}
+</script>
+<script>
+(function () {
+  const { S, svg, G, T, L, P, R, station, reg, head, fileGlyph, logo, draw, fadeIn, fadeOut, pop, fill, nudge, C } = DS;
+  const SP = 1700;                 // sheet spacing in world px
+  const SX = (i) => 160 + i * SP;  // sheet left edge
+  const CX = (i) => 960 + i * SP;  // station / sheet centre
+  const DATUM = 930;
+  const CH = [
+    { label: "Idea", start: 0 },
+    { label: "Design", start: 4.6 },
+    { label: "Plan", start: 11.4 },
+    { label: "Build", start: 17.8 },
+    { label: "Review", start: 25.6 },
+    { label: "Verify", start: 34.2 },
+    { label: "Ship", start: 40.6 },
+    { label: "Learn", start: 46.6 },
+  ];
+  const PULL = 53.0;
+  const FINAL = { s: 0.12 };
+
+  function build() {
+    const tl = gsap.timeline({ paused: true });
+    const world = document.getElementById("world");
+
+    // ---------- the datum, stations and tracer (world space) ----------
+    const wsvg = svg(world, 14000, 1080);
+    wsvg.id = "world-svg";
+    const datum = L(wsvg, 40, DATUM, 13780, DATUM, "datum");
+    datum.removeAttribute("pathLength");
+    const stations = CH.map((c, i) => {
+      const st = station(wsvg, CX(i), DATUM, 8, 16);
+      const lab = T(wsvg, CX(i), DATUM + 50, c.label, "t-mono mut", 18, "middle");
+      return { st, lab };
+    });
+    const tracer = S("circle", { cx: CX(0), cy: DATUM, r: 6, class: "tracer" }, wsvg);
+
+    // ---------- sheets ----------
+    const sheets = [];
+    function sheet(i, opts) {
+      const d = document.createElement("div");
+      d.className = "sheet";
+      d.style.left = SX(i) + "px";
+      world.appendChild(d);
+      const s = svg(d, 1600, 760);
+      const frame = R(s, 0.75, 0.75, 1598.5, 758.5, "hair-s");
+      frame.setAttribute("pathLength", 1);
+      const regs = [[22, 22], [1578, 22], [22, 674], [1578, 674]].map(([x, y]) => reg(s, x, y, 8));
+      const tbRule = L(s, 0, 696, 1600, 696, "hair-s");
+      const tbDiv = [L(s, 560, 696, 560, 760, "hair-s"), L(s, 1200, 696, 1200, 760, "hair-s")];
+      const tb = [
+        T(s, 28, 736, opts.tb[0], "t-mono-b", 19),
+        T(s, 588, 736, opts.tb[1], "t-mono", 19),
+        T(s, 1228, 736, opts.tb[2], "t-mono mut", 19),
+      ];
+      let name = null, desc = null;
+      if (opts.name) {
+        name = document.createElement("div");
+        name.className = "name h-display";
+        name.textContent = opts.name;
+        d.appendChild(name);
+        desc = document.createElement("div");
+        desc.className = "desc h-sub";
+        desc.textContent = opts.desc;
+        d.appendChild(desc);
+      }
+      const o = { i, d, s, frame, regs, tbRule, tbDiv, tb, name, desc };
+      sheets.push(o);
+      return o;
+    }
+    // sheet chrome reveal: frame, marks, title block, heading
+    function chrome(o, t) {
+      draw(tl, o.frame, t, 1.0, { ease: "power3.out" });
+      fadeIn(tl, o.regs, t + 0.1, 0.5, { y: 0, stagger: 0.05 });
+      draw(tl, [o.tbRule].concat(o.tbDiv), t + 0.25, 0.7);
+      fadeIn(tl, o.tb, t + 0.45, 0.6, { y: 6, stagger: 0.08 });
+      if (o.name) {
+        fadeIn(tl, o.name, t + 0.15, 0.8, { y: 18 });
+        fadeIn(tl, o.desc, t + 0.35, 0.8, { y: 10 });
+      }
+    }
+    const sheetsSeen = [];
+
+    // ===== Sheet 0: Idea (cover) =====
+    {
+      const o = sheet(0, { tb: ["Cover sheet", "One feature from idea to pull request", "Sheets: 7"] });
+      const k = document.createElement("div");
+      k.className = "kicker mono muted";
+      k.textContent = "Example feature:";
+      o.d.appendChild(k);
+      const req = document.createElement("div");
+      req.className = "request h-display";
+      req.textContent = "Add CSV export to the reports page";
+      o.d.appendChild(req);
+      const s = o.s;
+      const ix = 1010, iw = 520;
+      const hd = T(s, ix, 116, "Sheet index", "t-head", 24);
+      const rule = L(s, ix, 136, ix + iw, 136, "ln");
+      const rows = [
+        ["Design", "ab-brainstorming"], ["Plan", "ab-writing-plans"], ["Build", "ab-orchestrate"],
+        ["Review", "ab-review-swarm"], ["Verify", "ab-verification-before-completion"],
+        ["Ship", "ab-ship-pipeline"], ["Learn", "ab-knowledge-compounding"],
+      ].map(([n, sk], k2) => {
+        const g = G(s, 0, 0);
+        const y = 184 + k2 * 50;
+        T(g, ix, y, String(k2 + 1), "t-mono mut", 18);
+        T(g, ix + 34, y, n, "t-sans", 23);
+        T(g, ix + iw, y, sk, "t-mono ink2", 16, "end");
+        return g;
+      });
+      // opening: the sheet and datum are drawn first
+      chrome(o, 0.15);
+      draw(tl, datum, 0.3, 2.6, { ease: "power2.inOut" });
+      fadeIn(tl, k, 0.7, 0.7, { y: 8 });
+      fadeIn(tl, req, 0.85, 0.9, { y: 22 });
+      fadeIn(tl, hd, 1.1, 0.6, { y: 6 });
+      draw(tl, rule, 1.15, 0.8);
+      fadeIn(tl, rows, 1.3, 0.6, { y: 8, stagger: 0.09 });
+    }
+
+    // ===== Sheet 1: Design =====
+    const s1 = sheet(1, { name: "Design", desc: "Read the repository first, then compare two or three approaches.", tb: ["Sheet 1 of 7: Design", "ab-brainstorming", "Next sheet: Plan"] });
+    // ===== Sheet 2: Plan =====
+    const s2 = sheet(2, { name: "Plan", desc: "Each task records its file, its test and what that test asserts.", tb: ["Sheet 2 of 7: Plan", "ab-writing-plans", "Next sheet: Build"] });
+    // ===== Sheet 3: Build =====
+    const s3 = sheet(3, { name: "Build", desc: "Helpers take the tasks in dependency-ordered waves. Only the lead commits.", tb: ["Sheet 3 of 7: Build", "ab-orchestrate", "Next sheet: Review"] });
+    // ===== Sheet 4: Review =====
+    const s4 = sheet(4, { name: "Review", desc: "Reviewers work in parallel, findings merge into one report, fixes repeat.", tb: ["Sheet 4 of 7: Review", "ab-review-swarm, ab-iterative-refinement", "Next sheet: Verify"] });
+    // ===== Sheet 5: Verify =====
+    const s5 = sheet(5, { name: "Verify", desc: "Nothing is called done until the full command has run and been read.", tb: ["Sheet 5 of 7: Verify", "ab-verification-before-completion", "Next sheet: Ship"] });
+    // ===== Sheet 6: Ship =====
+    const s6 = sheet(6, { name: "Ship", desc: "The pull request opens only after a secret scan of everything outgoing.", tb: ["Sheet 6 of 7: Ship", "ab-ship-pipeline", "Next sheet: Learn"] });
+    // ===== Sheet 7: Learn =====
+    const s7 = sheet(7, { name: "Learn", desc: "What this session learned is written down. The next session reads it first.", tb: ["Sheet 7 of 7: Learn", "ab-knowledge-compounding, ab-session-wrap", "Next: the next session"] });
+
+    // ---------- camera + tracer between chapters ----------
+    // One red at a time: the stage dots on the datum stay ink. The tracer is red only
+    // while it travels; on arrival it merges into an ink dot and the sheet's own active
+    // step carries the red.
+    function travel(i) {
+      const c = CH[i].start;
+      // the tracer leaves first and pulls the camera after it
+      tl.set(tracer, { opacity: 1 }, c);
+      fill(tl, stations[i - 1].st.ring, C.ink, c, 0.3);
+      tl.to(stations[i - 1].lab, { fill: C.muted, duration: 0.3 }, c);
+      tl.to(tracer, { attr: { cx: CX(i) }, duration: 1.35, ease: "power2.inOut" }, c);
+      nudge(tl, world, "x", -(i - 1) * SP, -i * SP, c + 0.1, 1.6);
+      fill(tl, stations[i].st.ring, C.ink, c + 1.3, 0.25);
+      tl.to(stations[i].lab, { fill: C.ink, duration: 0.3 }, c + 1.3);
+      tl.to(tracer, { opacity: 0, duration: 0.2 }, c + 1.32);
+      return c;
+    }
+    // station 0 state at the opening
+    pop(tl, stations.map((s) => s.st.inner), 0.6, 0.6, { stagger: 0.12 });
+    fadeIn(tl, stations.map((s) => s.lab), 0.75, 0.6, { y: 6, stagger: 0.12 });
+    // the cover has no red of its own, so the tracer waits on Idea
+    pop(tl, tracer, 1.4, 0.5);
+    tl.to(stations[0].lab, { fill: C.ink, duration: 0.3 }, 1.4);
+
+    // ===== Design content =====
+    {
+      const c = travel(1), o = s1, s = o.s;
+      const K = 1.3;
+      chrome(o, c + K * 0.55);
+      const lab1 = T(s, 72, 300, "Repository answers", "t-mono mut", 17);
+      const files = ["docs/context/CONVENTIONS.md", "src/reports/table.ts", "git log -10"];
+      const fr = files.map((f, k) => {
+        const g = G(s, 0, 0);
+        P(g, `M72 ${346 + k * 50} l6 6 l12 -13`, "ln");
+        T(g, 104, 352 + k * 50, f, "t-mono", 19);
+        return g;
+      });
+      const a1 = P(s, "M452 396 H516", "ln");
+      const a1h = head(s, 524, 396, 0, 10, "ahi");
+      const lab2 = T(s, 540, 300, "Approaches", "t-mono mut", 17);
+      const opts = [["A", "Stream rows from the server"], ["B", "Build the file in the browser"], ["C", "Email a link when it is ready"]];
+      const boxes = opts.map(([l, txt], k) => {
+        const y = 322 + k * 90;
+        const g = G(s, 0, 0);
+        const b = R(g, 540, y, 520, 72, "box-h");
+        b.setAttribute("pathLength", 1);
+        const bub = S("circle", { cx: 574, cy: y + 36, r: 15, class: "box" }, g);
+        T(g, 574, y + 42, l, "t-mono-b", 16, "middle");
+        const tx = T(g, 604, y + 44, txt, "t-sans", 22);
+        return { g, b, tx };
+      });
+      const stamp = G(s, 0, 0);
+      R(stamp, 916, 340, 128, 36, "acc");
+      T(stamp, 980, 364, "approved", "t-mono-b acc-t", 17, "middle");
+      const a2 = P(s, "M1060 358 H1118", "ln");
+      const a2h = head(s, 1126, 358, 0, 10, "ahi");
+      const lab3 = T(s, 1134, 300, "Design saved", "t-mono mut", 17);
+      const fg = fileGlyph(s, 1138, 322, 64, 80);
+      const p1 = T(s, 1134, 446, "docs/plans/", "t-mono", 18);
+      const p2 = T(s, 1134, 474, "2026-10-08-csv-export-design.md", "t-mono", 18);
+
+      fadeIn(tl, lab1, c + K * 0.95, 0.5, { y: 6 });
+      fadeIn(tl, fr, c + K * 1.05, 0.55, { y: 8, stagger: 0.14 });
+      draw(tl, a1, c + K * 1.5, 0.45); fadeIn(tl, a1h, c + K * 1.8, 0.3, { y: 0 });
+      fadeIn(tl, lab2, c + K * 1.6, 0.5, { y: 6 });
+      draw(tl, boxes.map((b) => b.b), c + K * 1.7, 0.8, { stagger: 0.14 });
+      fadeIn(tl, boxes.map((b) => [b.tx, b.g.children[1], b.g.children[2]]).flat(), c + K * 1.8, 0.5, { y: 6, stagger: 0.05 });
+      // the user approves A; B and C step back
+      tl.to(boxes[0].b, { stroke: C.ink, strokeWidth: 2, duration: 0.3 }, c + K * 2.75);
+      pop(tl, stamp, c + K * 2.75, 0.45);
+      tl.to([boxes[1].g, boxes[2].g], { opacity: 0.38, duration: 0.5, ease: "power2.out" }, c + K * 2.8);
+      draw(tl, a2, c + K * 3.15, 0.4); fadeIn(tl, a2h, c + K * 3.4, 0.3, { y: 0 });
+      fadeIn(tl, lab3, c + K * 3.2, 0.5, { y: 6 });
+      draw(tl, [fg.body, fg.fold], c + K * 3.3, 0.6);
+      fadeIn(tl, [p1, p2], c + K * 3.5, 0.5, { y: 6, stagger: 0.1 });
+    }
+
+    // ===== Plan content =====
+    {
+      const c = travel(2), o = s2, s = o.s;
+      const K = 1.3;
+      chrome(o, c + K * 0.55);
+      const cols = [[72, "Task"], [160, "File"], [560, "Test asserts"], [960, "After"]];
+      const hd = cols.map(([x, t]) => T(s, x, 300, t, "t-mono mut", 17));
+      const rule = L(s, 72, 318, 1100, 318, "ln");
+      const rows = [
+        ["1", "src/export/csv.ts", "escapes commas and quotes", "none"],
+        ["2", "src/reports/range.ts", "filters rows by date range", "none"],
+        ["3", "src/api/export.ts", "responds with text/csv", "1, 2"],
+        ["4", "src/ui/ExportButton.tsx", "sends the chosen date range", "2"],
+      ].map((r, k) => {
+        const y = 368 + k * 54;
+        const g = G(s, 0, 0);
+        T(g, 72, y, r[0], "t-mono-b", 20);
+        T(g, 160, y, r[1], "t-mono", 20);
+        T(g, 560, y, r[2], "t-sans", 23);
+        T(g, 960, y, r[3], r[3] === "none" ? "t-mono mut" : "t-mono", 20);
+        return g;
+      });
+      const a = P(s, "M1132 420 H1222", "ln");
+      const ah = head(s, 1230, 420, 0, 10, "ahi");
+      const lab = T(s, 1250, 300, "Plan saved", "t-mono mut", 17);
+      const fg = fileGlyph(s, 1254, 322, 64, 80);
+      const p1 = T(s, 1250, 446, "docs/plans/", "t-mono", 18);
+      const p2 = T(s, 1250, 474, "2026-10-08-csv-export.md", "t-mono", 18);
+      const note = T(s, 1250, 520, "reviewed before anything runs", "t-sans ink2", 19);
+      fadeIn(tl, hd, c + K * 0.95, 0.5, { y: 6, stagger: 0.06 });
+      draw(tl, rule, c + K * 1.0, 0.8);
+      fadeIn(tl, rows, c + K * 1.25, 0.6, { y: 0, x: -10, stagger: 0.26 });
+      draw(tl, a, c + K * 2.55, 0.4); fadeIn(tl, ah, c + K * 2.8, 0.3, { y: 0 });
+      fadeIn(tl, lab, c + K * 2.6, 0.5, { y: 6 });
+      draw(tl, [fg.body, fg.fold], c + K * 2.7, 0.6);
+      fadeIn(tl, [p1, p2, note], c + K * 2.9, 0.5, { y: 6, stagger: 0.1 });
+    }
+
+    // ===== Build content =====
+    {
+      const c = travel(3), o = s3, s = o.s;
+      const K = 1.35;
+      chrome(o, c + K * 0.55);
+      const LY = 330;
+      const lead = station(s, 104, LY, 7, 14);
+      const leadLab = T(s, 104, 298, "lead", "t-mono-b", 18, "middle");
+      const leadLine = L(s, 124, LY, 1480, LY, "datum");
+      const endH = head(s, 1490, LY, 0, 11, "ahi");
+      const endLab = T(s, 1490, 366, "to review", "t-mono mut", 17, "end");
+      function lane(x0, x1, y) {
+        return P(s, `M${x0} ${LY} C${x0 + 34} ${LY} ${x0 + 30} ${y} ${x0 + 64} ${y} H${x1 - 64} C${x1 - 30} ${y} ${x1 - 34} ${LY} ${x1} ${LY}`, "acc");
+      }
+      const waves = [
+        { x0: 150, x1: 640, tasks: ["1  src/export/csv.ts", "2  src/reports/range.ts"], label: "Wave 1", chk: 668, commits: [706, 730] },
+        { x0: 790, x1: 1280, tasks: ["3  src/api/export.ts", "4  src/ui/ExportButton.tsx"], label: "Wave 2", chk: 1308, commits: [1346, 1370] },
+      ].map((w) => {
+        const lanes = [lane(w.x0, w.x1, 424), lane(w.x0, w.x1, 494)];
+        const labs = w.tasks.map((t, k) => T(s, w.x0 + 80, 414 + k * 70, t, "t-mono", 18));
+        const wl = T(s, (w.x0 + w.x1) / 2, 552, w.label, "t-head", 22, "middle");
+        const chk = L(s, w.chk, 296, w.chk, 520, "dash");
+        const chkLab = T(s, w.chk, 552, "integration check", "t-mono mut", 15, "middle");
+        const commits = w.commits.map((x) => R(s, x - 6, LY - 6, 12, 12, "fill-ink"));
+        const cLab = T(s, (w.commits[0] + w.commits[1]) / 2, 298, "commits", "t-mono", 16, "middle");
+        return Object.assign(w, { lanes, labs, wl, chk, chkLab, commits, cLab });
+      });
+      pop(tl, lead.inner, c + K * 0.95, 0.5);
+      fadeIn(tl, leadLab, c + K * 1.0, 0.5, { y: 6 });
+      draw(tl, leadLine, c + K * 1.05, 1.4, { ease: "power2.out" });
+      waves.forEach((w, k) => {
+        const t = c + K * 1.45 + k * 1.45 * K;
+        fadeIn(tl, w.wl, t, 0.5, { y: 8 });
+        draw(tl, w.lanes, t + 0.05, 0.95, { ease: "power2.inOut" });
+        fadeIn(tl, w.labs, t + 0.15, 0.5, { y: 6, stagger: 0.08 });
+        tl.to(w.lanes, { stroke: C.ink, strokeWidth: 1.25, duration: 0.3 }, t + 1.0);
+        fadeIn(tl, [w.chk, w.chkLab], t + 1.0, 0.4, { y: 0 });
+        pop(tl, w.commits, t + 1.15, 0.4, { stagger: 0.1 });
+        fadeIn(tl, w.cLab, t + 1.2, 0.4, { y: 4 });
+      });
+      fadeIn(tl, [endH, endLab], c + K * 4.3, 0.4, { y: 0 });
+    }
+
+    // ===== Review content =====
+    {
+      const c = travel(4), o = s4, s = o.s;
+      const K = 1.35;
+      chrome(o, c + K * 0.55);
+      const cb = R(s, 72, 330, 220, 230, "box");
+      cb.setAttribute("pathLength", 1);
+      const cbLab = T(s, 72, 312, "the change", "t-mono mut", 17);
+      const diff = [[0.7, 0], [0.5, 1], [0.85, 2], [0.4, 1], [0.65, 2], [0.75, 0], [0.3, 1], [0.6, 2]].map(([w, k], j) =>
+        L(s, 96, 362 + j * 24, 96 + 170 * w, 362 + j * 24, k === 0 ? "ln-2" : k === 1 ? "hair-s" : "ln"));
+      const ys = [334, 380, 426, 514, 560];
+      const names = ["code-reviewer", "code-simplicity-reviewer", "test-coverage-reviewer", "security-sentinel", "performance-oracle"];
+      const fanOut = ys.map((y, k) => P(s, `M292 445 C380 445 420 ${y} 548 ${y}`, k < 3 ? "ln" : "dash"));
+      const revs = ys.map((y, k) => {
+        const st = station(s, 560, y, 6, 11);
+        const lab = T(s, 584, y + 6, names[k], k < 3 ? "t-mono" : "t-mono ink2", 18);
+        return { st, lab };
+      });
+      const gl1 = T(s, 584, 306, "always", "t-mono mut", 15);
+      const gl2 = T(s, 584, 486, "when the diff calls for them", "t-mono mut", 15);
+      const RX = 1090;
+      const fanIn = ys.map((y) => P(s, `M884 ${y} C980 ${y} 990 452 ${RX - 20} 452`, "hair-s"));
+      const rpt = T(s, RX, 312, "Report", "t-head", 22);
+      const ph = [T(s, RX + 150, 350, "Pass 1", "t-mono mut", 16, "middle"), T(s, RX + 310, 350, "Pass 2", "t-mono mut", 16, "middle")];
+      const rRule = L(s, RX, 366, RX + 420, 366, "ln");
+      const tiers = ["P1", "P2", "P3"].map((p, k) => T(s, RX, 410 + k * 46, p, "t-mono-b", 20));
+      const v1 = ["2", "3", "4"].map((v, k) => T(s, RX + 150, 410 + k * 46, v, "t-mono", 22, "middle"));
+      const v2 = ["0", "1", "2"].map((v, k) => T(s, RX + 310, 410 + k * 46, v, k === 0 ? "t-mono-b acc-t" : "t-mono", 22, "middle"));
+      const p1box = R(s, RX + 278, 384, 64, 38, "acc");
+      p1box.setAttribute("pathLength", 1);
+      const ir1 = T(s, RX, 560, "ab-iterative-refinement", "t-mono-b", 17);
+      const ir2 = T(s, RX, 592, "fixes, then reviews again until no P1 is left", "t-sans ink2", 19);
+      // findings travel back along the fan-in lines
+      const finds = [];
+      ys.forEach((y, k) => { for (let j = 0; j < (k < 3 ? 2 : 1); j++) finds.push({ y, el: R(s, 0, 0, 8, 8, "fill-ink") }); });
+      finds.forEach((f) => gsap.set(f.el, { attr: { x: 880, y: f.y - 4 }, opacity: 0 }));
+
+      draw(tl, cb, c + K * 0.95, 0.8); fadeIn(tl, cbLab, c + K * 0.95, 0.5, { y: 6 });
+      draw(tl, diff, c + K * 1.1, 0.5, { stagger: 0.04 });
+      fadeIn(tl, gl1, c + K * 1.45, 0.4, { y: 4 });
+      draw(tl, fanOut, c + K * 1.45, 0.7, { stagger: 0.06 });
+      pop(tl, revs.map((r) => r.st.inner), c + K * 1.85, 0.45, { stagger: 0.06 });
+      fadeIn(tl, revs.map((r) => r.lab), c + K * 1.9, 0.5, { y: 0, x: -8, stagger: 0.06 });
+      fadeIn(tl, gl2, c + K * 2.1, 0.4, { y: 4 });
+      fadeIn(tl, [rpt].concat(ph), c + K * 1.95, 0.5, { y: 6, stagger: 0.06 });
+      draw(tl, rRule, c + K * 2.0, 0.6);
+      fadeIn(tl, tiers, c + K * 2.1, 0.4, { y: 6, stagger: 0.06 });
+      // pass 1: every reviewer works at once, findings come back and merge
+      function pass(t, list, vals) {
+        revs.forEach((r) => fill(tl, r.st.ring, C.accent, t, 0.2));
+        revs.forEach((r) => fill(tl, r.st.ring, C.bg, t + 0.75, 0.3));
+        tl.to(revs.map((r) => r.st.ring), { stroke: C.ink, duration: 0.3 }, t + 0.75);
+        list.forEach((f, j) => {
+          const tt = t + 0.45 + j * 0.05;
+          tl.fromTo(f.el, { attr: { x: 880, y: f.y - 4 }, opacity: 0 }, { opacity: 1, duration: 0.12, immediateRender: false }, tt);
+          tl.fromTo(f.el, { attr: { x: 880, y: f.y - 4 } }, { attr: { x: RX - 24, y: 448 }, duration: 0.65, ease: "power2.inOut", immediateRender: false }, tt);
+          tl.to(f.el, { opacity: 0, duration: 0.12 }, tt + 0.6);
+        });
+        fadeIn(tl, vals, t + 1.15, 0.4, { y: 6, stagger: 0.07 });
+      }
+      draw(tl, fanIn, c + K * 2.35, 0.6, { stagger: 0.04 });
+      pass(c + K * 2.35, finds, v1);
+      fadeIn(tl, [ir1, ir2], c + K * 3.55, 0.5, { y: 6, stagger: 0.1 });
+      pass(c + K * 3.7, finds.filter((_, j) => j % 3 === 0), v2);
+      draw(tl, p1box, c + K * 4.95, 0.5);
+    }
+
+    // ===== Verify content =====
+    {
+      const c = travel(5), o = s5, s = o.s;
+      const K = 1.3;
+      chrome(o, c + K * 0.55);
+      const VY = 420;
+      const xs = [96, 486, 876, 1266];
+      const line = L(s, 72, VY, 1528, VY, "datum");
+      const tops = ["Name what would prove it false", "Run the full command", "Read the output and exit code", "Only then say done"];
+      const sts = xs.map((x) => station(s, x, VY, 7, 14));
+      const tlabs = tops.map((t, k) => T(s, xs[k] - 14, 380, t, "t-head", 20));
+      const n = [];
+      const cmd = T(s, xs[1] - 14, 476, "npm test && npm run build", "t-mono", 19);
+      const ex1 = T(s, xs[2] - 14, 476, "exit code 0", "t-mono-b", 20);
+      const ex2 = T(s, xs[2] - 14, 506, "0 failed", "t-mono ink2", 18);
+      const fin = T(s, xs[3] - 14, 476, "with that output quoted", "t-sans ink2", 20);
+      const fail = T(s, xs[0] - 14, 476, "a failing test or a non-zero exit", "t-sans ink2", 19);
+      const tr = S("circle", { cx: xs[0], cy: VY, r: 5.5, class: "tracer" }, s);
+      draw(tl, line, c + K * 0.9, 1.0, { ease: "power2.out" });
+      pop(tl, sts.map((x) => x.inner), c + K * 0.95, 0.45, { stagger: 0.1 });
+      fadeIn(tl, tlabs, c + K * 1.0, 0.5, { y: 8, stagger: 0.1 });
+      gsap.set(tr, { opacity: 0 });
+      const t0 = c + K * 1.35;
+      fill(tl, sts[0].ring, C.accent, t0, 0.2);
+      fadeIn(tl, fail, t0 + 0.05, 0.4, { y: 6 });
+      const hops = [fail, cmd, [ex1, ex2], fin];
+      for (let k = 1; k < 4; k++) {
+        const t = t0 + k * 1.2; // arrival at step k
+        fill(tl, sts[k - 1].ring, C.ink, t - 0.6, 0.2);
+        tl.set(tr, { opacity: 1, attr: { cx: xs[k - 1] } }, t - 0.6);
+        tl.to(tr, { attr: { cx: xs[k] }, duration: 0.55, ease: "power2.inOut" }, t - 0.6);
+        tl.set(tr, { opacity: 0 }, t - 0.05);
+        fill(tl, sts[k].ring, C.accent, t - 0.06, 0.2);
+        fadeIn(tl, hops[k], t + 0.02, 0.4, { y: 6, stagger: 0.08 });
+      }
+    }
+
+    // ===== Ship content =====
+    {
+      const c = travel(6), o = s6, s = o.s;
+      const K = 1.3;
+      chrome(o, c + K * 0.55);
+      const BY = 420;
+      const br = L(s, 72, BY, 690, BY, "datum");
+      const commits = [190, 300, 410].map((x) => R(s, x - 7, BY - 7, 14, 14, "fill-ink"));
+      const bl1 = T(s, 72, 390, "outgoing commits", "t-mono mut", 17);
+      const bl2 = T(s, 72, 470, ".agent-blueprint/run/pr-body.md", "t-mono ink2", 17);
+      const gate = R(s, 700, 320, 28, 200, "box");
+      gate.setAttribute("pathLength", 1);
+      const sweep = L(s, 700, 322, 728, 322, "acc");
+      const gl = T(s, 714, 296, "secret scan", "t-head", 23, "middle");
+      const gs = T(s, 714, 556, "clean", "t-mono-b", 18, "middle");
+      const out = L(s, 728, BY, 900, BY, "datum");
+      const outH = head(s, 910, BY, 0, 11, "ahi");
+      const pr = R(s, 924, 316, 600, 208, "box");
+      pr.setAttribute("pathLength", 1);
+      const prT = T(s, 956, 372, "Pull request", "t-head", 30);
+      const prS = T(s, 956, 414, "feat(export): add CSV export to reports", "t-mono", 19);
+      const prL = [452, 476, 500].map((y, k) => L(s, 956, y, 956 + [420, 360, 250][k], y, "hair-s"));
+      const prTag = G(s, 0, 0);
+      R(prTag, 1388, 346, 104, 34, "acc");
+      T(prTag, 1440, 369, "opened", "t-mono-b acc-t", 16, "middle");
+      const tr = S("circle", { cx: 520, cy: BY, r: 5.5, class: "tracer" }, s);
+      gsap.set(tr, { opacity: 0 });
+      draw(tl, br, c + K * 0.9, 0.8, { ease: "power2.out" });
+      pop(tl, commits, c + K * 1.0, 0.4, { stagger: 0.1 });
+      fadeIn(tl, [bl1, bl2], c + K * 1.0, 0.5, { y: 6, stagger: 0.1 });
+      draw(tl, gate, c + K * 1.15, 0.6); fadeIn(tl, gl, c + K * 1.2, 0.5, { y: 6 });
+      tl.to(tr, { opacity: 1, duration: 0.15 }, c + K * 1.5);
+      tl.to(tr, { attr: { cx: 700 }, duration: 0.4, ease: "power2.in" }, c + K * 1.5);
+      tl.to(tr, { opacity: 0, duration: 0.05 }, c + K * 1.9);
+      tl.fromTo(sweep, { opacity: 0 }, { opacity: 1, duration: 0.1, immediateRender: false }, c + K * 1.9);
+      tl.fromTo(sweep, { attr: { y1: 322, y2: 322 } }, { attr: { y1: 518, y2: 518 }, duration: 0.55, ease: "power1.inOut", immediateRender: false }, c + K * 1.9);
+      tl.to(sweep, { opacity: 0, duration: 0.15 }, c + K * 2.45);
+      fadeIn(tl, gs, c + K * 2.45, 0.4, { y: 6 });
+      draw(tl, out, c + K * 2.5, 0.35, { ease: "power2.out" });
+      fadeIn(tl, outH, c + K * 2.75, 0.2, { y: 0 });
+      draw(tl, pr, c + K * 2.7, 0.6);
+      fadeIn(tl, [prT, prS], c + K * 2.85, 0.5, { y: 8, stagger: 0.08 });
+      draw(tl, prL, c + K * 2.95, 0.5, { stagger: 0.06 });
+      pop(tl, prTag, c + K * 3.15, 0.4);
+    }
+
+    // ===== Learn content =====
+    {
+      const c = travel(7), o = s7, s = o.s;
+      const K = 1.3;
+      chrome(o, c + K * 0.55);
+      const SY = 430;
+      const me = station(s, 120, SY, 8, 16);
+      const meL = T(s, 120, 384, "This session", "t-head", 23, "middle");
+      const meS = T(s, 120, 484, "Claude Code", "t-mono ink2", 17, "middle");
+      const out1 = P(s, `M140 ${SY} C260 ${SY} 270 340 400 340`, "ln");
+      const out2 = P(s, `M140 ${SY} C260 ${SY} 270 500 400 500`, "ln");
+      const h1 = head(s, 410, 340, 0, 10, "ahi"), h2 = head(s, 410, 500, 0, 10, "ahi");
+      const f1 = fileGlyph(s, 424, 300, 56, 72);
+      const f2 = fileGlyph(s, 424, 462, 56, 72);
+      const t1 = [T(s, 502, 324, "docs/solutions/", "t-mono", 18), T(s, 502, 350, "2026-10-08-csv-export.md", "t-mono", 18), T(s, 502, 378, "ab-knowledge-compounding", "t-mono ink2", 15)];
+      const t2 = [T(s, 502, 486, "docs/context/STATUS.md", "t-mono", 18), T(s, 502, 512, "Session Continuity", "t-sans ink2", 18), T(s, 502, 540, "ab-session-wrap", "t-mono ink2", 15)];
+      const in1 = P(s, `M880 340 C1080 340 1140 ${SY} 1352 ${SY}`, "ln");
+      const in2 = P(s, `M880 500 C1080 500 1140 ${SY} 1352 ${SY}`, "ln");
+      const h3 = head(s, 1362, SY, 0, 10, "ahi");
+      const nx = station(s, 1390, SY, 8, 16);
+      const nxL = T(s, 1390, 384, "Next session", "t-head", 23, "middle");
+      const nxS = T(s, 1390, 484, "Codex", "t-mono ink2", 17, "middle");
+      const nxR = T(s, 1390, 514, "ab-resume-session", "t-mono", 16, "middle");
+      pop(tl, me.inner, c + K * 0.9, 0.45);
+      fadeIn(tl, [meL, meS], c + K * 0.95, 0.5, { y: 6, stagger: 0.08 });
+      draw(tl, [out1, out2], c + K * 1.2, 0.6, { stagger: 0.12 });
+      fadeIn(tl, [h1, h2], c + K * 1.6, 0.25, { y: 0, stagger: 0.12 });
+      draw(tl, [f1.body, f1.fold, f2.body, f2.fold], c + K * 1.55, 0.6, { stagger: 0.06 });
+      fadeIn(tl, t1.concat(t2), c + K * 1.7, 0.5, { y: 6, stagger: 0.06 });
+      pop(tl, nx.inner, c + K * 2.35, 0.45);
+      fadeIn(tl, [nxL, nxS, nxR], c + K * 2.4, 0.5, { y: 6, stagger: 0.08 });
+      draw(tl, [in1, in2], c + K * 2.6, 0.7, { stagger: 0.1 });
+      fadeIn(tl, h3, c + K * 3.15, 0.25, { y: 0 });
+      fill(tl, nx.ring, C.accent, c + K * 3.2, 0.25);
+      fill(tl, me.ring, C.ink, c + K * 3.2, 0.25);
+    }
+
+    // ---------- pull back: the whole drawing set ----------
+    const fs = FINAL.s;
+    const ox = 960 - ((160 + SX(7) + 1600) / 2) * fs;
+    const oy = 128 - 96 * fs;
+    tl.to(world, { x: ox, y: oy, scale: fs, duration: 2.0, ease: "expo.inOut" }, PULL);
+    tl.to(sheets.map((o) => o.frame), { strokeWidth: 9, duration: 2.0, ease: "expo.inOut" }, PULL);
+    tl.to(stations.map((x) => x.st.inner).concat(stations.map((x) => x.lab), [tracer]), { opacity: 0, duration: 0.6 }, PULL + 0.4);
+    tl.to(datum, { opacity: 0, duration: 0.6 }, PULL + 0.6);
+
+    // overview layer: crisp datum, stations and labels at the final scale
+    const ov = svg(document.getElementById("overview"), 1920, 1080);
+    const sx = (X) => ox + X * fs, sy = (Y) => oy + Y * fs;
+    const oD = L(ov, sx(160), sy(DATUM), sx(SX(7) + 1600), sy(DATUM), "datum");
+    const oSt = CH.map((c, i) => {
+      const st = station(ov, sx(CX(i)), sy(DATUM), 6, 12);
+      st.ring.setAttribute("style", `fill:${C.ink};stroke:${C.ink}`);
+      const lab = T(ov, sx(CX(i)), sy(DATUM) + 36, c.label, "t-mono", 16, "middle");
+      return { st, lab };
+    });
+    const rY = sy(DATUM) + 66;
+    const ret = P(ov, `M${sx(CX(7))} ${sy(DATUM) + 46} V${rY} H${sx(CX(1))} V${sy(DATUM) + 50}`, "ln-2");
+    const retH = head(ov, sx(CX(1)), sy(DATUM) + 46, -90, 9, "ahm");
+    const retL = T(ov, 960, rY + 30, "the next session reads docs/ first", "t-mono ink2", 16, "middle");
+    const T0 = PULL + 1.3;
+    fadeIn(tl, oD, T0, 0.4, { y: 0 });
+    pop(tl, oSt.map((x) => x.st.inner), T0 + 0.05, 0.4, { stagger: 0.04 });
+    fadeIn(tl, oSt.map((x) => x.lab), T0 + 0.15, 0.4, { y: 4, stagger: 0.04 });
+    draw(tl, ret, T0 + 0.6, 1.1, { ease: "power2.inOut" });
+    fadeIn(tl, retH, T0 + 1.6, 0.2, { y: 0 });
+    fadeIn(tl, retL, T0 + 1.2, 0.5, { y: 6 });
+
+    // ---------- end card ----------
+    const ec = document.getElementById("endcard");
+    const E0 = 55.3;
+    const line = document.createElement("div");
+    line.className = "line";
+    line.textContent = "The same loop in eight coding CLIs";
+    ec.appendChild(line);
+    const es = svg(ec, 1920, 1080);
+    const tools = [["Claude Code", "claude"], ["Codex", "codex"], ["Antigravity", "agy"], ["Grok Build", "grok"], ["Pi", "pi"], ["Cursor CLI", "cursor-agent"], ["Hermes", "hermes"], ["Amp", "amp"]];
+    const PX = 1212, PW = 556, PY = 600;
+    const pH = T(es, PX, PY - 18, "Parts list", "t-head", 20);
+    const pH2 = T(es, PX + PW, PY - 18, "tool / install id", "t-mono mut", 15, "end");
+    const pR = L(es, PX, PY, PX + PW, PY, "ln");
+    const pRows = tools.map(([n, id], k) => {
+      const g = G(es, 0, 0);
+      const y = PY + 40 + k * 38;
+      T(g, PX, y, String(k + 1), "t-mono mut", 15);
+      T(g, PX + 30, y, n, "t-sans", 21);
+      T(g, PX + PW, y, id, "t-mono", 17, "end");
+      return g;
+    });
+    const lg = logo(es, 160, 470, 62, 10, 1.6);
+    const word = document.createElement("div");
+    word.className = "word h-display";
+    word.textContent = "Agent Blueprint";
+    ec.appendChild(word);
+    const vDiv = L(es, 1130, 440, 1130, 960, "hair");
+    fadeIn(tl, line, E0, 0.8, { y: 14 });
+    draw(tl, vDiv, E0 + 0.1, 0.8);
+    fadeIn(tl, [pH, pH2], E0 + 0.3, 0.5, { y: 6 });
+    draw(tl, pR, E0 + 0.35, 0.6);
+    fadeIn(tl, pRows, E0 + 0.45, 0.5, { y: 6, stagger: 0.07 });
+    // logo sting: outline cells first, then the path fills cell by cell
+    draw(tl, lg.outlines, E0 + 0.8, 0.6, { stagger: 0.06 });
+    lg.fills.forEach((f, k) => {
+      tl.fromTo(f, { opacity: 0, scale: 0.6, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.42, ease: "expo.out" }, E0 + 1.05 + k * 0.17);
+    });
+    fadeIn(tl, word, E0 + 1.95, 0.9, { y: 20 });
+
+
+    window.__timelines["main"] = tl;
+  }
+  DS.fontsReady().then(build);
+})();
+</script>
+</body>
+</html>

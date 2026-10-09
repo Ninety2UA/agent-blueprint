@@ -1,0 +1,3 @@
+/* Guide pages (pages/guides/): the page head and the README prose share the docs pages' styles
+   (docs-pages.css); this sets the grid of the skill cards that end each guide. */
+.g-cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }

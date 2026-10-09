@@ -1,0 +1,71 @@
+---
+// Every page: metadata, the self-hosted fonts, the header, the page in <main>, the
+// title-block footer. Pages ship no framework JavaScript on load; islands hydrate on use.
+import { Font } from 'astro:assets';
+import '../styles/global.css';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { sectionOf } from '../components/nav';
+import { THEME_INIT } from '../components/theme';
+
+interface Props {
+  /** unique per page, "<page> · Agent Blueprint" (the home page is "Agent Blueprint") */
+  title: string;
+  /** unique per page */
+  description: string;
+  /** absolute URL; defaults to this page's URL on the site. false for a page with no address of its own (404) */
+  canonical?: string | false;
+  /** the footer's sheet name; defaults to the section, or "Home" */
+  sheet?: string;
+  mainClass?: string;
+}
+const { title, description, canonical, sheet, mainClass } = Astro.props;
+const canonicalURL = canonical === false ? undefined : (canonical ?? new URL(Astro.url.pathname, Astro.site).href);
+const sheetName = sheet ?? sectionOf(Astro.url.pathname) ?? 'Home';
+// One social image for every page: the mark, the name and one line, drawn in 2A (public/brand/og.png).
+const ogImage = new URL('/brand/og.png', Astro.site).href;
+const ogAlt = 'Agent Blueprint: the path-grid mark and the name on an off-white drawing sheet.';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {canonicalURL && <link rel="canonical" href={canonicalURL} />}
+    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b0b0b" media="(prefers-color-scheme: dark)" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Agent Blueprint" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {canonicalURL && <meta property="og:url" content={canonicalURL} />}
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={ogAlt} />
+    <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml" />
+    <script is:inline set:html={THEME_INIT} />
+    <Font cssVariable="--font-archivo" preload />
+    <Font cssVariable="--font-azeret" />
+    {/* Without JavaScript the tabs cannot switch, so every panel shows under its own
+        name, and the buttons that would do nothing (tabs, copy, theme, search, menu) are hidden. */}
+    <noscript><style is:inline>.tabpanel[hidden]{display:block!important}.tabpanel+.tabpanel{margin-top:var(--s-5)}.tp-name{display:block!important}.tablist,.copy-btn,[data-theme-toggle],[data-open-search],.menu-btn{display:none!important}</style></noscript>
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <Header />
+    <main id="main" class={mainClass}>
+      <slot />
+    </main>
+    <Footer sheet={sheetName} />
+    <div id="live" class="sr-only" aria-live="polite"></div>
+  </body>
+</html>

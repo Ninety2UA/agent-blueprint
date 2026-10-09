@@ -1,0 +1,37 @@
+---
+// Home: the approved 2A home page (f/index.html), generated from the repository. Every
+// count, tool, command and skill summary comes from getSiteData() through
+// components/home/home-data.ts; the sections follow the approved order.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Catalog from '../components/home/Catalog.astro';
+import Closing from '../components/home/Closing.astro';
+import FilmSection from '../components/home/FilmSection.astro';
+import Hero from '../components/home/Hero.astro';
+import InstallTools from '../components/home/InstallTools.astro';
+import Loop from '../components/home/Loop.astro';
+import Notes from '../components/home/Notes.astro';
+import Problem from '../components/home/Problem.astro';
+import Runner from '../components/home/Runner.astro';
+import { numberWord, site } from '../components/home/home-data';
+import '../styles/home.css';
+
+const description = `${site.counts.skills} skills that take a coding agent from an idea to a reviewed pull request, in ${numberWord(site.counts.tools)} coding CLIs.`;
+---
+<BaseLayout title="Agent Blueprint" description={description} sheet="Home">
+  <div data-pagefind-body data-pagefind-filter="section:Pages" data-pagefind-meta="title:Home">
+    <Hero />
+    <Problem />
+    <Loop />
+    <FilmSection />
+    <Catalog />
+    <Notes />
+    <Runner />
+    <InstallTools />
+    <Closing />
+  </div>
+</BaseLayout>
+
+<script>
+  // the hero drawing, the stations, the catalog chips, the runner host picker and the reveals
+  import '../components/home/home';
+</script>

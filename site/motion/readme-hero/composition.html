@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1280, height=512" />
+<title>Agent Blueprint README hero</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+/*{{DS_CSS}}*/
+html, body { width: 1280px; height: 512px; }
+#stage { position: absolute; inset: 0; background: var(--bg); }
+#stage > svg { position: absolute; left: 0; top: 0; }
+.word { position: absolute; left: 124px; top: 50px; font-size: 50px; white-space: nowrap; }
+.line { position: absolute; left: 58px; top: 124px; width: 640px; font-size: 22px; line-height: 1.36; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="10" data-width="1280" data-height="512">
+  <div id="stage" class="clip" data-start="0" data-duration="10" data-track-index="0"></div>
+</div>
+<script>
+//{{DS_JS}}
+</script>
+<script>
+(function () {
+  const { S, svg, G, T, L, P, R, station, reg, head, logo, C } = DS;
+  function build() {
+    const tl = gsap.timeline({ paused: true });
+    const stage = document.getElementById("stage");
+    const s = svg(stage, 1280, 512);
+    R(s, 16.5, 16.5, 1247, 479, "hair-s");
+    [[34, 34], [1246, 34], [34, 478], [1246, 478]].forEach(([x, y]) => reg(s, x, y, 7));
+
+    // lockup and line
+    logo(s, 58, 58, 16, 4, 1.2);
+    const word = document.createElement("div");
+    word.className = "word h-display";
+    word.textContent = "Agent Blueprint";
+    stage.appendChild(word);
+    const line = document.createElement("div");
+    line.className = "line h-sub";
+    line.textContent = "53 skills that take a coding agent from an idea to a reviewed pull request, in eight coding CLIs.";
+    stage.appendChild(line);
+
+    // parts list of the eight tools
+    const tools = [["Claude Code", "claude"], ["Codex", "codex"], ["Antigravity", "agy"], ["Grok Build", "grok"], ["Pi", "pi"], ["Cursor CLI", "cursor-agent"], ["Hermes", "hermes"], ["Amp", "amp"]];
+    const PX = 812, PW = 412;
+    T(s, PX, 66, "Parts list", "t-head", 15);
+    T(s, PX + PW, 66, "tool / install id", "t-mono mut", 12, "end");
+    L(s, PX, 76, PX + PW, 76, "ln");
+    L(s, PX + PW / 2, 84, PX + PW / 2, 170, "hair");
+    tools.forEach(([n, id], k) => {
+      const col = Math.floor(k / 4), row = k % 4;
+      const x = PX + col * (PW / 2 + 12), y = 100 + row * 21;
+      const w = PW / 2 - 12;
+      T(s, x, y, String(k + 1), "t-mono mut", 12);
+      T(s, x + 18, y, n, "t-sans", 14);
+      T(s, x + w, y, id, "t-mono", 12, "end");
+    });
+
+    // the elevation: six stations on one datum
+    const DY = 324;
+    const names = [["Design", "ab-brainstorming"], ["Plan", "ab-writing-plans"], ["Build", "ab-orchestrate"], ["Review", "ab-review-swarm"], ["Ship", "ab-pr-workflow"], ["Learn", "ab-knowledge-compounding"]];
+    const xs = names.map((_, k) => 166 + k * 182);
+    L(s, xs[0], DY, xs[5] + 118, DY, "datum");
+    // return line: the next session reads docs/ and starts at Design again
+    const RY = 446, LX = 84, EX = xs[5] + 118;
+    P(s, `M${EX} ${DY} V${RY} H${LX} V${DY} H${xs[0] - 12}`, "ln-2");
+    head(s, xs[0] - 11, DY, 0, 9, "ahm");
+    T(s, (xs[0] + xs[5]) / 2, RY - 12, "next session reads docs/", "t-mono ink2", 13, "middle");
+    // dimension: the supervised pipeline spans every station
+    const dimY = 262;
+    L(s, xs[0], DY - 18, xs[0], dimY - 8, "ext");
+    L(s, xs[5], DY - 18, xs[5], dimY - 8, "ext");
+    L(s, xs[0] + 2, dimY, xs[5] - 2, dimY, "dim");
+    head(s, xs[0], dimY, 180, 9, "ah");
+    head(s, xs[5], dimY, 0, 9, "ah");
+    const MX = (xs[0] + xs[5]) / 2;
+    const dl = T(s, MX, dimY + 4, "", "t-mono", 13, "middle");
+    const t1 = S("tspan", { class: "t-mono-b" }, dl); t1.textContent = "ab-build-pipeline";
+    const t2 = S("tspan", { fill: C.muted }, dl); t2.textContent = "  a checkpoint after each stage";
+    const knock2 = R(s, MX - 196, dimY - 9, 392, 18, "fill-bg");
+    s.insertBefore(knock2, dl);
+
+    const sts = names.map(([n, sk], k) => {
+      const st = station(s, xs[k], DY, 7, 14);
+      T(s, xs[k], DY + 42, n, "t-head", 17, "middle");
+      T(s, xs[k], DY + 62, sk, "t-mono ink2", 12.5, "middle");
+      return st;
+    });
+
+    // ---- the tracer: walks the stations, then rides the return line home ----
+    const tr = S("circle", { cx: xs[0], cy: DY, r: 5.5, class: "tracer" }, s);
+    gsap.set(sts[0].ring, { fill: C.accent, stroke: C.accent });
+    const hop = 0.8, gap = 1.13;
+    for (let k = 0; k < 5; k++) {
+      const t = 0.55 + k * gap;
+      tl.to(tr, { attr: { cx: xs[k + 1] }, duration: hop, ease: "power2.inOut" }, t);
+      tl.to(sts[k].ring, { fill: C.bg, stroke: C.ink, duration: 0.3, ease: "power2.out" }, t + 0.05);
+      tl.to(sts[k + 1].ring, { fill: C.accent, stroke: C.accent, duration: 0.22, ease: "power2.out" }, t + hop - 0.06);
+    }
+    // return path, constant speed between eased ends
+    const segs = [[EX, DY], [EX, RY], [LX, RY], [LX, DY], [xs[0], DY]];
+    let t = 0.55 + 4 * gap + hop + 0.45; // leave Learn
+    tl.to(sts[5].ring, { fill: C.bg, stroke: C.ink, duration: 0.3 }, t + 0.05);
+    const lens = segs.map((p, i) => i ? Math.hypot(p[0] - segs[i - 1][0], p[1] - segs[i - 1][1]) : 0);
+    const total = lens.reduce((a, b) => a + b, 0);
+    const T_RET = 9.55 - t;
+    for (let i = 1; i < segs.length; i++) {
+      const d = (lens[i] / total) * T_RET;
+      const ease = i === 1 ? "power1.in" : i === segs.length - 1 ? "power2.out" : "none";
+      tl.to(tr, { attr: { cx: segs[i][0], cy: segs[i][1] }, duration: d, ease }, t);
+      t += d;
+    }
+    tl.to(sts[0].ring, { fill: C.accent, stroke: C.accent, duration: 0.22, ease: "power2.out" }, t - 0.06);
+    // the root data-duration holds the last state to the loop point
+    window.__timelines["main"] = tl;
+  }
+  DS.fontsReady().then(build);
+})();
+</script>
+</body>
+</html>

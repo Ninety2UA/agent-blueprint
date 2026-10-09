@@ -1,0 +1,44 @@
+---
+// The problem: an agent starts every session from nothing. The tools are drawn as a scale
+// bar, one segment per tool, each linking to its install route.
+import { listJoin } from '../../lib/text.mjs';
+import { GET_STARTED } from '../nav';
+import HomeLink from './HomeLink.astro';
+import { md, numberWord, site } from './home-data';
+
+const { counts, tools } = site;
+const toolWord = numberWord(counts.tools);
+
+// "<tool> gets N hook handlers and <tool> M, and the other tools run every pipeline
+// without them", from the README's support table. The largest number is the full set of
+// hook handlers, so it carries the hooks claim.
+const hooked = tools
+  .filter((t) => !/^none\b/i.test(t.support.hooks))
+  .map((t) => ({ name: t.name, n: Number.parseInt(t.support.hooks, 10) }));
+const most = Math.max(...hooked.map((h) => h.n));
+const parts = hooked.map((h, i) => {
+  const n = h.n === most ? `<span data-claim="hooks">${h.n}</span>` : String(h.n);
+  return i === 0 ? `${md(h.name)} gets ${n} hook handlers` : `${md(h.name)} ${n}`;
+});
+const hooks = `Hooks are optional: ${listJoin(parts)}, and the other ${numberWord(tools.length - hooked.length)} run every pipeline without them.`;
+---
+<section class="sec problem" id="problem" aria-labelledby="problem-h">
+  <div class="wrap">
+    <h2 id="problem-h" class="h-sec">A coding agent starts every session from nothing.</h2>
+    <div class="problem-cols">
+      <p class="body">It doesn't know how your project works, what you decided last week, or which problems were already solved. When you switch tools, whatever the last one learned stays behind.</p>
+      <p class="body">Agent Blueprint gives the agent one way of working, the same in all <span data-claim="tools">{toolWord}</span> tools. The method lives in <span data-claim="skills">{counts.skills}</span> skills. What the agent learns lives in your repository, in <code>AGENTS.md</code> and under <code>docs/</code>, where the next tool finds it.</p>
+    </div>
+    <figure class="scale">
+      <ol class="scale-bar" aria-label={`The ${toolWord} tools`}>
+        {tools.map((t) => (
+          <li><a href={`${GET_STARTED}#${t.id}`}><span class="seg" aria-hidden="true"></span><span class="tk" aria-hidden="true"></span><span class="nm">{t.name}</span></a></li>
+        ))}
+      </ol>
+      <figcaption>
+        <p>One <code>skills/</code> folder, read by <span data-claim="tools">{toolWord}</span> tools. <Fragment set:html={hooks} /></p>
+        <HomeLink href="/docs/tested-in-each-tool/">Tested in each tool</HomeLink>
+      </figcaption>
+    </figure>
+  </div>
+</section>

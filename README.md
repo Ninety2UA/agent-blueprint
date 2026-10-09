@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/hero.gif" alt="Agent Blueprint: 53 skills that take a coding agent from an idea to a reviewed pull request, in eight coding CLIs" width="100%">
+  <img src="docs/images/hero.gif" alt="Agent Blueprint: 53 skills that take a coding agent from an idea to a reviewed pull request, in eight coding CLIs. A parts list names the eight tools with their install ids. Below it, a marker moves through six stages, each labeled with its skill: Design (ab-brainstorming), Plan (ab-writing-plans), Build (ab-orchestrate), Review (ab-review-swarm), Ship (ab-pr-workflow) and Learn (ab-knowledge-compounding). A dimension line over all six reads ab-build-pipeline, a checkpoint after each stage. After Learn, the marker returns to Design along a line labeled next session reads docs/." width="100%">
 </p>
 
 <p align="center">
@@ -22,10 +22,6 @@
 </p>
 
 ---
-
-<p align="center">
-  <img src="docs/images/overview.gif" alt="Agent Blueprint overview: skills, pipelines, helper prompts and team work in eight coding CLIs" width="90%">
-</p>
 
 ## Why Agent Blueprint
 
@@ -78,7 +74,7 @@ The installer finds the tools on your `PATH` and gives each one its route:
 bash install.sh
 ```
 
-Or install one tool at a time with the route in this table (`<checkout>` is the folder you cloned):
+Or install one tool at a time with its own route (`<checkout>` is the folder you cloned):
 
 | Tool | Command | Install route | Support note |
 |---|---|---|---|
@@ -199,7 +195,7 @@ Each tool runs with the least privilege that still finishes a run: Claude Code `
    ```
 
 4. Refresh the project files. Run `ab-project-start` in the migrated project. It adds the v4 files the project lacks and keeps every section your `AGENTS.md` already has.
-5. Use the new names. `/build-pipeline` is now `ab-build-pipeline`, and every other skill gained the same prefix. The full map, the folder changes and what happened to each v3 instruction rule are in [`docs/upgrade/v4.md`](docs/upgrade/v4.md).
+5. Use the new names. `/build-pipeline` is now `ab-build-pipeline`, and the other skills gained the same prefix. The exceptions are `agent-teams` and `team-execution`, which merged into `ab-orchestrate`, and `migrate-to-plugin`, which became `ab-migrate`. The full map, the folder changes and what happened to each v3 instruction rule are in [`docs/upgrade/v4.md`](docs/upgrade/v4.md).
 
 ## Update
 
@@ -314,7 +310,10 @@ The repository checks itself against its own files, not against numbers someone 
 
 | Command | Checks |
 |---------|--------|
-| `bash scripts/check-drift.sh` | Count and version claims on every surface (manifests, README, website, promo source, `AGENTS.md`) match the tree: 53 skills, 10 hooks, 30 helper prompts, one version. It also fails when README.md or index.html brings back adoption or ecosystem wording |
+| `bash scripts/check-drift.sh` | Count and version claims in the manifests, the README, `AGENTS.md`, `index.html` and the README hero's source in `site/motion/readme-hero/` match the tree: 53 skills, 10 hooks, 30 helper prompts, one version. The site source in `site/src/` and the other motion sources in `site/motion/` state no literal skill, helper or hook count, and every skill sits in exactly one README phase table. It also fails when README.md, index.html or the site source brings back adoption or ecosystem wording |
+| `npx astro check` (in `site/`) | Type errors in the site's `.astro` and TypeScript files, under Astro's strict settings. Run it after `npm ci` in `site/` |
+| `python3 scripts/check-site.py site/dist` | The built site against the tree: one page per skill, each helper prompt once on the Skills page, the counts and version the pages state, no `SKILL.md` in the build, no adoption or ecosystem wording, internal links that resolve, and a title, description and canonical link on every page. Build the site first with `npm ci` and `npm run build` in `site/`, which needs Node 22.12 or later |
+| `node --test 'site/test/**/*.test.mjs'` | The site's data modules against the tree, such as the README, SKILL.md, release and tutorial parsers, each section's page order and llms.txt. On the built pages: a title and description of their own, the sitemap, the Changelog and Kit pages, islands that hydrate only on first interaction, and no script or stylesheet from another origin. Run it from the repository root with the glob quoted, after the site build: without `site/dist` the built-page tests skip |
 | `python3 scripts/check-skill-collisions.py` | Frontmatter YAML, `references/` pointers and § headings resolve, no near-duplicate descriptions |
 | `python3 scripts/check-portability.py` | The rules for all eight tools: agentskills frontmatter only, the `ab-` prefix, the 8,000-byte cap, no tool variables or cross-skill paths, no slash names, the manual-only pairing, no text Hermes would quarantine |
 | `python3 scripts/check-manifests.py` | Every manifest and every skill's `metadata.version` agree with the release |
@@ -360,7 +359,7 @@ Five helpers research a topic in parallel before planning: past learnings, frame
 
 ### Knowledge loop (`ab-knowledge-compounding`)
 
-Each solved problem becomes a searchable document in `docs/solutions/`. `ab-brainstorming` and `ab-deep-research` search it before new work, so the project stops repeating its mistakes.
+Each solved problem becomes a searchable document in `docs/solutions/`, which `ab-brainstorming` and `ab-deep-research` search before new work.
 
 <p align="center">
   <img src="docs/images/knowledge-loop.png" alt="Knowledge loop: solve, record, search, plan, repeat" width="90%">
@@ -619,7 +618,7 @@ The blueprint uses a tool's native features only as opt-ins: no pipeline depends
 | Fast mode (Claude Code) | Opt-in only | Opus 5.5, Opus 5 and Opus 4.8; research preview, pricing subject to change |
 | Session limits (Claude Code) | Swarms and research stay within the native limits: since CLI 2.1.224 there is no per-session subagent total, only a concurrency cap and a nesting depth; `host-limits.tsv` records the other tools' limits | 20 concurrent subagents by default (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`), spawn depth 3 (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`), 200 web searches per session |
 | Native injection hardening (Claude Code Agent tool) | Adds to the blueprint's own read and write scanners (Claude Code and Codex hooks) and the data markers helpers wrap around external text, which cover the main-session reads and writes native hardening does not see | None |
-| Bundled `/deep-research` workflow (Claude Code) | Claude Code bundles a web-search workflow of that name; the blueprint's research swarm is `ab-deep-research`, so the two no longer share a name | None |
+| Bundled `/deep-research` workflow (Claude Code) | Claude Code bundles a web-search workflow of that name; the blueprint's research swarm is `ab-deep-research`, so the two names do not collide | None |
 | Hermes skill security scan | Skills, prompt files and instruction files carry none of the phrases Hermes treats as injection, no instruction to edit the instructions file by name, and no HTML comments; the portability gate checks the same | Runs on every skill Hermes installs or indexes |
 
 ### Adjusting quality gates
@@ -628,7 +627,7 @@ The gates are written into the skill files. To relax one (for example, no code r
 
 ## Documentation structure
 
-The scaffold includes example docs in each category, so you can see the expected format right away. They are marked as examples; delete them when you start your project.
+The scaffold includes example docs in `docs/decisions/`, `docs/plans/`, `docs/specs/` and `docs/research/`, so you can see the expected format right away. They are marked as examples; delete them when you start your project.
 
 | Example file | Shows how to write |
 |-------------|----------------------|
@@ -742,10 +741,12 @@ An evaluation then ran the same fixture tasks on v3.8.0 and v4.0.0 in Claude Cod
 ## Release history
 
 <details>
-<summary>v2.3 to v3.8.0</summary>
+<summary>v2.3 to v4.0.1</summary>
 
 | Version | Date | What changed |
 |---|---|---|
+| v4.0.1 | 2026-10-07 | Cursor CLI and Amp no longer list every skill twice next to Claude Code. On a machine with Claude Code and either of them, `install.sh` writes no shared copy: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder, and the copy an earlier install left in `~/.agents/skills` is removed. |
+| v4.0.0 | 2026-10-07 | `claude-code-blueprint` becomes Agent Blueprint: one set of skills, each named with the `ab-` prefix, that installs natively in eight coding CLIs. Agents became helper prompts inside the skills that use them, `AGENTS.md` is the instructions file, and working files moved to `.agent-blueprint/`. Team work and the ship runner run in every tool, hooks are optional, new gates keep every skill portable, and `ab-migrate` cleans a v3 project. |
 | v3.8.0 | 2026-09-28 | Plans record decisions instead of code, and you review the saved plan before it runs. A security finding can be rejected only with a quoted refutation. Reviews start at the merge base and include untracked files. Opus 5.5 defaults documented. CI fails on frontmatter that isn't valid YAML and on references that don't resolve. |
 | v3.7.1 | 2026-09-12 | Four large skills split into a short `SKILL.md` plus references. Fixes to finishing a branch from a worktree and to detecting a moved HEAD when resuming. |
 | v3.7.0 | 2026-09-12 | A plan audit before a branch is finished, discarding work only on request, one rule for when an agent decides and when it asks, a fix loop that resumes the same implementer, tests that must be able to fail, and fetched text treated as data. |
@@ -787,7 +788,7 @@ Yes. The blueprint installs in your tool and adds no engine files to your projec
 <details>
 <summary><strong>Do I need all the skills?</strong></summary>
 
-No. A skill runs when a request matches its description or when you name it. If you never do test-driven development, `ab-test-driven-development` never runs. You can also delete any skill folder you don't want; the blueprint works with any subset.
+No. A skill runs when a request matches its description or when you name it. If you never do test-driven development, `ab-test-driven-development` never runs. You can also delete any skill folder you don't want, as long as no pipeline or other skill you keep runs it.
 </details>
 
 <details>

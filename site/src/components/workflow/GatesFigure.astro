@@ -1,0 +1,30 @@
+---
+// Fig. 4: the quality gates, row for row from the README's "Quality gates" table.
+import SkillLinks from './SkillLinks.astro';
+import { Num, wf } from './data';
+
+const { gates } = wf;
+---
+<section class="wf-sec" id="gates" aria-labelledby="gates-h">
+  <div class="wrap">
+    <div class="wf-sec-head">
+      <p class="sec-ref"><span class="bub" aria-hidden="true">4</span>Fig. 4</p>
+      <h2 id="gates-h" class="h-sec">{Num(gates.length)} quality gates hold at every stage.</h2>
+      <p class="body">Each rule names what has to happen first, and one skill enforces it.</p>
+    </div>
+    <figure class="wf-fig" aria-labelledby="gates-h">
+      <ol class="gates">
+        {gates.map((gate, i) => (
+          <li class="gate" style={`--i:${i}`}>
+            <span class="bub gate-n" aria-hidden="true">{gate.n}</span>
+            <h3 class="gate-rule" set:html={gate.ruleHtml} />
+            <div class="gate-by">
+              <span class="lbl">Enforced by</span>
+              <SkillLinks names={gate.skills} />
+            </div>
+          </li>
+        ))}
+      </ol>
+    </figure>
+  </div>
+</section>

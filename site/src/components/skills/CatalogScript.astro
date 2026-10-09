@@ -1,0 +1,67 @@
+---
+// The catalog's one inline script, placed after the cards so it runs before the first paint:
+//   - window.abCatalog.read(search) / apply(state): the filter rule. A card shows when its
+//     phase matches (or the phase is "all") and its data-text (name and summary) contains the
+//     search text. apply() also sets the live count and the empty state. SkillFilter.tsx
+//     calls the same two functions, so the rule exists once.
+//   - a URL with ?phase= or ?q= is shown filtered at once, chips and search box included,
+//     with no React on the page until someone uses the filter;
+//   - "/" focuses the search box (switching to the Skills tab if needed), except when typed
+//     into a field.
+---
+<script is:inline>
+(() => {
+  const d = document;
+  const cards = [...d.querySelectorAll('[data-skill-card]')];
+  const list = d.querySelector('[data-cards]');
+  const count = d.querySelector('[data-count]');
+  const empty = d.querySelector('[data-empty]');
+  const phases = new Set(cards.map((c) => c.dataset.phase));
+  const read = (search) => {
+    const p = new URLSearchParams(search);
+    const phase = p.get('phase');
+    return { q: p.get('q') || '', phase: phase && phases.has(phase) ? phase : 'all' };
+  };
+  const apply = (s) => {
+    const q = s.q.trim().toLowerCase();
+    let n = 0;
+    for (const c of cards) {
+      const on = (s.phase === 'all' || c.dataset.phase === s.phase) && (!q || c.dataset.text.includes(q));
+      c.hidden = !on;
+      if (on) n++;
+    }
+    count.textContent = n;
+    list.hidden = !n;
+    empty.hidden = !!n;
+    if (!n) {
+      const chip = d.querySelector('[data-phase-chip="' + s.phase + '"]');
+      empty.querySelector('[data-empty-q]').textContent = s.q.trim();
+      empty.querySelector('[data-empty-in]').textContent = s.phase === 'all' || !chip ? '' : ' in ' + chip.dataset.title;
+    }
+  };
+  window.abCatalog = { read, apply };
+
+  const s = read(location.search);
+  if (s.q || s.phase !== 'all') {
+    apply(s);
+    const input = d.getElementById('skill-q');
+    if (input) input.value = s.q;
+    for (const chip of d.querySelectorAll('[data-phase-chip]')) {
+      const on = chip.dataset.phaseChip === s.phase;
+      chip.setAttribute('aria-pressed', String(on));
+      chip.toggleAttribute('data-pressed', on);
+    }
+  }
+
+  d.addEventListener('keydown', (e) => {
+    if (e.key !== '/' || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+    const t = e.target;
+    if (t instanceof Element && (t.closest('input, textarea, select') || t.isContentEditable)) return;
+    const input = d.getElementById('skill-q');
+    if (!input) return;
+    e.preventDefault();
+    if (!input.offsetParent) d.getElementById('catalog-tab-skills')?.click();
+    input.focus();
+  });
+})();
+</script>

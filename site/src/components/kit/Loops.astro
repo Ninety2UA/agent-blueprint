@@ -1,0 +1,31 @@
+---
+// Four loops: the home page's loops as a 2 by 2 gallery (Figs. 2 to 5), each with its files. The
+// length and frame size in the text come from the files, so a re-render needs no edit here.
+import { capitalize } from '../../lib/text.mjs';
+import { mp4Facts } from '../media';
+import { numberWord } from '../number-word';
+import VideoFigure from '../VideoFigure.astro';
+import FileTable from './FileTable.astro';
+import { LOOPS } from './kit-data';
+
+const facts = LOOPS.map((l) => mp4Facts(`media/${l.name}.mp4`));
+// the loops are rendered as one set: the first one's length and frame stand for all four
+const { duration, width, height } = facts[0];
+const seconds = numberWord(Math.round(duration));
+---
+<section class="sec kit-sec" id="loops" aria-labelledby="loops-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="loops-h" class="h-sec">Four loops.</h2>
+      <p class="body">{capitalize(seconds)} seconds each, made to repeat without a visible seam. Each one shows a single mechanism from the home page. They are {width} by {height} with a poster frame, drawn to be read at about 560 px wide.</p>
+    </div>
+    <div class="loop-gallery">
+      {LOOPS.map((l, i) => (
+        <VideoFigure src={`/media/${l.name}.mp4`} num={i + 2} alt={l.alt} label={l.label} width={facts[i].width} height={facts[i].height} class="in-kit">
+          <Fragment set:html={l.caption} />
+          <FileTable slot="after" files={[`/media/${l.name}.mp4`, `/media/${l.name}.jpg`]} label={l.caption.replace(/<[^>]+>/g, '')} />
+        </VideoFigure>
+      ))}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,99 @@
+---
+// One step of a tutorial (R5): its number and title, how long it took, the skills it names as
+// chips linking to their pages, what to paste (each command a copyable block), then what happens,
+// why it matters and the checkpoint. Skill names in the step's prose link to their pages too.
+// The Markdown parts arrive as HTML from the tutorials collection (content.config.ts).
+import Cmd from '../Cmd.astro';
+import { linkSkills } from '../guides/guide-html.mjs';
+import { breakCodeAfterSlashes } from '../wrap-points.mjs';
+
+type Segment = { kind: 'md'; html: string } | { kind: 'cmd'; lang: 'prompt' | 'bash'; text: string };
+interface Props {
+  n: number;
+  step: {
+    title: string;
+    id: string;
+    skills: string[];
+    time: string;
+    lead: Segment[];
+    happens: string;
+    why: string;
+    checkpoint: string;
+  };
+  /** every skill name, for linking the prose */
+  names: string[];
+}
+const { n, step, names } = Astro.props;
+// skill names linked; paths in inline code wrap at a slash on a phone (wrap-points.mjs)
+const link = (html: string) => breakCodeAfterSlashes(linkSkills(html, names));
+
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// A placeholder such as <checkout> or <name> stands out, so the reader knows to fill it in.
+const line = (text: string, shell: boolean) =>
+  `<span class="ln">${shell ? '<span class="pr" aria-hidden="true">$</span>' : ''}${esc(text).replace(
+    /&lt;[a-z][a-z ]*&gt;/g,
+    (m) => `<span class="arg">${m}</span>`,
+  )}</span>`;
+const commands = step.lead.filter((s) => s.kind === 'cmd').length;
+let k = 0;
+const lead = step.lead.map((s) => {
+  if (s.kind === 'md') return s;
+  k += 1;
+  const shell = s.lang === 'bash';
+  const what = shell ? 'commands' : 'prompt';
+  const which = commands > 1 ? ` ${k}` : '';
+  return {
+    ...s,
+    caption: shell ? 'Run in a terminal' : 'Type in Claude Code',
+    label: `Step ${n} ${what}${which}`,
+    copyLabel: `Copy the step ${n} ${what}${which}`,
+    markup: s.text.split('\n').map((l) => line(l, shell)).join(''),
+  };
+});
+const parts = [
+  { title: 'What happens', html: step.happens, cls: 't-happens' },
+  { title: 'Why it matters', html: step.why, cls: 't-why' },
+  { title: 'Checkpoint', html: step.checkpoint, cls: 't-check' },
+];
+---
+<li class="t-step">
+  <div class="t-step-head">
+    <span class="bub" aria-hidden="true">{n}</span>
+    <h2 id={step.id}><span class="sr-only">Step {n}: </span>{step.title}</h2>
+  </div>
+  {(step.time || step.skills.length > 0) && (
+    <dl class="t-meta">
+      {step.time && <div><dt>Time</dt><dd>{step.time}</dd></div>}
+      {step.skills.length > 0 && (
+        <div>
+          <dt>Skills</dt>
+          <dd>
+            <ul class="t-skills">
+              {step.skills.map((name) => <li><a class="t-chip" href={`/skills/${name}/`}><code>{name}</code></a></li>)}
+            </ul>
+          </dd>
+        </div>
+      )}
+    </dl>
+  )}
+  <div class="t-lead">
+    {lead.map((s) =>
+      'markup' in s ? (
+        <div class="t-cmd">
+          <p class="lbl">{s.caption}</p>
+          <Cmd label={s.label} copyLabel={s.copyLabel}><Fragment set:html={s.markup} /></Cmd>
+        </div>
+      ) : (
+        <div class="readme-section" set:html={link(s.html)} />
+      ),
+    )}
+  </div>
+  <div class="t-parts">
+    {parts.map((p) => (
+      <section class:list={['t-part', p.cls]}>
+        <h3>{p.title}</h3>
+        <div class="readme-section" set:html={link(p.html)} />
+      </section>
+    ))}
+  </div>
+</li>

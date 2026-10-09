@@ -1,0 +1,68 @@
+---
+// Getting started: one tab per tool of the README install table, every fact from getSiteData()
+// (R13). Each panel shows the clone step when the route runs from a checkout, the route's commands
+// as copy controls with the README's words between them, how to name a skill, what the tool
+// supports, and its support note on GitHub. With `hashTarget`, each panel's id is the tool id, so
+// the footer's /docs/getting-started/#<tool id> links open that tab.
+import Cmd from '../Cmd.astro';
+import Tabs from '../Tabs.astro';
+import { getSiteData, type Tool } from '../../lib/site.mjs';
+import { inlineCode } from '../../lib/text.mjs';
+import { routeSteps } from './route.mjs';
+import { INSTALL_TABS_ID } from './section.mjs';
+
+const { tools, cloneCommand, repoUrl } = getSiteData();
+const clone = cloneCommand.split('\n');
+// install.sh and <checkout> both mean the route runs from a clone of the repository
+const fromCheckout = (t: Tool) => t.commands.some((c) => c.includes('install.sh') || c.includes('<checkout>'));
+const namesCheckout = (t: Tool) => t.commands.some((c) => c.includes('<checkout>'));
+---
+<section class="gs-tools" aria-labelledby={INSTALL_TABS_ID}>
+  <h2 id={INSTALL_TABS_ID}>Install by tool</h2>
+  <Tabs id="gs" label="Tools" items={tools.map((t) => ({ id: t.id, label: t.name }))} hashTarget class="gs-tabs">
+    {tools.map((t) => (
+      <Fragment slot={t.id}>
+        <dl class="gs-spec">
+          {fromCheckout(t) && (
+            <>
+              <dt>Get the code</dt>
+              <dd>
+                <Cmd lines={clone} prompt label="Clone command" copyLabel={`Copy the clone command for ${t.name}`} />
+                {namesCheckout(t) && <p class="gs-hint"><code>&lt;checkout&gt;</code> is the folder you cloned.</p>}
+              </dd>
+            </>
+          )}
+          <dt>Install</dt>
+          <dd class="gs-route">
+            {routeSteps(t.route, t.commands).map((step) =>
+              step.kind === 'cmd'
+                ? <Cmd lines={[step.text]} prompt label={`Install command for ${t.name}`} copyLabel={`Copy ${step.text}`} />
+                : <p class="gs-words" set:html={step.html} />,
+            )}
+          </dd>
+          <dt>Name a skill</dt>
+          <dd>
+            {t.naming.syntax ? (
+              <>
+                <p class="gs-say"><code>{t.naming.example}</code></p>
+                <p class="gs-hint"><code>{t.naming.syntax}</code> followed by the skill name.</p>
+              </>
+            ) : (
+              <p class="gs-say-plain">Ask in plain words: "{t.naming.example}".</p>
+            )}
+          </dd>
+          <dt>Support</dt>
+          <dd>
+            <div class="gs-facts">
+              <p><b>Hooks</b><span set:html={inlineCode(t.support.hooks)} /></p>
+              <p><b>Helpers</b><span set:html={inlineCode(t.support.helpers)} /></p>
+              <p><b>Manual-only skills</b><span set:html={inlineCode(t.support.manualOnly)} /></p>
+            </div>
+          </dd>
+          <dt>Support note</dt>
+          <dd><a class="gs-doc" href={`${repoUrl}/blob/main/${t.hostDoc}`}>{t.hostDoc}</a><span class="gs-hint"> on GitHub</span></dd>
+        </dl>
+      </Fragment>
+    ))}
+  </Tabs>
+</section>
