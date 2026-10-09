@@ -4,6 +4,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { NAV } from '../src/components/nav.ts';
+import { docsOrder } from '../src/lib/docs-sidebar.mjs';
+import { guidesOrder } from '../src/lib/guides-order.mjs';
+import { tutorialsOrder } from '../src/lib/tutorials-order.mjs';
 import { llmsTxt } from '../src/lib/llms.mjs';
 import { getSiteData } from '../src/lib/site.mjs';
 
@@ -30,9 +33,20 @@ test('one line per skill page, with the skill summary', () => {
 test('one line per section index: Home and every header section', () => {
   assert.equal(linkLines(`${site.siteUrl}/`).length, 1, 'Home');
   for (const { label, href } of NAV) {
-    const hit = linkLines(`${site.siteUrl}${href}`);
+    const hit = lines.filter((l) => l.startsWith(`- [${label}](${site.siteUrl}${href})`));
     assert.equal(hit.length, 1, label);
-    assert.ok(hit[0].startsWith(`- [${label}](`), hit[0]);
+  }
+});
+
+const SECTIONS = [['Docs', docsOrder()], ['Tutorials', tutorialsOrder()], ['Guides', guidesOrder()]];
+
+test('every docs, tutorial and guide page is listed under its section, in reading order', () => {
+  for (const [heading, pages] of SECTIONS) {
+    const start = lines.indexOf(`## ${heading}`);
+    assert.ok(start > 0, `no "## ${heading}" list`);
+    const end = lines.indexOf('', start + 2);
+    const block = lines.slice(start + 2, end === -1 ? undefined : end);
+    assert.deepEqual(block, pages.map((p) => `- [${p.label}](${site.siteUrl}${p.href})`), heading);
   }
 });
 
@@ -43,6 +57,7 @@ test('skills are grouped under their README phase, in phase order', () => {
 
 test('every link line is a full URL on the site', () => {
   const links = lines.filter((l) => l.startsWith('- ['));
-  assert.equal(links.length, site.skills.length + NAV.length + 1);
+  const pages = SECTIONS.reduce((n, [, list]) => n + list.length, 0);
+  assert.equal(links.length, site.skills.length + NAV.length + 1 + pages);
   for (const l of links) assert.match(l, new RegExp(`\\]\\(${site.siteUrl.replace(/\./g, '\\.')}/`), l);
 });

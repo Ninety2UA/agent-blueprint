@@ -1,12 +1,17 @@
-// llms.txt (https://llmstxt.org): the site's sections and every skill page with its one-line summary,
-// generated from the repository data, so a new or renamed skill changes it on the next build.
+// llms.txt (https://llmstxt.org): the site's sections, every docs, tutorial and guide page, and every
+// skill page with its one-line summary, generated from the repository data, so a new or renamed skill
+// or page changes it on the next build.
 //
 // Exports
 //   llmsTxt(site, nav)   the file's text. `site` is getSiteData(); `nav` is the header's sections
 //                        ([{ label, href }], components/nav.ts). Home comes first, then each section,
-//                        then one list of skills per README phase, in phase order.
+//                        then the pages of Docs, Tutorials and Guides in reading order, then one list
+//                        of skills per README phase, in phase order.
 
+import { docsOrder } from './docs-sidebar.mjs';
+import { guidesOrder } from './guides-order.mjs';
 import { listJoin } from './text.mjs';
+import { tutorialsOrder } from './tutorials-order.mjs';
 
 // What each section holds, keyed by its header label. A section missing here is listed without a note.
 const SECTION_NOTES = {
@@ -36,6 +41,9 @@ export function llmsTxt(site, nav) {
     link('Home', '/', SECTION_NOTES.Home),
     ...nav.map(({ label, href }) => link(label, href, SECTION_NOTES[label])),
   ];
+  for (const [heading, pages] of [['Docs', docsOrder()], ['Tutorials', tutorialsOrder()], ['Guides', guidesOrder()]]) {
+    lines.push('', `## ${heading}`, '', ...pages.map((page) => link(page.label, page.href)));
+  }
   for (const phase of phases) {
     lines.push('', `## Skills: ${phase.title}`, '');
     for (const name of phase.skills) lines.push(link(name, `/skills/${name}/`, byName.get(name)?.summary));
