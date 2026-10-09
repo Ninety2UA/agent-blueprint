@@ -4,15 +4,15 @@
 # Ground truth is DERIVED from the filesystem — the number of skills, helper
 # prompts (distinct names under skills/*/references/agents/), and hook command
 # entries the plugin actually ships, plus the release version — and
-# then compared against every hardcoded claim in the manifests, docs, installer,
-# and website. Any mismatch prints "LOCATION: expected X, found Y" and the script
-# exits non-zero. This replaces manual count sweeps, which drifted three times.
+# then compared against every hardcoded claim in the manifests and docs. Any
+# mismatch prints "LOCATION: expected X, found Y" and the script exits non-zero.
+# This replaces manual count sweeps, which drifted three times.
 # The site source is checked too: site/src/ and the film and loop compositions in
 # site/motion/ carry no literal skill, helper-prompt or hook count (KTD4), and the
 # README hero composition's "N skills" sentence matches the tree. Every skill folder
-# must sit in exactly one README phase table. It also fails README.md, index.html,
-# site/src/ and site/motion/ when they bring back adoption or ecosystem wording (the
-# denylist in scripts/adoption-denylist.json, shared with scripts/check-site.py).
+# must sit in exactly one README phase table. It also fails README.md, site/src/ and
+# site/motion/ when they bring back adoption or ecosystem wording (the denylist in
+# scripts/adoption-denylist.json, shared with scripts/check-site.py).
 #
 # Usage: check-drift.sh [repo-root]
 #   repo-root defaults to the parent of this script's directory, so CI
@@ -115,8 +115,8 @@ echo ""
 
 # ── Compare every hardcoded claim against ground truth ────────
 # The checker anchors each claim narrowly so frozen changelog text (README
-# "What's New" entries, older index.html new__badge spans) is never gated —
-# only current-state claims. A missing anchor is reported as drift, not skipped.
+# "What's New" entries) is never gated — only current-state claims. A missing
+# anchor is reported as drift, not skipped.
 python3 - "$REPO_ROOT" "$SKILLS" "$PROMPTS" "$HOOKS" "$SCRIPT_DIR/adoption-denylist.json" <<'PY'
 import json, os, re, sys
 
@@ -209,65 +209,7 @@ marketplace = ".claude-plugin/marketplace.json"
 check_triple("plugin.json description", plugin_json, json_get(plugin_json, ["description"]))
 check_triple("marketplace.json plugin description", marketplace,
              json_get(marketplace, ["plugins", 0, "description"]))
-_idx = rd("index.html")
-check_triple("index.html meta/og description", "index.html",
-             _idx.split('id="whats-new"')[0] if _idx is not None else None, min_matches=2)
-
-# index.html current-state count WIDGETS (hero stats, "By The Numbers" bar, feature
-# cards, "All N Skills" heading). Restricted to everything BEFORE the #whats-new
-# changelog section so frozen historical counts (e.g. an old "53 skills, zero
-# commands") are never gated. Covers both widget shapes: inline ("55 Skills") and
-# span-separated ('...__number">55</span> ... >Skills<'). The span form guards against
-# pairing a number with a distant label by refusing to cross another __number.
-idx_html = rd("index.html")
-if idx_html is not None:
-    prefix = idx_html.split('id="whats-new"')[0]
-    label_gt = {"skills": SK, "hooks": HK}
-    widgets = 0
-    for m in re.finditer(r"(\d+)(?:\s|&nbsp;|&#160;)+(Skills|Agents|Hooks)\b", prefix):
-        widgets += 1
-        num, lab = int(m.group(1)), m.group(2).lower()
-        if lab == "agents":
-            failures.append("index.html widget (inline '%d Agents'): v4 has no agent count; remove the widget" % num)
-        elif num != label_gt[lab]:
-            failures.append("index.html widget (inline '%d %s'): expected %d — homepage count drifted"
-                            % (num, m.group(2), label_gt[lab]))
-    for m in re.finditer(r'__number">(\d+)K?\+?</span>(?:(?!__number">).)*?<(?:h3|span[^>]*)>(Skills|Agents|Hooks)<',
-                         prefix, re.DOTALL):
-        widgets += 1
-        num, lab = int(m.group(1)), m.group(2).lower()
-        if lab == "agents":
-            failures.append("index.html widget (badge '%d Agents'): v4 has no agent count; remove the widget" % num)
-        elif num != label_gt[lab]:
-            failures.append("index.html widget (badge '%d %s'): expected %d — homepage count drifted"
-                            % (num, m.group(2), label_gt[lab]))
-    if widgets < 4:
-        failures.append("index.html: expected >=4 Skills/Hooks count widgets before #whats-new, "
-                        "found %d — anchor changed, re-point the gate" % widgets)
-
 # install.sh derives its version and skill count from the tree at run time, so it carries no claim to check.
-
-# index.html structural grids (before #whats-new): every skill and helper prompt must
-# be rendered — v3.4.0 added skills/agents that never reached the site grids — and
-# each group/category count badge must equal the items it actually renders.
-if idx_html is not None:
-    tag_count = len(re.findall(r'class="skill-tag"', prefix))
-    if tag_count != SK:
-        failures.append("index.html skills grid: renders %d skill-tag entries, expected %d "
-                        "— grid is missing skills" % (tag_count, SK))
-    name_count = len(re.findall(r'agent-item__name"', prefix))
-    if name_count != PR:
-        failures.append("index.html helper-prompt grid: renders %d entries, expected %d helper prompts"
-                        % (name_count, PR))
-    no_agent_count("index.html current-state sections", "index.html", prefix)
-    for kind, item_pat in (("agent-group", r'agent-item__name"'),
-                           ("skill-category", r'class="skill-tag"')):
-        parts = re.split(r'%s__count">(\d+)</span>' % kind, prefix)
-        for k in range(1, len(parts) - 1, 2):
-            declared, got = int(parts[k]), len(re.findall(item_pat, parts[k + 1]))
-            if got != declared:
-                failures.append("index.html %s #%d: count badge says %d but %d items render under it"
-                                % (kind, (k + 1) // 2, declared, got))
 
 readme = rd("README.md")
 if readme is not None:
@@ -382,25 +324,6 @@ version = json_get(plugin_json, ["version"])
 if version is None:
     failures.append("plugin.json version: missing — cannot establish the canonical release version")
 else:
-    index = rd("index.html")
-    if index is not None:
-        hero = re.search(r'class="hero__badge">.*?v(\d+\.\d+\.\d+)', index, re.DOTALL)
-        if not hero:
-            failures.append("index.html hero badge: version not found — anchor changed, re-point the gate")
-        elif hero.group(1) != version:
-            failures.append("index.html hero badge version: expected %s, found %s" % (version, hero.group(1)))
-
-        anchor = index.find('id="whats-new"')
-        if anchor == -1:
-            failures.append("index.html: #whats-new section not found — anchor changed, re-point the gate")
-        else:
-            latest = re.search(r'new__badge">v(\d+\.\d+\.\d+)', index[anchor:])
-            if not latest:
-                failures.append("index.html What's-New latest badge: version not found — anchor changed")
-            elif latest.group(1) != version:
-                failures.append("index.html What's-New latest badge version: expected %s, found %s"
-                                % (version, latest.group(1)))
-
     # marketplace.json is unversioned today; verify only if a version field is added later.
     mtext = rd(marketplace)
     if mtext:
@@ -441,7 +364,7 @@ if readme is not None:
             failures.append("README nav What's-New anchor: expected %s, found %s"
                             % (expected, nm.group(1)))
 
-# ── PUBLIC-SURFACE WORDING (README.md, index.html, site/src/, site/motion/) ──
+# ── PUBLIC-SURFACE WORDING (README.md, site/src/, site/motion/) ──
 # No adoption or ecosystem claims on the public surfaces: the README and the site say what
 # the blueprint does, not where its ideas came from. The phrases and project names in
 # scripts/adoption-denylist.json belonged to the removed comparison and import sections; any of
@@ -458,7 +381,7 @@ try:
 except (OSError, ValueError, KeyError, TypeError) as exc:
     failures.append("scripts/adoption-denylist.json: cannot read the denylist (%s)" % exc)
     ADOPTION = None
-surfaces = [(rel, rd(rel)) for rel in ("README.md", "index.html")] + SITE_FILES if ADOPTION else []
+surfaces = [("README.md", rd("README.md"))] + SITE_FILES if ADOPTION else []
 for rel, text in surfaces:
     if text is None:
         continue

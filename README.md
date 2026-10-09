@@ -7,6 +7,7 @@
 </p>
 
 <p align="center">
+  <a href="https://agent-blueprint.dbenger.com/">Website</a> ·
   <a href="#whats-new-in-v401">What's new</a> ·
   <a href="#install">Install</a> ·
   <a href="#quick-start">Quick start</a> ·
@@ -310,7 +311,7 @@ The repository checks itself against its own files, not against numbers someone 
 
 | Command | Checks |
 |---------|--------|
-| `bash scripts/check-drift.sh` | Count and version claims in the manifests, the README, `AGENTS.md`, `index.html` and the README hero's source in `site/motion/readme-hero/` match the tree: 53 skills, 10 hooks, 30 helper prompts, one version. The site source in `site/src/` and the other motion sources in `site/motion/` state no literal skill, helper or hook count, and every skill sits in exactly one README phase table. It also fails when README.md, index.html or the site source brings back adoption or ecosystem wording |
+| `bash scripts/check-drift.sh` | Count and version claims in the manifests, the README, `AGENTS.md` and the README hero's source in `site/motion/readme-hero/` match the tree: 53 skills, 10 hooks, 30 helper prompts, one version. The site source in `site/src/` and the other motion sources in `site/motion/` state no literal skill, helper or hook count, and every skill sits in exactly one README phase table. It also fails when README.md or the site source brings back adoption or ecosystem wording |
 | `npx astro check` (in `site/`) | Type errors in the site's `.astro` and TypeScript files, under Astro's strict settings. Run it after `npm ci` in `site/` |
 | `python3 scripts/check-site.py site/dist` | The built site against the tree: one page per skill, each helper prompt once on the Skills page, the counts and version the pages state, no `SKILL.md` in the build, no adoption or ecosystem wording, internal links that resolve, and a title, description and canonical link on every page. Build the site first with `npm ci` and `npm run build` in `site/`, which needs Node 22.12 or later |
 | `node --test 'site/test/**/*.test.mjs'` | The site's data modules against the tree, such as the README, SKILL.md, release and tutorial parsers, each section's page order and llms.txt. On the built pages: a title and description of their own, the sitemap, the Changelog and Kit pages, islands that hydrate only on first interaction, and no script or stylesheet from another origin. Run it from the repository root with the glob quoted, after the site build: without `site/dist` the built-page tests skip |

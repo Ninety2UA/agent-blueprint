@@ -290,24 +290,27 @@ class DriftGatePhaseTables(unittest.TestCase):
         self.assertIn("README.md Skills reference: skill folder ab-quick-fix has 2 rows (Pipelines, Meta)", out)
 
 
-# Lines the v4 rewrite removed from README.md and index.html, verbatim.
+SITE_HOME = "site/src/pages/index.astro"
+
+# Lines the v4 rewrite removed from README.md and the old index.html, verbatim. The index.html lines
+# are checked against the source of the site's home page, which replaced that file.
 REMOVED_ADOPTION_LINES = (
     ("README.md", "Before committing to any tool, it helps to understand the landscape. We've analyzed "
                   "**19 repos and frameworks** across the coding-agent ecosystem — over 1.15M combined GitHub "
                   "stars — through direct source code inspection, not marketing claims."),
     ("README.md", "### What's New in v3.7.0 — Ecosystem Imports"),
     ("README.md", "### What's New in v3.5.0 — Ecosystem Delta Sweep"),
-    ("index.html", "        <h2>Ecosystem Analysis</h2>"),
-    ("index.html", '            <tr><td>Compound Eng.</td><td>25.0K</td><td><span class="eco-verdict '
+    (SITE_HOME, "        <h2>Ecosystem Analysis</h2>"),
+    (SITE_HOME, '            <tr><td>Compound Eng.</td><td>25.0K</td><td><span class="eco-verdict '
                    'eco-verdict--adopted">Patterns adopted</span></td></tr>'),
-    ("index.html", "        <p>Ecosystem imports &mdash; twenty-one ideas from seven watched repositories grafted "
+    (SITE_HOME, "        <p>Ecosystem imports &mdash; twenty-one ideas from seven watched repositories grafted "
                    "onto existing skills and agents; no new components, every idea re-implemented in the "
                    "blueprint's own words, provenance recorded</p>"),
 )
 
 
 class DriftGateAdoption(unittest.TestCase):
-    """The drift gate fails README.md or index.html when it describes what was taken from other projects."""
+    """The drift gate fails README.md or the site source when it describes what was taken from other projects."""
 
     def assert_claim(self, rel_path, extra, marker, match=""):
         code, out = run_drift_with(rel_path, extra)
@@ -320,7 +323,7 @@ class DriftGateAdoption(unittest.TestCase):
         self.assert_claim("README.md", "\n## What we took from other repos\n", "## What", "What we took'")
 
     def test_project_name_on_the_site_fails(self):
-        self.assert_claim("index.html", "\n<p>Patterns from the gstack project.</p>\n", "<p>", "gstack'")
+        self.assert_claim(SITE_HOME, "\n<p>Patterns from the gstack project.</p>\n", "<p>", "gstack'")
 
     def test_lines_removed_in_the_v4_rewrite_fail(self):
         for rel_path, line in REMOVED_ADOPTION_LINES:
@@ -330,7 +333,7 @@ class DriftGateAdoption(unittest.TestCase):
     def test_a_phrase_split_by_a_wrap_a_tag_or_an_entity_fails_at_its_first_line(self):
         cases = (("README.md", "\nThe review stage keeps what we\ntook from another plugin.\n", "The review",
                   "what we took'"),
-                 ("index.html", "\n<p>The review stage was <em>imported</em> from another plugin.</p>\n", "<p>",
+                 (SITE_HOME, "\n<p>The review stage was <em>imported</em> from another plugin.</p>\n", "<p>",
                   "imported</em> from'"),
                  ("README.md", "\nThe review stage is what&nbsp;we took from another plugin.\n", "The review",
                   "what&nbsp;we took'"))
@@ -349,8 +352,8 @@ class DriftGateAdoption(unittest.TestCase):
 
     def test_two_claims_on_one_line_fail_once(self):
         extra = "\n<p>Patterns adopted from the gstack project.</p>\n"
-        out = self.assert_claim("index.html", extra, "<p>", "Patterns adopted'")
-        self.assertEqual(out.count("index.html:%d:" % appended_line("index.html", extra, "<p>")), 1, out)
+        out = self.assert_claim(SITE_HOME, extra, "<p>", "Patterns adopted'")
+        self.assertEqual(out.count("%s:%d:" % (SITE_HOME, appended_line(SITE_HOME, extra, "<p>"))), 1, out)
 
 
 if __name__ == "__main__":
