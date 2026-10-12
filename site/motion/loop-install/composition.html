@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1200, height=750" />
+<title>Install loop</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+/*{{DS_CSS}}*/
+html, body { width: 1200px; height: 750px; }
+#stage { position: absolute; inset: 0; background: var(--bg); }
+#stage > svg { position: absolute; left: 0; top: 0; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="10" data-width="1200" data-height="750">
+  <div id="stage" class="clip" data-start="0" data-duration="10" data-track-index="0"></div>
+</div>
+<script>
+//{{DS_JS}}
+</script>
+<script>
+(function () {
+  // Shown at about 560 px wide: smallest text 24 px, main labels 28 px and up.
+  // Each tool's own command lands in turn, then the installer sets up every tool at once.
+  const { S, svg, G, T, L, P, R, head, draw, C } = DS;
+  function build() {
+    const tl = gsap.timeline({ paused: true });
+    const s = svg(document.getElementById("stage"), 1200, 750);
+    const defs = S("defs", null, s);
+
+    // ---- the table: tools down the left, the command strip on the right ----
+    const NX = 94, CX = 300, RULE = 276;
+    const rowY = (k) => 128 + k * 52;
+    T(s, 40, 58, "Tool", "t-mono ink2", 24);
+    T(s, CX, 58, "Its own command", "t-mono ink2", 24);
+    L(s, 40, 80, 1160, 80, "hair-s");
+    L(s, RULE, 80, RULE, 516, "hair");
+    L(s, 40, 548, 1160, 548, "hair-s");
+
+    const NAMES = ["Claude Code", "Codex", "Antigravity", "Grok Build", "Pi", "Cursor CLI", "Hermes", "Amp"];
+    const rows = NAMES.map((n, k) => {
+      const y = rowY(k);
+      const box = R(s, 58.5, y - 20.5, 19, 19, "box-h");
+      const tick = P(s, `M56 ${y - 9} l8 8 l16 -18`, "ln");
+      const name = T(s, NX, y, n, "t-sans", 28);
+      gsap.set(tick, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+      gsap.set(name, { fill: C.muted });
+      return { y, box, tick, name };
+    });
+
+    // ---- the strip: one block per tool, shown while its row is active ----
+    const LY = (i) => 196 + i * 46; // strip line baselines under the tool's name
+    function block(k) {
+      const g = G(s, 0, 0);
+      T(g, CX, 140, NAMES[k], "t-head", 30);
+      L(g, CX, 162, CX + 260, 162, "hair");
+      gsap.set(g, { opacity: 0 });
+      return g;
+    }
+    const cmd = (g, i, str) => T(g, CX, LY(i), str, "t-mono", 24);
+    const note = (g, i, str, x, cls) => T(g, x == null ? CX : x, LY(i), str, cls || "t-sans ink2", 26);
+    // a "hooks" tag in the accent: it takes the accent over from the row's marker
+    function hooksTag(g, i) {
+      const y = LY(i);
+      const box = R(g, CX + 0.5, y - 26.5, 98, 36, "acc");
+      const tx = T(g, CX + 49, y, "hooks", "t-mono-b acc-t", 24, "middle");
+      return { box, tx };
+    }
+    function smallTick(g, x, y) {
+      const p = P(g, `M${x} ${y - 9} l8 8 l16 -18`, "ln");
+      gsap.set(p, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+      return p;
+    }
+
+    const B = NAMES.map((_, k) => block(k));
+    // Claude Code
+    const cc = [cmd(B[0], 0, "claude plugin marketplace add Ninety2UA/agent-blueprint"),
+      cmd(B[0], 1, "claude plugin install agent-blueprint@agent-blueprint")];
+    const ccH = hooksTag(B[0], 2);
+    const ccN = note(B[0], 2, "run as soon as the plugin is on", CX + 118);
+    // Codex
+    const cx = [cmd(B[1], 0, "codex plugin marketplace add Ninety2UA/agent-blueprint"),
+      cmd(B[1], 1, "codex plugin add agent-blueprint@agent-blueprint")];
+    const cxT = [cmd(B[1], 2, "/hooks"), note(B[1], 2, "trust the hooks", CX + 118)];
+    const cxTick = smallTick(B[1], CX + 316, LY(2));
+    const cxH = hooksTag(B[1], 3);
+    const cxN = note(B[1], 3, "run once trusted", CX + 118);
+    // Antigravity: the full GitHub URL, continued on a second line
+    const ag = [cmd(B[2], 0, "agy plugin install \\"), T(B[2], CX + 31, LY(1), "https://github.com/Ninety2UA/agent-blueprint", "t-mono", 24),
+      note(B[2], 2, "the full URL; owner/repo is rejected")];
+    // Grok Build: install, then it asks to confirm
+    const gk = [cmd(B[3], 0, "grok plugin install Ninety2UA/agent-blueprint"), note(B[3], 1, "asks to confirm")];
+    const gkTick = smallTick(B[3], CX + 206, LY(1));
+    // Pi
+    const pi = [cmd(B[4], 0, "pi install git:github.com/Ninety2UA/agent-blueprint")];
+    // Cursor CLI, Hermes, Amp
+    const cu = [note(B[5], 0, "reads Claude Code's plugin", CX, "t-sans"), note(B[5], 1, "otherwise its own marketplace, then /plugin", CX, "t-sans mut")];
+    const he = [note(B[6], 0, "gets the installer's copy", CX, "t-sans"), cmd(B[6], 1, "~/.hermes/skills")];
+    gsap.set(he[1], { fill: C.muted });
+    const am = [note(B[7], 0, "reads Claude Code's plugin", CX, "t-sans"), note(B[7], 1, "otherwise an Amp-only copy from the installer", CX, "t-sans mut")];
+    [cc, cx, cxT, ag, gk, pi, cu, he, am].forEach((a) => gsap.set(a, { opacity: 0 }));
+    gsap.set([ccN, cxN, ccH.box, ccH.tx, cxH.box, cxH.tx], { opacity: 0 });
+
+    // dashed leaders from the Claude Code row: Cursor CLI and Amp read its plugin
+    function leader(k, id) {
+      const y0 = rowY(0) - 10, y1 = rowY(k) - 10;
+      const cp = S("clipPath", { id }, defs);
+      const cr = R(cp, 0, y0 - 6, 70, 0, "");
+      const p = P(s, `M50 ${y0} H40 V${y1} H42`, "dash");
+      p.style.strokeWidth = "1.5";
+      p.setAttribute("clip-path", `url(#${id})`);
+      const h = head(s, 50, y1, 0, 9, "ahm");
+      gsap.set(h, { opacity: 0 });
+      return { p, cr, h, len: y1 - y0 + 12 };
+    }
+    const lCu = leader(5, "lc-cu");
+    const lAm = leader(7, "lc-am");
+
+    // ---- all at once: the installer line, a dimension line over every row ----
+    // drawn faint from the start, inked when it runs
+    const one = [T(s, 40, 610, "git clone https://github.com/Ninety2UA/agent-blueprint.git &&", "t-mono", 24),
+      T(s, 72, 652, "bash agent-blueprint/install.sh", "t-mono", 24)];
+    gsap.set(one, { fill: C.hairS });
+    const DT = rowY(0) - 24, DB = rowY(7) + 6;
+    const ext = [L(s, RULE - 14, DT, RULE + 10, DT, "ext"), L(s, RULE - 14, DB, RULE + 10, DB, "ext")];
+    const dimLine = L(s, RULE, DT + 2, RULE, DB - 2, "dim");
+    const dimH = [head(s, RULE, DT, -90, 10, "ah"), head(s, RULE, DB, 90, 10, "ah")];
+    const dimLab = T(s, CX, (DT + DB) / 2 + 10, "same routes, every tool at once", "t-head", 30);
+    gsap.set(ext, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+    gsap.set(dimLine, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+    gsap.set(dimH.concat([dimLab]), { opacity: 0 });
+
+    // ---- timeline helpers ----
+    const up = (els, t, d) => tl.fromTo(els, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: d || 0.35, ease: "expo.out", immediateRender: false }, t);
+    function activate(k, t) {
+      tl.to(rows[k].box, { stroke: C.accent, strokeWidth: 1.5, duration: 0.2, ease: "power2.out" }, t);
+      tl.to(rows[k].name, { fill: C.ink, duration: 0.25, ease: "power2.out" }, t);
+      up(B[k], t + 0.05, 0.22);
+    }
+    // the row's marker leaves the accent (something in the strip takes it)
+    function release(k, t) {
+      tl.to(rows[k].box, { stroke: C.hairS, strokeWidth: 1, duration: 0.2, ease: "power2.out" }, t);
+    }
+    function finish(k, t) {
+      tl.to(B[k], { opacity: 0, duration: 0.13, ease: "power2.in" }, t - 0.13);
+      tl.to(rows[k].box, { opacity: 0, stroke: C.hairS, strokeWidth: 1, duration: 0.15 }, t);
+      draw(tl, rows[k].tick, t, 0.32, { ease: "power2.out" });
+    }
+    function hooks(h, n, k, t) {
+      release(k, t);
+      tl.fromTo([h.box, h.tx], { opacity: 0, scale: 0.7, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.35, ease: "expo.out", immediateRender: false }, t);
+      up(n, t + 0.08);
+    }
+    function leaderIn(l, t) {
+      tl.fromTo(l.cr, { attr: { height: 0 } }, { attr: { height: l.len }, duration: 0.4, ease: "power2.inOut", immediateRender: false }, t);
+      tl.to(l.h, { opacity: 1, duration: 0.12 }, t + 0.36);
+    }
+
+    // ---- each tool's own command, in turn ----
+    // Claude Code and Codex carry the most text; each later tool's text holds settled for about half a second
+    activate(0, 0.25);
+    up(cc[0], 0.33); up(cc[1], 0.45);
+    hooks(ccH, ccN, 0, 0.68);
+    finish(0, 1.3);
+
+    activate(1, 1.38);
+    up(cx[0], 1.46); up(cx[1], 1.58);
+    up(cxT, 1.74);
+    draw(tl, cxTick, 1.88, 0.3, { ease: "power2.out" });
+    hooks(cxH, cxN, 1, 2.02);
+    finish(1, 2.55);
+
+    activate(2, 2.63);
+    up(ag[0], 2.69); up(ag[1], 2.73); up(ag[2], 2.79);
+    finish(2, 3.48);
+
+    activate(3, 3.56);
+    up(gk[0], 3.62); up(gk[1], 3.72);
+    draw(tl, gkTick, 3.78, 0.26, { ease: "power2.out" });
+    finish(3, 4.34);
+
+    activate(4, 4.42);
+    up(pi[0], 4.48);
+    finish(4, 5.2);
+
+    activate(5, 5.28);
+    leaderIn(lCu, 5.3);
+    up(cu[0], 5.34); up(cu[1], 5.4);
+    finish(5, 6.06);
+
+    activate(6, 6.14);
+    up(he[0], 6.2); up(he[1], 6.26);
+    finish(6, 6.88);
+
+    activate(7, 6.96);
+    leaderIn(lAm, 6.98);
+    up(am[0], 7.02); up(am[1], 7.08);
+    finish(7, 7.74);
+
+    // ---- the rows reset; the installer runs the same routes for every tool at once ----
+    const A0 = 7.96;
+    const ticks = rows.map((r) => r.tick), boxes = rows.map((r) => r.box), names = rows.map((r) => r.name);
+    tl.to(ticks, { opacity: 0, duration: 0.2, ease: "power2.in" }, A0);
+    tl.set(ticks, { strokeDashoffset: 1, opacity: 1 }, A0 + 0.22);
+    tl.to(boxes, { opacity: 1, duration: 0.2, ease: "power2.out" }, A0 + 0.1);
+    tl.to(names, { fill: C.muted, duration: 0.25, ease: "power2.out" }, A0 + 0.05);
+    tl.to([lCu.p, lCu.h, lAm.p, lAm.h], { opacity: 0, duration: 0.2, ease: "power2.in" }, A0);
+    tl.set([lCu.cr, lAm.cr], { attr: { height: 0 } }, A0 + 0.22);
+    tl.set([lCu.p, lAm.p], { opacity: 1 }, A0 + 0.23);
+    tl.to(one, { fill: C.ink, duration: 0.4, ease: "power2.out", stagger: 0.1 }, A0 + 0.2);
+    draw(tl, ext, A0 + 0.4, 0.3, { ease: "power2.out" });
+    draw(tl, dimLine, A0 + 0.45, 0.5, { ease: "expo.out" });
+    tl.to(dimH, { opacity: 1, duration: 0.15 }, A0 + 0.7);
+    up(dimLab, A0 + 0.5, 0.45);
+    tl.to(boxes, { opacity: 0, duration: 0.15 }, A0 + 0.65);
+    tl.to(names, { fill: C.ink, duration: 0.3 }, A0 + 0.65);
+    draw(tl, ticks, A0 + 0.65, 0.32, { ease: "power2.out", stagger: 0.03 });
+
+    // ---- back to the opening frame ----
+    const R0 = 9.36;
+    tl.to([dimLab].concat(dimH), { opacity: 0, duration: 0.35, ease: "power2.in" }, R0);
+    tl.to(one, { fill: C.hairS, duration: 0.4, ease: "power2.inOut" }, R0);
+    tl.to(ext.concat([dimLine]), { opacity: 0, duration: 0.35, ease: "power2.in" }, R0);
+    tl.set(ext.concat([dimLine]), { strokeDashoffset: 1, opacity: 1 }, R0 + 0.4);
+    tl.to(ticks, { opacity: 0, duration: 0.3, ease: "power2.in" }, R0 + 0.05);
+    tl.set(ticks, { strokeDashoffset: 1, opacity: 1 }, R0 + 0.4);
+    tl.to(boxes, { opacity: 1, duration: 0.3, ease: "power2.out" }, R0 + 0.2);
+    tl.to(names, { fill: C.muted, duration: 0.35, ease: "power2.out" }, R0 + 0.2);
+    window.__timelines["main"] = tl;
+  }
+  DS.fontsReady().then(build);
+})();
+</script>
+</body>
+</html>

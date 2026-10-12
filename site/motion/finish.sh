@@ -20,7 +20,7 @@ poster() { # name seconds
 
 enc film 16
 enc readme-hero 16
-for n in loop-review loop-waves loop-runner loop-handoff; do enc "$n" 17; done
+for n in loop-review loop-waves loop-runner loop-handoff loop-install loop-setup; do enc "$n" 17; done
 
 poster film 3.6
 # a lighter 1280x720 poster of the same frame
@@ -30,6 +30,8 @@ poster loop-review 5.5
 poster loop-waves 5.0
 poster loop-runner 6.4
 poster loop-handoff 5.2
+poster loop-install 2.3
+poster loop-setup 8.9
 
 # README GIF: 960 px wide, 15 fps, one shared palette, loops forever
 ffmpeg -v error -y -i "$OUT/readme-hero.mp4" -vf "fps=15,scale=960:-1:flags=lanczos,palettegen=max_colors=48:stats_mode=full" "$WORK/hero-palette.png"
