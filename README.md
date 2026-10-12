@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://agent-blueprint.dbenger.com/">Website</a> ·
-  <a href="#whats-new-in-v402">What's new</a> ·
+  <a href="#whats-new-in-v410">What's new</a> ·
   <a href="#install">Install</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#unattended-runs">Unattended runs</a> ·
@@ -29,6 +29,10 @@
 A coding agent starts every session from nothing. It doesn't know how your project works, what was decided last week, or which problems were already solved, and when you switch to another tool, whatever the last one learned stays behind.
 
 Agent Blueprint gives the agent one way of working that is the same in every tool. Skills take a feature from design through review to a pull request. Helper prompts handle the analysis that needs a fresh context, such as a security review or a plan check. Project documents under `docs/` carry conventions, decisions and solved problems from one session to the next, so they are there whichever of the eight tools opens the repository next.
+
+## What's new in v4.1.0
+
+Each tool now installs Agent Blueprint with its own command, straight from GitHub, and `install.sh` runs those same commands for every tool at once. Skill text that a literal model could misread is fixed. TDD keeps code that existed before the task, and brainstorming does not ask again for a design you already approved. No skill asks twice for an approval you gave. `ab-project-start` refuses your home folder and `/`, asks before it writes into a folder that is not a repository, and never nests one repository inside another. Codex gets a complete plugin listing, display names in its `$` picker, the setup skill offered right after install, and a write guard that now reads its edits. If you installed 4.0 with `bash install.sh`, run the new installer once without `--only` to move each tool to its own route. The [release notes](docs/releases/v4.1.0-release-notes.md) have the details.
 
 ## What's new in v4.0.2
 
@@ -778,16 +782,18 @@ The scaffolded `AGENTS.md` has a "When something goes wrong" table for the first
 
 ## Tested in each tool
 
-Before the release, a local smoke test (`tests/smoke/`) ran a sample project through each installed tool's headless mode: discovery of all 53 skills, an `AGENTS.md` check, hooks, the manual-only rule, and the build, review, debug, ship and team pipelines. The full table, with times and reasons, is [`docs/releases/v4.0.0-smoke.md`](docs/releases/v4.0.0-smoke.md), and each support note under `docs/hosts/` repeats its tool's row.
+Before the release, each of the eight tools installed Agent Blueprint by its own route in a clean profile and listed every skill exactly once ([`docs/releases/v4.1.0-installs.md`](docs/releases/v4.1.0-installs.md)). A local smoke test (`tests/smoke/`) then ran a sample project through each tool's headless mode. It covered discovery of every skill, the manual-only rule, hooks, debugging, and two checks for this release's skill fixes (existing code kept under TDD, and an approved design taken as approved). [`docs/releases/v4.1.0-smoke.md`](docs/releases/v4.1.0-smoke.md) has the table with times and reasons, and each support note under `docs/hosts/` repeats its tool's results.
 
 | Tool | Version tested | Result |
 |---|---|---|
-| Claude Code | 2.1.291 | Every check passes; with helpers switched off, the pipelines run inline as designed |
-| Codex | 0.160.0 | Every check that applies passes (hooks, effort and upgrade do not apply to Codex) |
-| Cursor CLI | 2026.10.01 | Every check that applies passes, in a profile with only the blueprint installed: on the test machine Cursor also lists the Claude Code plugin's copy beside the shared copy and caps its skill list |
-| Antigravity | 1.3.1 | Every check that applies passes, in a profile with only the blueprint installed; review and debug run their helper steps inline. On a machine with many other skills, Antigravity leaves most of them out of the model's list |
-| Grok Build | 1.0.34 | Discovery and manual-only pass on the release commit, and `AGENTS.md` and hooks passed on an earlier one; the free tier's usage limit stops the pipeline checks |
-| Pi, Hermes, Amp | Not installed on the test machine | Their install routes follow the vendor docs and have not been run yet |
+| Claude Code | 2.1.296 | Installs with each skill once; every check passes |
+| Codex | 0.160.0 | Installs with each skill once; every check passes, and all five hooks run once trusted |
+| Antigravity | 1.3.3 | Installs with each skill once; every check passes |
+| Cursor CLI | 2026.10.01 | Installs with each skill once, through Claude Code's plugin or `--plugin-dir`; every check passes |
+| Grok Build | 1.0.34 and 1.0.52 | Installs with each skill once; discovery, hooks, the manual-only rule and debugging pass |
+| Pi | 0.73.1 | Installs with each skill once by its own route |
+| Hermes | 0.19.0 | Installs with each skill once by its own route |
+| Amp | 0.0.1791360091 | Installs with each skill once, through Claude Code's plugin or its own copy |
 
 An evaluation then ran the same fixture tasks on v3.8.0 and v4.0.0 in Claude Code ([`docs/releases/v4.0.0-eval.md`](docs/releases/v4.0.0-eval.md)). Build, review and debug passed on both versions, with no task getting worse. v4 is slower and costs more per task (review took 7m21s instead of 3m08s), because a v4 pipeline writes a provenance record, runs reviews as a swarm with a validator, and takes debugging all the way to a regression test. The ship pipeline was not part of the evaluation: one run costs about $40 and nearly two hours, and the smoke test above already shows it passing end to end.
 
