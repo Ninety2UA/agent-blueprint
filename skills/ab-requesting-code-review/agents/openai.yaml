@@ -1,0 +1,3 @@
+interface:
+  display_name: "Requesting Code Review"
+  short_description: "Have one reviewer check a finished change"

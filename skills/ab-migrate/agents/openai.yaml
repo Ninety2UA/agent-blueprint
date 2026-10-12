@@ -1,3 +1,6 @@
 # Codex: this skill runs only when the user asks for it by name (KTD12).
 policy:
   allow_implicit_invocation: false
+interface:
+  display_name: "Migrate to v4"
+  short_description: "Clean an old v2 or v3 install out of a project"

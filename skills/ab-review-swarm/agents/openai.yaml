@@ -1,0 +1,3 @@
+interface:
+  display_name: "Review Swarm"
+  short_description: "Review a change with parallel specialist reviewers"

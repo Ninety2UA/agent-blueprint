@@ -1,0 +1,3 @@
+interface:
+  display_name: "Performance Profiling"
+  short_description: "Measure slow code, then speed it up one change at a time"

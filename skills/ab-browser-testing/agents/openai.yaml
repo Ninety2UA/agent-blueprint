@@ -1,0 +1,3 @@
+interface:
+  display_name: "Browser Testing"
+  short_description: "Check UI changes in a real browser"

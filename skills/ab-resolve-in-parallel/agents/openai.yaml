@@ -1,0 +1,3 @@
+interface:
+  display_name: "Resolve in Parallel"
+  short_description: "Fix a batch of independent items at once"

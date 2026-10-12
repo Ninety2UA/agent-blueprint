@@ -1,0 +1,3 @@
+interface:
+  display_name: "Dependency Management"
+  short_description: "Vet, pin, upgrade and remove dependencies"

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Scope Cutting"
+  short_description: "Cut a feature down to its smallest useful version"

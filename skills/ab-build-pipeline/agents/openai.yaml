@@ -1,0 +1,3 @@
+interface:
+  display_name: "Build Pipeline"
+  short_description: "Build a feature in stages you approve one by one"

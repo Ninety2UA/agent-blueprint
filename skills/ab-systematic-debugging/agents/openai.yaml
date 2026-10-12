@@ -1,0 +1,3 @@
+interface:
+  display_name: "Systematic Debugging"
+  short_description: "Find a bug's root cause before changing code"

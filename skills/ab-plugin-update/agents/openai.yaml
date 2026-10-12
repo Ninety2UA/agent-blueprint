@@ -1,2 +1,5 @@
 policy:
   allow_implicit_invocation: false
+interface:
+  display_name: "Update Agent Blueprint"
+  short_description: "Upgrade the plugin to its latest release"

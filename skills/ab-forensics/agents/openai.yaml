@@ -1,0 +1,3 @@
+interface:
+  display_name: "Failed Run Forensics"
+  short_description: "Diagnose a failed or stalled automated run"

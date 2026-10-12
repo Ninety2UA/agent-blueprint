@@ -1,7 +1,7 @@
 {
   "name": "agent-blueprint",
   "version": "4.0.2",
-  "description": "Production-grade development toolkit for AI-assisted engineering. 53 skills and 10 hooks covering the full development lifecycle \u2014 from brainstorming through verified deployment, with helper swarms, team work, wave orchestration, and knowledge compounding.",
+  "description": "53 skills and 5 hooks that take Codex from an idea to a reviewed pull request: design, plans, test-first code, reviews and handoffs between sessions.",
   "author": {
     "name": "Ninety2UA"
   },
@@ -29,7 +29,26 @@
   "hooks": "./hooks/codex.json",
   "interface": {
     "displayName": "Agent Blueprint",
-    "shortDescription": "Skills, helper prompts and pipelines for AI-assisted engineering, portable across eight coding CLIs.",
-    "category": "Coding"
+    "shortDescription": "Take an idea to a reviewed PR",
+    "longDescription": "Agent Blueprint gives Codex engineering skills that carry a change from an idea to a reviewed pull request. Brainstorm a design, settle the open decisions, write a plan, build it test-first, review it with parallel reviewers, verify it, and leave notes in docs/context/STATUS.md so the next session picks up where this one stopped.\n\nCall a skill by name, such as $ab-brainstorming, or let Codex pick one from your request. Start with $ab-project-start, which sets up AGENTS.md, docs/context/ and BACKLOG.md and merges into files that already exist instead of overwriting them. $ab-build-pipeline stops for your approval after each stage, and $ab-ship-pipeline runs a feature end to end with no checkpoints.\n\nThe plugin also ships hooks for Codex: a session-start pointer to the project status, a prompt-injection guard on file writes, a commit-message check, a context monitor that warns after many tool calls, and the ship-pipeline Stop guard. Codex runs none of them until you review and trust them in /hooks. Every skill works without the hooks.\n\nAgent Blueprint is open source under the MIT license.",
+    "developerName": "Ninety2UA",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://agent-blueprint.dbenger.com/",
+    "supportURL": "https://github.com/Ninety2UA/agent-blueprint/issues",
+    "defaultPrompt": [
+      "Use $ab-project-start to set up this repo and keep the files already in it",
+      "Use $ab-build-pipeline to add password reset, and check with me after each stage",
+      "Use $ab-review-swarm to review this branch before I merge it"
+    ],
+    "brandColor": "#ED4423",
+    "composerIcon": "./docs/images/codex/composer-icon.svg",
+    "composerIconDark": "./docs/images/codex/composer-icon-dark.svg",
+    "logo": "./docs/images/codex/logo.svg",
+    "logoDark": "./docs/images/codex/logo-dark.svg"
   }
 }

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Ideation"
+  short_description: "Generate ranked improvement ideas for a project"

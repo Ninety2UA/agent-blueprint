@@ -1,0 +1,3 @@
+interface:
+  display_name: "Session Wrap-Up"
+  short_description: "End a session and update the project docs"

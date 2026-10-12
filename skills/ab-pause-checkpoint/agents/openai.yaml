@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pause Checkpoint"
+  short_description: "Save a quick snapshot before you step away"

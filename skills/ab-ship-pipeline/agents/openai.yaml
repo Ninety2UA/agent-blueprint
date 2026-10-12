@@ -1,0 +1,3 @@
+interface:
+  display_name: "Ship Pipeline"
+  short_description: "Ship a feature hands-off, from plan to PR"

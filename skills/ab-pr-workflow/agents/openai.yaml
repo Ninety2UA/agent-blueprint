@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pull Request Workflow"
+  short_description: "Take a branch through its pull request to merge"

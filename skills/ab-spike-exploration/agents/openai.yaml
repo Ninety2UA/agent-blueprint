@@ -1,0 +1,3 @@
+interface:
+  display_name: "Spike Exploration"
+  short_description: "Answer one technical question with a timeboxed spike"
