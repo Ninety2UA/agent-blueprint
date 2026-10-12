@@ -125,6 +125,17 @@ class PluginUpdateRoutes(unittest.TestCase):
                             'grok plugin install "<checkout>" --trust')
         self.assertRegex(grok, r"(?i)confirm.*removed.*before")
 
+    def test_grok_does_not_read_or_follow_claudes_plugin_install(self):
+        for filename in ("SKILL.md", "references/update-routes.md"):
+            with self.subTest(filename=filename):
+                text = (SKILL_DIR / filename).read_text()
+                self.assertNotRegex(
+                    text,
+                    r"(?i)\bGrok(?: Build)?\b[^.!?]*"
+                    r"\b(?:reads?|reading|follows?|following|uses?|using)\b"
+                    r"[^.!?]*\bClaude Code\b",
+                )
+
     def test_pi_updates_git_but_only_pulls_a_local_path(self):
         pi = self.route("Pi")
         self.assertRegex(pi, r"pi update --(?:extension git:github.com/Ninety2UA/agent-blueprint|extensions)")

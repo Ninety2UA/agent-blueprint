@@ -33,7 +33,7 @@ When running in Codex, first run `codex plugin list --json`. Find the entry in `
 | a git checkout of Agent Blueprint (local development or a folder the tool reads directly) | Checkout, followed by the host's local refresh if it keeps a cache or copy |
 | a project's `.claude/skills/`, `.claude/agents/` or `.claude/commands/` | old in-project copy |
 
-Grok Build reading Claude Code's registered marketplace also follows the Claude Code plugin route. A checkout path does not override an identified host registration. Where a route distinguishes Git and local sources, read that distinction and the original checkout path from the host's install metadata; a cache directory alone does not establish the source. If that source is unknown, report it and stop before updating.
+A checkout path does not override an identified host registration. Where a route distinguishes Git and local sources, read that distinction and the original checkout path from the host's install metadata; a cache directory alone does not establish the source. If that source is unknown, report it and stop before updating.
 
 Note the installed version: for Claude Code use `claude plugin list --json` (the `agent-blueprint@agent-blueprint` row, with its scope); for Codex use the cached `.codex-plugin/plugin.json` as described in Step 2's route notes; for copies read `version` in the containing skills folder's `.agent-blueprint-install.json`; otherwise read `.claude-plugin/plugin.json` at the installed plugin or checkout root. If unreadable, record "unknown".
 

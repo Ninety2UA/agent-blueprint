@@ -11,7 +11,7 @@ claude plugin marketplace update agent-blueprint
 claude plugin update agent-blueprint@agent-blueprint
 ```
 
-Add `--scope project` or `--scope local` when the `claude plugin list --json` row shows it is installed for one project, and `--yes` when no terminal is attached. If the update command rejects the `plugin@marketplace` name, use `/plugin` and pick the update, or `/plugin install agent-blueprint@agent-blueprint`, which refreshes the marketplace first and installs the latest version. This is also the route for Cursor, Amp or Grok Build reading Claude Code's install; do not add a separate install for them.
+Add `--scope project` or `--scope local` when the `claude plugin list --json` row shows it is installed for one project, and `--yes` when no terminal is attached. If the update command rejects the `plugin@marketplace` name, use `/plugin` and pick the update, or `/plugin install agent-blueprint@agent-blueprint`, which refreshes the marketplace first and installs the latest version. This is also the route for Cursor or Amp reading Claude Code's install; do not add a separate install for them.
 
 ## Codex plugin
 
