@@ -45,6 +45,7 @@ The Dial: the modes `low`, `medium`, `high` and `ultra` each set the model, the 
 - Questions: `ask_user_choice`, built in since September 2026; a headless run takes the documented default.
 - Task tracking: the plan file's checkboxes; `todo_read` and `todo_write` may mirror them.
 - Instructions: Amp reads `AGENTS.md` in the cwd and its parents; `CLAUDE.md` or `AGENT.md` only where no `AGENTS.md` exists.
+- Older copies beside Claude Code: after a plugin update, Claude Code keeps the previous version's folder in `~/.claude/plugins/cache/agent-blueprint/agent-blueprint/` for a while, marked with an `.orphaned_at` file, and Amp scans that whole cache. Until Claude Code removes the old folder, Amp may load a skill from the older copy, since it keeps the first skill of each name it finds. Delete the orphaned version folders to make Amp read only the current one.
 
 ## Unattended runs
 
@@ -54,7 +55,7 @@ Run from the project root, with the path to the skill folder as installed (a che
 bash /path/to/agent-blueprint/skills/ab-ship-pipeline/scripts/run.sh --host amp --allow-unguarded "<feature>"
 ```
 
-Posture: `amp -x "<prompt>"` (execute mode; also on when stdout is redirected). Amp has had no approvals by default since May 2026, so nothing blocks a destructive command unless you opt into `amp.permissions`, which loads a permissions plugin that also applies to `-x`. The runner therefore requires `--allow-unguarded`, which means: the agent holds your git and `gh` credentials for the whole run, and the runner's secret scan and publish checks cannot contain what it does before it publishes. Run it in a throwaway clone or a container. Exit codes are not documented; the runner judges a run from `state.json`. Per-iteration timeout: 3600 s. Preflight: `AMP_API_KEY` (an `sgamp_` access token) or `~/.config/amp`. This row of the adapter table is unverified, since Amp is not installed on the maintainer's machine. Docs: <https://ampcode.com/docs/markdown/cli/execute-mode>.
+Posture: `amp -x "<prompt>"` (execute mode; also on when stdout is redirected). Amp has had no approvals by default since May 2026, so nothing blocks a destructive command unless you opt into `amp.permissions`, which loads a permissions plugin that also applies to `-x`. The runner therefore requires `--allow-unguarded`, which means: the agent holds your git and `gh` credentials for the whole run, and the runner's secret scan and publish checks cannot contain what it does before it publishes. Run it in a throwaway clone or a container. Exit codes are not documented; the runner judges a run from `state.json`. Per-iteration timeout: 3600 s. Preflight: `AMP_API_KEY` (an `sgamp_` access token) or `~/.config/amp`. This row of the adapter table follows the vendor docs. Docs: <https://ampcode.com/docs/markdown/cli/execute-mode>.
 
 ## Privacy
 
@@ -69,21 +70,4 @@ Headless threads are visible to your workspace by default: per the SDK docs a th
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version not installed, last cell 2026-10-04.
-
-| Cell | State | Time | Reason |
-|------|-------|------|--------|
-| `discovery` | not-installed | 0s | amp not on PATH |
-| `canary` | not-installed | 0s | amp not on PATH |
-| `hooks` | not-installed | 0s | amp not on PATH |
-| `manual-only` | not-installed | 0s | amp not on PATH |
-| `build` | not-installed | 0s | amp not on PATH |
-| `helpers-off` | not-installed | 0s | amp not on PATH |
-| `effort` | not-installed | 0s | amp not on PATH |
-| `review` | not-installed | 0s | amp not on PATH |
-| `debug` | not-installed | 0s | amp not on PATH |
-| `ship` | not-installed | 0s | amp not on PATH |
-| `team` | not-installed | 0s | amp not on PATH |
-| `upgrade` | not-installed | 0s | amp not on PATH |
-
-The tool is not installed on the build machine, so nothing ran; the adapter row in `hosts.sh` follows the vendor docs and is unverified.
+Install: the v4.1.0 install record ([docs/releases/v4.1.0-installs.md](../releases/v4.1.0-installs.md)) shows this tool installing Agent Blueprint by its own route and listing each skill once.

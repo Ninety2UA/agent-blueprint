@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Write each host's `## Smoke status` section in docs/hosts/<note>.md from the smoke JSON.
 
-Usage: python3 tests/smoke/host-notes.py [--json docs/releases/v4.0.0-smoke.json] [--hosts docs/hosts]
+Usage: python3 tests/smoke/host-notes.py [--json docs/releases/v<version>-smoke.json] [--hosts docs/hosts]
 
 The section is the last one in every support note; everything after its heading is replaced.
-A host with no cells recorded keeps the pending line.
+The default JSON is the current release's (the version in .claude-plugin/plugin.json). When that
+release has an install record (docs/releases/v<version>-installs.md), each section opens with it.
 """
 import argparse
 import json
@@ -15,18 +16,30 @@ from report import fmt_secs, mask   # the same directory; report.py owns the tab
 
 NOTES = {"claude": "claude-code.md", "codex": "codex.md", "agy": "antigravity.md", "grok": "grok-build.md",
          "pi": "pi.md", "cursor-agent": "cursor-cli.md", "hermes": "hermes.md", "amp": "amp.md"}
-CELLS = ["discovery", "canary", "hooks", "manual-only", "build", "helpers-off", "effort", "review", "debug", "ship", "team", "upgrade"]
-PENDING = "Pending: the v4.0.0 smoke table (docs/releases/v4.0.0-smoke.md) fills this section.\n"
+CELLS = ["discovery", "canary", "hooks", "manual-only", "build", "helpers-off", "effort", "review", "debug",
+         "tdd-override", "brainstorm-override", "ship", "team", "upgrade"]
+
+
+def current_version():
+    return json.load(open(".claude-plugin/plugin.json", encoding="utf-8"))["version"]
 
 
 def section(host, doc):
+    release = doc.get("release") or current_version()
     entry = (doc.get("hosts") or {}).get(host) or {}
     cells = entry.get("cells") or {}
+    smoke = "docs/releases/v%s-smoke.md" % release
+    installs = "docs/releases/v%s-installs.md" % release
+    lines = []
+    if os.path.exists(installs):
+        lines += ["Install: the v%s install record ([%s](%s)) shows this tool installing Agent Blueprint by its own route "
+                  "and listing each skill once." % (release, installs, os.path.relpath(installs, "docs/hosts")), ""]
     if not cells:
-        return PENDING
-    rel = os.path.relpath("docs/releases/v4.0.0-smoke.md", "docs/hosts")
-    lines = ["From the v4.0.0 smoke table ([%s](%s)), host version %s, last cell %s." % (
-        "docs/releases/v4.0.0-smoke.md", rel, entry.get("version") or "unknown",
+        if not lines:
+            return "Pending: the v%s smoke table (%s) fills this section.\n" % (release, smoke)
+        return "\n".join(lines)
+    lines += ["From the v%s smoke table ([%s](%s)), host version %s, last cell %s." % (
+        release, smoke, os.path.relpath(smoke, "docs/hosts"), entry.get("version") or "unknown",
         max((c.get("date") or "") for c in cells.values())[:10]), ""]
     lines += ["| Cell | State | Time | Reason |", "|------|-------|------|--------|"]
     for cell in CELLS:
@@ -38,20 +51,17 @@ def section(host, doc):
         if c.get("link"):
             reason += " ([upstream issue](%s))" % c["link"]
         lines.append("| `%s` | %s | %s | %s |" % (cell, c.get("state", ""), fmt_secs(c.get("seconds")), reason[:220]))
-    states = [c.get("state") for c in cells.values()]
-    if all(s == "not-installed" for s in states):
-        lines += ["", "The tool is not installed on the build machine, so nothing ran; the adapter row in `hosts.sh` follows the vendor docs and is unverified."]
-    elif any(s == "fail" for s in states):
-        lines += ["", "A `fail` cell blocks the release until it passes or is confirmed as a vendor bug (then it renders `degraded (vendor bug)` with the upstream link; see `docs/releases/v4.0.0-checklist.md`)."]
+    if any(c.get("state") == "fail" for c in cells.values()):
+        lines += ["", "A `fail` cell blocks the release until it passes or is confirmed as a vendor bug (then it renders `degraded (vendor bug)` with the upstream link; see `docs/releases/v%s-checklist.md`)." % release]
     return "\n".join(lines) + "\n"
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--json", default="docs/releases/v4.0.0-smoke.json")
+    ap.add_argument("--json", default=None)
     ap.add_argument("--hosts", default="docs/hosts")
     args = ap.parse_args()
-    doc = json.load(open(args.json, encoding="utf-8"))
+    doc = json.load(open(args.json or "docs/releases/v%s-smoke.json" % current_version(), encoding="utf-8"))
     for host, note in NOTES.items():
         path = os.path.join(args.hosts, note)
         text = open(path, encoding="utf-8").read()
@@ -60,7 +70,7 @@ def main():
             raise SystemExit("%s has no '## Smoke status' section" % path)
         text = section(host, doc)
         open(path, "w", encoding="utf-8").write(head + sep + "\n" + text)
-        print("%-12s %s" % (host, "pending" if text == PENDING else "written"))
+        print("%-12s %s" % (host, "pending" if text.startswith("Pending:") else "written"))
 
 
 if __name__ == "__main__":

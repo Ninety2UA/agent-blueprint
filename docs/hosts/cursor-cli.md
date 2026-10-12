@@ -72,19 +72,15 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 2026.10.01-14929f9, last cell 2026-10-07.
+Install: the v4.1.0 install record ([docs/releases/v4.1.0-installs.md](../releases/v4.1.0-installs.md)) shows this tool installing Agent Blueprint by its own route and listing each skill once.
+
+From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-smoke.md)), host version 2026.10.01-14929f9, last cell 2026-10-12.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | pass | 7s | 53 ab- skills once each in 1 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 8s | final message names HARBOR-19 |
-| `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
-| `manual-only` | pass | 20s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
-| `build` | pass | 5m22s | acceptance test passes (deps: tabulate>=0.9.0,<0.10); 4 commit(s) after the base · helper steps: helper,helper,helper,helper,helper,helper,helper,helper |
-| `helpers-off` | n/a | 0s | no helper switch on cursor-agent |
-| `effort` | n/a | 0s | no per-dispatch effort metadata on cursor-agent |
-| `review` | pass | 1m10s | the review reports eval in cli.py as a finding (security: arbitrary) · helper steps: helper |
-| `debug` | pass | 57s | suite passes; store.py fixed; regression test present · helper steps: helper |
-| `ship` | pass | 10m48s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9.0,<0.10) on the pushed branch |
-| `team` | pass | 3m55s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |
-| `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |
+| `discovery` | pass | 11s | 53 ab- skills once each in 1 location(s); the answer names ab-ship-pipeline |
+| `hooks` | pass | 11s | no blueprint hook fired (canary prompt run with the trace exported) |
+| `manual-only` | pass | 26s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `debug` | pass | 1m17s | suite passes; store.py fixed; regression test present · helper steps: helper |
+| `tdd-override` | pass | 1m03s | seeded functions retain their recorded behavior; count_words test present; suite passes |
+| `brainstorm-override` | pass | 1m52s | no design approval request; plan or code: docs/plans/2026-10-12-note-count-design.md, docs/plans/2026-10-12-note-count.md, src/notes/store.py |

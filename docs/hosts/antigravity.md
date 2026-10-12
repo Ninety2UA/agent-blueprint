@@ -64,19 +64,15 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 1.3.1, last cell 2026-10-07.
+Install: the v4.1.0 install record ([docs/releases/v4.1.0-installs.md](../releases/v4.1.0-installs.md)) shows this tool installing Agent Blueprint by its own route and listing each skill once.
+
+From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-smoke.md)), host version 1.3.3, last cell 2026-10-12.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | pass | 11s | 53 ab- skills once each in 1 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 11s | final message names HARBOR-19 |
-| `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
-| `manual-only` | pass | 11s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
-| `build` | pass | 2m05s | acceptance test passes (deps: tabulate); 1 commit(s) after the base |
-| `helpers-off` | n/a | 0s | no helper switch on agy |
-| `effort` | n/a | 0s | no per-dispatch effort metadata on agy |
-| `review` | degraded-pass (inline) | 1m43s | the review reports eval in cli.py as a finding (security: arbitrary) · helper steps: inline |
-| `debug` | degraded-pass (inline) | 54s | suite passes; store.py fixed; regression test present · helper steps: inline |
-| `ship` | pass | 2m45s | published; pr create recorded; acceptance test passes (deps: tabulate) on the pushed branch |
-| `team` | pass | 4m32s | ledger done; 3 commits; tests pass |
-| `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |
+| `discovery` | pass | 10s | 53 ab- skills once each in 1 location(s); the answer names ab-ship-pipeline |
+| `hooks` | pass | 9s | no blueprint hook fired (canary prompt run with the trace exported) |
+| `manual-only` | pass | 12s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `debug` | pass | 4m48s | suite passes; store.py fixed; regression test present · helper steps: helper |
+| `tdd-override` | pass | 3m09s | seeded functions retain their recorded behavior; count_words test present; suite passes |
+| `brainstorm-override` | pass | 4m34s | no design approval request; plan or code: docs/plans/2026-10-12-note-count-design.md, docs/plans/2026-10-12-note-count.md, src/notes/store.py |

@@ -49,7 +49,7 @@ Run from the project root, with the path to the skill folder as installed (a che
 bash /path/to/agent-blueprint/skills/ab-ship-pipeline/scripts/run.sh --host hermes "<feature>"
 ```
 
-Posture: `hermes -z "<prompt>"`, the one-shot mode that prints only the final text. `approvals.single_query_mode: deny` (the default) blocks commands Hermes flags as dangerous, and a hardline blocklist (`rm -rf /`, `mkfs`, `dd`, fork bombs) always blocks; that is a guard, so `--allow-unguarded` is not needed, and the runner never passes `--yolo`. The prompt names the skill, because preloading with `-s` under `-z` is not verified. Exit codes: 0 done, 2 failed or partial, 1 no text, 130 interrupted. Per-iteration timeout: 3600 s. Helpers per wave: 2. Preflight: `~/.hermes/config.yaml` exists. This row of the adapter table is unverified, since Hermes is not installed on the maintainer's machine.
+Posture: `hermes -z "<prompt>"`, the one-shot mode that prints only the final text. `approvals.single_query_mode: deny` (the default) blocks commands Hermes flags as dangerous, and a hardline blocklist (`rm -rf /`, `mkfs`, `dd`, fork bombs) always blocks; that is a guard, so `--allow-unguarded` is not needed, and the runner never passes `--yolo`. The prompt names the skill, because preloading with `-s` under `-z` is not verified. Exit codes: 0 done, 2 failed or partial, 1 no text, 130 interrupted. Per-iteration timeout: 3600 s. Helpers per wave: 2. Preflight: `~/.hermes/config.yaml` exists. This row of the adapter table follows the vendor docs.
 
 ## Privacy
 
@@ -64,21 +64,11 @@ Nothing beyond the host's own terms is known. Hermes is self-hosted, so where it
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version not installed, last cell 2026-10-04.
+Install: the v4.1.0 install record ([docs/releases/v4.1.0-installs.md](../releases/v4.1.0-installs.md)) shows this tool installing Agent Blueprint by its own route and listing each skill once.
+
+From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-smoke.md)), host version Hermes Agent v0.19.0 (2026.7.20), last cell 2026-10-12.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | not-installed | 0s | hermes not on PATH |
-| `canary` | not-installed | 0s | hermes not on PATH |
-| `hooks` | not-installed | 0s | hermes not on PATH |
-| `manual-only` | not-installed | 0s | hermes not on PATH |
-| `build` | not-installed | 0s | hermes not on PATH |
-| `helpers-off` | not-installed | 0s | hermes not on PATH |
-| `effort` | not-installed | 0s | hermes not on PATH |
-| `review` | not-installed | 0s | hermes not on PATH |
-| `debug` | not-installed | 0s | hermes not on PATH |
-| `ship` | not-installed | 0s | hermes not on PATH |
-| `team` | not-installed | 0s | hermes not on PATH |
-| `upgrade` | not-installed | 0s | hermes not on PATH |
-
-The tool is not installed on the build machine, so nothing ran; the adapter row in `hosts.sh` follows the vendor docs and is unverified.
+| `hooks` | n/a | 0s | no hook path on this host |
+| `manual-only` | n/a | 0s | hermes cannot enforce manual-only (KTD12); its support note says so |

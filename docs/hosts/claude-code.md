@@ -62,19 +62,15 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 2.1.291 (Claude Code), last cell 2026-10-07.
+Install: the v4.1.0 install record ([docs/releases/v4.1.0-installs.md](../releases/v4.1.0-installs.md)) shows this tool installing Agent Blueprint by its own route and listing each skill once.
+
+From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-smoke.md)), host version 2.1.296 (Claude Code), last cell 2026-10-12.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | pass | 7s | 53 ab- skills once each in 7 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 8s | final message names HARBOR-19 |
-| `hooks` | pass | 0s | handlers wrote the trace: session-start.js x1, ship-loop.sh x1 (from the canary run) |
-| `manual-only` | pass | 9s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
-| `build` | pass | 27m30s | acceptance test passes (deps: tabulate>=0.9); 7 commit(s) after the base · helper steps: helper,helper,helper,helper |
-| `helpers-off` | degraded-pass (inline) | 12m31s | acceptance test passes (deps: tabulate); 6 commit(s) after the base · helper steps: inline,inline,inline,inline |
-| `effort` | pass | 0s | session effort xhigh; 12 helper transcript(s) at the same effort |
-| `review` | pass | 3m51s | the review reports eval in cli.py as a finding (security: exploitable) · helper steps: helper |
-| `debug` | pass | 2m03s | suite passes; store.py fixed; regression test present · helper steps: helper |
-| `ship` | pass | 49m43s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch |
-| `team` | pass | 7m22s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |
-| `upgrade` | pass | 4s | 14 checks passed: both plugin ids listed, detect-v3.sh reported and removed the v3 traces, the session-start warning names the v3 plugin |
+| `discovery` | pass | 5s | 53 ab- skills once each in 7 location(s); the answer names ab-ship-pipeline |
+| `hooks` | pass | 5s | handlers wrote the trace: session-start.js x1, ship-loop.sh x1 (canary prompt run with the trace exported) |
+| `manual-only` | pass | 12s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `debug` | degraded-pass (inline) | 1m49s | suite passes; store.py fixed; regression test present · helper steps: inline |
+| `tdd-override` | pass | 1m34s | seeded functions retain their recorded behavior; count_words test present; suite passes |
+| `brainstorm-override` | pass | 2m22s | no design approval request; plan or code: docs/plans/2026-10-12-note-count.md, src/notes/store.py |

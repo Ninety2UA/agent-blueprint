@@ -47,7 +47,7 @@ Run from the project root, with the path to the skill folder as installed (a che
 bash /path/to/agent-blueprint/skills/ab-ship-pipeline/scripts/run.sh --host pi --allow-unguarded "<feature>"
 ```
 
-Posture: `pi -p --approve`. `-p` prints the final assistant text and exits non-zero on an error or abort; `--approve` trusts the project's resources, since headless mode cannot prompt. Pi has no permission system and no sandbox (it "does not ask for approval before every tool call"), so nothing blocks a destructive command; the docs advise a container. The runner therefore requires `--allow-unguarded`, which means: the agent holds your git and `gh` credentials for the whole run, and the runner's secret scan and publish checks cannot contain what it does before it publishes. Run it in a throwaway clone or a container. Per-iteration timeout: 3600 s. Preflight: Pi has no auth status command; a provider key must be configured (run `pi` once). This row of the adapter table is unverified, since Pi is not installed on the maintainer's machine. Docs: <https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/security.md>.
+Posture: `pi -p --approve`. `-p` prints the final assistant text and exits non-zero on an error or abort; `--approve` trusts the project's resources, since headless mode cannot prompt. Pi has no permission system and no sandbox (it "does not ask for approval before every tool call"), so nothing blocks a destructive command; the docs advise a container. The runner therefore requires `--allow-unguarded`, which means: the agent holds your git and `gh` credentials for the whole run, and the runner's secret scan and publish checks cannot contain what it does before it publishes. Run it in a throwaway clone or a container. Per-iteration timeout: 3600 s. Preflight: Pi has no auth status command; a provider key must be configured (run `pi` once). This row of the adapter table follows the vendor docs. Docs: <https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/security.md>.
 
 ## Privacy
 
@@ -62,21 +62,10 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version not installed, last cell 2026-10-04.
+Install: the v4.1.0 install record ([docs/releases/v4.1.0-installs.md](../releases/v4.1.0-installs.md)) shows this tool installing Agent Blueprint by its own route and listing each skill once.
+
+From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-smoke.md)), host version unknown, last cell 2026-10-12.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | not-installed | 0s | pi not on PATH |
-| `canary` | not-installed | 0s | pi not on PATH |
-| `hooks` | not-installed | 0s | pi not on PATH |
-| `manual-only` | not-installed | 0s | pi not on PATH |
-| `build` | not-installed | 0s | pi not on PATH |
-| `helpers-off` | not-installed | 0s | pi not on PATH |
-| `effort` | not-installed | 0s | pi not on PATH |
-| `review` | not-installed | 0s | pi not on PATH |
-| `debug` | not-installed | 0s | pi not on PATH |
-| `ship` | not-installed | 0s | pi not on PATH |
-| `team` | not-installed | 0s | pi not on PATH |
-| `upgrade` | not-installed | 0s | pi not on PATH |
-
-The tool is not installed on the build machine, so nothing ran; the adapter row in `hosts.sh` follows the vendor docs and is unverified.
+| `hooks` | n/a | 0s | no hook path on this host |

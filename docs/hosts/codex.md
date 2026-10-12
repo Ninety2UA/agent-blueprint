@@ -68,19 +68,15 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version codex-cli 0.160.0, last cell 2026-10-07.
+Install: the v4.1.0 install record ([docs/releases/v4.1.0-installs.md](../releases/v4.1.0-installs.md)) shows this tool installing Agent Blueprint by its own route and listing each skill once.
+
+From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-smoke.md)), host version codex-cli 0.160.0, last cell 2026-10-12.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | pass | 11s | 53 ab- skills once each in 10 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 7s | final message names HARBOR-19 |
-| `hooks` | n/a | 0s | plugin hooks run only after trust on codex; the review cell covers the untrusted path (AE1) |
-| `manual-only` | pass | 9s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
-| `build` | pass | 9m14s | acceptance test passes (deps: tabulate>=0.9); no-commit mode (8 changed files in the tree, commit-msg.md written) · helper steps: helper,helper,helper,helper |
-| `helpers-off` | n/a | 0s | no helper switch on codex |
-| `effort` | n/a | 0s | no per-dispatch effort metadata on codex |
-| `review` | pass | 7m48s | the review reports eval in cli.py as a finding (rated critical) · helper steps: helper |
-| `debug` | pass | 2m08s | suite passes; store.py fixed; regression test present · helper steps: helper |
-| `ship` | pass | 21m32s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch |
-| `team` | pass | 7m17s | ledger done; no-commit mode (4 changed files in the tree, commit-msg.md written); tests pass · helper steps: helper,helper,helper,helper,helper |
-| `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |
+| `discovery` | pass | 23s | 53 ab- skills once each in 11 location(s); the answer names ab-ship-pipeline |
+| `hooks` | pass | 22s | all five handlers wrote codex trace lines |
+| `manual-only` | pass | 12s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `debug` | pass | 2m39s | suite passes; store.py fixed; regression test present · helper steps: helper |
+| `tdd-override` | pass | 1m21s | seeded functions retain their recorded behavior; count_words test present; suite passes |
+| `brainstorm-override` | pass | 9m34s | no design approval request; plan or code: src/notes/store.py, docs/plans/2026-10-12-note-count.md |
