@@ -1,6 +1,7 @@
 ---
-// Four loops: the home page's loops as a 2 by 2 gallery (Figs. 2 to 5), each with its files. The
-// length and frame size in the text come from the files, so a re-render needs no edit here.
+// The loops: every loop the site embeds as a two-column gallery (Figs. 2 onward), each with its files.
+// The number of loops comes from LOOPS, and the lengths and frame size in the text from the files, so
+// a new loop or a re-render needs no edit here.
 import { capitalize } from '../../lib/text.mjs';
 import { mp4Facts } from '../media';
 import { numberWord } from '../number-word';
@@ -9,15 +10,16 @@ import FileTable from './FileTable.astro';
 import { LOOPS } from './kit-data';
 
 const facts = LOOPS.map((l) => mp4Facts(`media/${l.name}.mp4`));
-// the loops are rendered as one set: the first one's length and frame stand for all four
-const { duration, width, height } = facts[0];
-const seconds = numberWord(Math.round(duration));
+// the loops share one frame size, so the first one's stands for all; their lengths can differ
+const { width, height } = facts[0];
+const lengths = [...new Set(facts.map((f) => Math.round(f.duration)))].sort((a, b) => a - b);
+const seconds = lengths.length === 1 ? numberWord(lengths[0]) : `${numberWord(lengths[0])} to ${numberWord(lengths.at(-1)!)}`;
 ---
 <section class="sec kit-sec" id="loops" aria-labelledby="loops-h">
   <div class="wrap">
     <div class="sec-head">
-      <h2 id="loops-h" class="h-sec">Four loops.</h2>
-      <p class="body">{capitalize(seconds)} seconds each, made to repeat without a visible seam. Each one shows a single mechanism from the home page. They are {width} by {height} with a poster frame, drawn to be read at about 560 px wide.</p>
+      <h2 id="loops-h" class="h-sec">{capitalize(numberWord(LOOPS.length))} loops.</h2>
+      <p class="body">{capitalize(seconds)} seconds each, made to repeat without a visible seam. Each one shows a single mechanism from the home page or the docs. They are {width} by {height} with a poster frame, drawn to be read at about 560 px wide.</p>
     </div>
     <div class="loop-gallery">
       {LOOPS.map((l, i) => (

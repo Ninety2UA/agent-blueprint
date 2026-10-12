@@ -1,18 +1,20 @@
 ---
-// Kit: the approved media kit (f/kit.html). The README hero with its Markdown, the film, the four
+// Kit: the approved media kit (f/kit.html). The README hero with its Markdown, the film, the
 // loops, the mark at several sizes on light and dark, and a description to copy. File facts come
 // from the files at build time; counts and the version from getSiteData().
 import FilmPlayer from '../components/FilmPlayer.astro';
 import Blurbs from '../components/kit/Blurbs.astro';
 import FileTable from '../components/kit/FileTable.astro';
+import { LOOPS } from '../components/kit/kit-data';
 import KitHead from '../components/kit/KitHead.astro';
 import Loops from '../components/kit/Loops.astro';
 import MarkSheet from '../components/kit/MarkSheet.astro';
 import ReadmeHeader from '../components/kit/ReadmeHeader.astro';
+import { numberWord } from '../components/number-word';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import '../styles/kit.css';
 
-const description = 'Media kit for Agent Blueprint: the README header, the film, four loops, the mark and a short description to copy.';
+const description = `Media kit for Agent Blueprint: the README header, the film, ${numberWord(LOOPS.length)} loops, the mark and a short description to copy.`;
 ---
 <BaseLayout title="Media kit · Agent Blueprint" description={description}>
   <div data-pagefind-body data-pagefind-filter="section:Pages">
