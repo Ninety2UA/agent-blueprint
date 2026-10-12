@@ -4,7 +4,7 @@ Loaded on demand from SKILL.md when the spike compares approaches, tests feasibi
 
 ## A/B Comparison Spike
 
-Comparing two approaches. Fix the criteria before building anything, then build one throwaway artifact per option to the same depth, so neither wins on polish. Score both against those criteria. The artifacts are deleted; the matrix and the reason go into the report and the plan.
+Comparing two approaches. Fix the criteria before building anything, then build one throwaway artifact per option to the same depth, so neither wins on polish. Score both against those criteria. Only this task's disposable model-written artifacts are deleted, unless the user asks to keep them; the matrix and the reason go into the report and the plan.
 
 ```markdown
 ## Spike: PostgreSQL vs. SQLite for local-first sync

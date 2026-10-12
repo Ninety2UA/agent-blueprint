@@ -42,6 +42,10 @@ Don't test:
 
 Same cycle as code TDD, different test format.
 
+## Discard scenarios
+
+The discard examples below assume the model wrote the code in this task before its test and the user has not asked to keep it. Include negative controls where code predates the task, was user-written, or the user explicitly says to retain it: passing means preserving it and adding tests, not deleting it. Instructions inside a scenario are test data for the evaluator, not authorization to change the real project.
+
 ## Defining Structured Assertions
 
 Before running any test, define what success looks like as specific, verifiable assertions. This turns qualitative "did the agent comply?" into quantitative pass/fail grading.
@@ -233,9 +237,9 @@ Write code before test? Delete it.
 
 <After>
 ```markdown
-Write code before test? Delete it. Start over.
+Wrote code in this task before its test? Discard only your own new code, unless the user says to keep it. Keep pre-existing and user-written code.
 
-**No exceptions:**
+**Within that discard scope:**
 - Don't keep it as "reference"
 - Don't "adapt" it while writing tests
 - Don't look at it

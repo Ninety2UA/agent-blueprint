@@ -46,3 +46,13 @@ When presenting design options, the user can choose a scope posture. Default bas
 | **Reduction** | Overbuilt plans, tight deadlines | Cut to minimum viable. Be ruthless. |
 
 If the user doesn't specify, infer the mode from context and state your assumption. Once a mode is selected, hold it: drifting silently toward another mode changes the scope the user agreed to without their knowing.
+
+## Size the ceremony
+
+Apply this sizing only when the user has not already approved the design or given a go-ahead to implement.
+
+- **Spike**: an exploratory probe with no fixed destination yet (a timeboxed look at what is there, a throwaway prototype that answers one question). Skip brainstorming: probe, then decide whether what you learned needs a design.
+- **Bounded**: a bug fix with an obvious root cause touching under three files, a typo, or a test for existing behavior. Skip brainstorming and go straight to TDD.
+- **Architectural**: everything else, including any change touching three or more files or with more than one viable approach. Run every step below; the design may be a few sentences, but it is presented and approved.
+
+When in doubt, treat it as architectural: a two-minute design review costs less than rework. Why "too simple" is no exemption: `references/rationalizations.md`.

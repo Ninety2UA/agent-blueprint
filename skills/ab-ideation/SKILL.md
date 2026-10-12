@@ -72,7 +72,7 @@ Write or update the ideation doc (`references/ideation-formats.md` § Ideation d
 
 Options: (1) take a chosen idea forward: mark it `Explored` in the doc, then invoke the ab-brainstorming skill with the idea as its seed, since a chosen idea still needs a design before a plan; (2) refine: add angles (back to Phase 2), raise the bar (back to Phase 3) or dig into one idea; (3) end the session and commit the doc, unless the user would rather leave it uncommitted. Default when nobody answers: (3), because choosing which idea to pursue is the user's call.
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 Commit message: `docs: ideation — <topic>`.
 

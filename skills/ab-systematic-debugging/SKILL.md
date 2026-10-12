@@ -22,7 +22,7 @@ A finished run names the root cause with evidence, fixes it at the source, and a
 
 - **Syntax/Type** (compile error, missing import, type mismatch): fix mechanically in Phase 4.
 - **Environment** (fails locally but not in CI, wrong runtime, missing env var): Phase 1 only, then fix.
-- **Flaky test** (passes sometimes; confirm with 3 re-runs): quarantine it (mark flaky, skip, continue); fixing flakiness here burns iterations and never converges.
+- **Flaky test** (confirm with 3 re-runs): follow `references/classification.md` § Flaky-test handling; a request to fix flakiness is not permission to skip the test.
 - **Logic, Design, Performance**: all four phases; a design error likely needs the user (Phase 4 step 5).
 
 Signs per class: `references/classification.md` § Classification table.
@@ -63,7 +63,7 @@ Find similar working code, read any reference implementation completely, and lis
 4. **If the fix fails**: under 3 tries, back to Phase 1 with what you learned; at 3, step 5.
 5. **After 3 failed fixes, question the architecture.** When each fix exposes new coupling or symptoms elsewhere, or needs a large refactor, the design is wrong, not the hypothesis. Ask before any further fix.
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 It applies to the commit in step 3.
 

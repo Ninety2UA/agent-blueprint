@@ -19,7 +19,7 @@ Profile-driven performance investigation. Measure before optimizing, form hypoth
 
 ## The Iron Law
 
-**Hard gate.** Optimize only a bottleneck that profiling data shows, and measure before you change anything, even when the user asks for a specific fix such as an index or a cache. Intuition about where time goes is usually wrong, and an unmeasured change can make things slower while looking like progress. When the user's fix is the right one, the data will say so.
+**Hard gate.** Optimize only a bottleneck that profiling data shows, and measure before you change anything, even when the user asks for a specific fix such as an index or a cache. Intuition about where time goes is usually wrong, and an unmeasured change can make things slower while looking like progress. When the user's fix is the right one, the data will say so. If the user's own messages explicitly ask to skip profiling or keep a specific change despite the measurement, honor that instruction and report the missing or contrary evidence; do not claim an unmeasured speedup. This exception also applies to Step 4's revert and the reverted-attempt ledger.
 
 ## Process
 

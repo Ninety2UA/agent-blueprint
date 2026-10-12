@@ -90,7 +90,7 @@ If `docs/context/STATE.md` exists, use the `ab-session-continuity` skill to reco
 
 Stage `BACKLOG.md` and `docs/` and commit with the message in `references/step-checklists.md` § Step 16 commit messages.
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 ## Step 17: Final Verification
 

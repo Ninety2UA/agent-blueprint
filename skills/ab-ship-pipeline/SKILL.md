@@ -39,7 +39,7 @@ Ship only a feature: route the request with `references/stages.md` § Intake, th
 
 ### Stage 1: Requirements (Auto-Discuss)
 
-Lock clear requirements as decisions; where they are ambiguous, lock reasonable assumptions from `docs/context/CONVENTIONS.md` and `docs/context/GOALS.md` instead of asking. Other decisions follow the ab-executing-plans skill's decision boundary, except that a must-ask category from the project instructions file is decided conservatively and locked the same way. Append decisions to `docs/context/DECISIONS.md` (append, don't overwrite) and score the requirements with `references/stages.md` § Ambiguity gate.
+Lock clear requirements as decisions; where they are ambiguous, lock reasonable assumptions from `docs/context/CONVENTIONS.md` and `docs/context/GOALS.md` instead of asking. Other decisions follow the ab-executing-plans decision boundary: conservative defaults never authorize destruction, history rewriting or an unrequested push. Apply `references/stages.md` § Authorization. Append decisions to `docs/context/DECISIONS.md` (append, don't overwrite) and score the requirements with `references/stages.md` § Ambiguity gate.
 
 ### Stage 2: Plan
 
@@ -58,7 +58,7 @@ Invoke the ab-orchestrate skill with the plan file, the `--no-review` flag and a
 
 ### Stage 5: Iterative Review
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 Invoke the ab-iterative-refinement skill (with `--swarm`, alongside browser testing: `references/modes-and-reports.md` § Swarm-mode review), passing `max_iterations` (`--iterations`, default 3), `convergence` (`--convergence`, default `fast`), `scope` (this branch against its merge base with the default branch, or in no-commit mode the working tree) and earlier rounds' Skip and Defer decisions, so declined findings stay declined (ab-iterative-refinement Step 2a).
 

@@ -4,6 +4,8 @@ Loaded on demand from SKILL.md when you catch yourself reading without acting, o
 
 ## Analysis Paralysis Guard
 
+This guard applies to an implementation loop. If the user explicitly requested read-only investigation or an audit before edits, finish that work first: report what the next read will resolve and continue. Never mutate a file merely to reset the counter or override that instruction.
+
 If you make five or more read-only operations in a row (reading files, searching) without an action that changes state (an edit, a new file, a command that modifies something), stop: you are in analysis paralysis. Do one of:
 
 1. **Write code** — you have enough information, start implementing

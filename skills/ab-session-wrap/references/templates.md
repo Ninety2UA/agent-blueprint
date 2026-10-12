@@ -31,12 +31,7 @@ git diff --name-only | grep -v -E '\.(md|json)$' | head -5
 git status
 ```
 
-If this wrap modified a non-documentation file, revert that file:
-```bash
-git checkout -- [file]
-```
-
-Revert only files the wrap itself changed. Uncommitted work from earlier in the session belongs to the user: list it under uncommitted changes in Session Continuity instead of discarding it.
+If this wrap modified a non-documentation file, undo only the wrap's own edits. Do not restore the whole file from Git: it may also contain earlier uncommitted work. Preserve that work and list it in Session Continuity; if the edits cannot be separated, keep the file and report the overlap instead of discarding anything.
 
 ## Step 17 report
 
@@ -64,7 +59,7 @@ ls -la *.tmp *.bak *~ 2>/dev/null
 **Actions:**
 - If feature worktrees exist and the branch was merged, remove them: `git worktree remove <path>`
 - If worktrees are still in progress, document them in Session Continuity ("worktree at .worktrees/feat-auth still active")
-- Remove any temp/backup files that shouldn't be committed
+- Remove only disposable temp/backup files this skill created. Keep pre-existing or user-owned files unless the user's own messages request or confirm their removal; a filename ending in `.tmp` or `.bak` is not consent. With no answer, list and keep them.
 - If completed plans should be archived, add a completion note at the top rather than moving/deleting them
 
 ## Step 6 status tables

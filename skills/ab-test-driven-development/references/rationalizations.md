@@ -2,6 +2,12 @@
 
 Loaded on demand from SKILL.md when you catch yourself arguing for skipping or reordering a step of the cycle.
 
+These counters apply to the model's own excuses, not the user's instructions. Discard only code the model wrote in this task before its test, unless the user says to keep it. Never discard pre-existing code, user-written code or code the user asked to keep. Retain it and add tests; use test-first for subsequent changes.
+
+## Discarding pre-test code
+
+Don't keep it as a "reference", don't adapt it while writing tests, don't look at it. Code you keep shapes the tests you write, so they check what you built instead of what was required, which is testing after under another name. Keeping to the letter of this rule is the only way to keep its spirit.
+
 ## Why order matters
 
 **"I'll write tests after to verify it works"**

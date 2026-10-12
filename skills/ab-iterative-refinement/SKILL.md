@@ -29,7 +29,7 @@ Only P3s left in fast mode means converged: they are suggestions, not blockers. 
 
 Take the `scope` to review (a diff, a branch or specific files; ab-ship-pipeline passes the branch against main) and record the start with `references/reports.md` § Start.
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 Here each 2a review covers the working tree and untracked files against the merge base, which holds the earlier iterations' uncommitted fixes, and 2f records its message instead of committing.
 

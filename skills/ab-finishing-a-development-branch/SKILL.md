@@ -51,7 +51,7 @@ Prompt: `references/agents/code-reviewer.md`, in a fresh helper. Inputs: the req
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-Offer exactly the three below, without explanation: a structured choice gets a clear answer where "what now?" does not. When Step 3 blocked, mark 1 and 2 `(blocked by plan audit)` and accept only 3. Default when nobody answers: 3, keep the branch; 2 when the calling pipeline asked for a PR and the audit did not block.
+If the user's own messages already chose merge, PR or keep, carry out that choice after the gates pass; do not ask again. Otherwise offer the three below: a structured choice gets a clear answer where "what now?" does not. When Step 3 blocked, mark 1 and 2 `(blocked by plan audit)` and accept only 3. Default when nobody answers: 3, keep the branch; 2 when the calling pipeline asked for a PR and the audit did not block.
 
 ```
 Implementation complete. What would you like to do?
@@ -64,7 +64,7 @@ Discarding the branch is not on the menu: it deletes commits and a worktree for 
 
 ### Step 5: Execute Choice
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 A merge is a commit, so in this mode Option 1 cannot run: say so and keep the branch (Option 3). Option 2 leaves uncommitted work and its message as above.
 

@@ -11,7 +11,7 @@ A worktree is a second checkout of the same repository on its own branch, so wor
 
 ## Directory Selection Process
 
-Follow this priority order: an existing directory, then the instructions file's preference, then ask. Guessing a location creates inconsistency and can break the project's conventions.
+Use a location the user explicitly named in their own messages first. Otherwise follow this priority order: an existing directory, then the instructions file's preference, then ask. Guessing a location creates inconsistency and can break the project's conventions.
 
 ### 1. Check Existing Directories
 
@@ -43,18 +43,18 @@ Options: `.worktrees/` (project-local, hidden) or `~/.agent-blueprint/worktrees/
 
 ### For Project-Local Directories (.worktrees or worktrees)
 
-Verify the directory is ignored before creating the worktree, because an unignored worktree gets its whole contents tracked and pollutes `git status`:
+Set `LOCATION` to the chosen directory, expanding a home path first. For any project-local location, verify that directory is ignored before creating the worktree, because an unignored worktree gets its whole contents tracked and pollutes `git status`:
 
 ```bash
 # Check if directory is ignored (respects local, global, and system gitignore)
-git check-ignore -q .worktrees 2>/dev/null || git check-ignore -q worktrees 2>/dev/null
+git check-ignore -q -- "$LOCATION"
 ```
 
 **If not ignored**, fix it before going on: add the directory to `.gitignore`, commit that change, then create the worktree.
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
-`git worktree add` writes to `.git` as well, so in this mode create no worktree: say so and hand back, and the caller works in the current checkout with disjoint file ownership, as the ab-orchestrate skill does.
+`git worktree add` writes to `.git` as well. If those writes are disallowed, create no worktree: say so and hand back, and the caller uses the current checkout with disjoint file ownership. A user instruction not to commit alone does not prohibit creating a worktree.
 
 ### For Global Directory (~/.agent-blueprint/worktrees)
 
@@ -71,11 +71,9 @@ project=$(basename "$(git rev-parse --show-toplevel)")
 ### 2. Create Worktree
 
 ```bash
-# Determine full path ($HOME, since a quoted ~ is not expanded)
-case "$LOCATION" in
-  .worktrees|worktrees) path="$LOCATION/$BRANCH_NAME" ;;
-  *) path="$HOME/.agent-blueprint/worktrees/$project/$BRANCH_NAME" ;;
-esac
+# LOCATION is the selected directory, with a home path already expanded.
+# For the global default: LOCATION="$HOME/.agent-blueprint/worktrees/$project"
+path="$LOCATION/$BRANCH_NAME"
 
 # Create worktree with new branch
 git worktree add "$path" -b "$BRANCH_NAME"

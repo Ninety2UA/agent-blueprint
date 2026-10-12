@@ -21,7 +21,7 @@ Read the plan. Each task needs a description, a completion check and a checkbox 
 
 **Tracking tasks.** The plan file's checkboxes are the record of progress: tick each one when its task is done and verified, so another session or another tool can continue from there. A host task list, if you have one, may mirror them, but it never replaces them.
 
-**Pre-flight danger scan (advisory):** before the first task, run the scan in `references/loop-details.md` § Pre-flight danger scan. It routes each hit through the ab-executing-plans decision boundary and never stops the loop by itself.
+**Pre-flight danger scan (advisory):** before the first task, run the scan in `references/loop-details.md` § Pre-flight danger scan. It routes each hit through the ab-executing-plans decision boundary; missing authority for destruction or publishing stops the run.
 
 ## Step 2: Run the loop
 
@@ -29,7 +29,7 @@ Each pass (diagram: `references/loop-details.md` § Loop diagram): **pick** the 
 
 **On success,** tick its checkbox, log "Task N complete. [N/total] done.", and commit, so a later failure can return to the last good state without losing earlier work. An unticked task gets attempted again.
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 **On failure,** classify the error. Transient (rate limit, timeout, flaky test): retry with backoff. Fixable (an implementation bug): debug with the ab-systematic-debugging skill, fix, retry. Fatal (missing dependency, wrong architecture, unclear requirement): stop and escalate (Step 4). An unclear requirement is Fatal only when the ab-executing-plans decision boundary says to stop (a must-ask category in the project instructions file); anything else it lets an autonomous run decide is decided, recorded, and continued.
 

@@ -44,7 +44,7 @@ Options: 1. All critical and high gaps. 2. Specific gaps, named by their numbers
 
 ## Step 3: Generate Tests
 
-For each approved gap, write its test with the ab-test-driven-development skill, starting from the helper's draft and following the existing test conventions. Delete any draft the helper left on disk for a gap the user did not pick, so Step 5 commits only approved tests.
+For each approved gap, write its test with the ab-test-driven-development skill, starting from the helper's draft and following the existing test conventions. For a gap the user did not pick, remove only the helper's new draft or its added hunks, preserving pre-existing and user-written tests. Never delete an existing test file to remove a draft; when the additions cannot be separated, keep the file and report it, so Step 5 commits only approved tests.
 
 ## Step 4: Verify
 
@@ -59,6 +59,6 @@ All tests must pass, both new and existing, because the commit in Step 5 should 
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 Commit only the new and extended test files, in the project's commit format (see `docs/context/CONVENTIONS.md`), for example `test(auth): cover token expiry and refresh errors`. Then report the gaps filled, the gaps skipped or escalated by the helper, and any bugs found in Step 4.

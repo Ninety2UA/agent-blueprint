@@ -33,7 +33,7 @@ git merge-base --is-ancestor "$BASE_SHA" "$HEAD_SHA" && [ -n "$(git rev-list "$B
 
 Use the merge base for a branch, not bare `origin/main`: once main moves past your branch point, its new files show up as phantom deletions in the diff. If the guard refuses, fix the range; an empty or unrelated diff produces a review of nothing.
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 Here that means: set `BASE_SHA=$(git merge-base origin/main HEAD)` and `HEAD_SHA` to `working tree`, and skip the guard, since the changes have no commits yet. The request's Range section then has the reviewer diff the working tree against the base and read every untracked file, so nothing the session wrote is left out.
 

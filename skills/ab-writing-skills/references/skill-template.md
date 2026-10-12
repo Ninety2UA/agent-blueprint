@@ -92,5 +92,5 @@ Concrete results
 
 **Deployment:**
 - [ ] Portability gate, snippet sync check and collision gate pass (in the Agent Blueprint repository)
-- [ ] Commit skill to git and push to your fork (if configured)
+- [ ] Commit when authorized by the workflow and user instructions. Push to a configured fork only if the user's own messages request or confirm publishing; otherwise leave the change local.
 - [ ] Consider contributing back via PR (if broadly useful)

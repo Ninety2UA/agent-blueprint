@@ -106,8 +106,8 @@ Save the report to `docs/research/spikes/YYYY-MM-DD-[topic].md` on the branch yo
 
 ### Step 5: Clean Up
 
-1. **Don't merge spike code** — it's throwaway by definition
-2. **Delete the spike branch** (or archive it with a `spike/` prefix)
+1. **Keep spike code out of production by default.** If the user's own messages ask to keep or promote it, retain it; promotion still needs the normal tests and review.
+2. **Delete only this task's disposable spike branch** (or archive it with a `spike/` prefix). Preserve pre-existing branches, user-written work and anything the user asked to keep; deleting those needs their request or confirmation.
 3. **Keep the report** — the knowledge is the deliverable
 4. **Create implementation tasks** — if the spike was successful, create plan tasks based on what you learned
 

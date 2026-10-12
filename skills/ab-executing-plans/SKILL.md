@@ -35,7 +35,7 @@ Here they live in `.agent-blueprint/plans/<plan-basename>.progress.md`, one box 
 
 A batch is the next three tasks. Work in an isolated workspace (ab-using-git-worktrees); on main or master, branch first unless the user said to work there. For each task, from the first unticked box: follow its steps exactly, run its verifications, commit, tick the box (`- [ ]` → `- [x]`), and record interpretive choices (`references/assumption-tracking.md`).
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 A task that touches a framework or library API (forms, routing, data fetching, hooks, ORM queries, config) uses the ab-source-driven-development skill: detect the version, fetch the docs page, follow its pattern, cite the URL.
 
@@ -55,13 +55,13 @@ Apply the feedback and run the next batch until every box is ticked. Return to S
 
 ## Decision Boundary
 
-A decision in a must-ask category of the project instructions (new tables or schema changes, a framework switch, a public API contract, auth logic, new environment variables) stops here for the user. Outside those, a choice you can detect and roll back is decided, recorded under `### Assumptions` and continued; the rest is asked. Claims that something is impossible or blocked need evidence. The full rule, which other skills cite, and examples: `references/decision-boundary.md`.
+An approval already given in the user's own messages satisfies that action's ask-first rule. Destructive actions and pushes follow `references/decision-boundary.md` § The rule. A decision in an unapproved must-ask category of the project instructions (new tables or schema changes, a framework switch, a public API contract, auth logic, new environment variables) stops here for the user. Outside those, a choice you can detect and roll back is decided, recorded under `### Assumptions` and continued; the rest is asked. Claims that something is impossible or blocked need evidence. The full rule, which other skills cite, and examples: `references/decision-boundary.md`.
 
 Fix what the current task caused or needs; everything else goes to `BACKLOG.md`. After three failed fixes on one issue, list it under `### Deferred Issues` in the batch report and move on (`references/deviations.md`).
 
 ## When to stop and ask
 
-Stop at a blocker (a missing dependency, a failing test, an unclear instruction), a gap that keeps the plan from starting, repeated verification failures, or a must-ask decision; a guess builds what nobody asked for. After five read-only steps in a row, act (`references/staying-on-course.md`).
+Stop at a blocker (a missing dependency, a failing test, an unclear instruction), a gap that keeps the plan from starting, repeated verification failures, or a must-ask decision; a guess builds what nobody asked for. After five read-only steps, apply the scoped guard in `references/staying-on-course.md`.
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 

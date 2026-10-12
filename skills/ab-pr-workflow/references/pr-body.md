@@ -50,3 +50,11 @@ Run it on the body file before `gh pr create`, `gh pr edit` or any push that car
 ```bash
 grep -nE 'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|(^|[^A-Za-z0-9_-])sk-[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|/(Users|home)/[A-Za-z0-9._-]+' .agent-blueprint/run/pr-body.md
 ```
+
+## Pre-flight diff
+
+```bash
+# Review your own diff (main stands for the default branch)
+git diff main...HEAD --stat
+git diff main...HEAD
+```

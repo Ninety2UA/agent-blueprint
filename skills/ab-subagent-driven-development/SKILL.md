@@ -31,7 +31,7 @@ Here they live in the progress file `.agent-blueprint/plans/<plan-basename>.prog
 
 One task at a time, since two implementers would edit the same files. Record BASE, the commit the task starts from, and keep it through fix rounds so each re-review reads the whole task. The implementer commits; reviewers read BASE..HEAD.
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 In that mode, tell the implementer: it reports its commit message instead of committing, and you add the message there. Reviewers get `working tree` as HEAD, and the implementer's list of changed files marks the task's part.
 
