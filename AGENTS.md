@@ -34,13 +34,13 @@ Run these before you push; CI runs the same set on every pull request.
 
 | Command | Checks |
 |---------|--------|
-| `bash scripts/check-drift.sh` | Count claims in the manifests, the README, `AGENTS.md` and the README hero's source in `site/motion/readme-hero/` match the tree. The rest of `site/motion/` and all of `site/src/` state no literal skill, helper or hook count, every skill sits in exactly one README phase table, and README.md, `site/src/` and `site/motion/` say nothing about adopting ideas from other projects or analyzing them |
+| `bash scripts/check-drift.sh` | Count claims in the manifests, the README, `AGENTS.md` and the README hero's source in `site/motion/readme-hero/` match the tree; Codex's description counts command handlers in `hooks/codex.json`. The rest of `site/motion/` and all of `site/src/` state no literal skill, helper or hook count, every skill sits in exactly one README phase table, and README.md, `site/src/` and `site/motion/` say nothing about adopting ideas from other projects or analyzing them |
 | `npx astro check` (in `site/`) | Type errors in the site's `.astro` and TypeScript files, under Astro's strict settings. Run it after `npm ci` in `site/` |
 | `python3 scripts/check-site.py site/dist` | The built site against the tree: one page per skill, each helper prompt once on the Skills page, the counts and version the pages state, no `SKILL.md` in the build, the adoption denylist, internal links, and a title, description and canonical link on every page. Build the site first with `npm ci` and `npm run build` in `site/`, which needs Node 22.12 or later |
 | `node --test 'site/test/**/*.test.mjs'` | The site's data modules against the tree, such as the README, SKILL.md, release and tutorial parsers, each section's page order and llms.txt. On the built pages: a title and description of their own, the sitemap, the Changelog and Kit pages, islands that hydrate only on first interaction, and no script or stylesheet from another origin. Run it from the repository root with the glob quoted, after the site build: without `site/dist` the built-page tests skip |
 | `python3 scripts/check-skill-collisions.py` | Frontmatter YAML, `references/` pointers and § headings resolve, no near-duplicate descriptions |
-| `python3 scripts/check-portability.py` | The portability rules for all eight hosts (see the ab-writing-skills skill's `references/portable-authoring.md`) |
-| `python3 scripts/check-manifests.py` | Every host manifest and every skill's `metadata.version` agree with the release |
+| `python3 scripts/check-portability.py` | The portability rules for all eight hosts, including every skill's Codex display fields, allowed metadata keys and unique display name (see the ab-writing-skills skill's `references/portable-authoring.md`) |
+| `python3 scripts/check-manifests.py` | Every host manifest and every skill's `metadata.version` agree with the release; interface assets resolve to files inside the repository and Codex categories use supported values |
 | `python3 scripts/sync-shared.py --check` | Snippet and shared-file copies match their owners |
 | `python3 -m unittest discover -s tests/gates` | The gate and skill-contract tests |
 | `claude plugin validate --strict .claude-plugin/plugin.json` | The plugin manifest, with Claude Code's own validator |

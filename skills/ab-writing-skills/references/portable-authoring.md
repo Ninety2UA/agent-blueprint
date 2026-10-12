@@ -20,6 +20,7 @@ How to write a skill that loads and runs in any of the eight tools Agent Bluepri
 - [name] `ab-` plus lowercase letters, digits and single hyphens, at most 64 characters, equal to the folder name. The prefix keeps the skills apart from other packs in the shared skill folders most tools scan.
 - [description] 1 to 1,024 characters (Codex truncates the catalog there). Lead with what the skill does and how, then "Use when ..." with the situations that call for it. Tools such as Codex and Amp pick a skill from a short catalog line, so the mechanism has to come first. Keep it distinct from sibling skills; the collision gate fails near-duplicates.
 - [manual-only] A skill only the user should start carries `disable-model-invocation: true` and `agents/openai.yaml` with `policy.allow_implicit_invocation: false`, the Codex equivalent. Several hosts also hide a manual-only skill from other skills, so no skill may name one. Amp and Hermes cannot enforce manual-only; keep its description free of broad trigger words.
+- [openai-metadata] Every skill has `agents/openai.yaml` with a unique, nonempty `interface.display_name` of at most 30 characters and an `interface.short_description` of 25-60 characters, so Codex's picker can describe it. Only those display fields and the optional boolean `policy.allow_implicit_invocation` are allowed; unknown keys can invalidate metadata. Use two-level YAML mappings with two-space field indentation and single-line strings; keep `allow_implicit_invocation: false` first under `policy:` for manual-only skills.
 
 ## Body
 

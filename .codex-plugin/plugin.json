@@ -27,6 +27,11 @@
   ],
   "skills": "./skills/",
   "hooks": "./hooks/codex.json",
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./skills/ab-project-start/SKILL.md"
+    }
+  },
   "interface": {
     "displayName": "Agent Blueprint",
     "shortDescription": "Take an idea to a reviewed PR",

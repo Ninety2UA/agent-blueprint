@@ -108,6 +108,10 @@ class Repo:
         self.root = tempfile.mkdtemp(prefix="ab-gate-")
         copy_fixture_skill(os.path.join(FIXTURES, "skill"), os.path.join(self.root, "skills", "ab-fixture"))
         copy_fixture_skill(os.path.join(FIXTURES, "helper"), os.path.join(self.root, "skills", "ab-helper"))
+        for name in ("ab-fixture", "ab-helper"):
+            self.write("skills/%s/agents/openai.yaml" % name,
+                       'interface:\n  display_name: "%s"\n'
+                       '  short_description: "Check a temporary gate test fixture"\n' % name)
 
     def path(self, rel_path):
         return os.path.join(self.root, rel_path)
