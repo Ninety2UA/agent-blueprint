@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """Scaffold a project from this skill's assets/ without overwriting anything.
 
-Usage: python3 scaffold.py <project-dir> [--dry-run]
+Usage: python3 scaffold.py [project-dir] [--dry-run]
+
+Without a folder argument, the target is the current directory: home and /
+are refused, and a non-empty folder outside a git work tree needs confirmation.
+Naming a folder explicitly (including .) bypasses those guards.
+Exit: 0 success, 1 refusal/error, 2 bad usage, 3 needs confirmation (dry run only).
 
 - Files the project lacks are copied from assets/.
 - AGENTS.md that exists gains the template's sections it does not have yet;
@@ -23,6 +28,7 @@ Standard library only.
 import os
 import re
 import shutil
+import subprocess
 import sys
 
 ASSETS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
@@ -118,24 +124,52 @@ def apply(project, actions):
                 fh.write(payload or "")
 
 
+def git_top_level(project):
+    """Return the enclosing work tree's root, including for a not-yet-created target."""
+    directory = project
+    while not os.path.exists(directory):
+        directory = os.path.dirname(directory)
+    try:
+        inside = subprocess.run(["git", "-C", directory, "rev-parse", "--is-inside-work-tree"],
+                                capture_output=True, text=True)
+        if inside.returncode != 0 or inside.stdout.strip() != "true":
+            return None
+        top = subprocess.run(["git", "-C", directory, "rev-parse", "--show-toplevel"],
+                             capture_output=True, text=True)
+    except FileNotFoundError:
+        return None  # Git is not installed: treat the folder as outside a work tree.
+    return os.path.realpath(top.stdout.strip()) if top.returncode == 0 else None
+
+
 def main(argv):
     args = [a for a in argv if a != "--dry-run"]
-    if len(args) != 1:
+    if len(args) > 1:
         print(__doc__.strip().splitlines()[2], file=sys.stderr)
         return 2
-    project = os.path.abspath(args[0])
+    project = os.path.realpath(args[0] if args else os.getcwd())
+    name_folder = "name a folder explicitly: python3 scaffold.py /path/to/project"
+    if not args and project in (os.path.realpath(os.path.expanduser("~")), os.path.realpath(os.sep)):
+        print("scaffold: refusing home folder or filesystem root (%s); %s" % (project, name_folder),
+              file=sys.stderr)
+        return 1
     if not os.path.isdir(ASSETS):
         print("scaffold: no assets folder at %s" % ASSETS, file=sys.stderr)
         return 1
+    top = git_top_level(project)
+    if top and top != project:
+        print("scaffold: enclosing git top level: %s" % top)
+    needs_confirmation = not args and top is None and bool(os.listdir(project))
+    if needs_confirmation:
+        print("scaffold: dry run for %s; needs confirmation; %s" % (project, name_folder))
     actions = plan(project)
-    if "--dry-run" not in argv:
+    if "--dry-run" not in argv and not needs_confirmation:
         os.makedirs(project, exist_ok=True)
         apply(project, actions)
     for action, rel, _ in actions:
         print("%-8s %s" % (action, rel))
     counts = {a: sum(1 for x in actions if x[0] == a) for a in ("created", "merged", "kept")}
     print("scaffold: %(created)d created, %(merged)d merged, %(kept)d kept" % counts)
-    return 0
+    return 3 if needs_confirmation else 0
 
 
 if __name__ == "__main__":

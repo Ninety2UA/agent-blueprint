@@ -1,7 +1,7 @@
 ---
 name: ab-project-start
 description: "Sets up a project for Agent Blueprint: scaffolds AGENTS.md, a one-line CLAUDE.md that imports it, docs/context/ and BACKLOG.md by merging into what exists (never overwriting), then fills in conventions, goals and status from the codebase and a short conversation. Use when starting a new project or adopting the blueprint in an existing one, when the user asks to initialize, set up or bootstrap, or when docs/context/ is missing. Not for a status update (ab-project-status) or resuming earlier work (ab-resume-session)."
-argument-hint: "[project directory, default: the current one]"
+argument-hint: "[project directory]"
 ---
 
 # Project Start
@@ -14,15 +14,15 @@ Keep it to two or three exchanges with the user: learn everything you can from t
 
 **Bundled scripts.** Paths such as `scripts/run.sh` are relative to this skill's own folder, the one holding its SKILL.md, not to the project. Run a script through its interpreter (`bash` for `.sh`; `python3`, or `python` if that is missing, for `.py`) instead of relying on its executable bit, and if the interpreter is missing, say so and stop that step.
 
-Run `scripts/scaffold.py <project directory>` through `python3` (`.` when the user named none). It copies this skill's `assets/` into the project without overwriting anything:
+Run `scripts/scaffold.py` through `python3`; pass a folder argument only when the user named one. Otherwise omit the folder argument. Without one, it refuses home and `/`; a non-empty folder outside any git work tree gets a dry run and exit 3 without writes. Repo subfolders report their git top level.
 
-- files the project lacks are created;
-- an existing `AGENTS.md` keeps every section it has and gains only the template sections it lacks;
-- an existing `CLAUDE.md` keeps its content and gains an `@AGENTS.md` line at the top, so Claude Code loads both (a `CLAUDE.md` that is a symlink to `AGENTS.md` is left alone);
-- `.gitignore` files gain only the lines they are missing;
-- a project with nothing in it but `.git` also gets `src/`, `tests/` and `infra/`.
+**Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-It prints one line per file (`created`, `merged` or `kept`). Pass `--dry-run` first when the user wants to see the changes before they happen. If no Python interpreter is available, copy the files from `assets/` yourself by the same rules: the dotfiles are stored there without their dot (`assets/gitignore` becomes `.gitignore`, `assets/agent-blueprint/gitignore` becomes `.agent-blueprint/.gitignore`).
+On exit 3, show the dry run and ask for confirmation; after a yes, rerun with the folder named. Default when nobody answers: stop and say how to name a folder. Other non-zero exits: stop and show the error.
+
+It copies `assets/` without overwriting: missing files are created; `AGENTS.md` gains only missing sections; `CLAUDE.md` gains `@AGENTS.md` so Claude Code loads both, keeping its content (a symlink to `AGENTS.md` is left alone); `.gitignore` files gain missing lines. Empty projects (or only `.git`) also get `src/`, `tests/` and `infra/`. It prints `created`, `merged` or `kept` per file. Use `--dry-run` for a preview.
+
+If no Python interpreter is available, guard before copying: with no folder named, refuse home and `/` (resolve symlinks), and require the same dry-run confirmation for a non-empty folder outside any git work tree. Use the unattended default above. Copy `assets/` by the same merge rules; dotfiles omit their dot (`assets/gitignore` becomes `.gitignore`, `assets/agent-blueprint/gitignore` becomes `.agent-blueprint/.gitignore`).
 
 The ship runner is part of the ab-ship-pipeline skill, which prints its command; nothing needs copying for it.
 
@@ -65,7 +65,7 @@ Fill in `docs/context/STATUS.md`: today's date, the current state (what is in fl
 
 If there is no `README.md`, create a short one; if it still holds template text, fill in the name, description, prerequisites and the setup, dev, test and lint commands. Keep its architecture part short with a link to `docs/decisions/`.
 
-If the project has no `.git`, run `git init` and commit the scaffold, naming the files you created: `chore: initialize project with Agent Blueprint`. If git already exists, commit nothing; report what changed so the user can review it first, since the scaffold touched files they own.
+In the project folder, run `git rev-parse --is-inside-work-tree`. Only when that check fails, run `git init` and commit the scaffold, naming the files you created: `chore: initialize project with Agent Blueprint`. Inside an existing work tree, commit nothing; report what changed so the user can review it first, since the scaffold touched files they own.
 
 ## Step 7: Summary
 
