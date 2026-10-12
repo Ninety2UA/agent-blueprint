@@ -85,7 +85,7 @@ class NoCommitScope(unittest.TestCase):
         snippet = text.split("**No-commit mode.**", 1)[1].split("\n\n", 1)[0]
         self.assertIn("If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits", snippet)
         self.assertIn("With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session", snippet)
-        self.assertIn("unless the user said not to commit: work stays uncommitted for them", snippet)
+        self.assertIn("the ship runner commits after the session, so it is not for work the user wants uncommitted", snippet)
         self.assertNotIn("only if the user authorized it", snippet)
         self.assertIn("Reviews use the working tree and untracked files against the merge base instead of a commit range", snippet)
 

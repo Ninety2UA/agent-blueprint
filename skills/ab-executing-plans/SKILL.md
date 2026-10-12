@@ -35,7 +35,7 @@ Keep progress in `.agent-blueprint/plans/<plan-basename>.progress.md`; follow `r
 
 A batch is the next three tasks. Work in an isolated workspace (ab-using-git-worktrees); on main or master, branch first unless the user said to work there. For each task, from the first unticked box: follow its steps exactly, run its verifications, commit, tick the box (`- [ ]` → `- [x]`), and record interpretive choices (`references/assumption-tracking.md`).
 
-**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, unless the user said not to commit: work stays uncommitted for them. Reviews use the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 A task that touches a framework or library API (forms, routing, data fetching, hooks, ORM queries, config) uses the ab-source-driven-development skill: detect the version, fetch the docs page, follow its pattern, cite the URL.
 

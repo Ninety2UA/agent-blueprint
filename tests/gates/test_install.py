@@ -214,6 +214,72 @@ class Installer(unittest.TestCase):
         self.assertEqual(list(copy.iterdir()), [])
         self.assertNotIn("each skill twice", out)
 
+    def test_hermes_reading_the_shared_copy_keeps_it_until_hermes_is_in_the_run(self):
+        copy = self.earlier_copy(".agents/skills", "ab-quick-fix")
+        config = Path(self.home, ".hermes/config.yaml")
+        config.parent.mkdir(parents=True)
+        config.write_text("skills:\n  external_dirs:\n    - " + str(copy) + "\n")
+        for tool in ("codex", "hermes"):
+            self.fake_tool(tool)
+        code, out = self.run_install("--only", "codex")
+        self.assertEqual(code, 0, out)
+        self.assertTrue((copy / "ab-quick-fix").is_dir())
+        warning = next(line for line in out.splitlines() if line.startswith("  ! ") and str(copy) in line)
+        self.assertIn("hermes", warning)
+        code, out = self.run_install()
+        self.assertEqual(code, 0, out)
+        self.assertEqual(list(copy.iterdir()), [])
+        self.assertIn("external_dirs", out)
+        self.assertEqual(self.ab_skills(".hermes", "skills"), SKILLS)
+        # Without that config entry, Hermes on PATH is not a reader of the shared copy.
+        config.unlink()
+        copy = self.earlier_copy(".agents/skills", "ab-quick-fix")
+        code, out = self.run_install("--only", "codex")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(list(copy.iterdir()), [])
+        self.assertNotIn("external_dirs", out)
+
+    def test_failed_route_keeps_the_copies_it_would_replace(self):
+        # Routes run codex, grok, pi in that order; a copy leaves only after its own tool's route
+        # succeeded, and the shared copy only after every route did.
+        for tool, failing, kept in (
+            ("codex", "plugin add " + PLUGIN, (".agents/skills", ".grok/skills", ".pi/agent/skills")),
+            ("grok", "plugin install " + GITHUB + " --trust", (".agents/skills", ".grok/skills", ".pi/agent/skills")),
+            ("pi", "install " + PI_SOURCE, (".agents/skills", ".pi/agent/skills")),
+        ):
+            with self.subTest(failing=tool):
+                copies = {folder: self.earlier_copy(folder, "ab-quick-fix") for folder in
+                          (".agents/skills", ".grok/skills", ".pi/agent/skills")}
+                for other in ("codex", "grok", "pi"):
+                    self.fake_tool(other, {failing: {"code": 1}} if other == tool else None)
+                code, out = self.run_install()
+                self.assertNotEqual(code, 0, out)
+                for folder, copy in copies.items():
+                    self.assertEqual((copy / "ab-quick-fix").is_dir(), folder in kept, folder)
+                    self.assertEqual((copy / ".agent-blueprint-install.json").is_file(), folder in kept, folder)
+
+    def test_codex_marketplace_only_registration(self):
+        root = Path(self.root, "old marketplace")
+        (root / ".agents/plugins").mkdir(parents=True)
+        (root / ".agents/plugins/marketplace.json").write_text(json.dumps({"name": "agent-blueprint"}))
+        foreign = Path(self.root, "foreign marketplace")
+        (foreign / ".agents/plugins").mkdir(parents=True)
+        (foreign / ".agents/plugins/marketplace.json").write_text(json.dumps({"name": "someone-else"}))
+        for marketplace_root, args, expected in (
+            (root, [], ["codex plugin marketplace remove agent-blueprint",
+                        "codex plugin marketplace add " + GITHUB, "codex plugin add " + PLUGIN]),
+            (Path(REPO), ["--local"], ["codex plugin add " + PLUGIN]),
+            (foreign, [], ["codex plugin marketplace add " + GITHUB, "codex plugin add " + PLUGIN]),
+        ):
+            with self.subTest(root=marketplace_root.name, args=args):
+                self.fake_tool("codex", {"plugin list --json": json.dumps({"installed": []}),
+                                         "plugin marketplace list": "NAME  ROOT\nagent-blueprint  " + str(marketplace_root)})
+                Path(self.log).write_text("")
+                code, out = self.run_install(*args)
+                self.assertEqual(code, 0, out)
+                self.assertEqual(self.mutations(), expected)
+                self.assertEqual("Could not read Codex" in out, marketplace_root == foreign)
+
     def test_split_cleanup_waits_until_each_hosts_route(self):
         copies = [self.earlier_copy(folder, "ab-quick-fix") for folder in
                   (".grok/skills", ".pi/agent/skills")]
@@ -394,7 +460,7 @@ class Installer(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(self.mutations(), ["grok plugin update agent-blueprint"])
 
-    def test_pi_source_swap_uses_exact_stored_source(self):
+    def test_pi_source_swap_names_each_package_as_pi_matches_it(self):
         old = Path(self.home, "old checkout")
         old.mkdir()
         (old / "package.json").write_text(json.dumps({"name": "agent-blueprint"}))
@@ -405,7 +471,7 @@ class Installer(unittest.TestCase):
         self.fake_tool("pi")
         code, out = self.run_install()
         self.assertEqual(code, 0, out)
-        self.assertEqual(self.mutations(), ["pi remove " + relative, "pi install " + PI_SOURCE])
+        self.assertEqual(self.mutations(), ["pi remove " + str(old), "pi install " + PI_SOURCE])
         (base / "settings.json").write_text(json.dumps({"packages": [PI_SOURCE]}))
         Path(self.log).write_text("")
         code, out = self.run_install("--local")
@@ -479,21 +545,27 @@ class Installer(unittest.TestCase):
         self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
 
     def test_same_local_sources_use_the_hosts_update_routes(self):
-        self.fake_tool("claude", {"plugin marketplace list": "❯ agent-blueprint\n Source: Local (" + REPO + ")",
+        self.fake_tool("claude", {"plugin marketplace list": "❯ agent-blueprint\n Source: Folder (" + REPO + ")",
                                   "plugin list": PLUGIN})
         self.fake_tool("codex", {"plugin marketplace list": "NAME  ROOT\nagent-blueprint " + REPO,
             "plugin list --json": json.dumps({"installed": [{"pluginId": PLUGIN,
                 "marketplaceSource": {"sourceType": "local", "source": REPO}}]})})
-        self.fake_tool("grok", {"plugin list": "  repo-hash: agent-blueprint [local: " + REPO + "]"})
+        self.fake_tool("grok", {"plugin list": ["  repo-hash: agent-blueprint [local: " + REPO + "]",
+                                               "No plugins installed"]})
         pi = Path(self.home, ".pi/agent")
         pi.mkdir(parents=True)
-        (pi / "settings.json").write_text(json.dumps({"packages": [REPO]}))
+        # Pi stores a local path relative to ~/.pi/agent and resolves a command's argument against
+        # the current folder, so the installer passes the absolute path; a second spelling of the
+        # same checkout is removed so Pi lists each skill once.
+        relative = os.path.relpath(REPO, pi)
+        (pi / "settings.json").write_text(json.dumps({"packages": [relative, REPO]}))
         self.fake_tool("pi")
         code, out = self.run_install("--local")
         self.assertEqual(code, 0, out)
         self.assertEqual(self.mutations(), ["claude plugin marketplace update agent-blueprint",
             "claude plugin update " + PLUGIN, "codex plugin add " + PLUGIN,
-            "grok plugin update agent-blueprint", "pi update --extension " + REPO])
+            "grok plugin uninstall agent-blueprint", "grok plugin install " + REPO + " --trust",
+            "pi remove " + REPO, "pi update --extension " + os.path.normpath(os.path.join(pi, relative))])
 
     def test_grok_local_to_github_removes_local_before_install(self):
         self.fake_tool("grok", {"plugin list": ["  repo-hash: agent-blueprint [local: " + REPO + "]",

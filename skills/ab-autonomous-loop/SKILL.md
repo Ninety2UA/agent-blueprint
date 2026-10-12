@@ -29,7 +29,7 @@ Each pass (diagram: `references/loop-details.md` § Loop diagram): **pick** the 
 
 **On success,** tick its checkbox, log "Task N complete. [N/total] done.", and commit, so a later failure can return to the last good state without losing earlier work. An unticked task gets attempted again.
 
-**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, unless the user said not to commit: work stays uncommitted for them. Reviews use the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 **On failure,** classify the error. Transient (rate limit, timeout, flaky test): retry with backoff. Fixable (an implementation bug): debug with the ab-systematic-debugging skill, fix, retry. Fatal (missing dependency, wrong architecture, unclear requirement): stop and escalate (Step 4). An unclear requirement is Fatal only when the ab-executing-plans decision boundary says to stop (a must-ask category in the project instructions file); anything else it lets an autonomous run decide is decided, recorded, and continued.
 

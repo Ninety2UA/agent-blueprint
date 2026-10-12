@@ -10,7 +10,7 @@ One route: Grok's plugin manager, straight from GitHub. Grok asks you to confirm
 grok plugin install Ninety2UA/agent-blueprint
 ```
 
-Grok 1.0.34 reads the root `plugin.json` and discovers `skills/` by convention. `bash install.sh` runs the same command with `--trust`, so it does not stop to ask, and takes the clone as the source with `--local`; `grok --plugin-dir <checkout>` loads a checkout for one session. On a re-run the installer first removes the `~/.grok/skills` copy that 4.0 recorded, since Grok would list a second set.
+Grok 1.0.34 reads the root `plugin.json` and discovers `skills/` by convention. `bash install.sh` runs the same command with `--trust`, so it does not stop to ask, and takes the clone as the source with `--local`; `grok --plugin-dir <checkout>` loads a checkout for one session. On a re-run, once Grok's own install succeeds, the installer removes the `~/.grok/skills` copy that 4.0 recorded, since Grok would list a second set. A local install is a copy that `grok plugin update` reports as live without refreshing, so a `--local` re-run uninstalls and installs it again.
 
 What covers what: Grok needs this command even when Claude Code has the plugin. It lists the marketplaces Claude Code has registered but loads no skills from Claude Code's installed plugin. It does read `~/.claude/skills` and a project's `.claude/skills`, so skills placed there show up in Grok too.
 

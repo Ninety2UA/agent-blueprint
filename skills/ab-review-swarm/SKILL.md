@@ -24,7 +24,7 @@ Start specialized review helpers in parallel on one change, validate their findi
 
 If the range is empty or the base is not an ancestor of HEAD, stop and report the range instead of reviewing nothing.
 
-**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, unless the user said not to commit: work stays uncommitted for them. Reviews use the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 Here: review `git diff $(git merge-base origin/main HEAD)` plus the untracked files, whatever range was named, since the work has no commits yet.
 

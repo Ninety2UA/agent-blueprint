@@ -199,7 +199,7 @@ Prompt: a fix task packet, built like a wave task packet (§ Start the Wave's Wo
 
 Run the ab-review-swarm skill on all changes since the run started (`git diff <base commit>...HEAD`, with the base commit from the ledger). It starts all configured reviewers in parallel and synthesizes their findings via findings-synthesizer.
 
-**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, unless the user said not to commit: work stays uncommitted for them. Reviews use the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 In this mode the review covers the working tree and untracked files against the ledger's base commit, since the run has made no commits (`references/team-ledger.md` § Isolation).
 

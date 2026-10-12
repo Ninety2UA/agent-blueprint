@@ -10,7 +10,7 @@ One route: Pi's package manager, straight from GitHub. `package.json` carries a 
 pi install git:github.com/Ninety2UA/agent-blueprint
 ```
 
-`bash install.sh` runs the same command, or `pi install <checkout>` with the clone under `--local`, and on a re-run first removes the `~/.pi/agent/skills` copy that 4.0 recorded, since Pi keeps the first skill of a name it finds and warns about the rest. A project-level install (`-l`) is written to `.pi/settings.json` and loads only after you trust the project; the global install needs no trust step.
+`bash install.sh` runs the same command, or `pi install <checkout>` with the clone under `--local`, and on a re-run, once Pi's own install succeeds, removes the `~/.pi/agent/skills` copy that 4.0 recorded, since Pi keeps the first skill of a name it finds and warns about the rest. A project-level install (`-l`) is written to `.pi/settings.json` and loads only after you trust the project; the global install needs no trust step.
 
 Recommended add-ons, both from npm: `pi install npm:pi-subagents` gives Pi a `subagent` tool, without which every Helper step runs inline, and `pi install npm:pi-ask-user` gives it a blocking question tool.
 

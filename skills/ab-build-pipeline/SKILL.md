@@ -59,7 +59,7 @@ Checkpoint: the user approves the plan. Default when nobody answers: the plan as
 - **Under four tasks, or all sequential:** invoke the ab-executing-plans skill.
 - **Four or more tasks with mixed dependencies, or `--team`:** invoke the ab-orchestrate skill with `--no-review`. Stage 5, not that skill, does the review.
 
-**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, unless the user said not to commit: work stays uncommitted for them. Reviews use the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 No-commit mode covers the skill Stage 4 runs, the Stage 5 fixes and the Stage 5 review.
 

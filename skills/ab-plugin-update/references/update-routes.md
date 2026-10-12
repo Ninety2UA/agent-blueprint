@@ -75,11 +75,11 @@ When this skill comes from Claude Code's plugin cache, use the Claude Code plugi
 
 ## Hermes
 
-The copy under `~/.hermes/skills` uses Copy install below. Let the installer replace its recorded skills and keep other skills intact.
+The copy under `~/.hermes/skills` uses Copy install below with `--only hermes`. Let the installer replace its recorded skills and keep other skills intact.
 
 ## Amp
 
-When this skill comes from Claude Code's plugin cache, use the Claude Code plugin route above. The Amp-only copy in `~/.config/amp/skills` uses Copy install below. Do not add an Amp copy next to a Claude Code plugin that Amp already reads.
+When this skill comes from Claude Code's plugin cache, use the Claude Code plugin route above. The Amp-only copy in `~/.config/amp/skills` uses Copy install below with `--only amp`. Do not add an Amp copy next to a Claude Code plugin that Amp already reads.
 
 ## Copy install
 
@@ -91,7 +91,7 @@ git clone --depth 1 https://github.com/Ninety2UA/agent-blueprint.git "$CHECKOUT/
 bash "$CHECKOUT/agent-blueprint/install.sh" --dry-run
 ```
 
-For a recorded explicit custom copy, add `--copy-dir "<destination>"` to both installer runs, preserving that destination. Legacy shared locations above migrate through the default installer; do not pass them as `--copy-dir` destinations. If unrecorded legacy skills remain, report them and stop rather than deleting user-owned folders or claiming migration succeeded.
+For the Hermes copy or the Amp-only copy, add `--only hermes` or `--only amp` to both installer runs, so every other tool's install stays as it is. For a recorded explicit custom copy, add `--copy-dir "<destination>"` to both installer runs, preserving that destination. Legacy shared locations above migrate through the default installer; do not pass them as `--copy-dir` destinations. If unrecorded legacy skills remain, report them and stop rather than deleting user-owned folders or claiming migration succeeded.
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 

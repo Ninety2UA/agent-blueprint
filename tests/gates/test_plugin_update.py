@@ -143,11 +143,17 @@ class PluginUpdateRoutes(unittest.TestCase):
         self.assertIn("Checkout", cursor)
 
     def test_hermes_and_amp_preserve_their_own_routes(self):
-        self.assertIn("Copy install", self.route("Hermes"))
+        hermes = self.route("Hermes")
+        self.assertIn("Copy install", hermes)
+        self.assertIn("--only hermes", hermes)
         amp = self.route("Amp")
         self.assertIn("Claude Code plugin", amp)
         self.assertIn("Copy install", amp)
+        self.assertIn("--only amp", amp)
         self.assertIn("~/.config/amp/skills", amp)
+        copy = self.route("Copy install")
+        self.assertIn("--only hermes", copy)
+        self.assertIn("--only amp", copy)
 
     def test_plugin_failures_and_old_versions_do_not_fall_back_to_copy(self):
         run = section(self.skill, "Step 2: Run the route's command")

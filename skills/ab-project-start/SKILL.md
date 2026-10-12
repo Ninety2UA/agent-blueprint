@@ -14,11 +14,11 @@ Keep it to two or three exchanges with the user: learn everything you can from t
 
 **Bundled scripts.** Paths such as `scripts/run.sh` are relative to this skill's own folder, the one holding its SKILL.md, not to the project. Run a script through its interpreter (`bash` for `.sh`; `python3`, or `python` if that is missing, for `.py`) instead of relying on its executable bit, and if the interpreter is missing, say so and stop that step.
 
-Run `scripts/scaffold.py` through `python3`; pass a folder argument only when the user named one. Otherwise omit the folder argument. Without one, it refuses home and `/`; a non-empty folder outside any git work tree gets a dry run and exit 3 without writes. Repo subfolders report their git top level.
+Run `scripts/scaffold.py` through `python3`, with no folder argument; add one only when the user named a folder. Without one, it refuses home and `/`; a non-empty folder outside any git work tree gets a dry run and exit 3 without writes. Repo subfolders report their git top level.
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-On exit 3, show the dry run and ask for confirmation; after a yes, rerun with the folder named. Default when nobody answers: stop and say how to name a folder. Other non-zero exits: stop and show the error.
+On exit 3, show the dry run and ask for confirmation; if it refuses home or `/`, ask for the project folder. After a yes or a folder, rerun with it named. Default when nobody answers: stop and say how to name a folder. Other non-zero exits: stop and show the error.
 
 It copies `assets/` without overwriting: missing files are created; `AGENTS.md` gains only missing sections; `CLAUDE.md` gains `@AGENTS.md` so Claude Code loads both, keeping its content (a symlink to `AGENTS.md` is left alone); `.gitignore` files gain missing lines. Empty projects (or only `.git`) also get `src/`, `tests/` and `infra/`. It prints `created`, `merged` or `kept` per file. Use `--dry-run` for a preview.
 

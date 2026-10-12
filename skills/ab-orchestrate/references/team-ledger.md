@@ -76,7 +76,7 @@ Read the `isolation` column for your host.
 - **ownership:** helpers share the checkout and each touches only the files it owns. Helpers do not commit; the lead commits each task's files once the task passes its checks, naming the files so another task's work stays out of that commit.
 - **inline:** no helpers. The lead does each task itself, one after another, in wave order, and commits each task as it would under ownership.
 
-**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, unless the user said not to commit: work stays uncommitted for them. Reviews use the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 Some hosts' sandboxes block `.git` writes, and creating a worktree writes there too, so in this mode helpers use ownership, never worktrees; inline stays inline. The lead still integrates each task after its checks pass, adds that task's message, and sets its Result to `uncommitted`. The wave check then gets the files the wave's tasks own instead of the commit the wave started from.
 

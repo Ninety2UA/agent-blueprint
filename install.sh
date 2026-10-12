@@ -186,8 +186,6 @@ def identity(value):
 try:
     if raw == "@unknown":
         print(raw)
-    elif host == "identity":
-        print(identity(raw))
     elif host == "claude":
         lines = raw.splitlines()
         for i, line in enumerate(lines):
@@ -195,7 +193,7 @@ try:
                 source = next((x.strip()[7:].strip() for x in lines[i+1:i+3] if x.strip().startswith("Source:")), None)
                 if source:
                     # Claude labels its sources, e.g. GitHub (owner/repo) or Local (/path).
-                    m = re.fullmatch(r"(?:GitHub|Git|Local|Directory|Local directory)\s*\((.*)\)", source, re.I)
+                    m = re.fullmatch(r"(?:GitHub|Git|Local|Folder|Directory|Local directory)\s*\((.*)\)", source, re.I)
                     print(identity(m[1] if m else source))
                 else:
                     print("@unknown")
@@ -241,11 +239,14 @@ try:
             if not isinstance(source, str):
                 continue
             if identity(source.split("#", 1)[0]) == github:
-                print(source)
+                # A pinned ref (#...) is not the plain source, so the installer replaces it.
+                print(identity(source) + "\t" + source)
             elif not source.startswith(("git:", "npm:", "https://", "git@")):
                 path = Path(os.path.expanduser(source))
                 if not path.is_absolute():
                     path = base / path
+                # Pi resolves a relative path lexically, so normalize before following symlinks.
+                path = Path(os.path.normpath(str(path)))
                 named = os.path.realpath(path) == os.path.realpath(sys.argv[3])
                 for manifest in ("package.json", ".claude-plugin/plugin.json"):
                     try:
@@ -253,7 +254,7 @@ try:
                     except (OSError, ValueError):
                         pass
                 if named:
-                    print(source)
+                    print(os.path.realpath(path) + "\t" + str(path))
 except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
     print("  ! Could not read " + host + " install listing: " + str(exc), file=sys.stderr)
     print("@unknown")
@@ -413,20 +414,6 @@ remove_recorded_copy() {
     if [ "$DRY_RUN" = true ]; then info "Would remove the recorded copy in $dir"; else info "Removed the recorded copy in $dir"; fi
 }
 
-# Keep the shared copy until every installed reader is selected for its own route.
-# Per-tool copies are retired below, immediately before that tool's route runs.
-if [ -f "$HOME/.agents/skills/.agent-blueprint-install.json" ]; then
-    shared_readers=()
-    for h in codex grok pi cursor-agent amp; do
-        if have "$h" && ! listed "$h"; then shared_readers+=("$h"); fi
-    done
-    if [ ${#shared_readers[@]} -eq 0 ]; then
-        remove_recorded_copy "$HOME/.agents/skills"
-    else
-        warn "Keeping the recorded copy in $HOME/.agents/skills: tools still reading it outside this run: ${shared_readers[*]}. Run install.sh without --only (or with those tools) to retire it. Until then, a tool given its own route in this run may list each skill twice."
-    fi
-fi
-
 claude_plugin=false
 if listed claude; then
     markets=$(listing claude plugin marketplace list)
@@ -480,9 +467,9 @@ if listed agy; then
 fi
 
 if listed grok; then
-    remove_recorded_copy "$HOME/.grok/skills"
     prior_sources=$(sources grok "$(listing grok plugin list)")
-    if [ "$prior_sources" = "$SOURCE" ]; then
+    # A local install is a copy that grok plugin update reports as live without refreshing it.
+    if [ "$prior_sources" = "$SOURCE" ] && [ "$LOCAL" = false ]; then
         run grok plugin update agent-blueprint
     else
         if [[ "$prior_sources" == *'@unknown'* ]]; then
@@ -508,23 +495,19 @@ if listed grok; then
         fi
         run grok plugin install "$SOURCE" --trust
     fi
+    remove_recorded_copy "$HOME/.grok/skills"
     success "Grok Build: agent-blueprint"
 fi
 
 if listed pi; then
-    remove_recorded_copy "$HOME/.pi/agent/skills"
     prior_sources=$(sources pi '' "$SOURCE_DIR")
     same=''
-    while IFS= read -r package; do
-        [ -n "$package" ] || continue
-        if [ "$package" = '@unknown' ]; then
+    while IFS=$'\t' read -r resolved package; do
+        [ -n "$resolved" ] || continue
+        if [ "$resolved" = '@unknown' ]; then
             warn "Could not read Pi's packages; trying install without removing them."
             continue
         fi
-        case "$package" in
-            git:*|/*|~*) resolved=$(sources identity "$package") ;;
-            *) resolved=$(sources identity "$HOME/.pi/agent/$package") ;;
-        esac
         if [ "$resolved" = "$SOURCE" ] && [ -z "$same" ]; then
             same="$package"
         else
@@ -532,6 +515,7 @@ if listed pi; then
         fi
     done <<< "$prior_sources"
     if [ -n "$same" ]; then run pi update --extension "$same"; else run pi install "$PI_SOURCE"; fi
+    remove_recorded_copy "$HOME/.pi/agent/skills"
     success "Pi: agent-blueprint"
 fi
 
@@ -541,6 +525,7 @@ if listed cursor-agent; then
         if cursor_record has; then
             run cursor-agent plugin marketplace remove agent-blueprint
             if [ "$DRY_RUN" = false ]; then cursor_record remove; fi
+            warn "Cursor CLI: if /plugin still lists agent-blueprint from Cursor's own marketplace, uninstall it there, so Cursor reads only the Claude Code plugin."
         fi
         success "Cursor CLI: covered by the Claude Code plugin"
     elif [ "$LOCAL" = true ]; then
@@ -571,6 +556,27 @@ if listed amp; then
     fi
 fi
 if [ "$COPY_DIR_SET" = true ]; then copy_skills "$COPY_DIR" --copy-dir; fi
+
+# Retire the 4.0 shared copy only after every route above succeeded (set -e stops the run at a
+# failed one), and only once every installed reader has its own route in this run. 4.0 pointed
+# Hermes at it through skills.external_dirs in ~/.hermes/config.yaml.
+hermes_reads_shared=false
+if grep -qs '\.agents/skills' "$HOME/.hermes/config.yaml"; then hermes_reads_shared=true; fi
+if [ -f "$HOME/.agents/skills/.agent-blueprint-install.json" ]; then
+    shared_readers=()
+    for h in codex grok pi cursor-agent amp; do
+        if have "$h" && ! listed "$h"; then shared_readers+=("$h"); fi
+    done
+    if [ "$hermes_reads_shared" = true ] && have hermes && ! listed hermes; then shared_readers+=(hermes); fi
+    if [ ${#shared_readers[@]} -eq 0 ]; then
+        remove_recorded_copy "$HOME/.agents/skills"
+    else
+        warn "Keeping the recorded copy in $HOME/.agents/skills: tools still reading it outside this run: ${shared_readers[*]}. Run install.sh without --only (or with those tools) to retire it. Until then, a tool given its own route in this run may list each skill twice."
+    fi
+fi
+if [ "$hermes_reads_shared" = true ] && listed hermes; then
+    warn "Hermes: ~/.hermes/config.yaml still lists ~/.agents/skills under skills.external_dirs. Remove that entry; Hermes now reads its own copy in ~/.hermes/skills."
+fi
 if [ ${#unfinished[@]} -gt 0 ]; then warn "Unfinished: ${unfinished[*]}"; fi
 
 # ─── Optional project scaffold ────────────────────────────────
