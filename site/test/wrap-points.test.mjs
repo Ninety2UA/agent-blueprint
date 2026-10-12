@@ -112,7 +112,8 @@ test('breakCodeAfterSlashes leaves code blocks alone', () => {
 test('breakCodeAfterSlashes keeps a short hyphenated name in inline code whole, and lets a long one wrap', () => {
   // ab-project-start would otherwise wrap as "ab-" and "project-start" on a phone
   assert.equal(breakCodeAfterSlashes('<p>Run <code>ab-project-start</code>.</p>'), `<p>Run <code>${whole('ab-project-start')}</code>.</p>`);
-  assert.equal(breakCodeAfterSlashes('<code>--dry-run</code>'), `<code>${whole('--dry-run')}</code>`);
+  // a flag is marked as one, so a phone table keeps it whole while it lets other names break
+  assert.equal(breakCodeAfterSlashes('<code>--dry-run</code>'), '<code><span class="nowrap flag">--dry-run</span></code>');
   // each word of a command on its own: the short hyphenated one whole, the rest as they are
   assert.equal(breakCodeAfterSlashes('<code>use the ab-x skill</code>'), `<code>use the ${whole('ab-x')} skill</code>`);
   // a name without a hyphen has nothing to break at and gets no span

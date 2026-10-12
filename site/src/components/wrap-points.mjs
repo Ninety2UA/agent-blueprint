@@ -21,7 +21,8 @@
 //                            - any other word of up to SHORT_CODE characters that holds a hyphen
 //                              goes in a <span class="nowrap">, so ab-project-start never wraps as
 //                              "ab-" and "project-start" in prose (a phone table may still break it,
-//                              see docs-pages.css);
+//                              see docs-pages.css); a flag (--effort) is marked "nowrap flag" and
+//                              stays whole there too;
 //                            - any other word gets a <wbr> after each inner |, = or , (between
 //                              values: none|minimal|low, effort=high), and, when it is longer than
 //                              LONG_WORD, after each inner _ and after a dot that starts a name of
@@ -108,7 +109,7 @@ export function breakCodeAfterSlashes(html) {
         .split(/(\s+)/)
         .map((word) =>
           HAS_INNER_SLASH.test(word) ? breakPath(word, !QUOTED.test(word))
-          : word.includes('-') && textLength(word) <= SHORT_CODE ? `<span class="nowrap">${word}</span>`
+          : word.includes('-') && textLength(word) <= SHORT_CODE ? `<span class="${FLAG.test(word) ? 'nowrap flag' : 'nowrap'}">${word}</span>`
           : (textLength(word) > LONG_WORD ? word.replace(LONG_SEPARATOR, '$1<wbr>') : word).replace(SEPARATOR, '$1<wbr>'),
         )
         .join('');
