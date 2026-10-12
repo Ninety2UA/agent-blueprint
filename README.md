@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://agent-blueprint.dbenger.com/">Website</a> ·
-  <a href="#whats-new-in-v401">What's new</a> ·
+  <a href="#whats-new-in-v402">What's new</a> ·
   <a href="#install">Install</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#unattended-runs">Unattended runs</a> ·
@@ -29,6 +29,10 @@
 A coding agent starts every session from nothing. It doesn't know how your project works, what was decided last week, or which problems were already solved, and when you switch to another tool, whatever the last one learned stays behind.
 
 Agent Blueprint gives the agent one way of working that is the same in every tool. Skills take a feature from design through review to a pull request. Helper prompts handle the analysis that needs a fresh context, such as a security review or a plan check. Project documents under `docs/` carry conventions, decisions and solved problems from one session to the next, so they are there whichever of the eight tools opens the repository next.
+
+## What's new in v4.0.2
+
+This release fixes three problems found while running the tutorials. The injection scanners no longer flag an ordinary word that contains a trigger word, such as "Blueprint", which contains "print". New projects get `docs/context/DECISIONS.md`, the file their `AGENTS.md` already pointed to, and `ab-brainstorming` writes each design section out in full before it asks you to approve it.
 
 ## What's new in v4.0.1
 
@@ -742,10 +746,11 @@ An evaluation then ran the same fixture tasks on v3.8.0 and v4.0.0 in Claude Cod
 ## Release history
 
 <details>
-<summary>v2.3 to v4.0.1</summary>
+<summary>v2.3 to v4.0.2</summary>
 
 | Version | Date | What changed |
 |---|---|---|
+| v4.0.2 | 2026-10-12 | The injection scanners match whole words, so "Blueprint" no longer reads as an injection attempt. New projects get `docs/context/DECISIONS.md`, and `ab-brainstorming` writes each design section out before asking for approval. |
 | v4.0.1 | 2026-10-07 | Cursor CLI and Amp no longer list every skill twice next to Claude Code. On a machine with Claude Code and either of them, `install.sh` writes no shared copy: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder, and the copy an earlier install left in `~/.agents/skills` is removed. |
 | v4.0.0 | 2026-10-07 | `claude-code-blueprint` becomes Agent Blueprint: one set of skills, each named with the `ab-` prefix, that installs natively in eight coding CLIs. Agents became helper prompts inside the skills that use them, `AGENTS.md` is the instructions file, and working files moved to `.agent-blueprint/`. Team work and the ship runner run in every tool, hooks are optional, new gates keep every skill portable, and `ab-migrate` cleans a v3 project. |
 | v3.8.0 | 2026-09-28 | Plans record decisions instead of code, and you review the saved plan before it runs. A security finding can be rejected only with a quoted refutation. Reviews start at the merge base and include untracked files. Opus 5.5 defaults documented. CI fails on frontmatter that isn't valid YAML and on references that don't resolve. |
