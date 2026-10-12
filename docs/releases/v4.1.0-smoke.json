@@ -1,0 +1,511 @@
+{
+  "hosts": {
+    "agy": {
+      "cells": {
+        "brainstorm-override": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:37:57Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-192455/agy/brainstorm-override.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "no design approval request; plan or code: docs/plans/2026-10-12-note-count-design.md, docs/plans/2026-10-12-note-count.md, src/notes/store.py",
+          "seconds": 274,
+          "session": "",
+          "state": "pass",
+          "tokens": 199043
+        },
+        "debug": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:30:14Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-192455/agy/debug.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper",
+          "seconds": 288,
+          "session": "",
+          "state": "pass",
+          "tokens": 147008
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:25:05Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-192455/agy/discovery.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "53 ab- skills once each in 1 location(s); the answer names ab-ship-pipeline",
+          "seconds": 10,
+          "session": "",
+          "state": "pass",
+          "tokens": 23530
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:25:14Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-192455/agy/hooks.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "no blueprint hook fired (canary prompt run with the trace exported)",
+          "seconds": 9,
+          "session": "",
+          "state": "pass",
+          "tokens": 23410
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:25:26Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-192455/agy/manual-only.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 12,
+          "session": "",
+          "state": "pass",
+          "tokens": 24349
+        },
+        "tdd-override": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:33:23Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-192455/agy/tdd-override.log",
+          "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
+          "reason": "seeded functions retain their recorded behavior; count_words test present; suite passes",
+          "seconds": 189,
+          "session": "",
+          "state": "pass",
+          "tokens": 154458
+        }
+      },
+      "version": "1.3.3"
+    },
+    "amp": {
+      "cells": {},
+      "version": "0.0.1791360091-gfb32ce (released 2026-10-07T08:01:31.000Z, 5d ago)"
+    },
+    "claude": {
+      "cells": {
+        "brainstorm-override": {
+          "cost_usd": 1.53,
+          "date": "2026-10-12T17:16:13Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/claude/brainstorm-override.log",
+          "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
+          "reason": "no design approval request; plan or code: docs/plans/2026-10-12-note-count.md, src/notes/store.py",
+          "seconds": 142,
+          "session": "6057bd3b-be96-455c-b22a-278de03f2add",
+          "state": "pass",
+          "tokens": 594059
+        },
+        "debug": {
+          "cost_usd": 1.1019,
+          "date": "2026-10-12T17:12:17Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/claude/debug.log",
+          "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
+          "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: inline",
+          "seconds": 109,
+          "session": "ee8bcf47-6122-422c-987c-a7e29e30313a",
+          "state": "degraded-pass (inline)",
+          "tokens": 313867
+        },
+        "discovery": {
+          "cost_usd": 0.477,
+          "date": "2026-10-12T17:10:10Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/claude/discovery.log",
+          "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
+          "reason": "53 ab- skills once each in 7 location(s); the answer names ab-ship-pipeline",
+          "seconds": 5,
+          "session": "b0d1b488-881b-47fe-a7db-13f6f8efc492",
+          "state": "pass",
+          "tokens": 34367
+        },
+        "hooks": {
+          "cost_usd": 0.5074,
+          "date": "2026-10-12T17:10:16Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/claude/hooks.log",
+          "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
+          "reason": "handlers wrote the trace: session-start.js x1, ship-loop.sh x1 (canary prompt run with the trace exported)",
+          "seconds": 5,
+          "session": "02228e4b-acce-4eb6-9471-b4f44adc6270",
+          "state": "pass",
+          "tokens": 35892
+        },
+        "manual-only": {
+          "cost_usd": 0.5355,
+          "date": "2026-10-12T17:10:28Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/claude/manual-only.log",
+          "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 12,
+          "session": "ba558230-92d7-453c-9736-37a621bbf3d2",
+          "state": "pass",
+          "tokens": 36501
+        },
+        "tdd-override": {
+          "cost_usd": 1.0565,
+          "date": "2026-10-12T17:13:51Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/claude/tdd-override.log",
+          "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
+          "reason": "seeded functions retain their recorded behavior; count_words test present; suite passes",
+          "seconds": 94,
+          "session": "ac8215d3-063d-4ed8-8e2f-a428e930e9ac",
+          "state": "pass",
+          "tokens": 303659
+        }
+      },
+      "version": "2.1.296 (Claude Code)"
+    },
+    "codex": {
+      "cells": {
+        "brainstorm-override": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:24:36Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/codex/brainstorm-override.log",
+          "plugin_dir": "~/.codex/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
+          "reason": "no design approval request; plan or code: src/notes/store.py, docs/plans/2026-10-12-note-count.md",
+          "seconds": 574,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "debug": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:13:41Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/codex/debug.log",
+          "plugin_dir": "~/.codex/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
+          "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper",
+          "seconds": 159,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:10:28Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/codex/discovery.log",
+          "plugin_dir": "~/.codex/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
+          "reason": "53 ab- skills once each in 11 location(s); the answer names ab-ship-pipeline",
+          "seconds": 23,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:10:50Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/codex/hooks.log",
+          "plugin_dir": "~/.codex/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
+          "reason": "all five handlers wrote codex trace lines",
+          "seconds": 22,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:11:02Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/codex/manual-only.log",
+          "plugin_dir": "~/.codex/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 12,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        },
+        "tdd-override": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:15:02Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/codex/tdd-override.log",
+          "plugin_dir": "~/.codex/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
+          "reason": "seeded functions retain their recorded behavior; count_words test present; suite passes",
+          "seconds": 81,
+          "session": "",
+          "state": "pass",
+          "tokens": null
+        }
+      },
+      "version": "codex-cli 0.160.0"
+    },
+    "cursor-agent": {
+      "cells": {
+        "brainstorm-override": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:42:58Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-193757/cursor-agent/brainstorm-override.log",
+          "plugin_dir": "$TMPDIR/.../ab-src-410",
+          "reason": "no design approval request; plan or code: docs/plans/2026-10-12-note-count-design.md, docs/plans/2026-10-12-note-count.md, src/notes/store.py",
+          "seconds": 112,
+          "session": "a47e08d6-3a29-42c6-bb3a-6e3ad3fafb07",
+          "state": "pass",
+          "tokens": null
+        },
+        "debug": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:40:03Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-193757/cursor-agent/debug.log",
+          "plugin_dir": "$TMPDIR/.../ab-src-410",
+          "reason": "suite passes; store.py fixed; regression test present \u00b7 helper steps: helper",
+          "seconds": 77,
+          "session": "6f0163d6-7810-4e29-8299-670c9c2bb0ba",
+          "state": "pass",
+          "tokens": null
+        },
+        "discovery": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:38:09Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-193757/cursor-agent/discovery.log",
+          "plugin_dir": "$TMPDIR/.../ab-src-410",
+          "reason": "53 ab- skills once each in 1 location(s); the answer names ab-ship-pipeline",
+          "seconds": 11,
+          "session": "be0d957f-7cef-4660-ba2c-5cc3fd1bbb4b",
+          "state": "pass",
+          "tokens": null
+        },
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:38:20Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-193757/cursor-agent/hooks.log",
+          "plugin_dir": "$TMPDIR/.../ab-src-410",
+          "reason": "no blueprint hook fired (canary prompt run with the trace exported)",
+          "seconds": 11,
+          "session": "c86c2274-954b-4088-9bed-fa2bfe32a81b",
+          "state": "pass",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:38:46Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-193757/cursor-agent/manual-only.log",
+          "plugin_dir": "$TMPDIR/.../ab-src-410",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 26,
+          "session": "e70d0b32-cdcf-4dc0-b1d7-e41754202386",
+          "state": "pass",
+          "tokens": null
+        },
+        "tdd-override": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:41:06Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-193757/cursor-agent/tdd-override.log",
+          "plugin_dir": "$TMPDIR/.../ab-src-410",
+          "reason": "seeded functions retain their recorded behavior; count_words test present; suite passes",
+          "seconds": 63,
+          "session": "68ff070e-8c06-4359-8ba9-05e3850a6dc0",
+          "state": "pass",
+          "tokens": null
+        }
+      },
+      "version": "2026.10.01-14929f9"
+    },
+    "grok": {
+      "cells": {
+        "debug": {
+          "cost_usd": 0.589,
+          "date": "2026-10-12T18:02:45Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-195903/grok/debug.log",
+          "plugin_dir": "~/.grok/installed-plugins/ab-src-410-c4f91e3a/skills",
+          "reason": "the host refused the run: usage or rate limit reached. suite passes; store.py fixed; regression test present (host exited 1) \u00b7 helper steps: helper",
+          "seconds": 196,
+          "session": "",
+          "state": "pass",
+          "tokens": 623937
+        },
+        "discovery": {
+          "cost_usd": 0.0842,
+          "date": "2026-10-12T17:59:10Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-195903/grok/discovery.log",
+          "plugin_dir": "~/.grok/installed-plugins/ab-src-410-c4f91e3a/skills",
+          "reason": "53 ab- skills once each in 4 location(s); the answer names ab-ship-pipeline",
+          "seconds": 7,
+          "session": "",
+          "state": "pass",
+          "tokens": 42393
+        },
+        "hooks": {
+          "cost_usd": 0.1051,
+          "date": "2026-10-12T17:59:19Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-195903/grok/hooks.log",
+          "plugin_dir": "~/.grok/installed-plugins/ab-src-410-c4f91e3a/skills",
+          "reason": "no blueprint hook fired (canary prompt run with the trace exported)",
+          "seconds": 9,
+          "session": "",
+          "state": "pass",
+          "tokens": 84795
+        },
+        "manual-only": {
+          "cost_usd": 0.087,
+          "date": "2026-10-12T17:59:29Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-195903/grok/manual-only.log",
+          "plugin_dir": "~/.grok/installed-plugins/ab-src-410-c4f91e3a/skills",
+          "reason": "ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are",
+          "seconds": 10,
+          "session": "",
+          "state": "pass",
+          "tokens": 42904
+        }
+      },
+      "version": "grok 1.0.52 (0920c8169e27) [stable]"
+    },
+    "hermes": {
+      "cells": {
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:10:11Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/hermes/hooks.log",
+          "plugin_dir": "~/.hermes/skills",
+          "reason": "no hook path on this host",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "manual-only": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:10:11Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/hermes/manual-only.log",
+          "plugin_dir": "~/.hermes/skills",
+          "reason": "hermes cannot enforce manual-only (KTD12); its support note says so",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        }
+      },
+      "version": "Hermes Agent v0.19.0 (2026.7.20)"
+    },
+    "pi": {
+      "cells": {
+        "hooks": {
+          "cost_usd": null,
+          "date": "2026-10-12T17:10:06Z",
+          "link": "",
+          "log": "tests/smoke/logs/20261012-191004/pi/hooks.log",
+          "plugin_dir": "$TMPDIR/.../skills",
+          "reason": "no hook path on this host",
+          "seconds": 0,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        }
+      },
+      "version": ""
+    }
+  },
+  "release": "4.1.0",
+  "runs": [
+    {
+      "cells": [
+        "hooks"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host codex --cell hooks --plugin-dir $TMPDIR/.../ab-src-410 --out ~/projects/claude-eng/project-template/project-template/docs/releases",
+      "date": "2026-10-12 17:09 UTC",
+      "hosts": [
+        "codex"
+      ],
+      "plugin_dir": "$TMPDIR/.../ab-src-410"
+    },
+    {
+      "cells": [
+        "brainstorm-override",
+        "debug",
+        "discovery",
+        "hooks",
+        "manual-only",
+        "tdd-override"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude,codex,grok,pi,hermes,amp --cell discovery,manual-only,hooks,debug,tdd-override,brainstorm-override --jobs 6 --plugin-dir $TMPDIR/.../ab-src-410 --out ~/projects/claude-eng/project-template/project-template/docs/releases",
+      "date": "2026-10-12 17:24 UTC",
+      "hosts": [
+        "amp",
+        "claude",
+        "codex",
+        "grok",
+        "hermes",
+        "pi"
+      ],
+      "plugin_dir": "$TMPDIR/.../ab-src-410"
+    },
+    {
+      "cells": [
+        "brainstorm-override",
+        "debug",
+        "discovery",
+        "hooks",
+        "manual-only",
+        "tdd-override"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host agy --cell discovery,manual-only,hooks,debug,tdd-override,brainstorm-override --plugin-dir $TMPDIR/.../ab-src-410 --out ~/projects/claude-eng/project-template/project-template/docs/releases",
+      "date": "2026-10-12 17:37 UTC",
+      "hosts": [
+        "agy"
+      ],
+      "plugin_dir": "$TMPDIR/.../ab-src-410"
+    },
+    {
+      "cells": [
+        "brainstorm-override",
+        "debug",
+        "discovery",
+        "hooks",
+        "manual-only",
+        "tdd-override"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host cursor-agent --cell discovery,manual-only,hooks,debug,tdd-override,brainstorm-override --plugin-dir $TMPDIR/.../ab-src-410 --out ~/projects/claude-eng/project-template/project-template/docs/releases",
+      "date": "2026-10-12 17:42 UTC",
+      "hosts": [
+        "cursor-agent"
+      ],
+      "plugin_dir": "$TMPDIR/.../ab-src-410"
+    },
+    {
+      "cells": [
+        "brainstorm-override",
+        "debug",
+        "discovery",
+        "hooks",
+        "manual-only",
+        "tdd-override"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host grok --cell discovery,manual-only,hooks,debug,tdd-override,brainstorm-override --plugin-dir $TMPDIR/.../ab-src-410 --out ~/projects/claude-eng/project-template/project-template/docs/releases",
+      "date": "2026-10-12 18:02 UTC",
+      "hosts": [
+        "grok"
+      ],
+      "plugin_dir": "$TMPDIR/.../ab-src-410"
+    },
+    {
+      "cells": [
+        "brainstorm-override",
+        "tdd-override"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host grok --cell tdd-override,brainstorm-override --plugin-dir $TMPDIR/.../ab-src-410 --out ~/projects/claude-eng/project-template/project-template/docs/releases",
+      "date": "2026-10-12 18:03 UTC",
+      "hosts": [
+        "grok"
+      ],
+      "plugin_dir": "$TMPDIR/.../ab-src-410"
+    }
+  ],
+  "updated": "2026-10-12 18:03 UTC"
+}
