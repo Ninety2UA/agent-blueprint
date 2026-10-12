@@ -6,8 +6,8 @@
 //   routeSteps(route, commands)   the Install route cell split at its commands:
 //                                 [{ kind: 'cmd', text }  one per command, in order, shown copyable
 //                                  { kind: 'text', html } the README's words between them, inline code kept]
-//                                 A comma that joined the words to the command before them is dropped
-//                                 (", then" reads "then" under a command block).
+//                                 The comma, period or semicolon that joined the words to the command
+//                                 before them is dropped (", then" reads "then" under a command block).
 
 import { inlineCode } from '../../lib/text.mjs';
 
@@ -21,7 +21,7 @@ export function routeSteps(route, commands) {
   const steps = [];
   let words = '';
   const flush = () => {
-    const html = inlineCode(words.trim().replace(/^,\s*/, ''));
+    const html = inlineCode(words.trim().replace(/^[,.;]\s*/, ''));
     if (html) steps.push({ kind: 'text', html });
     words = '';
   };

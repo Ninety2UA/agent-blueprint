@@ -1,23 +1,24 @@
 # Agent Blueprint on Grok Build
 
-Binary `grok`; facts checked against Grok Build 1.0.34 on 2026-09-30.
+Binary `grok`; facts checked against Grok Build 1.0.34 on 2026-09-30, and the install against the same version on 2026-10-12.
 
 ## Install
 
-One route: one copy of `skills/` in `~/.agents/skills`, which Grok scans. `bash install.sh` writes it, and the same copy serves Codex, Pi, Cursor CLI and Amp. On a machine with Claude Code and Cursor CLI or Amp, it copies the skills into `~/.grok/skills` instead, which only Grok reads:
+One route: Grok's plugin manager, straight from GitHub. Grok asks you to confirm the install:
 
 ```bash
-git clone https://github.com/Ninety2UA/agent-blueprint.git
-bash agent-blueprint/install.sh --only grok
+grok plugin install Ninety2UA/agent-blueprint
 ```
 
-Leave out `--only` to install for every tool on the machine. The installer keeps a record at `~/.agents/skills/.agent-blueprint-install.json`, so a re-run removes skills that were renamed or deleted since and leaves every other skill in that folder alone.
+Grok 1.0.34 reads the root `plugin.json` and discovers `skills/` by convention. `bash install.sh` runs the same command with `--trust`, so it does not stop to ask, and takes the clone as the source with `--local`; `grok --plugin-dir <checkout>` loads a checkout for one session. On a re-run the installer first removes the `~/.grok/skills` copy that 4.0 recorded, since Grok would list a second set.
 
-Grok's plugin manager also accepts this repository (`grok plugin install Ninety2UA/agent-blueprint` after the rename, a local path, or `grok --plugin-dir <checkout>` for one session), because Grok 1.0.34 reads the root `plugin.json` and discovers `skills/` by convention. Do not combine it with the copy: Grok would list every skill twice. Grok also reads `~/.claude/skills`, a project's `.claude/skills` and the marketplaces Claude Code has registered, so a Claude Code user looks at `grok plugin marketplace list` and `grok plugin list` before adding a route here.
+What covers what: Grok needs this command even when Claude Code has the plugin. It lists the marketplaces Claude Code has registered but loads no skills from Claude Code's installed plugin. It does read `~/.claude/skills` and a project's `.claude/skills`, so skills placed there show up in Grok too.
 
-Trust step: none for skills. Project hooks need `/hooks-trust` or `--trust`, and this plugin ships no Grok hooks.
+Trust step: none for skills beyond the confirmation. Project hooks need `/hooks-trust` or `--trust`, and this plugin ships no Grok hooks.
 
-Check: not verified for a copy install (Grok's listing commands, `grok plugin list` and `grok plugin details <name>`, cover plugins); `grok plugin validate <checkout>` prints the name, version and components of a checkout. Update: re-run `bash install.sh`, or the ab-plugin-update skill. Docs: <https://docs.x.ai/build/features/skills-plugins-marketplaces>.
+Check: `grok plugin list` shows one agent-blueprint install, and `grok plugin details agent-blueprint` lists its components; `grok plugin validate <checkout>` prints the name, version and components of a checkout. Update: `grok plugin update agent-blueprint`, or the ab-plugin-update skill. Docs: <https://docs.x.ai/build/features/skills-plugins-marketplaces>.
+
+Set up a project: `/ab-project-start` in a session. The README's [Set up your project](../../README.md#set-up-your-project) says what it creates and when to run it.
 
 ## Invoke a skill
 

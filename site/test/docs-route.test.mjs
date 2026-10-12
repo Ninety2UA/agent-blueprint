@@ -17,23 +17,25 @@ test('every command of every route becomes one command step, in table order', ()
   }
 });
 
-test('the words between commands stay, without the comma that joined them to the command', () => {
-  assert.deepEqual(routeSteps(tool('claude').route, tool('claude').commands), [
+test('the words between commands stay, without the punctuation that joined them to the command', () => {
+  const claude = routeSteps(tool('claude').route, tool('claude').commands);
+  assert.deepEqual(claude.slice(0, 3), [
     { kind: 'cmd', text: 'claude plugin marketplace add Ninety2UA/agent-blueprint' },
     { kind: 'text', html: 'then' },
     { kind: 'cmd', text: 'claude plugin install agent-blueprint@agent-blueprint' },
   ]);
-  assert.deepEqual(routeSteps(tool('hermes').route, tool('hermes').commands), [
-    { kind: 'cmd', text: 'bash install.sh --only hermes' },
-    {
-      kind: 'text',
-      html: 'then add <code>~/.agents/skills</code> under <code>skills.external_dirs</code> in <code>~/.hermes/config.yaml</code> (the installer prints the lines)',
-    },
-  ]);
+  // the sentence after the last command starts without the period that ended the command's sentence
+  assert.equal(claude.length, 4);
+  assert.match(claude[3].html, /^The hooks /);
+  // words before the only command stay in front of it, inline code kept
+  const hermes = routeSteps(tool('hermes').route, tool('hermes').commands);
+  assert.deepEqual(hermes.map((s) => s.kind), ['text', 'cmd']);
+  assert.match(hermes[0].html, /<code>~\/\.hermes\/skills<\/code>/);
+  assert.equal(hermes[1].text, tool('hermes').commands[0]);
 });
 
 test('no word of a route is lost', () => {
-  const words = (s) => s.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/[`,]/g, ' ').split(/\s+/).filter(Boolean);
+  const words = (s) => s.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/[`,.;]/g, ' ').split(/\s+/).filter(Boolean);
   for (const t of tools) {
     const steps = routeSteps(t.route, t.commands);
     const rebuilt = steps.map((s) => (s.kind === 'cmd' ? s.text : s.html)).join(' ');

@@ -1,23 +1,24 @@
 # Agent Blueprint on Pi
 
-Binary `pi`; docs only (the Pi docs at release v0.87.1, read on 2026-09-28): Pi is not installed on the maintainer's machine.
+Binary `pi`; facts from the Pi docs at release v0.87.1, read on 2026-09-28, and the install checked against Pi 0.73.1 on 2026-10-12.
 
 ## Install
 
-One route: one copy of `skills/` in `~/.agents/skills`, which Pi scans recursively. `bash install.sh` writes it, and the same copy serves Codex, Grok Build, Cursor CLI and Amp. On a machine with Claude Code and Cursor CLI or Amp, it copies the skills into `~/.pi/agent/skills` instead, which only Pi reads:
+One route: Pi's package manager, straight from GitHub. `package.json` carries a `pi` key that points at `./skills`:
 
 ```bash
-git clone https://github.com/Ninety2UA/agent-blueprint.git
-bash agent-blueprint/install.sh --only pi
+pi install git:github.com/Ninety2UA/agent-blueprint
 ```
 
-Pi's package manager also accepts this repository, since `package.json` carries a `pi` key pointing at `./skills` (`pi install git:github.com/Ninety2UA/agent-blueprint` after the rename, `pi install ./agent-blueprint` from a checkout). Do not combine it with the copy: on a name collision Pi keeps the first skill found and warns. A project-level install (`-l`) is written to `.pi/settings.json` and loads only after you trust the project; the global copy needs no trust step.
+`bash install.sh` runs the same command, or `pi install <checkout>` with the clone under `--local`, and on a re-run first removes the `~/.pi/agent/skills` copy that 4.0 recorded, since Pi keeps the first skill of a name it finds and warns about the rest. A project-level install (`-l`) is written to `.pi/settings.json` and loads only after you trust the project; the global install needs no trust step.
 
 Recommended add-ons, both from npm: `pi install npm:pi-subagents` gives Pi a `subagent` tool, without which every Helper step runs inline, and `pi install npm:pi-ask-user` gives it a blocking question tool.
 
 What covers what: an `amp skill add` into a project writes `.agents/skills/`, which Pi also reads. A Claude Code install covers nothing here: Pi reads neither `.claude/skills` nor the Claude Code plugin cache.
 
-Check: `pi list` shows installed packages; a listing command for skills copied into `~/.agents/skills` is not verified. Update: re-run `bash install.sh`, or the ab-plugin-update skill; `pi update --extensions` refreshes packages. Docs: <https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/skills.md>.
+Check: `pi list` shows one agent-blueprint package. Update: `pi update --extensions`, or the ab-plugin-update skill. Docs: <https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/skills.md>.
+
+Set up a project: `/skill:ab-project-start` in a session. The README's [Set up your project](../../README.md#set-up-your-project) says what it creates and when to run it.
 
 ## Invoke a skill
 

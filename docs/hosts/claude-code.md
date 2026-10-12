@@ -1,29 +1,23 @@
 # Agent Blueprint on Claude Code
 
-Binary `claude`; facts checked against Claude Code 2.1.284 on 2026-09-30.
+Binary `claude`; facts checked against Claude Code 2.1.284 on 2026-09-30, and the install against 2.1.296 on 2026-10-12.
 
 ## Install
 
-One route: the plugin, through Claude Code's marketplace commands. Once the repository carries its v4 name:
+One route: the plugin, through Claude Code's marketplace commands, straight from GitHub:
 
 ```bash
 claude plugin marketplace add Ninety2UA/agent-blueprint
 claude plugin install agent-blueprint@agent-blueprint
 ```
 
-Before the rename, or for a pre-release checkout, both commands take the local path:
+There is no trust step: the plugin's hooks run as soon as it is enabled. Claude Code caches the plugin under `~/.claude/plugins/cache/`. `bash install.sh` in a clone of the repository runs the same two commands with GitHub as the source (`marketplace update` and `plugin update` instead, when the plugin is already there), takes the clone as the source with `--local`, and warns when the v3 plugin is still installed next to this one.
 
-```bash
-git clone https://github.com/Ninety2UA/agent-blueprint.git
-claude plugin marketplace add ./agent-blueprint
-claude plugin install agent-blueprint@agent-blueprint
-```
+What covers what: no other host's install covers Claude Code. The other way round, Cursor CLI and Amp read this plugin, so once it is installed they need nothing more, and a second route for either would list every skill twice. Grok Build loads no skills from Claude Code's install, so it needs its own command.
 
-`bash install.sh` from the checkout runs the same two commands (`marketplace update` and `plugin update` instead, when the plugin is already there) and warns when the v3 plugin is still installed next to this one. There is no trust step: the plugin's hooks run as soon as it is enabled. Claude Code caches the plugin under `~/.claude/plugins/cache/`.
+Check: `claude plugin list` shows `agent-blueprint@agent-blueprint`; `claude plugin validate --strict ./agent-blueprint` checks a checkout. Update: `claude plugin marketplace update agent-blueprint`, then `claude plugin update agent-blueprint@agent-blueprint`, then `/reload-plugins` in a session, or the ab-plugin-update skill. Remove v3 with `claude plugin uninstall claude-code-blueprint@claude-code-blueprint`; the ab-migrate skill cleans a project's old copies. Docs: <https://code.claude.com/docs/en/plugins-reference>.
 
-What covers what: no other host's install covers Claude Code, because it does not scan `~/.agents/skills`. The other way round, a Claude Code install already covers Amp, which loads that plugin cache, and Cursor CLI and Grok Build import Claude Code plugins and marketplaces; on those three, do not add a second route.
-
-Check: `claude plugin list` shows `agent-blueprint@agent-blueprint`; `claude plugin validate --strict ./agent-blueprint` checks a checkout. Update: `claude plugin marketplace update agent-blueprint`, then `claude plugin update agent-blueprint@agent-blueprint`, or the ab-plugin-update skill. Remove v3 with `claude plugin uninstall claude-code-blueprint@claude-code-blueprint`; the ab-migrate skill cleans a project's old copies. Docs: <https://code.claude.com/docs/en/plugins-reference>.
+Set up a project: `/ab-project-start` in a session (`/agent-blueprint:ab-project-start` in the menu). The README's [Set up your project](../../README.md#set-up-your-project) says what it creates and when to run it.
 
 ## Invoke a skill
 

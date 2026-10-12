@@ -15,7 +15,7 @@ const page = [
   '<h2 id="a">A</h2>',
   '<p>Or install one tool at a time with the route in this table:</p>',
   table(['Tool', 'Command', 'Install route', 'Support note'], 3),
-  '<p>The shared copy is one copy.</p>',
+  '<p>Give each tool one route.</p>',
   table(['Tool', 'How to name a skill'], 2),
   '<p>What each tool supports:</p>',
   table(['Tool', 'Hooks', 'Helpers', 'Manual-only skills'], 2),
@@ -29,9 +29,9 @@ test('the three install tables are replaced by their pointers and nothing else c
   for (const { pointer } of INSTALL_TABLES) assert.ok(out.includes(pointer), `pointer missing: ${pointer}`);
   // the pointers sit where the tables were, between the same paragraphs
   assert.ok(out.indexOf(INSTALL_TABLES[0].pointer) > out.indexOf('route in this table'));
-  assert.ok(out.indexOf(INSTALL_TABLES[0].pointer) < out.indexOf('The shared copy'));
+  assert.ok(out.indexOf(INSTALL_TABLES[0].pointer) < out.indexOf('Give each tool'));
   assert.ok(out.indexOf(INSTALL_TABLES[2].pointer) > out.indexOf('What each tool supports'));
-  for (const text of ['<h2 id="a">A</h2>', 'The shared copy is one copy.', 'What each tool supports:']) {
+  for (const text of ['<h2 id="a">A</h2>', 'Give each tool one route.', 'What each tool supports:']) {
     assert.ok(out.includes(text), `lost: ${text}`);
   }
 });

@@ -1,24 +1,31 @@
 # Agent Blueprint on Amp
 
-Binary `amp` (Sourcegraph); docs only (the skills page dated 2026-09-27, read on 2026-09-28): Amp is not installed on the maintainer's machine.
+Binary `amp` (Sourcegraph); facts from the docs (the skills page dated 2026-09-27, read on 2026-09-28), and the install checked against Amp 0.0.1791360091 on 2026-10-12.
 
 ## Install
 
 One route, with two starting points:
 
-- If Claude Code with the Agent Blueprint plugin is on the machine, there is nothing to do: Amp loads `~/.claude/plugins/cache/`, so the skills are already there. `bash install.sh` sees the Claude Code install, skips Amp and, since 4.0.1, writes no shared copy, which Amp would read as a second set.
-- Otherwise, one copy of `skills/` in `~/.agents/skills`, which Amp scans; the same copy serves Codex, Grok Build, Pi and Cursor CLI:
+- If Claude Code with the Agent Blueprint plugin is on the machine, there is nothing to do: Amp loads `~/.claude/plugins/cache/`, so the skills are already there. `bash install.sh` sees the Claude Code install and skips Amp. To add the plugin in Claude Code:
 
-```bash
-git clone https://github.com/Ninety2UA/agent-blueprint.git
-bash agent-blueprint/install.sh --only amp
-```
+  ```bash
+  claude plugin marketplace add Ninety2UA/agent-blueprint
+  claude plugin install agent-blueprint@agent-blueprint
+  ```
 
-Amp's own installer, `amp skill add <repo or path>` (`--global` for `~/.config/agents/skills/`), writes skills into a project's `.agents/skills/`, which Codex, Antigravity, Pi, Cursor CLI and Hermes also read; whether a repository URL installs every `skills/*` folder or needs a per-skill path is not verified. Do not combine routes: Amp resolves a duplicate name to the first found, and the other hosts list it twice. To keep only the copy on a machine that also has Claude Code, set `amp.skills.disableClaudeCodeSkills`.
+- Otherwise, the installer writes a copy of `skills/` into `~/.config/amp/skills`, a folder only Amp reads:
+
+  ```bash
+  git clone https://github.com/Ninety2UA/agent-blueprint.git && bash agent-blueprint/install.sh --only amp
+  ```
+
+The installer keeps a record in that folder, so a re-run replaces or removes only the skills it recorded, and it removes the Amp copy once Claude Code has the plugin. Amp's own installer, `amp skill add <repo or path>` (`--global` for `~/.config/agents/skills/`), writes skills into a project's `.agents/skills/`, which Codex, Antigravity, Pi, Cursor CLI and Hermes also read; whether a repository URL installs every `skills/*` folder or needs a per-skill path is not verified. Do not combine routes: Amp resolves a duplicate name to the first found, and the other hosts list it twice.
 
 Trust step: none is documented.
 
-Check: `amp skills list` (or `--json`), the `skills: list` palette entry, or the `reload_skills` tool after a change. Update: `claude plugin update agent-blueprint@agent-blueprint` when Claude Code provides the skills, otherwise re-run `bash install.sh`; the ab-plugin-update skill picks the route. Docs: <https://ampcode.com/docs/markdown/customize/skills>.
+Check: `amp skills list` (or `--json`) in a signed-in session, the `skills: list` palette entry, or the `reload_skills` tool after a change. Update: Claude Code's update when Amp reads its plugin (`claude plugin marketplace update agent-blueprint`, then `claude plugin update agent-blueprint@agent-blueprint`); for the Amp-only copy, `git pull` in the clone, then `bash install.sh --only amp` again. The ab-plugin-update skill picks the route. Docs: <https://ampcode.com/docs/markdown/customize/skills>.
+
+Set up a project: ask in plain words, "use the ab-project-start skill". The README's [Set up your project](../../README.md#set-up-your-project) says what it creates and when to run it.
 
 ## Invoke a skill
 
@@ -57,7 +64,7 @@ Headless threads are visible to your workspace by default: per the SDK docs a th
 
 - `.claude/` for working files: Amp reads `.claude/skills` and `~/.claude/skills`, so anything there is live in Amp too; v4 keeps its files under `.agent-blueprint/`.
 - `.amp/plugins/` and `~/.config/amp/plugins/`: Amp's plugin folders (TypeScript); a directory plugin would have to register each skill as `<plugin>:<skill>`, so the blueprint ships none.
-- `~/.config/agents/skills/`: Amp's global folder for `amp skill add --global`; a copy there next to `~/.agents/skills` doubles the catalog.
+- `~/.config/agents/skills/`: Amp's global folder for `amp skill add --global`; a copy there next to Claude Code's plugin or the installer's copy doubles the catalog.
 - `hooks/hooks.json`: never present in this plugin.
 
 ## Smoke status

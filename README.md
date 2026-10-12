@@ -61,54 +61,87 @@ The decision record behind the change is [`docs/learnings/2026-10-portability-de
 ## Install
 
 <p align="center">
-  <img src="docs/images/eight-tools.png" alt="One skills folder installed into eight tools: Claude Code and Antigravity through their own plugin commands, Codex, Grok Build, Pi, Cursor CLI, Hermes and Amp through one shared copy" width="90%">
+  <img src="docs/images/eight-tools.png" alt="Each tool installs Agent Blueprint from the GitHub repository Ninety2UA/agent-blueprint by its own route. Claude Code adds the marketplace and installs the plugin, hooks included; Codex adds the marketplace, adds the plugin and trusts its hooks in /hooks; Antigravity installs from the full GitHub URL; Grok Build installs its plugin and confirms; Pi installs from the git: source; Hermes gets the installer's copy in ~/.hermes/skills. Cursor CLI and Amp read Claude Code's plugin; without it, Cursor CLI uses its own marketplace and /plugin, and Amp gets the installer's copy. Beside the repository, bash install.sh runs the same routes for every tool at once." width="90%">
 </p>
 
-### 1. Get the code
+Each tool installs Agent Blueprint from GitHub by its own route and updates it the same way. Find your tool in the table, or set up every tool on the machine at once with the installer.
 
-```bash
-git clone https://github.com/Ninety2UA/agent-blueprint.git
-cd agent-blueprint
-```
-
-### 2. Install for the tools you use
-
-The installer finds the tools on your `PATH` and gives each one its route:
-
-```bash
-bash install.sh
-```
-
-Or install one tool at a time with its own route (`<checkout>` is the folder you cloned):
+### Install in your tool
 
 | Tool | Command | Install route | Support note |
 |---|---|---|---|
-| Claude Code | `claude` | `claude plugin marketplace add Ninety2UA/agent-blueprint`, then `claude plugin install agent-blueprint@agent-blueprint` | [claude-code.md](docs/hosts/claude-code.md) |
-| Codex | `codex` | `bash install.sh --only codex` (the shared copy). On a machine where no other tool uses the shared copy, `codex plugin marketplace add <checkout>` then `codex plugin add agent-blueprint@agent-blueprint` instead; never both | [codex.md](docs/hosts/codex.md) |
-| Antigravity | `agy` | `agy plugin install <checkout>`, or `bash install.sh --only agy` | [antigravity.md](docs/hosts/antigravity.md) |
-| Grok Build | `grok` | `bash install.sh --only grok` (the shared copy) | [grok-build.md](docs/hosts/grok-build.md) |
-| Pi | `pi` | `bash install.sh --only pi` (the shared copy) | [pi.md](docs/hosts/pi.md) |
-| Cursor CLI | `cursor-agent` | `bash install.sh --only cursor-agent` (the shared copy) | [cursor-cli.md](docs/hosts/cursor-cli.md) |
-| Hermes | `hermes` | `bash install.sh --only hermes`, then add `~/.agents/skills` under `skills.external_dirs` in `~/.hermes/config.yaml` (the installer prints the lines) | [hermes.md](docs/hosts/hermes.md) |
-| Amp | `amp` | `bash install.sh --only amp`, or nothing if Claude Code already has the plugin, because Amp reads Claude Code's install | [amp.md](docs/hosts/amp.md) |
+| Claude Code | `claude` | `claude plugin marketplace add Ninety2UA/agent-blueprint`, then `claude plugin install agent-blueprint@agent-blueprint`. The hooks run as soon as the plugin is on, and Cursor CLI and Amp read this plugin too | [claude-code.md](docs/hosts/claude-code.md) |
+| Codex | `codex` | `codex plugin marketplace add Ninety2UA/agent-blueprint`, then `codex plugin add agent-blueprint@agent-blueprint`, then trust the hooks in `/hooks`. The Codex app installs the same plugin from its plugin directory | [codex.md](docs/hosts/codex.md) |
+| Antigravity | `agy` | `agy plugin install https://github.com/Ninety2UA/agent-blueprint`. Antigravity needs the full URL and rejects the `owner/repo` form | [antigravity.md](docs/hosts/antigravity.md) |
+| Grok Build | `grok` | `grok plugin install Ninety2UA/agent-blueprint`, then confirm when it asks. Grok Build needs this command even when Claude Code has the plugin | [grok-build.md](docs/hosts/grok-build.md) |
+| Pi | `pi` | `pi install git:github.com/Ninety2UA/agent-blueprint` | [pi.md](docs/hosts/pi.md) |
+| Cursor CLI | `cursor-agent` | Cursor CLI reads Claude Code's plugin, so once Claude Code has it there is nothing to do. To add it there: `claude plugin marketplace add Ninety2UA/agent-blueprint`, then `claude plugin install agent-blueprint@agent-blueprint`. Without Claude Code: `cursor-agent plugin marketplace add https://github.com/Ninety2UA/agent-blueprint`, then run `/plugin` in a session and install agent-blueprint | [cursor-cli.md](docs/hosts/cursor-cli.md) |
+| Hermes | `hermes` | The installer gives Hermes its own copy in `~/.hermes/skills`, a folder only Hermes reads, with no config to edit: `git clone https://github.com/Ninety2UA/agent-blueprint.git && bash agent-blueprint/install.sh --only hermes` | [hermes.md](docs/hosts/hermes.md) |
+| Amp | `amp` | Amp reads Claude Code's plugin, so once Claude Code has it there is nothing to do. To add it there: `claude plugin marketplace add Ninety2UA/agent-blueprint`, then `claude plugin install agent-blueprint@agent-blueprint`. Without Claude Code: `git clone https://github.com/Ninety2UA/agent-blueprint.git && bash agent-blueprint/install.sh --only amp`, which writes a copy in `~/.config/amp/skills` that only Amp reads | [amp.md](docs/hosts/amp.md) |
 
-The shared copy is one copy of `skills/` in `~/.agents/skills`, read by Codex, Grok Build, Pi, Cursor CLI, Hermes and Amp. The installer records it in `~/.agents/skills/.agent-blueprint-install.json`, so running it again removes skills that were renamed or dropped since. Cursor CLI and Amp also read Claude Code's plugin, so on a machine with Claude Code and either of them the installer writes no shared copy: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder (`~/.grok/skills`, `~/.pi/agent/skills`, `~/.hermes/skills`), and a shared copy an earlier install left is removed. Keep one route per tool: a tool that sees the skills twice lists every skill twice, Codex with both its plugin and the shared copy for one. The support note for each tool says what to check before adding a route.
+Give each tool one route, because a tool that sees the skills twice lists every skill twice. Cursor CLI and Amp read Claude Code's plugin, so once Claude Code has it they need nothing more. Grok Build loads no skills from Claude Code's plugin and needs its own command even then. If you installed 4.0, run the installer below once without `--only`. It removes the copies 4.0 recorded in `~/.agents/skills`, `~/.grok/skills` and `~/.pi/agent/skills`, then installs each tool by its own route.
 
-Installer options:
+### Codex in the CLI and the app
+
+In the Codex CLI:
+
+1. Add the marketplace:
+
+   ```bash
+   codex plugin marketplace add Ninety2UA/agent-blueprint
+   ```
+
+2. Add the plugin:
+
+   ```bash
+   codex plugin add agent-blueprint@agent-blueprint
+   ```
+
+3. Start a Codex session, run `/hooks` and trust the Agent Blueprint hooks. Codex runs none of them until you do, and every skill works without them.
+
+In the Codex app, add the same marketplace and plugin from the app's plugin directory, then trust the hooks in `/hooks`.
+
+The hooks add five checks: a pointer to `docs/context/STATUS.md` when a session starts, the prompt-injection guard on file writes (it reads Codex's `apply_patch` edits too), the commit-message check (on when `.agent-blueprint/config.json` sets `hooks.validateCommit`), a context monitor that warns at 150 tool calls, and the Stop guard that keeps an interactive `ab-ship-pipeline` run going while its state file says `running`.
+
+Right after the install, Codex offers `$ab-project-start`, the setup skill described under [Set up your project](#set-up-your-project). Codex's `$` picker shows a display name and a one-line description for every skill, such as Project Setup for `ab-project-start` and Brainstorming for `ab-brainstorming`. Two skills, `ab-plugin-update` and `ab-migrate`, stay manual-only, so Codex runs them only when you type their name.
+
+To update, run `codex plugin marketplace upgrade agent-blueprint`, then `codex plugin add agent-blueprint@agent-blueprint` again. Codex keeps each version in its own cache folder, so the second command is the one that switches to the new release.
+
+### Set up every tool at once
+
+The installer finds the tools on your `PATH` and runs the route from the table for each one, with GitHub as the source:
+
+```bash
+git clone https://github.com/Ninety2UA/agent-blueprint.git
+bash agent-blueprint/install.sh
+```
+
+It adds `--trust` to Grok Build's install so Grok does not stop to ask. For Cursor CLI without Claude Code, it adds the marketplace and lists `/plugin` as the step left for you, because a script cannot run it. It writes no shared `~/.agents/skills` copy, removes the copies an earlier version recorded, and ends by pointing you to the setup skill.
+
+In the clone, `install.sh` takes these options:
 
 ```bash
 bash install.sh --dry-run                    # print what would run or be copied, change nothing
 bash install.sh --only claude,codex          # only these tools (claude,codex,agy,grok,pi,cursor-agent,hermes,amp)
+bash install.sh --local                      # install from this clone instead of GitHub
 bash install.sh /path/to/project             # install, then scaffold that project
 bash install.sh --scaffold /path/to/project  # only scaffold a project's files
 bash install.sh --copy-dir /path/to/skills   # copy the skills somewhere else, for a machine with no tool on PATH
 ```
 
-### 3. Check that your tool sees the skills
+### Check that your tool sees the skills
 
-Start a session and ask which skills it has that start with `ab-`. You should see them listed; the support note for your tool names its own listing command. Two skills, `ab-plugin-update` and `ab-migrate`, are manual-only and stay out of that list on purpose: they run only when you name them.
+Start a session and ask which skills it has that start with `ab-`. You should see each of them once; the support note for your tool names its own listing command. Two skills, `ab-plugin-update` and `ab-migrate`, are manual-only and stay out of that list on purpose: they run only when you name them. In Codex you can also type `$` to open the skill picker, which shows each skill by its display name, such as Project Setup.
 
-### 4. Name a skill when you want a specific one
+### Set up your project
+
+Run the setup skill, `ab-project-start`, first thing in a new project, or when you add the blueprint to a project that already exists. Start it with `/ab-project-start` in Claude Code, Antigravity, Grok Build, Cursor CLI and Hermes; Claude Code's menu also lists it as `/agent-blueprint:ab-project-start`. In Codex it is `$ab-project-start`, and Codex offers it right after you install the plugin. In Pi it is `/skill:ab-project-start`, and in Amp you ask in plain words: "use the ab-project-start skill".
+
+It creates `AGENTS.md`, the instructions every tool reads, with a one-line `CLAUDE.md` that imports it for Claude Code. Next to them go `docs/context/` (`CONVENTIONS.md`, `GOALS.md`, `STATUS.md` and `DECISIONS.md`), a `BACKLOG.md`, and `.gitignore` lines that keep its working files out of commits. The skill merges into files you already have and never overwrites them, then fills in your commands, goals and status from the code and a short conversation. [What you get](#what-you-get) shows the whole layout.
+
+Open the session in the project folder. With no folder named, the skill refuses to run in your home folder or in `/`. In a folder that has files but is not a git repository, it shows what it would write and asks first. Inside a git repository it never runs `git init` again, names the repository's top folder, and commits nothing, so you can review the changes.
+
+### Name a skill when you want a specific one
 
 Every tool also picks a skill on its own when your request matches its description.
 
@@ -119,12 +152,14 @@ Every tool also picks a skill on its own when your request matches its descripti
 | Pi | `/skill:` followed by the skill name |
 | Amp | Ask in plain words: "use the ab-brainstorming skill" (Amp removed user invocation of skills in May 2026) |
 
+The setup skill is named the same way, as [Set up your project](#set-up-your-project) shows for each tool.
+
 What each tool supports:
 
 | Tool | Hooks | Helpers | Manual-only skills |
 |---|---|---|---|
 | Claude Code | 10 handlers | Subagents, worktree isolation | Kept out of the model's list |
-| Codex | 5 handlers with the plugin route, after you trust them in `/hooks`; none with the shared copy | Subagents, file ownership | Kept out of the model's list |
+| Codex | 5 handlers, after you trust them in `/hooks` | Subagents, file ownership | Kept out of the model's list |
 | Antigravity | None | Subagents, worktree isolation | Kept out of the model's list (smoke test on 1.2.16) |
 | Grok Build | None | Subagents, worktree isolation | Kept out of the model's list |
 | Pi | None | With the `pi-subagents` package; inline without it | Kept out of the model's list |
@@ -135,13 +170,13 @@ What each tool supports:
 ## Quick start
 
 1. Install the blueprint for your tool, as described in [Install](#install).
-2. Set up a project. Open a session in your project and ask for the `ab-project-start` skill. It adds `AGENTS.md` (with a one-line `CLAUDE.md` that imports it), `docs/context/`, `BACKLOG.md` and `.agent-blueprint/.gitignore`, merging into what is already there, then fills in conventions, goals and status from your code and a short conversation. To add only the files, without a session:
+2. Set up a project. Open a session in your project and run the `ab-project-start` skill, first thing in a new project or when you bring the blueprint into an existing one. [Set up your project](#set-up-your-project) shows how to call it in each tool, and Codex offers it right after install. It adds `AGENTS.md` (with a one-line `CLAUDE.md` that imports it), `docs/context/`, `BACKLOG.md` and `.agent-blueprint/.gitignore`, merging into what is already there, then fills in conventions, goals and status from your code and a short conversation. It refuses to run in your home folder, and in a folder with files that is not a git repository it asks before writing. To add only the files without a session, run this from a clone of the repository:
 
    ```bash
    bash install.sh --scaffold /path/to/your/project
    ```
 
-3. Design your first feature. Ask for the `ab-brainstorming` skill with your idea. It checks what the repository already answers, compares two or three approaches, asks you to approve a design, and saves a plan under `docs/plans/`. Read the plan before anything runs, because it holds the details the design left open.
+3. Design your first feature. Ask for the `ab-brainstorming` skill with your idea. It checks what the repository already answers, compares two or three approaches, asks you to approve a design, and saves a plan under `docs/plans/`. It asks for that approval once, and a design you already approved, or told it to build, goes ahead without a second question. Read the plan before anything runs, because it holds the details the design left open.
 4. Build it, choosing how much you want to watch:
    - `ab-build-pipeline` runs the plan with a checkpoint after every stage.
    - `ab-ship-pipeline` runs it end to end with no checkpoints.
@@ -170,6 +205,8 @@ For a well-defined feature you want built hands-off, the ship runner drives `ab-
    ```bash
    bash <checkout>/skills/ab-ship-pipeline/scripts/run.sh --host codex "add JWT authentication with refresh tokens"
    ```
+
+   The runner is `scripts/run.sh` inside the installed `ab-ship-pipeline` skill. Ask for that skill in a session and it prints the command with the installed path, or clone the repository and use the clone as `<checkout>`.
 
 ### What the runner does
 
@@ -204,14 +241,20 @@ Each tool runs with the least privilege that still finishes a run: Claude Code `
 
 ## Update
 
-| Install route | How to update |
-|---|---|
-| Claude Code plugin | `claude plugin marketplace update agent-blueprint`, then `claude plugin update agent-blueprint@agent-blueprint`, then `/reload-plugins` |
-| Codex plugin | `codex plugin` from the marketplace you added; the `ab-plugin-update` skill finds the right subcommand, or falls back to the shared copy |
-| Antigravity | `git pull` in the checkout, then `agy plugin install <checkout>` again |
-| The shared copy (Codex, Grok Build, Pi, Cursor CLI, Hermes, Amp) | `git pull` in the checkout, then `bash install.sh` again |
+Each tool updates Agent Blueprint through its own route. Cursor CLI and Amp follow Claude Code's update when they read its plugin.
 
-In any tool, the `ab-plugin-update` skill works out which route you used, runs it, and checks the installed version against `main`.
+| Tool | How to update |
+|---|---|
+| Claude Code | `claude plugin marketplace update agent-blueprint`, then `claude plugin update agent-blueprint@agent-blueprint`, then `/reload-plugins` in a session |
+| Codex | `codex plugin marketplace upgrade agent-blueprint`, then `codex plugin add agent-blueprint@agent-blueprint` again. Codex caches each version separately, so the second command is needed |
+| Antigravity | Run `agy plugin install https://github.com/Ninety2UA/agent-blueprint` again |
+| Grok Build | `grok plugin update agent-blueprint` |
+| Pi | `pi update --extensions` |
+| Cursor CLI | Claude Code's update when Cursor CLI reads its plugin. For Cursor's own install, `cursor-agent plugin marketplace update agent-blueprint`, then update agent-blueprint through `/plugin` in a session |
+| Hermes | `git pull` in your clone of the repository, then `bash install.sh --only hermes` again |
+| Amp | Claude Code's update when Amp reads its plugin. For the Amp-only copy, `git pull` in your clone, then `bash install.sh --only amp` again |
+
+In any tool, the `ab-plugin-update` skill finds the route you used, runs it and checks the installed version against `main`. Before the release, each tool was installed by its route from a local checkout, in a clean profile, and listed every skill once, and `ab-plugin-update` moved a Codex install from 4.0.2 to 4.1.0 ([install record](docs/releases/v4.1.0-installs.md)).
 
 ## What you get
 
@@ -243,6 +286,8 @@ your-project/ (scaffolded by ab-project-start)
 ├── tests/                 # Your test suite
 └── infra/                 # Deployment and infrastructure
 ```
+
+Run `ab-project-start` first thing in a new project, or when you add the blueprint to one that exists. It merges into the files you already have and never overwrites them. It refuses your home folder, asks before writing into a folder with files that is not a git repository, and never runs `git init` inside a repository. [Set up your project](#set-up-your-project) shows how to call it in each tool.
 
 ### What each piece does
 
@@ -309,19 +354,21 @@ Five checkpoints hold at every stage:
 | 4 | No completion claim without fresh verification evidence | `ab-verification-before-completion` |
 | 5 | No merge without code review | `ab-requesting-code-review` |
 
+Gate 2 applies to code the agent writes. Code that existed before the task, or that you wrote or asked to keep, is never deleted to satisfy it; only code the agent wrote in the task before its test is thrown away and written again from a failing test.
+
 ### Consistency gates (CI)
 
 The repository checks itself against its own files, not against numbers someone typed. CI runs every gate on every pull request, and `AGENTS.md` lists them for maintainers.
 
 | Command | Checks |
 |---------|--------|
-| `bash scripts/check-drift.sh` | Count claims in the manifests, the README, `AGENTS.md` and the README hero's source in `site/motion/readme-hero/` match the tree: 53 skills, 10 hooks, 30 helper prompts. The site source in `site/src/` and the other motion sources in `site/motion/` state no literal skill, helper or hook count, and every skill sits in exactly one README phase table. It also fails when README.md or the site source brings back adoption or ecosystem wording |
+| `bash scripts/check-drift.sh` | Count claims in the manifests, the README, `AGENTS.md` and the README hero's source in `site/motion/readme-hero/` match the tree: 53 skills, 10 hooks, 30 helper prompts, and Codex's description counts the command handlers in `hooks/codex.json`. The site source in `site/src/` and the other motion sources in `site/motion/` state no literal skill, helper or hook count, and every skill sits in exactly one README phase table. It also fails when README.md or the site source brings back adoption or ecosystem wording |
 | `npx astro check` (in `site/`) | Type errors in the site's `.astro` and TypeScript files, under Astro's strict settings. Run it after `npm ci` in `site/` |
 | `python3 scripts/check-site.py site/dist` | The built site against the tree: one page per skill, each helper prompt once on the Skills page, the counts and version the pages state, no `SKILL.md` in the build, no adoption or ecosystem wording, internal links that resolve, and a title, description and canonical link on every page. Build the site first with `npm ci` and `npm run build` in `site/`, which needs Node 22.12 or later |
 | `node --test 'site/test/**/*.test.mjs'` | The site's data modules against the tree, such as the README, SKILL.md, release and tutorial parsers, each section's page order and llms.txt. On the built pages: a title and description of their own, the sitemap, the Changelog and Kit pages, islands that hydrate only on first interaction, and no script or stylesheet from another origin. Run it from the repository root with the glob quoted, after the site build: without `site/dist` the built-page tests skip |
 | `python3 scripts/check-skill-collisions.py` | Frontmatter YAML, `references/` pointers and § headings resolve, no near-duplicate descriptions |
-| `python3 scripts/check-portability.py` | The rules for all eight tools: agentskills frontmatter only, the `ab-` prefix, the 8,000-byte cap, no tool variables or cross-skill paths, no slash names, the manual-only pairing, no text Hermes would quarantine |
-| `python3 scripts/check-manifests.py` | Every manifest and every skill's `metadata.version` agree with the release |
+| `python3 scripts/check-portability.py` | The rules for all eight tools: agentskills frontmatter with only the allowed metadata keys, the `ab-` prefix, the 8,000-byte cap, no tool variables or cross-skill paths, no slash names, the manual-only pairing, no text Hermes would quarantine, and every skill's Codex display name and one-line description, with no display name used twice |
+| `python3 scripts/check-manifests.py` | Every host manifest and every skill's `metadata.version` agree with the release; interface assets resolve to files inside the repository, and Codex categories use supported values |
 | `python3 scripts/sync-shared.py --check` | Shared snippets and prompt copies match their sources |
 | `python3 -m unittest discover -s tests/gates` | The gate and skill-contract tests |
 | `claude plugin validate --strict .claude-plugin/plugin.json` | The plugin manifest, with Claude Code's own validator |
@@ -427,7 +474,7 @@ Each skill is a folder under `skills/` with a `SKILL.md` that stays under 8,000 
 
 | Skill | What it does | When |
 |-------|-------------|------|
-| [ab-brainstorming](skills/ab-brainstorming/) | Turns an idea into an approved design: settles what the repository answers, challenges the premise, compares two or three approaches, saves the plan | Before any new feature |
+| [ab-brainstorming](skills/ab-brainstorming/) | Turns an idea into an approved design: settles what the repository answers, challenges the premise, compares two or three approaches, saves the plan. Never asks twice for a design you approved | Before any new feature |
 | [ab-discuss](skills/ab-discuss/) | Captures and locks your decisions before planning, with prior art from ADRs, plans and learnings | Ambiguous choices ahead of a plan |
 | [ab-ideation](skills/ab-ideation/) | Generates grounded improvement ideas from learnings, structure and git history, and saves five to seven ranked survivors | "What's worth building?" |
 | [ab-writing-plans](skills/ab-writing-plans/) | Turns an approved design into a plan that records decisions, not code: file paths, each test and what it asserts, signatures, verification commands, review focus | After design approval |
@@ -443,7 +490,7 @@ Each skill is a folder under `skills/` with a `SKILL.md` that stays under 8,000 
 | [ab-executing-plans](skills/ab-executing-plans/) | Executes a plan in batches of three tasks with a checkpoint after each batch and a whole-branch review at the end | Plan execution in this session |
 | [ab-subagent-driven-development](skills/ab-subagent-driven-development/) | A fresh helper per task, then a spec reviewer and a code reviewer, with fix rounds until both pass | Plan execution with two-stage review |
 | [ab-autonomous-loop](skills/ab-autonomous-loop/) | Runs a plan's tasks with no checkpoints: verify, tick, commit, retry after a written reflection, stop on a circuit breaker or a risk score | "Just do it all" |
-| [ab-test-driven-development](skills/ab-test-driven-development/) | Red, green, refactor: one failing test, the least code that passes, the whole suite, then refactor | Any new code |
+| [ab-test-driven-development](skills/ab-test-driven-development/) | Red, green, refactor: one failing test, the least code that passes, the whole suite, then refactor. Keeps code that existed before the task | Any new code |
 | [ab-source-driven-development](skills/ab-source-driven-development/) | Writes framework- and library-specific code from the official docs for the installed version, citing the URL or marking it unverified | Framework or library APIs |
 | [ab-dispatching-parallel-agents](skills/ab-dispatching-parallel-agents/) | One focused helper per independent problem, all started at once, then integrated | Two or more unrelated failures |
 | [ab-using-git-worktrees](skills/ab-using-git-worktrees/) | An isolated git worktree on a new branch for feature or parallel work | Before major features |
@@ -509,7 +556,7 @@ Each skill is a folder under `skills/` with a `SKILL.md` that stays under 8,000 
 | Skill | What it does | When |
 |-------|-------------|------|
 | [ab-writing-skills](skills/ab-writing-skills/) | Writes, edits and tests skills that load in every supported tool: agentskills frontmatter, the 8,000-byte cap, capability snippets, prompt files, a test first | Creating or changing skills |
-| [ab-plugin-update](skills/ab-plugin-update/) | Upgrades Agent Blueprint itself through the tool's own route or a new run of `install.sh`, then checks the version. Manual-only | Upgrading the blueprint |
+| [ab-plugin-update](skills/ab-plugin-update/) | Upgrades Agent Blueprint itself through each tool's own updater, or a new run of the installer for Hermes and Amp, then checks the version. Manual-only | Upgrading the blueprint |
 | [ab-migrate](skills/ab-migrate/) | Cleans a v3 install out of a project and renames `CLAUDE.md` to `AGENTS.md` behind a backup branch. Manual-only | Moving a project from v3 |
 
 ## Helper prompts reference
@@ -624,6 +671,7 @@ The blueprint uses a tool's native features only as opt-ins: no pipeline depends
 | Session limits (Claude Code) | Swarms and research stay within the native limits: since CLI 2.1.224 there is no per-session subagent total, only a concurrency cap and a nesting depth; `host-limits.tsv` records the other tools' limits | 20 concurrent subagents by default (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`), spawn depth 3 (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`), 200 web searches per session |
 | Native injection hardening (Claude Code Agent tool) | Adds to the blueprint's own read and write scanners (Claude Code and Codex hooks) and the data markers helpers wrap around external text, which cover the main-session reads and writes native hardening does not see | None |
 | Bundled `/deep-research` workflow (Claude Code) | Claude Code bundles a web-search workflow of that name; the blueprint's research swarm is `ab-deep-research`, so the two names do not collide | None |
+| Codex plugin listing | Codex's `$` picker shows each skill's display name and one-line description, and Codex offers `ab-project-start` right after install | Checked on Codex 0.160.0 |
 | Hermes skill security scan | Skills, prompt files and instruction files carry none of the phrases Hermes treats as injection, no instruction to edit the instructions file by name, and no HTML comments; the portability gate checks the same | Runs on every skill Hermes installs or indexes |
 
 ### Adjusting quality gates
@@ -789,7 +837,13 @@ Yes. Hooks exist only for Claude Code (`hooks/claude-code.json`, 10 handlers) an
 <details>
 <summary><strong>Can I use this with an existing project?</strong></summary>
 
-Yes. The blueprint installs in your tool and adds no engine files to your project. Install it, then ask for the `ab-project-start` skill in the project: it adds `AGENTS.md` and `docs/` by merging into what exists, and never overwrites your code or instructions.
+Yes. The blueprint installs in your tool and adds no engine files to your project. Install it, then run the `ab-project-start` skill in the project ([how to call it in each tool](#set-up-your-project)): it adds `AGENTS.md` and `docs/` by merging into what exists, and never overwrites your code or instructions. In a folder with files that is not a git repository, it shows what it would write and asks first. Inside a repository it runs no second `git init`, names the repository's top folder and commits nothing, so you review the changes before you commit them.
+</details>
+
+<details>
+<summary><strong>What does ab-project-start set up, and when do I run it?</strong></summary>
+
+It creates `AGENTS.md`, a one-line `CLAUDE.md` that imports it, `docs/context/` with `CONVENTIONS.md`, `GOALS.md`, `STATUS.md` and `DECISIONS.md`, a `BACKLOG.md`, and `.gitignore` lines for its working files. It merges into what is there and never overwrites it, then fills in the commands, goals and status from your code and a few questions. Run it first thing in a new project, or when you bring the blueprint into one that exists. Call it with `/ab-project-start` in Claude Code, Antigravity, Grok Build, Cursor CLI and Hermes, `$ab-project-start` in Codex and `/skill:ab-project-start` in Pi, or ask Amp to "use the ab-project-start skill". Codex offers it right after you install the plugin.
 </details>
 
 <details>
@@ -819,7 +873,13 @@ Yes. The plugin works the same in the Claude Code CLI and in its VS Code and Jet
 <details>
 <summary><strong>How do I update the blueprint?</strong></summary>
 
-See [Update](#update). In any tool, the `ab-plugin-update` skill finds the route you used, runs it and checks the version. Your project files (`AGENTS.md`, `docs/`, `BACKLOG.md`) are never touched.
+Each tool updates through its own route, and [Update](#update) gives the command for each. In any tool, the `ab-plugin-update` skill finds the route you used, runs it and checks the version. Your project files (`AGENTS.md`, `docs/`, `BACKLOG.md`) are never touched.
+</details>
+
+<details>
+<summary><strong>How do I move a 4.0 install to the new routes?</strong></summary>
+
+Run the installer once more, without `--only`: `git pull` and `bash install.sh` in the clone you have, or clone it again with the command under [Set up every tool at once](#set-up-every-tool-at-once). It removes the copies 4.0 recorded in `~/.agents/skills`, `~/.grok/skills` and `~/.pi/agent/skills`, touching only the skills it recorded, then installs each tool by its own route. A run with `--only` retires an old copy only for the tools in that run, and keeps the shared copy, with a warning, while a tool outside the run still reads it. If you install with a tool's own command instead and keep the old copy, that tool lists every skill twice.
 </details>
 
 <details>

@@ -1,21 +1,17 @@
 ---
 // Getting started: one tab per tool of the README install table, every fact from getSiteData()
-// (R13). Each panel shows the clone step when the route runs from a checkout, the route's commands
-// as copy controls with the README's words between them, how to name a skill, what the tool
+// (R13). Each panel shows the route's commands as copy controls with the README's words between
+// them (a route that needs a clone has it inside its command), how to name a skill, what the tool
 // supports, and its support note on GitHub. With `hashTarget`, each panel's id is the tool id, so
 // the footer's /docs/getting-started/#<tool id> links open that tab.
 import Cmd from '../Cmd.astro';
 import Tabs from '../Tabs.astro';
-import { getSiteData, type Tool } from '../../lib/site.mjs';
+import { getSiteData } from '../../lib/site.mjs';
 import { inlineCode } from '../../lib/text.mjs';
 import { routeSteps } from './route.mjs';
 import { INSTALL_TABS_ID } from './section.mjs';
 
-const { tools, cloneCommand, repoUrl } = getSiteData();
-const clone = cloneCommand.split('\n');
-// install.sh and <checkout> both mean the route runs from a clone of the repository
-const fromCheckout = (t: Tool) => t.commands.some((c) => c.includes('install.sh') || c.includes('<checkout>'));
-const namesCheckout = (t: Tool) => t.commands.some((c) => c.includes('<checkout>'));
+const { tools, repoUrl } = getSiteData();
 ---
 <section class="gs-tools" aria-labelledby={INSTALL_TABS_ID}>
   <h2 id={INSTALL_TABS_ID}>Install by tool</h2>
@@ -23,15 +19,6 @@ const namesCheckout = (t: Tool) => t.commands.some((c) => c.includes('<checkout>
     {tools.map((t) => (
       <Fragment slot={t.id}>
         <dl class="gs-spec">
-          {fromCheckout(t) && (
-            <>
-              <dt>Get the code</dt>
-              <dd>
-                <Cmd lines={clone} prompt label="Clone command" copyLabel={`Copy the clone command for ${t.name}`} />
-                {namesCheckout(t) && <p class="gs-hint"><code>&lt;checkout&gt;</code> is the folder you cloned.</p>}
-              </dd>
-            </>
-          )}
           <dt>Install</dt>
           <dd class="gs-route">
             {routeSteps(t.route, t.commands).map((step) =>

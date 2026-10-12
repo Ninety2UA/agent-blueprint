@@ -21,6 +21,35 @@ const README = readFileSync(join(ROOT, 'README.md'), 'utf8');
 const PLUGIN = JSON.parse(readFileSync(join(ROOT, '.claude-plugin/plugin.json'), 'utf8'));
 const OPTIONS = { repoUrl: PLUGIN.repository, repoRoot: ROOT, anchorFallbacks: ANCHOR_FALLBACKS };
 
+// Each tool's own route from GitHub (plan KTD10), from the repository URL in plugin.json. Cursor CLI
+// and Amp read Claude Code's plugin, so their rows give Claude Code's commands before their own.
+const GITHUB = PLUGIN.repository; // https://github.com/<owner>/<repo>
+const SLUG = new URL(GITHUB).pathname.slice(1);
+const CHECKOUT = SLUG.split('/')[1];
+const PLUGIN_ID = `${PLUGIN.name}@${PLUGIN.name}`;
+const ALL_TOOLS = `git clone ${GITHUB}.git && bash ${CHECKOUT}/install.sh`;
+const CLAUDE = [`claude plugin marketplace add ${SLUG}`, `claude plugin install ${PLUGIN_ID}`];
+const KTD10 = {
+  claude: CLAUDE,
+  codex: [`codex plugin marketplace add ${SLUG}`, `codex plugin add ${PLUGIN_ID}`],
+  agy: [`agy plugin install ${GITHUB}`],
+  grok: [`grok plugin install ${SLUG}`],
+  pi: [`pi install git:${GITHUB.replace(/^https:\/\//, '')}`],
+  'cursor-agent': [...CLAUDE, `cursor-agent plugin marketplace add ${GITHUB}`],
+  hermes: [`${ALL_TOOLS} --only hermes`],
+  amp: [...CLAUDE, `${ALL_TOOLS} --only amp`],
+};
+
+// The commands in the fenced blocks of a host note's "## Install" section, and the section's text.
+function hostInstall(hostDoc) {
+  const text = readFileSync(join(ROOT, hostDoc), 'utf8');
+  const section = text.split(/^## Install\n/m)[1]?.split(/^## /m)[0];
+  assert.ok(section, `${hostDoc} has no "## Install" section`);
+  const fences = [...section.matchAll(/^[ \t]*```[a-z]*\n([\s\S]*?)^[ \t]*```/gm)];
+  const commands = fences.flatMap(([, body]) => body.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#')));
+  return { section, commands };
+}
+
 const skillFolders = readdirSync(join(ROOT, 'skills'), { withFileTypes: true })
   .filter((d) => d.isDirectory() && existsSync(join(ROOT, 'skills', d.name, 'SKILL.md')))
   .map((d) => d.name)
@@ -89,8 +118,7 @@ test('the install, naming and support tables give one entry per host the install
   const hostIds = hostsSh.match(/^AB_HOSTS="([^"]+)"/m)[1].split(' ');
   const install = parseInstall(README);
   assert.deepEqual(install.tools.map((t) => t.id), hostIds);
-  assert.match(install.cloneCommand, /^git clone \S+\ncd \S+$/);
-  assert.equal(install.installCommand, 'bash install.sh');
+  assert.equal(install.allToolsCommand, ALL_TOOLS);
   for (const tool of install.tools) {
     assert.ok(existsSync(join(ROOT, tool.hostDoc)), `${tool.name} host doc ${tool.hostDoc} is missing`);
     assert.ok(tool.commands.length > 0, `${tool.name} has no install command`);
@@ -103,8 +131,30 @@ test('the install, naming and support tables give one entry per host the install
   assert.deepEqual(byId.codex.naming, { syntax: '$', example: '$ab-brainstorming' });
   assert.deepEqual(byId.pi.naming, { syntax: '/skill:', example: '/skill:ab-brainstorming' });
   assert.deepEqual(byId.amp.naming, { syntax: null, example: 'use the ab-brainstorming skill' });
-  assert.equal(byId.hermes.commands[0], 'bash install.sh --only hermes');
-  assert.ok(!byId.hermes.commands.includes('~/.agents/skills'), 'a path is not a command');
+  assert.ok(!byId.hermes.commands.includes('~/.hermes/skills'), 'a path is not a command');
+});
+
+test("each install row's commands are that tool's own route (KTD10), with no clone placeholder", () => {
+  const { tools } = parseInstall(README);
+  assert.deepEqual(Object.keys(KTD10), tools.map((t) => t.id));
+  for (const tool of tools) {
+    assert.deepEqual(tool.commands, KTD10[tool.id], tool.name);
+    assert.ok(!tool.route.includes('<checkout>'), `${tool.name}'s route names <checkout>`);
+  }
+});
+
+test("each host note's Install section gives the same commands as the README", () => {
+  const { allToolsCommand, tools } = parseInstall(README);
+  for (const tool of tools) {
+    const { section, commands } = hostInstall(tool.hostDoc);
+    assert.ok(commands.length > 0, `${tool.hostDoc} has no install command in a code block`);
+    for (const command of commands) {
+      assert.ok(tool.commands.includes(command) || command === allToolsCommand, `${tool.hostDoc}: "${command}" is not in the README's ${tool.name} route`);
+    }
+    for (const command of tool.commands) {
+      assert.ok(section.includes(command), `${tool.hostDoc} does not give the README's "${command}"`);
+    }
+  }
 });
 
 test('a README without the "Skills reference" heading makes the parser name the missing section', () => {
@@ -151,7 +201,7 @@ test('a README with a mapped heading renamed makes extraction name the page that
 test('extracted sections link README anchors to site pages and repository paths to GitHub', () => {
   const extra = [
     '',
-    'The skill is [ab-migrate](skills/ab-migrate/), its first step is [Get the code](#1-get-the-code),',
+    'The skill is [ab-migrate](skills/ab-migrate/), the installer is under [Set up every tool at once](#set-up-every-tool-at-once),',
     'the catalog is [Skills](#skills-reference) and the gates are [Quality gates](#quality-gates).',
     '',
   ].join('\n');
@@ -162,7 +212,10 @@ test('extracted sections link README anchors to site pages and repository paths 
   assert.ok(!/\]\(#/.test(pages['quick-start'].markdown));
   const upgrade = pages['upgrade-from-v3'].markdown;
   assert.ok(upgrade.includes(`[ab-migrate](${PLUGIN.repository}/tree/main/skills/ab-migrate/)`));
-  assert.ok(upgrade.includes(`[Get the code](${url('getting-started')}#1-get-the-code)`), 'a subsection anchor keeps its fragment');
+  assert.ok(
+    upgrade.includes(`[Set up every tool at once](${url('getting-started')}#set-up-every-tool-at-once)`),
+    'a subsection anchor keeps its fragment',
+  );
   // A heading no page renders links to its fallback page.
   assert.ok(upgrade.includes('[Skills](/skills/)'));
   assert.ok(upgrade.includes('[Quality gates](/workflow/)'));
@@ -176,12 +229,13 @@ test('extracted sections link README anchors to site pages and repository paths 
 test('extracted sections keep inline code, tables and fenced code, and reference README images', () => {
   const pages = Object.fromEntries(extractPages(README, README_PAGES, OPTIONS).map((p) => [p.slug, p]));
   const start = pages['getting-started'].markdown;
-  assert.ok(start.includes('```bash\ngit clone https://github.com/Ninety2UA/agent-blueprint.git\ncd agent-blueprint\n```'));
+  assert.ok(start.includes(`\`\`\`bash\n${ALL_TOOLS.replace(' && ', '\n')}\n\`\`\``));
   assert.ok(start.includes('| Tool | Command | Install route | Support note |'));
-  assert.ok(start.includes('`<checkout>`'));
-  assert.match(start, /^## 1\. Get the code$/m, 'subsections become H2 when a page renders one section');
+  assert.ok(start.includes('`codex plugin marketplace add'), 'the Codex section keeps its inline code');
+  assert.match(start, /^## Install in your tool$/m, 'subsections become H2 when a page renders one section');
+  assert.match(start, /^## Set up your project$/m);
   assert.ok(!/^## Install$/m.test(start), 'the page title replaces the section heading');
-  assert.match(start, /!\[One skills folder installed into eight tools[^\]]*\]\(\.\/docs\/images\/eight-tools\.png\)/);
+  assert.match(start, /!\[Each tool installs Agent Blueprint[^\]]*\]\(\.\/docs\/images\/eight-tools\.png\)/);
   assert.ok(!start.includes('<img'), 'README <img> tags become Markdown images');
   for (const page of Object.values(pages)) {
     for (const image of page.images) assert.ok(existsSync(join(ROOT, image)), `${page.slug}: ${image} is missing`);

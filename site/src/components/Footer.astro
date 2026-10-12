@@ -18,12 +18,12 @@ interface Props {
   sheet: string;
 }
 const { sheet } = Astro.props;
-const { version, repoUrl, counts, cloneCommand, installCommand, tools } = getSiteData();
+const { version, repoUrl, counts, allToolsCommand, tools } = getSiteData();
 
 const PRODUCT = ['Skills', 'Workflow', 'Tutorials', 'Guides', 'Kit', 'Changelog'];
 const product = PRODUCT.map((label) => NAV.find((n) => n.label === label)!);
-const clone: string[] = cloneCommand.split('\n');
-const installLines = [...clone.slice(0, -1), `${clone.at(-1)} && ${installCommand}`];
+// the clone and the installer, one line each; the copy button copies them joined by &&
+const installLines = allToolsCommand.split(' && ');
 const resources = [
   { label: 'GitHub', href: repoUrl },
   { label: 'Contributing', href: `${repoUrl}/blob/main/CONTRIBUTING.md` },
@@ -54,7 +54,7 @@ const resources = [
       </nav>
       <div class="tb-install">
         <span class="f">Install</span>
-        <Cmd lines={installLines} copy={[...clone, installCommand].join(' && ')} prompt label="Install command" copyLabel="Copy install command" />
+        <Cmd lines={installLines} copy={allToolsCommand} prompt label="Install command" copyLabel="Copy install command" />
       </div>
       <div class="tb-meta tb-last">
         <div><span class="f">License</span><span class="v">MIT</span></div>

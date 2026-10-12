@@ -1,34 +1,25 @@
 # Agent Blueprint on Codex
 
-Binary `codex`; facts checked against Codex CLI 0.155.1 on 2026-09-30.
+Binary `codex`; facts checked against Codex CLI 0.155.1 on 2026-09-30, and the install, the hooks and the update against 0.160.0 on 2026-10-12.
 
 ## Install
 
-One route: the shared skills copy that `bash install.sh` writes to `~/.agents/skills`, which Codex scans (along with Grok Build, Pi, Cursor CLI and Amp, so one copy serves all five). On a machine with Claude Code and Cursor CLI or Amp, which would see that copy a second time, the installer uses Codex's plugin route instead (below):
-
-```bash
-git clone https://github.com/Ninety2UA/agent-blueprint.git
-bash agent-blueprint/install.sh
-```
-
-The copy carries the 53 skills and no hooks. The installer keeps a record in that folder, so a re-run removes skills that were renamed or deleted since and leaves every other skill there alone.
-
-On a machine where no other tool uses the shared copy, the plugin route is the alternative: it brings the same skills plus `hooks/codex.json`. Once the repository carries its v4 name:
+One route: the plugin, straight from GitHub, in the CLI and the app. In the CLI, add the marketplace and the plugin:
 
 ```bash
 codex plugin marketplace add Ninety2UA/agent-blueprint
 codex plugin add agent-blueprint@agent-blueprint
 ```
 
-For a pre-release checkout, `codex plugin marketplace add` also takes a local marketplace root (`codex plugin marketplace add ./agent-blueprint`, then the same `codex plugin add`). `codex plugin add` exists in 0.155.1; the docs still describe installing through the ChatGPT desktop app, which older versions need. Codex caches the plugin under `~/.codex/plugins/cache/`. Per the docs, a plugin can also be switched on per repository in `.codex/config.toml` (`[plugins."agent-blueprint@agent-blueprint"] enabled = true`, trusted projects only).
-
-Pick one route. With the plugin and the copy both present Codex lists every skill twice (KTD18), and whether it would merge a plugin skill and a `~/.agents/skills` skill of the same name into one catalog entry is not verified. Running the installer for another tool does not avoid that: `bash install.sh --only grok,pi` (or Cursor CLI, Hermes or Amp) still writes the copy to `~/.agents/skills`, and Codex reads it. So when any of those tools uses the shared copy, Codex uses it too, and the plugin route is only for a machine where no other tool needs the copy; Claude Code and Antigravity have their own routes and do not write it.
+Then start a session and trust the hooks in `/hooks`. In the Codex app, add the same marketplace and plugin from its plugin directory and trust the hooks the same way. Codex caches the plugin under `~/.codex/plugins/cache/`, one folder per version. `bash install.sh` in a clone of the repository runs the same two commands with GitHub as the source, or with the clone under `--local`. Per the docs, a plugin can also be switched on per repository in `.codex/config.toml` (`[plugins."agent-blueprint@agent-blueprint"] enabled = true`, trusted projects only).
 
 Trust step for hooks: plugin hooks are skipped until you review and trust them in `/hooks` (Codex trusts them by hash); headless, `codex exec --dangerously-bypass-hook-trust` runs them without that review. No pipeline depends on the hooks, so an untrusted install still works.
 
-What covers what: the `~/.agents/skills` copy reaches Codex whichever other host it was made for. Codex does not read `.claude/skills` or Claude Code's plugin cache.
+After the install, Codex offers `$ab-project-start`, the setup skill, because the manifest names it as the plugin's onboarding skill. The README's [Set up your project](../../README.md#set-up-your-project) says what it creates and when to run it. In the `$` picker every skill shows a display name and a one-line description from its `agents/openai.yaml`, such as Project Setup for `ab-project-start`.
 
-Check: `codex plugin list`, or `/plugins` in the session; `codex plugin marketplace list` shows the marketplace. Codex has no `plugin validate` command. Update: `codex plugin marketplace upgrade` refreshes the marketplace; whether an installed plugin then picks up the new version on its own, or needs `codex plugin add` again, is not verified on 0.155.1. A copy install is refreshed by re-running `bash install.sh`; the ab-plugin-update skill picks the route. Docs: <https://developers.openai.com/plugins/build/plugins>, <https://learn.chatgpt.com/docs/hooks>.
+What covers what: no other host's install covers Codex. Codex reads neither `.claude/skills` nor Claude Code's plugin cache. If a 4.0 install left a skills copy in `~/.agents/skills`, Codex lists every skill twice until a run of `bash install.sh` without `--only` removes it.
+
+Check: `codex plugin list`, or `/plugins` in the session; `codex plugin marketplace list` shows the marketplace; type `$` in a session and look for the display names. Codex has no `plugin validate` command. Update: `codex plugin marketplace upgrade agent-blueprint`, then `codex plugin add agent-blueprint@agent-blueprint` again, because Codex keeps each version in its own cache folder; a marketplace added from a local checkout is pulled with git instead of upgraded. The ab-plugin-update skill follows the same route and moved a Codex 0.160.0 install from 4.0.2 to 4.1.0 (`docs/releases/v4.1.0-installs.md`). Docs: <https://developers.openai.com/plugins/build/plugins>, <https://learn.chatgpt.com/docs/hooks>.
 
 ## Invoke a skill
 
@@ -44,7 +35,7 @@ Codex truncates skill text at 8,000 bytes, silently; every SKILL.md stays under 
 
 ## What is missing or different
 
-- Hooks: only the plugin route installs them; the shared copy has none. `hooks/codex.json` carries five handlers: the session-start pointer to `docs/context/STATUS.md`, the injection scanner on writes (`Edit|Write`), the commit-message check (`Bash`), the context monitor and the ship-pipeline Stop guard. Absent, because Codex has no event for them: the read-injection scanner and the fetch cache (Codex has no `Read` or `WebFetch` tool) and the Agent Teams gates (Claude Code only). Until you trust the hooks in `/hooks`, none of the five runs, and the injection guard is inactive.
+- Hooks: `hooks/codex.json` carries five handlers: the session-start pointer to `docs/context/STATUS.md`, the injection scanner on writes (`Edit|Write`; it also scans the lines an `apply_patch` edit adds), the commit-message check (`Bash`, on when `.agent-blueprint/config.json` sets `hooks.validateCommit`), the context monitor and the ship-pipeline Stop guard. A Codex 0.160.0 session ran all five (2026-10-12). Absent, because Codex has no event for them: the read-injection scanner and the fetch cache (Codex has no `Read` or `WebFetch` tool) and the Agent Teams gates (Claude Code only). Until you trust the hooks in `/hooks`, none of the five runs, and the injection guard is inactive.
 - Helpers: `spawn_agent` (the `multi_agent` feature, on by default). Helpers share the parent's checkout and sandbox, so team work isolates by file ownership.
 - Team work: 4 helpers per wave (`agents.max_concurrent_threads_per_session`). `multi_agent_v2` is an optional extra: with `[features] multi_agent_v2 = true`, team work uses named agents with `send_message` and `followup_task`, and that also works under `codex exec`.
 - Questions: a Codex question tool is not verified; the skills fall back to a plain-text numbered list, and a headless run takes the documented default.
@@ -70,7 +61,8 @@ Nothing beyond the host's own terms is known.
 ## Paths to avoid
 
 - `.claude/`: Codex does not read it, and v4 keeps working files under `.agent-blueprint/`.
-- `.codex/skills` and `$CODEX_HOME/skills`: undocumented scan paths that may disappear; the copy route uses `~/.agents/skills`.
+- `.codex/skills` and `$CODEX_HOME/skills`: undocumented scan paths that may disappear; the plugin is the only route.
+- `~/.agents/skills`: Codex scans it, so a skills copy there beside the plugin lists every skill twice; a re-run of the installer removes the one 4.0 recorded.
 - A root `plugin.json` with the Agent Plugins `$schema`: the blueprint ships none, because that schema switches Codex to a different loader.
 - `hooks/hooks.json`: never present; the Codex file is `hooks/codex.json`, declared in `.codex-plugin/plugin.json`.
 

@@ -1,21 +1,31 @@
 # Agent Blueprint on Cursor CLI
 
-Binary `cursor-agent`, never `agent` (see below); facts checked against Cursor CLI 2026.09.10 on 2026-09-30.
+Binary `cursor-agent`, never `agent` (see below); facts checked against Cursor CLI 2026.09.10 on 2026-09-30; on 2026-10-12, 2026.10.01 listed each skill once through Claude Code's plugin and through `--plugin-dir`.
 
 ## Install
 
-One route: one copy of `skills/` in `~/.agents/skills`, which Cursor scans. `bash install.sh` writes it, and the same copy serves Codex, Grok Build, Pi and Amp:
+Cursor reads Claude Code's plugin, so once Claude Code has Agent Blueprint there is nothing to do here. To add it in Claude Code:
 
 ```bash
-git clone https://github.com/Ninety2UA/agent-blueprint.git
-bash agent-blueprint/install.sh --only cursor-agent
+claude plugin marketplace add Ninety2UA/agent-blueprint
+claude plugin install agent-blueprint@agent-blueprint
 ```
 
-Cursor's plugin route also works, through `.cursor-plugin/plugin.json`: `cursor-agent plugin marketplace add https://github.com/Ninety2UA/agent-blueprint` (after the rename; `--git-ref` pins a ref), then `/plugin` in the session to install; `cursor-agent --plugin-dir <checkout>` loads a checkout for one session. There is no `plugin install` shell subcommand in 2026.09.10. Do not combine a plugin with the copy: Cursor would list every skill twice. Cursor also imports Claude Code plugins and shows them next to native ones, so a Claude Code user already sees the skills here; since 4.0.1, `bash install.sh` then writes no shared copy, so Cursor lists each skill once. That import includes plugins Claude Code installed for other projects: with the v3 `claude-code-blueprint` plugin still installed anywhere, Cursor sees its unprefixed skills (for example `systematic-debugging`) beside the v4 `ab-` skills and may follow the old one. Remove the v3 plugin as `docs/upgrade/v4.md` describes.
+Without Claude Code, add Cursor's own marketplace from GitHub (through `.cursor-plugin/plugin.json`; `--git-ref` pins a ref), then run `/plugin` in a session and install agent-blueprint:
+
+```bash
+cursor-agent plugin marketplace add https://github.com/Ninety2UA/agent-blueprint
+```
+
+There is no `plugin install` shell subcommand in 2026.09.10, so `/plugin` is a step you take in the session. `bash install.sh` does nothing for Cursor when Claude Code has the plugin; otherwise it adds the marketplace and lists `/plugin` as unfinished, and with `--local` it prints `cursor-agent --plugin-dir <checkout>`, which loads a checkout for one session. Do not combine Cursor's own install with Claude Code's plugin: Cursor would list every skill twice.
+
+Cursor's import of Claude Code plugins includes plugins Claude Code installed for other projects: with the v3 `claude-code-blueprint` plugin still installed anywhere, Cursor sees its unprefixed skills (for example `systematic-debugging`) beside the v4 `ab-` skills and may follow the old one. Remove the v3 plugin as `docs/upgrade/v4.md` describes.
 
 Trust step: none is documented for skills or plugins; headless runs pass `--trust` for the workspace.
 
-Check: `cursor-agent plugin marketplace list` for marketplaces and `/plugin` in the session for plugins; a listing command for skills copied into `~/.agents/skills` is not verified. Update: re-run `bash install.sh`, or the ab-plugin-update skill. Docs: <https://cursor.com/docs/skills>, <https://cursor.com/docs/reference/plugins>.
+Check: `cursor-agent plugin marketplace list` for marketplaces and `/plugin` in the session for plugins. Update: Claude Code's update when Cursor reads its plugin; for Cursor's own install, `cursor-agent plugin marketplace update agent-blueprint`, then update agent-blueprint through `/plugin` in a session. The ab-plugin-update skill picks the route. Docs: <https://cursor.com/docs/skills>, <https://cursor.com/docs/reference/plugins>.
+
+Set up a project: `/ab-project-start` in a session. The README's [Set up your project](../../README.md#set-up-your-project) says what it creates and when to run it.
 
 ## Invoke a skill
 
@@ -36,7 +46,7 @@ Check: `cursor-agent plugin marketplace list` for marketplaces and `/plugin` in 
 - Task tracking: the plan file's checkboxes; a Cursor todo tool is not verified.
 - `.git` writes: the sandbox protects `.git/hooks`; the runner's preflight probe decides whether `.git` is writable, and a read-only answer puts the skills in no-commit mode, with the runner committing.
 - Binary: Grok Build installs `~/.grok/bin/agent`, which can shadow Cursor's `agent` on the PATH; the blueprint and the runner always call `cursor-agent`.
-- Catalog cap: Cursor hands the model a list of about 210 skill names and says how many more it left out (128 of 339 on the build machine, which also holds the skills of other tools, since the CLI reads `~/.claude/skills` and `~/.codex/skills` too; the app's "Include third-party Plugins, Skills, and other configs" setting does not reach the CLI). Where every `ab-` skill falls past the cap, the model cannot choose one on its own, but naming it (`/ab-pr-workflow`) still loads it. With only the blueprint installed every cell that applies passes, manual-only included: `ab-plugin-update` is absent from the list while `ab-pr-workflow` and `ab-project-start` are in it (verified 2026-10-07 on the release commit in a clean profile; `tests/smoke/README.md` § A clean profile for a capped catalog). A machine with both the Claude Code plugin and the shared copy installed shows Cursor every skill twice; since 4.0.1 the installer writes no shared copy beside Claude Code and removes one an earlier install left.
+- Catalog cap: Cursor hands the model a list of about 210 skill names and says how many more it left out (128 of 339 on the build machine, which also holds the skills of other tools, since the CLI reads `~/.claude/skills` and `~/.codex/skills` too; the app's "Include third-party Plugins, Skills, and other configs" setting does not reach the CLI). Where every `ab-` skill falls past the cap, the model cannot choose one on its own, but naming it (`/ab-pr-workflow`) still loads it. With only the blueprint installed every cell that applies passes, manual-only included: `ab-plugin-update` is absent from the list while `ab-pr-workflow` and `ab-project-start` are in it (verified 2026-10-07 on the release commit in a clean profile; `tests/smoke/README.md` § A clean profile for a capped catalog). A machine with both the Claude Code plugin and a 4.0 shared copy in `~/.agents/skills` shows Cursor every skill twice; the installer writes no shared copy, and a run without `--only` removes the one 4.0 recorded.
 - Instructions: the CLI reads both `AGENTS.md` and `CLAUDE.md` at the project root, which is why the scaffold's `CLAUDE.md` is the single line `@AGENTS.md` rather than a copy.
 
 ## Unattended runs
@@ -56,7 +66,7 @@ Nothing beyond the host's own terms is known.
 ## Paths to avoid
 
 - `.claude/` for working files: Cursor reads `.claude/skills` and `.claude/agents`, so anything there is live in Cursor too; v4 keeps its files under `.agent-blueprint/`.
-- `.cursor/skills` and `~/.cursor/skills`: Cursor's own folders; the copy route uses `~/.agents/skills`, and a second copy there doubles the catalog.
+- `.cursor/skills`, `~/.cursor/skills` and `~/.agents/skills`: folders Cursor scans; a skills copy in any of them beside the plugin doubles the catalog.
 - `agent` on the PATH: it may be Grok's; call `cursor-agent`.
 - `hooks/hooks.json`: never present in this plugin.
 

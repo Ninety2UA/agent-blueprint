@@ -15,8 +15,7 @@ export const site = {
   repoUrl: data.repoUrl,
   tools: data.tools,
   phases: data.phases,
-  cloneLines: data.cloneCommand.split('\n'),
-  installCommand: data.installCommand,
+  allToolsCommand: data.allToolsCommand,
 };
 
 const HERE = 'site/src/components/home/home-data.ts';
@@ -49,10 +48,10 @@ export const skillHref = (name: string) => `/skills/${skill(name).name}/`;
 export { capitalize as cap, inlineCode as md } from '../../lib/text.mjs';
 export { numberWord };
 
-/** The install command: the clone lines with the installer on the last one, as the footer shows it. */
+/** The command that sets up every tool at once: the clone and the installer, one line each, as the footer shows it. */
 export const install = {
-  lines: [...site.cloneLines.slice(0, -1), `${site.cloneLines.at(-1)} && ${site.installCommand}`],
-  copy: [...site.cloneLines, site.installCommand].join(' && '),
+  lines: site.allToolsCommand.split(' && '),
+  copy: site.allToolsCommand,
 };
 
 // ---------- The loop: the stations from idea to pull request ----------

@@ -88,8 +88,8 @@ export const SITE_URL = 'https://agent-blueprint.dbenger.com';
  * @property {string} repoUrl
  * @property {string} siteUrl
  * @property {Counts} counts
- * @property {string} cloneCommand  the lines under README "### 1. Get the code", newline-separated
- * @property {string} installCommand  "bash install.sh"
+ * @property {string} allToolsCommand  the command under README "### Set up every tool at once": the clone
+ *   and the installer joined by " && "
  * @property {Tool[]} tools
  * @property {Phase[]} phases
  * @property {Skill[]} skills
@@ -153,8 +153,7 @@ export function getSiteData(root = findRepoRoot()) {
       tools: install.tools.length,
       phases: phases.length,
     },
-    cloneCommand: install.cloneCommand,
-    installCommand: install.installCommand,
+    allToolsCommand: install.allToolsCommand,
     tools: install.tools,
     phases: phases.map(({ slug, title, skills }) => ({ slug, title, skills: skills.map((s) => s.name) })),
     skills: joinSkills({ root, folders, phases, repoUrl, helpersOf }),
