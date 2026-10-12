@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://agent-blueprint.dbenger.com/">Website</a> ·
-  <a href="#whats-new-in-v401">What's new</a> ·
+  <a href="#whats-new-in-v402">What's new</a> ·
   <a href="#install">Install</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#unattended-runs">Unattended runs</a> ·
@@ -29,6 +29,10 @@
 A coding agent starts every session from nothing. It doesn't know how your project works, what was decided last week, or which problems were already solved, and when you switch to another tool, whatever the last one learned stays behind.
 
 Agent Blueprint gives the agent one way of working that is the same in every tool. Skills take a feature from design through review to a pull request. Helper prompts handle the analysis that needs a fresh context, such as a security review or a plan check. Project documents under `docs/` carry conventions, decisions and solved problems from one session to the next, so they are there whichever of the eight tools opens the repository next.
+
+## What's new in v4.0.2
+
+This release fixes three problems found while running the tutorials. The injection scanners no longer flag an ordinary word that contains a trigger word, such as "Blueprint", which contains "print". New projects get `docs/context/DECISIONS.md`, the file their `AGENTS.md` already pointed to, and `ab-brainstorming` writes each design section out in full before it asks you to approve it.
 
 ## What's new in v4.0.1
 
@@ -172,7 +176,7 @@ For a well-defined feature you want built hands-off, the ship runner drives `ab-
 1. Preflight. It checks that the tool is installed and signed in, records the remote and branch it will push to, and probes whether the tool's headless posture can write to `.git`. Where it cannot (Codex `workspace-write`), the skill leaves its work uncommitted with the message in `.agent-blueprint/run/commit-msg.md`, and the runner commits after each iteration.
 2. The loop. Every iteration is a new headless session with a clean context. The skill locks the requirements as decisions, writes and verifies a plan, deepens it with research, builds it through `ab-orchestrate`, reviews and fixes until no P1 finding is left (three rounds at most by default), records what it learned, commits, and writes the pull request body. Between iterations the runner reads `.agent-blueprint/run/state.json`.
 3. The finish check. Text the agent prints never ends a run. It is done only when the state file says `done`, there are new commits since the recorded base, the pull request body exists, and the provenance record names the skill and its version.
-4. Publishing. The runner scans every commit the push would publish (each one the remote does not have yet, plus the run's own), their messages and the pull request body for secrets, including any `.env` file a commit added. Then it pushes exactly the commit it scanned, only to the remote and branch it recorded, and opens or updates the pull request. It stops as `needs-human` instead if it cannot read the remote's branches, if the git configuration (any file git reads, `.git/config` included) or the place a push would go changed during the run, or if those commits touch `.github/workflows` or `.github/actions` and you did not pass `--allow-ci-changes`.
+4. Publishing. The runner scans every commit the push would publish (each one the remote does not have yet, plus the run's own), their messages and the pull request body for secrets, including any `.env` file a commit added. Then it pushes exactly the commit it scanned, only to the remote and branch it recorded, and opens or updates the pull request. It stops as `needs-human` instead if it cannot read the remote's branches, if the git configuration (any file git reads, `.git/config` included) or the place a push would go changed during the run, or if those commits touch `.github/workflows` or `.github/actions` and you did not pass `--allow-ci-changes`. After it publishes, the runner deletes the run's working files under `.agent-blueprint/run/` (`state.json`, `pr-body.md`, `commit-msg.md`, `stop-guard.json` and the `provenance/` folder) and its own record outside the working tree. It keeps the logs, so the pull request and the logs are the record of a published run.
 
 ### When a run stops early
 
@@ -742,10 +746,11 @@ An evaluation then ran the same fixture tasks on v3.8.0 and v4.0.0 in Claude Cod
 ## Release history
 
 <details>
-<summary>v2.3 to v4.0.1</summary>
+<summary>v2.3 to v4.0.2</summary>
 
 | Version | Date | What changed |
 |---|---|---|
+| v4.0.2 | 2026-10-12 | The injection scanners match whole words, so "Blueprint" no longer reads as an injection attempt. New projects get `docs/context/DECISIONS.md`, and `ab-brainstorming` writes each design section out before asking for approval. |
 | v4.0.1 | 2026-10-07 | Cursor CLI and Amp no longer list every skill twice next to Claude Code. On a machine with Claude Code and either of them, `install.sh` writes no shared copy: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder, and the copy an earlier install left in `~/.agents/skills` is removed. |
 | v4.0.0 | 2026-10-07 | `claude-code-blueprint` becomes Agent Blueprint: one set of skills, each named with the `ab-` prefix, that installs natively in eight coding CLIs. Agents became helper prompts inside the skills that use them, `AGENTS.md` is the instructions file, and working files moved to `.agent-blueprint/`. Team work and the ship runner run in every tool, hooks are optional, new gates keep every skill portable, and `ab-migrate` cleans a v3 project. |
 | v3.8.0 | 2026-09-28 | Plans record decisions instead of code, and you review the saved plan before it runs. A security finding can be rejected only with a quoted refutation. Reviews start at the merge base and include untracked files. Opus 5.5 defaults documented. CI fails on frontmatter that isn't valid YAML and on references that don't resolve. |

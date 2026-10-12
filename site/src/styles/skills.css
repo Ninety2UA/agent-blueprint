@@ -1,6 +1,6 @@
 /* Skills catalog (/skills/) and skill pages (/skills/<name>/). The skill page is ported from
    the approved d2/src/skill.css; the card, chips, tabs, title block and command come from
-   global.css. Loaded only by the two skills templates. */
+   global.css. Loaded only by pages/skills/index.astro and pages/skills/[name].astro. */
 
 /* mono text outside code keeps its letters apart, as code does (no "fi" ligature in skill names) */
 

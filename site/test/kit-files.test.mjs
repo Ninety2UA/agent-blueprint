@@ -3,7 +3,7 @@
 // the page with no edit under site/.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { fileFacts, humanSize } from '../src/components/kit/files.mjs';
@@ -48,11 +48,22 @@ test('a JPG gives its frame size from its own header, and no length', () => {
   assert.equal(fileFacts(join(media, 'loop-review.jpg')).frame, '1200 × 750');
 });
 
+// The README hero GIF is rendered from site/motion/readme-hero/composition.html (its root element
+// declares the size and length) and scaled by finish.sh, so the GIF's facts follow from those two
+// files and a wrong read of the GIF's own header or frame delays fails here.
 test('a GIF gives its frame size and its length, the sum of its frame delays', () => {
+  const motion = join(root, 'site', 'motion');
+  const declared = readFileSync(join(motion, 'readme-hero', 'composition.html'), 'utf8').match(
+    /data-duration="([\d.]+)"[^>]*data-width="(\d+)"[^>]*data-height="(\d+)"/,
+  );
+  assert.ok(declared, 'the composition no longer declares data-duration, data-width and data-height');
+  const [, seconds, width, height] = declared.map(Number);
+  const scaled = readFileSync(join(motion, 'finish.sh'), 'utf8').match(/scale=(\d+):-1[^"]*\[x\]/);
+  assert.ok(scaled, 'finish.sh no longer scales the GIF with scale=<width>:-1');
+  const gifWidth = Number(scaled[1]);
   const facts = fileFacts(join(root, 'docs', 'images', 'hero.gif'));
-  assert.match(facts.frame, /^\d+ × \d+$/);
-  assert.match(facts.length, /^\d+\.\d s$/);
-  assert.ok(parseFloat(facts.length) > 0);
+  assert.equal(facts.frame, `${gifWidth} × ${Math.round((gifWidth * height) / width)}`);
+  assert.equal(facts.length, `${seconds.toFixed(1)} s`);
 });
 
 test('an SVG gives the grid of its viewBox', () => {

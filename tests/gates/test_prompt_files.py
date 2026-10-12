@@ -271,6 +271,36 @@ class DriftGateSiteSource(unittest.TestCase):
                               out)
         self.assertNotIn("readme-hero/composition.html:", out)
 
+    def test_a_spelled_out_count_fails_like_digits(self):
+        cases = (("site/src/components/Footer.astro", "\n<p>Ten hooks and fifty-three skills</p>\n", "<p>",
+                  ("Ten hooks", "fifty-three skills")),
+                 ("site/motion/loop-waves/composition.html", "\n<!-- thirty helper prompts -->\n", "<!--",
+                  ("thirty helper prompts",)),
+                 ("site/src/content/tutorials/unattended-run.md", "\nThe run listed eleven hooks.\n", "The run",
+                  ("eleven hooks",)),
+                 ("site/src/content/tutorials/first-feature-new-project.md",
+                  "\nThe plugin ships fifty\nthree skills and thirty  helper prompts.\n", "The plugin",
+                  ("fifty three skills",)),
+                 ("site/src/content/tutorials/feature-existing-codebase.md",
+                  "\nIt counted forty&nbsp;two skills and twenty-\none hooks.\n", "It counted",
+                  ("forty&nbsp;two skills", "twenty- one hooks")))
+
+        def append(copy):
+            for rel_path, extra, _marker, _counts in cases:
+                with open(os.path.join(copy, rel_path), "a", encoding="utf-8") as fh:
+                    fh.write(extra)
+        code, out = run_drift_on_copy(append)
+        self.assertNotEqual(code, 0, out)
+        for rel_path, extra, marker, counts in cases:
+            for count in counts:
+                self.assertIn("%s:%d: literal count '%s'" % (rel_path, appended_line(rel_path, extra, marker), count),
+                              out)
+
+    def test_a_tutorial_may_count_what_one_run_did_in_small_words(self):
+        code, out = run_drift_with("site/src/content/tutorials/unattended-run.md",
+                                   "\nEach task got three helpers, and two skills ran before the plan.\n")
+        self.assertEqual(code, 0, out)
+
 
 class DriftGatePhaseTables(unittest.TestCase):
     """Every skill folder sits in exactly one README phase table, which the site is built from."""

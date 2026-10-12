@@ -4,6 +4,7 @@ Runs the skill's own scaffold script against temporary projects: an empty one,
 one with a CLAUDE.md of its own, one with an AGENTS.md of its own, and a rerun.
 """
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -66,6 +67,15 @@ class Scaffold(unittest.TestCase):
                     ".agent-blueprint/.gitignore", "src/.gitkeep"):
             self.assertTrue(os.path.isfile(self.p(rel)), rel)
             self.assertEqual(actions[rel], "created", rel)
+
+    def test_every_path_the_agents_md_table_names_is_scaffolded(self):
+        self.run_scaffold()
+        table = read(os.path.join(ASSETS, "AGENTS.md")).split("## Where things are", 1)[1].split("\n## ", 1)[0]
+        named = [path for line in table.splitlines() if line.startswith("| `")
+                 for path in re.findall(r"`([^`]+)`", line.split("|")[1])]
+        self.assertIn("docs/context/DECISIONS.md", named)
+        for rel in named:
+            self.assertTrue(os.path.exists(self.p(rel)), "AGENTS.md names %s, which the scaffold does not create" % rel)
 
     def test_existing_claude_md_gains_the_import_and_keeps_its_content(self):
         write(self.project, "CLAUDE.md", "# My rules\n\nUse tabs.\n")

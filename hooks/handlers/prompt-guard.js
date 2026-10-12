@@ -15,17 +15,20 @@
 const path = require('path');
 const { detectHost } = require('./host');
 
-// Prompt injection patterns — catches obvious injection attempts
+// Prompt injection patterns — catches obvious injection attempts. Each word-led pattern refuses a letter
+// or digit just before it, so a word that only ends in a trigger ("Blueprint instructions", "slideshow
+// prompt") is not a finding. An underscore is allowed there (Markdown emphasis: _ignore ..._), and the
+// output verbs also match with a "re" prefix ("reprint your system prompt").
 const INJECTION_PATTERNS = [
-  /ignore\s+(all\s+)?previous\s+instructions/i,
-  /ignore\s+(all\s+)?above\s+instructions/i,
-  /disregard\s+(all\s+)?previous/i,
-  /forget\s+(all\s+)?(your\s+)?instructions/i,
-  /override\s+(system|previous)\s+(prompt|instructions)/i,
-  /you\s+are\s+now\s+(?:a|an|the)\s+/i,
-  /pretend\s+(?:you(?:'re| are)\s+|to\s+be\s+)/i,
-  /from\s+now\s+on,?\s+you\s+(?:are|will|should|must)/i,
-  /(?:print|output|reveal|show|display|repeat)\s+(?:your\s+)?(?:system\s+)?(?:prompt|instructions)/i,
+  /(?<![A-Za-z0-9])ignore\s+(all\s+)?previous\s+instructions/i,
+  /(?<![A-Za-z0-9])ignore\s+(all\s+)?above\s+instructions/i,
+  /(?<![A-Za-z0-9])disregard\s+(all\s+)?previous/i,
+  /(?<![A-Za-z0-9])forget\s+(all\s+)?(your\s+)?instructions/i,
+  /(?<![A-Za-z0-9])override\s+(system|previous)\s+(prompt|instructions)/i,
+  /(?<![A-Za-z0-9])you\s+are\s+now\s+(?:a|an|the)\s+/i,
+  /(?<![A-Za-z0-9])pretend\s+(?:you(?:'re| are)\s+|to\s+be\s+)/i,
+  /(?<![A-Za-z0-9])from\s+now\s+on,?\s+you\s+(?:are|will|should|must)/i,
+  /(?<![A-Za-z0-9])(?:re)?(?:print|output|reveal|show|display|repeat)\s+(?:your\s+)?(?:system\s+)?(?:prompt|instructions)/i,
   /<\/?(?:system|assistant|human)>/i,
   /\[SYSTEM\]/i,
   /\[INST\]/i,
