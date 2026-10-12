@@ -13,6 +13,8 @@
 #                                     · brainstorm-approval (ask for approval despite writing a plan)
 #                                     · codex-four (omit the write guard from the Codex hook trace)
 #                                     · codex-wrong-host (the write guard trace names another host)
+#                                     · codex-entry-only (all Codex handler entries, neither action)
+#                                     · codex-no-warning/codex-no-flag (omit one Codex action)
 #   AGENT_BLUEPRINT_HOOK_TRACE        a trace line (handler, host, timestamp) is appended here: in
 #                                     fail mode one naming claude, as a handler that acted on a
 #                                     foreign host would; in stand-down mode one naming other
@@ -83,6 +85,12 @@ PY
             trace_host=codex
             if [ "$MODE" = codex-wrong-host ] && [ "$handler" = prompt-guard.js ]; then trace_host=other; fi
             printf '%s\t%s\t%s\n' "$handler" "$trace_host" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$AGENT_BLUEPRINT_HOOK_TRACE"
+        done
+        for action in prompt-guard.js:warned validate-commit.js:flagged; do
+            if [ "$MODE" = codex-entry-only ]; then continue; fi
+            if [ "$MODE" = codex-no-warning ] && [ "$action" = prompt-guard.js:warned ]; then continue; fi
+            if [ "$MODE" = codex-no-flag ] && [ "$action" = validate-commit.js:flagged ]; then continue; fi
+            printf '%s\tcodex\t%s\n' "$action" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$AGENT_BLUEPRINT_HOOK_TRACE"
         done
         reply "Codex hooks smoke check finished." ;;
     *codename*)

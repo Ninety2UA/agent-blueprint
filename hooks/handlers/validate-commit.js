@@ -18,7 +18,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { detectHost } = require('./host');
+const { detectHost, traceAction } = require('./host');
 
 const VALID_TYPES = new Set([
   'feat',
@@ -69,6 +69,7 @@ process.stdin.on('end', () => {
       },
     };
     process.stdout.write(JSON.stringify(output));
+    traceAction('flagged', data);
   } catch {
     process.exit(0);
   }

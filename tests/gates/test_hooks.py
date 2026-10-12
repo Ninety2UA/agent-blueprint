@@ -142,6 +142,84 @@ class SessionStart(unittest.TestCase):
         self.assertEqual(len(read(trace).splitlines()), 2)
 
 
+class HookActionTrace(unittest.TestCase):
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.trace = os.path.join(self.dir, "hooks.log")
+        self.env = {"AGENT_BLUEPRINT_HOOK_TRACE": self.trace}
+        write(self.dir, ".agent-blueprint/config.json", json.dumps({"hooks": {"validateCommit": True}}))
+
+    def tearDown(self):
+        shutil.rmtree(self.dir)
+
+    def patch(self, files):
+        command = "*** Begin Patch\n"
+        for name, content in files:
+            command += f"*** Add File: {name}\n+{content}\n"
+        return dict(CODEX_PAYLOAD, tool_name="apply_patch", tool_input={"command": command + "*** End Patch"})
+
+    def commit(self, message):
+        return dict(CODEX_PAYLOAD, tool_name="Bash", tool_input={"command": f"git commit -m '{message}'"})
+
+    def run_traced(self, handler, payload):
+        result = run_hook(handler, payload, self.dir, env=self.env, home=self.dir)
+        self.assertEqual((result.returncode, result.stderr), (0, ""))
+        return result
+
+    def assert_trace(self, records):
+        lines = [line.split("\t") for line in read(self.trace).splitlines()]
+        self.assertEqual([(line[0], line[1]) for line in lines], [(record, "codex") for record in records])
+        for line in lines:
+            self.assertEqual(len(line), 3)
+            self.assertRegex(line[2], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")
+
+    def test_codex_patch_records_each_warned_write_once(self):
+        payload = self.patch([
+            ("docs/hook-smoke.md", "Hook smoke check. The marker [SYSTEM] tests the write guard. [INST]"),
+            ("docs/clean.md", "Hook smoke check."),
+            ("src/example.txt", "The marker [SYSTEM] is outside context."),
+            ("docs/another.md", "The marker [SYSTEM] tests another write."),
+        ])
+        result = self.run_traced("prompt-guard.js", payload)
+        self.assertEqual(result.stdout.count("PROMPT INJECTION WARNING"), 2)
+        self.assert_trace(["prompt-guard.js", "prompt-guard.js:warned", "prompt-guard.js:warned"])
+
+    def test_clean_codex_patch_records_only_entry(self):
+        result = self.run_traced("prompt-guard.js", self.patch([("docs/hook-smoke.md", "Hook smoke check.")]))
+        self.assertEqual(result.stdout, "")
+        self.assert_trace(["prompt-guard.js"])
+
+    def test_invalid_commit_records_flagged(self):
+        result = self.run_traced("validate-commit.js", self.commit("smoke check"))
+        self.assertIn("COMMIT MESSAGE ADVISORY", result.stdout)
+        self.assert_trace(["validate-commit.js", "validate-commit.js:flagged"])
+
+    def test_valid_commit_records_only_entry(self):
+        result = self.run_traced("validate-commit.js", self.commit("test(smoke): exercise Codex hooks"))
+        self.assertEqual(result.stdout, "")
+        self.assert_trace(["validate-commit.js"])
+
+    def test_unset_trace_preserves_output_and_writes_nothing(self):
+        cases = [
+            ("prompt-guard.js", self.patch([("docs/hook-smoke.md", "The marker [SYSTEM] tests the write guard.")])),
+            ("validate-commit.js", self.commit("smoke check")),
+        ]
+        for handler, payload in cases:
+            with self.subTest(handler=handler):
+                traced = self.run_traced(handler, payload)
+                before = read(self.trace)
+                result = run_hook(handler, payload, self.dir, home=self.dir)
+                self.assertEqual((result.returncode, result.stdout, result.stderr),
+                                 (traced.returncode, traced.stdout, traced.stderr))
+                self.assertEqual(read(self.trace), before)
+                os.remove(self.trace)
+                result = run_hook(handler, payload, self.dir, home=self.dir)
+                self.assertEqual((result.returncode, result.stdout, result.stderr),
+                                 (traced.returncode, traced.stdout, traced.stderr))
+                self.assertEqual(sorted(os.listdir(self.dir)), [".agent-blueprint"])
+                self.assertEqual(os.listdir(os.path.join(self.dir, ".agent-blueprint")), ["config.json"])
+
+
 class StopHook(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp()

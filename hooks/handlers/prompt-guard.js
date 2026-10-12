@@ -13,7 +13,7 @@
 // not to create false-positive deadlocks.
 
 const path = require('path');
-const { detectHost } = require('./host');
+const { detectHost, traceAction } = require('./host');
 
 // Prompt injection patterns — catches obvious injection attempts. Each word-led pattern refuses a letter
 // or digit just before it, so a word that only ends in a trigger ("Blueprint instructions", "slideshow
@@ -120,6 +120,7 @@ process.stdin.on('end', () => {
         'instructions that could manipulate agent behavior. If the content is legitimate ' +
         '(e.g., documentation about prompt injection), proceed normally.'
       );
+      traceAction('warned', data);
     }
     if (warnings.length === 0) process.exit(0);
 

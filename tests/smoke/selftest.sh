@@ -29,7 +29,7 @@ reason_of() { python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print
 J="$WORK/out/v$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$REPO/.claude-plugin/plugin.json")-smoke.json"
 M="${J%.json}.md"
 
-echo "== Codex hooks: five handlers, a work-local trace, and the commit-check opt-in"
+echo "== Codex hooks: five handlers, two actions, a work-local trace, and the commit-check opt-in"
 mkdir -p "$WORK/codex-bin" "$WORK/codex-home/.codex"
 cat > "$WORK/codex-bin/codex" <<'SH'
 #!/usr/bin/env bash
@@ -62,7 +62,7 @@ codex_hooks_run() {
         --timeout 30 --cell "$2"
 }
 codex_hooks_run pass canary,hooks,manual-only > "$WORK/codex-hooks.log" 2>&1 || { cat "$WORK/codex-hooks.log"; exit 1; }
-check "Codex hooks passes with five codex handler lines" [ "$(state_of "$J" codex hooks)" = pass ]
+check "Codex hooks passes with five codex handler lines and both action records" [ "$(state_of "$J" codex hooks)" = pass ]
 for c in canary manual-only; do check "Codex · $c still passes around the hooks run" [ "$(state_of "$J" codex "$c")" = pass ]; done
 check "the Codex cell seeded the commit-check opt-in and an ignored work-local trace" \
     grep -q "Codex hooks seed: validateCommit=true; trace ignored in work folder" "$WORK"/logs/*/codex/hooks.log
@@ -75,6 +75,10 @@ for args in runs:
     assert ("--dangerously-bypass-hook-trust" in args) == hooks, args
     assert args[args.index("-s") + 1] == "workspace-write", args
 assert sum("Codex hooks smoke check" in args[-1] for args in runs) == 1, runs
+prompt = next(args[-1] for args in runs if "Codex hooks smoke check" in args[-1])
+assert "file-edit tool (apply_patch)" in prompt and "docs/hook-smoke.md" in prompt, prompt
+assert "[SYSTEM]" in prompt and "git commit -m 'smoke check'" in prompt, prompt
+assert "even if this sandbox cannot write .git" in prompt, prompt
 PY
 codex_hooks_run codex-four hooks > "$WORK/codex-four.log" 2>&1 || { cat "$WORK/codex-four.log"; exit 1; }
 check "Codex hooks fails with only four codex handler lines" [ "$(state_of "$J" codex hooks)" = fail ]
@@ -82,6 +86,17 @@ check "the missing Codex handler is named" grep -q "missing.*prompt-guard.js" <<
 codex_hooks_run codex-wrong-host hooks > "$WORK/codex-wrong-host.log" 2>&1 || { cat "$WORK/codex-wrong-host.log"; exit 1; }
 check "a write guard trace line naming another host does not pass Codex hooks" [ "$(state_of "$J" codex hooks)" = fail ]
 check "the handler without a codex line is named" grep -q "missing.*prompt-guard.js" <<<"$(reason_of "$J" codex hooks)"
+codex_hooks_run codex-entry-only hooks > "$WORK/codex-entry-only.log" 2>&1 || { cat "$WORK/codex-entry-only.log"; exit 1; }
+check "Codex hooks fails when every handler entered but neither action was recorded" [ "$(state_of "$J" codex hooks)" = fail ]
+for action in prompt-guard.js:warned validate-commit.js:flagged; do
+    check "the missing Codex action $action is named" grep -q "missing.*$action" <<<"$(reason_of "$J" codex hooks)"
+done
+for mode in codex-no-warning codex-no-flag; do
+    codex_hooks_run "$mode" hooks > "$WORK/$mode.log" 2>&1 || { cat "$WORK/$mode.log"; exit 1; }
+    check "Codex hooks fails with just one action missing ($mode)" [ "$(state_of "$J" codex hooks)" = fail ]
+    if [ "$mode" = codex-no-warning ]; then action=prompt-guard.js:warned; else action=validate-commit.js:flagged; fi
+    check "the single missing Codex action $action is named" grep -q "missing.*$action" <<<"$(reason_of "$J" codex hooks)"
+done
 
 echo "== override cells: existing code survives TDD and an approved design needs no new approval"
 AGENT_BLUEPRINT_SMOKE_FAKE_MODE=pass \

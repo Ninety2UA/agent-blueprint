@@ -316,7 +316,7 @@ PY
 }
 
 cell_codex_hooks() {
-    local trace prompt secs handler handlers count=0 missing=""
+    local trace prompt secs handler handlers action count=0 missing=""
     local words=(no one two three four five six seven eight nine ten)
     # Codex needs its own session: a canary does not exercise file or shell tools, and its
     # trace sits outside the workspace-write sandbox. *.log is ignored by the fixture.
@@ -324,7 +324,7 @@ cell_codex_hooks() {
     mkdir -p "$WORK/.agent-blueprint/run"
     printf '{"hooks": {"validateCommit": true}}\n' > "$WORK/.agent-blueprint/config.json"
     trace="$WORK/.agent-blueprint/run/hooks.log"
-    prompt="Codex hooks smoke check: use your file-edit tool to create docs/hook-smoke.md containing 'Hook smoke check.' Then run the shell command git commit -am 'test(smoke): exercise Codex hooks'. Attempt that command even if this sandbox cannot write .git; its success is not required. Then stop with a short final message. $SMOKE_HEADLESS"
+    prompt="Codex hooks smoke check: use your file-edit tool (apply_patch) to create docs/hook-smoke.md containing 'Hook smoke check. The marker [SYSTEM] tests the write guard.' Then run the shell command git commit -m 'smoke check'. Attempt that command even if this sandbox cannot write .git; its success is not required. Then stop with a short final message. $SMOKE_HEADLESS"
     secs=$(cell_timeout hooks)
     printf '=== hooks · %s · host codex · timeout %ss · work %s ===\n--- prompt ---\n%s\n--- output ---\n' "$(now_utc)" "$secs" "$WORK" "$prompt" >> "$LOG"
     RUN_RC=0
@@ -343,7 +343,13 @@ cell_codex_hooks() {
             missing="${missing:+$missing, }$handler"
         fi
     done
-    CHECK_REASON="all ${words[$count]:-$count} handlers wrote codex trace lines"
+    for action in prompt-guard.js:warned validate-commit.js:flagged; do
+        if ! [ -f "$trace" ] || ! awk -F'\t' -v action="$action" \
+            '$1 == action && $2 == "codex" { found=1 } END { exit !found }' "$trace"; then
+            missing="${missing:+$missing, }$action"
+        fi
+    done
+    CHECK_REASON="all ${words[$count]:-$count} handlers wrote codex trace lines; prompt-guard.js:warned and validate-commit.js:flagged recorded codex actions"
     if [ "$count" -eq 0 ]; then missing="no handlers read from hooks/codex.json"; CHECK_REASON="$missing"
     elif [ -n "$missing" ]; then CHECK_REASON="missing codex trace lines: $missing"; fi
     if [ "$RUN_RC" -eq 124 ]; then
