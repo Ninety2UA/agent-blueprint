@@ -8,6 +8,9 @@
 #   AGENT_BLUEPRINT_SMOKE_FAKE_MODE   pass (default) · fail (does nothing useful; the manual-only
 #                                     skill runs; a hook "fires") · hang (sleeps 300 s) · stand-down
 #                                     (pass, after the trace line of a handler that ran and stood down)
+#                                     · tdd-delete/tdd-rewrite (lose a seeded function or its behavior,
+#                                     with the new test present) · tdd-refactor (same behavior)
+#                                     · brainstorm-approval (ask for approval despite writing a plan)
 #   AGENT_BLUEPRINT_HOOK_TRACE        a trace line (handler, host, timestamp) is appended here: in
 #                                     fail mode one naming claude, as a handler that acted on a
 #                                     foreign host would; in stand-down mode one naming other
@@ -100,6 +103,68 @@ case "$PROMPT" in
         cp "$REPO/tests/smoke/fixture/src/notes/store.py" src/notes/store.py
         commit_all "fix(store): search ignores case again"
         reply "Root cause: search() compared case-sensitively. Fixed in store.py; the suite passes." ;;
+    *"Add count_words(text)"*)
+        provenance ab-test-driven-development
+        cat > tests/test_textutil.py <<'PY'
+import os
+import sys
+import unittest
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
+from notes.textutil import count_words
+
+
+class CountWordsTests(unittest.TestCase):
+    def test_count_words(self):
+        self.assertEqual(count_words("Harbor plan"), 2)
+        self.assertEqual(count_words(" one\t two\nthree "), 3)
+        self.assertEqual(count_words(""), 0)
+        self.assertEqual(count_words(" \t\n"), 0)
+PY
+        cat >> src/notes/textutil.py <<'PY'
+
+
+def count_words(text):
+    return len(text.split())
+PY
+        python3 - "$MODE" <<'PY'
+import ast
+from pathlib import Path
+import sys
+
+replacements = {
+    "tdd-delete": "",
+    "tdd-rewrite": 'def normalize_title(text):\n    return text.strip().lower()\n',
+    "tdd-refactor": 'def normalize_title(text):\n    words = text.split()\n    return " ".join(word for word in words)\n',
+}
+if sys.argv[1] in replacements:
+    path = Path("src/notes/textutil.py")
+    source = path.read_text()
+    node = next(node for node in ast.parse(source).body
+                if isinstance(node, ast.FunctionDef) and node.name == "normalize_title")
+    lines = source.splitlines(keepends=True)
+    lines[node.lineno - 1:node.end_lineno] = [replacements[sys.argv[1]]]
+    path.write_text("".join(lines))
+PY
+        commit_all "feat(textutil): count words with a test"
+        reply "Added count_words test-first; the suite passes." ;;
+    *"Implement the design in docs/designs/note-count.md"*)
+        provenance ab-brainstorming
+        mkdir -p docs/plans
+        cat > docs/plans/note-count-plan.md <<'MD'
+# Implement note count
+
+The user approved the design in docs/designs/note-count.md for implementation.
+
+1. Add tests for an empty store and a store with two notes.
+2. Add NoteStore.count() returning len(self._notes) without saving the store.
+3. Run python3 -m unittest discover -s tests.
+MD
+        if [ "$MODE" = brainstorm-approval ]; then
+            reply "I wrote the implementation plan. Do you approve the design before I continue?"
+        else
+            reply "I followed the approved design and wrote docs/plans/note-count-plan.md for implementation."
+        fi ;;
     *"Review the changes"*)
         provenance ab-requesting-code-review code-reviewer
         reply "Critical: src/notes/cli.py evaluates the user's --filter expression with eval(), which runs arbitrary code. Use a safe matcher instead." ;;

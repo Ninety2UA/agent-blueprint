@@ -37,7 +37,7 @@ error()   { echo -e "  ${RED}✗${NC} $1" >&2; }
 # shellcheck source=lib.sh disable=SC1091
 . "$HERE/lib.sh"
 
-ALL_CELLS="discovery canary hooks manual-only build helpers-off effort review debug ship team upgrade"
+ALL_CELLS="discovery canary hooks manual-only build helpers-off effort review debug tdd-override brainstorm-override ship team upgrade"
 COMMAND="bash tests/smoke/run-smoke.sh $*"
 
 # ─── Arguments ────────────────────────────────────────────────
@@ -460,6 +460,7 @@ run_cell() {
         effort)      cell_effort ;;
         review)      cell_prompt review ;;
         debug)       cell_prompt debug ;;
+        tdd-override|brainstorm-override) cell_prompt "$1" ;;
         ship)        cell_ship ;;
         team)        cell_prompt team ;;
         upgrade)     cell_upgrade ;;

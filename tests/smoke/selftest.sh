@@ -29,10 +29,47 @@ reason_of() { python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print
 J="$WORK/out/v$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$REPO/.claude-plugin/plugin.json")-smoke.json"
 M="${J%.json}.md"
 
+echo "== override cells: existing code survives TDD and an approved design needs no new approval"
+AGENT_BLUEPRINT_SMOKE_FAKE_MODE=pass \
+    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 \
+    --cell tdd-override,brainstorm-override > "$WORK/overrides.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/overrides.log"; exit 1; }
+for c in tdd-override brainstorm-override; do
+    check "fake · $c is pass" [ "$(state_of "$J" fake "$c")" = pass ]
+done
+check "the compliant answer mentions the approved design" grep -q "the approved design" "$WORK"/logs/*/fake/brainstorm-override.final
+override_suite() { ( cd "$1" && python3 -m unittest discover -s tests ); }
+for mode in tdd-delete tdd-rewrite tdd-refactor; do
+    AGENT_BLUEPRINT_SMOKE_FAKE_MODE="$mode" \
+        bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --keep \
+        --cell tdd-override > "$WORK/$mode.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/$mode.log"; exit 1; }
+    reason=$(reason_of "$J" fake tdd-override)
+    # The report replaces the temporary root with the literal $TMPDIR; the folder name survives.
+    override_root="${reason##* · work: }"
+    override_work="$TMPDIR/${override_root##*/}/work"
+    check "$mode keeps the new function's test" test -f "$override_work/tests/test_textutil.py"
+    check "$mode has a passing suite despite the seed edit" override_suite "$override_work"
+    if [ "$mode" = tdd-refactor ]; then
+        check "a harmless refactor of a seeded function passes" [ "$(state_of "$J" fake tdd-override)" = pass ]
+    else
+        check "$mode fails even with the new test present" [ "$(state_of "$J" fake tdd-override)" = fail ]
+        check "$mode names the affected seeded function" grep -q "normalize_title" <<<"$reason"
+        if [ "$mode" = tdd-delete ]; then
+            check "the deleted function is reported missing" grep -q "missing" <<<"$reason"
+        else
+            check "the same-name rewrite is reported as changed behavior" grep -q "behavior changed" <<<"$reason"
+        fi
+    fi
+done
+AGENT_BLUEPRINT_SMOKE_FAKE_MODE=brainstorm-approval \
+    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 \
+    --cell brainstorm-override > "$WORK/approval.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/approval.log"; exit 1; }
+check "an approval request fails the brainstorming cell" [ "$(state_of "$J" fake brainstorm-override)" = fail ]
+check "the approval request is named" grep -q "design approval request" <<<"$(reason_of "$J" fake brainstorm-override)"
+
 echo "== pass mode: every cell on the fake host (hooks foreign, helpers switch present)"
 AGENT_BLUEPRINT_FAKE_HOOKS=foreign AGENT_BLUEPRINT_FAKE_HELPERS_OFF=--no-helpers \
     bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 60 > "$WORK/pass.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/pass.log"; exit 1; }
-for c in discovery canary hooks manual-only build review debug ship team; do
+for c in discovery canary hooks manual-only build review debug tdd-override brainstorm-override ship team; do
     check "fake · $c is pass" [ "$(state_of "$J" fake "$c")" = pass ]
 done
 check "fake · helpers-off is degraded-pass (inline)" [ "$(state_of "$J" fake helpers-off)" = "degraded-pass (inline)" ]
