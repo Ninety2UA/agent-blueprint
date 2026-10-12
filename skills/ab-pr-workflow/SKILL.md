@@ -18,7 +18,7 @@ Run the checks the project declares in `docs/context/CONVENTIONS.md` (lint, type
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, unless the user said not to commit: work stays uncommitted for them. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 Here, check the working tree as it stands and review `git diff $(git merge-base main HEAD)` plus untracked files instead of the committed range.
 
@@ -28,7 +28,7 @@ Committed range: `references/pr-body.md` § Pre-flight diff.
 
 ### Step 2: Write the PR
 
-Title: concise, imperative mood (`Add user authentication`, not `Added user auth`). Body: what changed, why, how to test it, and the issues it closes. Write the body to `.agent-blueprint/run/pr-body.md` (git ignores it) by the rules and template in `references/pr-body.md`.
+Write the title and body by the rules and template in `references/pr-body.md`, saving the body to `.agent-blueprint/run/pr-body.md` (git ignores it).
 
 **Scan before any external sink.** Before `gh pr create`, `gh pr edit`, or any push that carries the body, scan it for credentials and personal data, because a published secret or home path cannot be taken back. Run the scan in `references/pr-body.md` § Body scan; it must print nothing. A hit stops the command: redact or remove, rescan, and only then run it.
 

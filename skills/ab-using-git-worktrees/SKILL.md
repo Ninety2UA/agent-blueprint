@@ -52,7 +52,7 @@ git check-ignore -q -- "$LOCATION"
 
 **If not ignored**, fix it before going on: add the directory to `.gitignore`, commit that change, then create the worktree.
 
-**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, unless the user said not to commit: work stays uncommitted for them. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 `git worktree add` writes to `.git` as well. If those writes are disallowed, create no worktree: say so and hand back, and the caller uses the current checkout with disjoint file ownership. A user instruction not to commit alone does not prohibit creating a worktree.
 

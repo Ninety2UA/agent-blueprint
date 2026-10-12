@@ -63,7 +63,7 @@ Find similar working code, read any reference implementation completely, and lis
 4. **If the fix fails**: under 3 tries, back to Phase 1 with what you learned; at 3, step 5.
 5. **After 3 failed fixes, question the architecture.** When each fix exposes new coupling or symptoms elsewhere, or needs a large refactor, the design is wrong, not the hypothesis. Ask before any further fix.
 
-**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, unless the user said not to commit: work stays uncommitted for them. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 It applies to the commit in step 3.
 

@@ -4,6 +4,8 @@ Loaded on demand from SKILL.md when writing or rewriting a pull request body.
 
 ## Description rules
 
+Title: concise, imperative mood (`Add user authentication`, not `Added user auth`). Body: what changed, why, how to test it, and the issues it closes.
+
 - **Motivation before mechanism.** The first paragraph states the problem and the outcome. A reader who stops after `## Why` knows whether to care; `## How` comes after.
 - **Size by decision cost.** Length follows what the reviewer must decide, not the diff's line count. A low-risk diff gets a short body; a wide or risky one gets every section filled.
 - **Honor a repository template.** If `.github/PULL_REQUEST_TEMPLATE.md` (or the repository's equivalent) exists, keep its section headers and fill them; add `## Plan audit` and the disclosure line inside it rather than replacing it.

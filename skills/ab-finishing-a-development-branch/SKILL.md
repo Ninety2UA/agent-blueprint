@@ -37,7 +37,7 @@ With neither `main` nor `master`, use the remote's default branch (`git symbolic
 
 Before any option, a fresh read-only helper classifies every plan item against the branch diff. This step owns the audit procedure; `ab-pr-workflow` renders the result, and `ab-executing-plans` and `ab-subagent-driven-development` pass the plan path.
 
-Find the plan per `references/plan-audit.md` § Plan path; its items are `### U<N>.` headings, `### Task N:` headings, or checklist lines. No plan file, or one with no items, reports `NO PLAN`: show that line, skip the table and go on to Step 4, since a missing plan never blocks.
+Find the plan and identify its items per `references/plan-audit.md` § Plan path. No plan file, or one with no items, reports `NO PLAN`: show that line, skip the table and go on to Step 4, since a missing plan never blocks.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
@@ -64,7 +64,7 @@ Discarding the branch is not on the menu: it deletes commits and a worktree for 
 
 ### Step 5: Execute Choice
 
-**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. The ship runner may commit after the session only if the user authorized it. Reviews use the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, unless the user said not to commit: work stays uncommitted for them. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 A merge is a commit, so in this mode Option 1 cannot run: say so and keep the branch (Option 3). Option 2 leaves uncommitted work and its message as above.
 

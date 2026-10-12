@@ -4,7 +4,7 @@ Loaded on demand from SKILL.md when you create the progress file or check which 
 
 The file is `.agent-blueprint/plans/<plan-basename>.progress.md`, where `<plan-basename>` is the plan's filename without `.md`:
 
-- The first line names the plan; then one `- [ ] Task N: <title>` line per task.
+- The first line names the plan; then one `- [ ] Task N: <title>` line per task. Tick the plan's own boxes too if it has them.
 - If the file already exists, reuse it and its ticks instead of recreating it.
 - Delete it when the run's final review is clean (Step 5, before the ab-finishing-a-development-branch skill runs).
 - An interrupted run leaves it in place; the STATE.md handoff (ab-session-continuity) points at it.
