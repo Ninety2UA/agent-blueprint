@@ -148,9 +148,24 @@ check "the table lists the fake row" grep -q '^| fake |' "$M"
 check "the JSON records tokens for the build cell" [ "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["hosts"]["fake"]["cells"]["build"]["tokens"])' "$J")" = 150 ]
 
 echo "== fail mode with a vendor-bug row, a not-installed host, a native-hooks fake, and --jobs 2"
+# Pi stands in for a host that is not installed. Mirror each PATH folder that holds pi without it,
+# so the run sees no pi even where Pi is installed, and every other tool stays reachable.
+nopi_path=""
+IFS=: read -r -a path_dirs <<< "$PATH"
+for d in "${path_dirs[@]}"; do
+    if [ -n "$d" ] && [ -e "$d/pi" ]; then
+        mirror="$WORK/nopi/${#nopi_path}"
+        mkdir -p "$mirror"
+        for entry in "$d"/*; do
+            [ "$(basename "$entry")" = pi ] || ln -s "$entry" "$mirror/"
+        done
+        d="$mirror"
+    fi
+    nopi_path="${nopi_path:+$nopi_path:}$d"
+done
 printf 'host\tcell\turl\tnote\nfake\tdebug\thttps://example.com/vendor/1\tselftest\n' > "$WORK/bugs.tsv"
 AB_SMOKE_VENDOR_BUGS="$WORK/bugs.tsv" AGENT_BLUEPRINT_SMOKE_FAKE_MODE=fail AGENT_BLUEPRINT_FAKE_HOOKS=native AGENT_BLUEPRINT_FAKE_HELPERS_OFF=--no-helpers \
-    bash "$HERE/run-smoke.sh" --host fake,pi --jobs 2 --plugin-dir "$REPO" --out "$WORK/out" --timeout 60 \
+    PATH="$nopi_path" bash "$HERE/run-smoke.sh" --host fake,pi --jobs 2 --plugin-dir "$REPO" --out "$WORK/out" --timeout 60 \
     --cell canary,hooks,manual-only,build,helpers-off,review,debug,ship,team > "$WORK/fail.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/fail.log"; exit 1; }
 for c in canary manual-only build helpers-off review ship team; do
     check "fake · $c is fail" [ "$(state_of "$J" fake "$c")" = fail ]

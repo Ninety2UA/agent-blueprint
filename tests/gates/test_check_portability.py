@@ -95,7 +95,11 @@ class PortabilityGate(unittest.TestCase):
         for content in (original.replace('"ab-fixture"', "false"),
                         original.replace('"ab-fixture"', "12345"),
                         original.replace('"Check a temporary gate test fixture"', "null"),
-                        original + 'policy:\n  allow_implicit_invocation: "false"\n'):
+                        original + 'policy:\n  allow_implicit_invocation: "false"\n',
+                        # A plain value that opens with a YAML block indicator is a list or a key, not text.
+                        original.replace('"ab-fixture"', "- Fixture"),
+                        original.replace('"ab-fixture"', "? Fixture"),
+                        original.replace('"ab-fixture"', "-")):
             with self.subTest(content=content):
                 self.repo.write(OPENAI, content)
                 self.assertFails(OPENAI, "openai-metadata")

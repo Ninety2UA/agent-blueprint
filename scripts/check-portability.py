@@ -451,7 +451,8 @@ def openai_scalar(value):
         scalar, tail = match.group(1).replace("''", "'"), value[match.end():]
     else:
         scalar = re.split(r"\s+#", value, maxsplit=1)[0].rstrip()
-        if not scalar or scalar[0] in "[]{}&*!|>@`#%" or re.search(r":(?:\s|$)", scalar):
+        if (not scalar or scalar[0] in "[]{}&*!|>@`#%" or re.search(r":(?:\s|$)", scalar)
+                or re.match(r"[-?](?:\s|$)", scalar)):
             raise ValueError("expected a single-line string or boolean")
         if scalar in ("true", "false"):
             return scalar == "true"

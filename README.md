@@ -127,7 +127,7 @@ In the clone, `install.sh` takes these options:
 ```bash
 bash install.sh --dry-run                    # print what would run or be copied, change nothing
 bash install.sh --only claude,codex          # only these tools (claude,codex,agy,grok,pi,cursor-agent,hermes,amp)
-bash install.sh --local                      # install from this clone instead of GitHub
+bash install.sh --local                      # install from this clone instead of GitHub (use a clean clone or worktree)
 bash install.sh /path/to/project             # install, then scaffold that project
 bash install.sh --scaffold /path/to/project  # only scaffold a project's files
 bash install.sh --copy-dir /path/to/skills   # copy the skills somewhere else, for a machine with no tool on PATH
