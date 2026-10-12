@@ -209,11 +209,13 @@ host_catalog_dirs() {
             done
             _existing "$HOME/.gemini/antigravity-cli/skills" "$HOME/.gemini/config/skills" ".agents/skills" ".agent/skills" ;;
         grok)
-            for d in "$HOME"/.grok/plugins/*/skills .grok/plugins/*/skills; do _existing "$d"; done
+            for d in "$HOME"/.grok/installed-plugins/*/skills .grok/plugins/*/skills; do _existing "$d"; done
             _existing "$HOME/.agents/skills" "$HOME/.grok/skills" ".grok/skills" "$HOME/.claude/skills" ".claude/skills" ;;
         pi)
+            _native_package_skill_dirs pi
             _existing "$HOME/.pi/agent/skills" ".pi/skills" "$HOME/.agents/skills" ".agents/skills" ;;
         cursor-agent)
+            _native_package_skill_dirs cursor-agent
             for d in "$HOME"/.cursor/plugins/local/*/skills; do _existing "$d"; done
             # Cursor imports the plugins Claude Code has enabled, with their skills.
             _enabled_plugin_skill_dirs claude "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
@@ -239,6 +241,54 @@ host_catalog_dirs() {
     esac
     return 0
 }
+# Native package routes that do not use the Claude/Codex enablement registries.
+_native_package_skill_dirs() {
+    command -v python3 >/dev/null 2>&1 || return 0
+    python3 - "$1" <<'PY'
+import json, os, sys
+from pathlib import Path
+home = Path(os.environ["HOME"])
+dirs = []
+try:
+    if sys.argv[1] == "pi":
+        base = home / ".pi/agent"
+        settings = json.loads((base / "settings.json").read_text())
+        for package in settings.get("packages", []):
+            source = package.get("source") if isinstance(package, dict) else package
+            if not isinstance(source, str):
+                continue
+            if source.startswith("git:"):
+                repo = source[4:].split("#", 1)[0]
+                for prefix in ("https://", "http://", "ssh://git@"):
+                    if repo.startswith(prefix):
+                        repo = repo[len(prefix):]
+                if repo.startswith("git@"):
+                    repo = repo[4:].replace(":", "/", 1)
+                if repo.endswith(".git"):
+                    repo = repo[:-4]
+                path = base / "git" / repo
+            elif source.startswith(("npm:", "https://", "http://")):
+                continue
+            else:
+                path = Path(os.path.expanduser(source))
+                if not path.is_absolute():
+                    path = base / path
+            dirs.append((path / "skills").resolve())
+    else:
+        for plugin in (home / ".cursor/plugins/cache").glob("*/*"):
+            versions = [p for p in plugin.iterdir() if p.is_dir()] if plugin.is_dir() else []
+            if versions:
+                newest = max(versions, key=lambda p: (p.stat().st_mtime_ns, p.name))
+                dirs.append(newest / "skills")
+except (OSError, ValueError, TypeError, AttributeError):
+    pass
+for directory in dict.fromkeys(dirs):
+    if directory.is_dir():
+        print(directory)
+PY
+    return 0
+}
+
 _existing() { local p; for p in "$@"; do [ -d "$p" ] && echo "$p"; done; return 0; }
 # The skills directories of the plugins a host has enabled: Claude Code from settings.json +
 # installed_plugins.json, Codex from config.toml [plugins."name@marketplace"] enabled = true
