@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { dropImages, dropTables, insertAfterHeading, INSTALL_IMAGES, INSTALL_TABLES, markShortKeys, SHORT_KEY } from '../src/components/docs/section.mjs';
+import { dropImages, dropTables, insertAfterHeading, INSTALL_IMAGES, INSTALL_TABLES, markShortKeys, SHORT_KEY, wrapTables } from '../src/components/docs/section.mjs';
 
 // The shape remark-gfm gives a Markdown table, with an alignment attribute on one header cell.
 const table = (cells, rows = 1) =>
@@ -71,4 +71,12 @@ test('a table whose rows start with short names is marked so they stay on one li
   // four columns compete for the width, so their keys are left free to wrap
   const wide = tools.replace('<th>How to update</th>', '<th>A</th>\n<th>B</th>\n<th>C</th>');
   assert.equal(markShortKeys(wide), wide);
+});
+
+test('each table sits in its own sideways-scrolling container, so a wide one never widens the page', () => {
+  const html = `<p>a</p>\n${table(['Tool', 'How to update'], 2)}\n<p>b</p>\n${table(['A', 'B', 'C', 'D'])}`;
+  const out = wrapTables(html);
+  assert.equal((out.match(/<div class="table-scroll"><table>/g) ?? []).length, 2);
+  assert.equal((out.match(/<\/table><\/div>/g) ?? []).length, 2);
+  assert.equal(out.replace(/<div class="table-scroll">|<\/div>/g, ''), html, 'nothing else changes');
 });

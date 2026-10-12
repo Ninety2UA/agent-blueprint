@@ -81,7 +81,9 @@
 .readme-section pre span { color: inherit !important; background: none !important; }
 .readme-section pre code { font-size: inherit; }
 
-/* Tables, ruled like the title block: mono labels over an ink line, hairlines between rows */
+/* Tables, ruled like the title block: mono labels over an ink line, hairlines between rows. Each
+   README table sits in a container that scrolls sideways only if the table cannot fit (wrapTables) */
+.table-scroll { max-width: 100%; overflow-x: auto; scrollbar-width: thin; }
 .readme-section table, .hooks-by-tool table { width: 100%; margin-top: var(--s-5); border-collapse: collapse; font-size: 0.9375rem; line-height: 1.5; }
 .readme-section th, .hooks-by-tool thead th { padding: 0 14px 8px 0; border-bottom: 1px solid var(--ink); text-align: left; vertical-align: bottom; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; color: var(--muted); }
 .readme-section td, .hooks-by-tool td, .hooks-by-tool tbody th { padding: 10px 14px 10px 0; border-bottom: 1px solid var(--hair); text-align: left; vertical-align: top; color: var(--ink-2); overflow-wrap: break-word; }
@@ -160,10 +162,10 @@ span.gs-hint { margin-top: 0; }
      columns to their longest unbreakable word, so code in a cell breaks only where wrap-points.mjs
      put a break (after a slash, |, =, a comma, and in long words after _ or a dot) or at a space
      or hyphen, and is set a step smaller so a four-column table fits. A name kept whole in prose
-     may break at its hyphens here, or it would set its column's width; a path segment (.seg)
-     never breaks */
+     may break at its hyphens here, or it would set its column's width; a flag (--effort) and a
+     path segment (.seg) never break */
   .readme-section td code, .hooks-by-tool td code { font-size: 0.75rem; }
-  .readme-section td .nowrap, .hooks-by-tool td .nowrap { white-space: normal; }
+  .readme-section td .nowrap:not(.flag), .hooks-by-tool td .nowrap:not(.flag) { white-space: normal; }
   .readme-section table, .hooks-by-tool table { font-size: 0.875rem; }
   .readme-section th, .readme-section td { padding-right: 10px; }
   /* header labels at the title block's label size, so a long one (Requirements) does not widen

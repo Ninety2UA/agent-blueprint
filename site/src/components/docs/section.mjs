@@ -17,6 +17,10 @@
 //                     is `id`, ahead of that section's text. Throws naming the id when no heading has it.
 //   SHORT_KEY         the longest first-column text (in characters) a table may have and still count
 //                     as keyed by short names: 20, which "Claude Code" and "Pi, Hermes, Amp" fit.
+//   wrapTables(html)  the HTML with each table inside <div class="table-scroll">, a container that
+//                     scrolls sideways on its own when a table cannot fit the column (a four-column table
+//                     on a phone), so the page itself never scrolls sideways. A table that fits does not
+//                     scroll.
 //   markShortKeys(html)  the HTML with class="key-short" on each table of two or three columns whose
 //                     body rows all start with a cell of at most SHORT_KEY characters, such as a tool
 //                     name, so the stylesheet can keep those names on one line on a wide screen instead
@@ -88,4 +92,8 @@ export function markShortKeys(html) {
     if (headerOf(table).length > 3 || !keys.length || keys.some((k) => k.length > SHORT_KEY)) return table;
     return table.replace(/^<table\b/, '<table class="key-short"');
   });
+}
+
+export function wrapTables(html) {
+  return html.replace(TABLE, (table) => `<div class="table-scroll">${table}</div>`);
 }
