@@ -7,6 +7,7 @@
 // recorded: they decide a link's form, not the content of a page.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { syncBuiltinESMExports } from 'node:module';
 import { extname, join, relative, sep } from 'node:path';
@@ -28,11 +29,15 @@ const { getWorkflow } = await import('../src/components/workflow/workflow-data.m
 const root = findRepoRoot();
 const toRepo = (path) => relative(root, path).split(sep).join('/');
 
-function scriptInputs() {
-  const script = fs.readFileSync(join(root, 'site', 'scripts', 'ignore-build.sh'), 'utf8');
-  const block = script.match(/^inputs=\(\n([\s\S]*?)^\)/m);
+// The script's inputs array as Bash expands it, so a commented-out entry is not counted. Each entry is a
+// ':/path' pathspec, anchored at the repository root.
+function scriptInputs(script = fs.readFileSync(join(root, 'site', 'scripts', 'ignore-build.sh'), 'utf8')) {
+  const block = script.match(/^inputs=\([\s\S]*?^\)/m);
   assert.ok(block, 'ignore-build.sh no longer has an inputs=( ... ) list');
-  return [...block[1].matchAll(/':\/([^']+)'/g)].map((m) => m[1]);
+  const out = execFileSync('bash', ['-c', `${block[0]}\nprintf '%s\\n' "\${inputs[@]}"`], { encoding: 'utf8' });
+  const inputs = out.split('\n').filter(Boolean);
+  assert.ok(inputs.length > 0 && inputs.every((p) => p.startsWith(':/')), `unexpected inputs: ${inputs.join(', ')}`);
+  return inputs.map((p) => p.slice(2));
 }
 
 // Literal repository paths in the site source: join(findRepoRoot(), 'a', 'b') anywhere in site/src,
@@ -68,6 +73,14 @@ test('every repository path the build reads outside site/ is an input of the ign
   assert.ok(paths.includes('README.md') && paths.some((p) => p.startsWith('skills/')), 'the trace recorded no reads');
   const covered = (p) => inputs.some((input) => p === input || p.startsWith(`${input}/`));
   assert.deepEqual(paths.filter((p) => !covered(p)), [], `inputs: ${inputs.join(', ')}`);
+});
+
+test('an input that is commented out of the script is not counted as an input', () => {
+  const script = fs.readFileSync(join(root, 'site', 'scripts', 'ignore-build.sh'), 'utf8');
+  const commented = script.replace("  ':/docs/images'", "  # ':/docs/images'");
+  assert.notEqual(commented, script, "ignore-build.sh no longer lists ':/docs/images'");
+  assert.ok(scriptInputs(script).includes('docs/images'));
+  assert.ok(!scriptInputs(commented).includes('docs/images'));
 });
 
 test('the script lists the site itself and the two files the built-site gate reads', () => {
