@@ -262,6 +262,7 @@ cell_hooks() {
     case "$kind" in
         none) na_cell "no hook path on this host"; return 0 ;;
     esac
+    if [ "$HOST" = codex ]; then cell_codex_hooks; return 0; fi
     if [ "$kind" = native ] && [ "$HOST" != claude ] && [ "$HOST" != fake ]; then
         na_cell "plugin hooks run only after trust on $HOST; the review cell covers the untrusted path (AE1)"; return 0
     fi
@@ -297,6 +298,44 @@ cell_hooks() {
     elif [ -n "$misfires" ]; then finish_cell fail "blueprint hooks fired on $HOST: $misfires ($CHECK_REASON)"
     elif [ -n "$lines" ]; then finish_cell pass "handlers ran and stood down: $lines ($CHECK_REASON)"
     else finish_cell pass "no blueprint hook fired ($CHECK_REASON)"
+    fi
+}
+
+cell_codex_hooks() {
+    local trace prompt secs handler missing=""
+    # Codex needs its own session: a canary does not exercise file or shell tools, and its
+    # trace sits outside the workspace-write sandbox. *.log is ignored by the fixture.
+    new_work hooks
+    mkdir -p "$WORK/.agent-blueprint/run"
+    printf '{"hooks": {"validateCommit": true}}\n' > "$WORK/.agent-blueprint/config.json"
+    trace="$WORK/.agent-blueprint/run/hooks.log"
+    prompt="Codex hooks smoke check: use your file-edit tool to create docs/hook-smoke.md containing 'Hook smoke check.' Then run the shell command git commit -am 'test(smoke): exercise Codex hooks'. Attempt that command even if this sandbox cannot write .git; its success is not required. Then stop with a short final message. $SMOKE_HEADLESS"
+    secs=$(cell_timeout hooks)
+    printf '=== hooks · %s · host codex · timeout %ss · work %s ===\n--- prompt ---\n%s\n--- output ---\n' "$(now_utc)" "$secs" "$WORK" "$prompt" >> "$LOG"
+    RUN_RC=0
+    AGENT_BLUEPRINT_CODEX_BYPASS_HOOK_TRUST=1 AGENT_BLUEPRINT_HOOK_TRACE="$trace" \
+        run_host_timed "$HOST" "$secs" "$LOG" "$prompt" "$LASTMSG" "$HOST_PLUGIN_DIR" || RUN_RC=$?
+    # Keep evidence beside the log before finish_cell removes a passing work copy.
+    if [ -f "$trace" ]; then cp "$trace" "$HOST_LOG_DIR/hooks.trace"; fi
+    host_final_message "$HOST" "$LOG" "$LASTMSG" > "$FINAL" 2>/dev/null || true
+    usage_fields "$HOST" "$LOG"
+    SESSION=$(session_of_log "$LOG")
+    for handler in session-start.js prompt-guard.js validate-commit.js context-monitor.js ship-loop.sh; do
+        if ! [ -f "$trace" ] || ! awk -F'\t' -v handler="$handler" \
+            '$1 == handler && $2 == "codex" { found=1 } END { exit !found }' "$trace"; then
+            missing="${missing:+$missing, }$handler"
+        fi
+    done
+    CHECK_REASON="all five handlers wrote codex trace lines"
+    if [ -n "$missing" ]; then CHECK_REASON="missing codex trace lines: $missing"; fi
+    if [ "$RUN_RC" -eq 124 ]; then
+        finish_cell timeout "no result after ${secs}s; $CHECK_REASON"
+    elif [ "$RUN_RC" -ne 0 ]; then
+        finish_cell fail "host exited $RUN_RC; $CHECK_REASON"
+    elif [ -n "$missing" ]; then
+        finish_cell fail "$CHECK_REASON"
+    else
+        finish_cell pass "$CHECK_REASON"
     fi
 }
 

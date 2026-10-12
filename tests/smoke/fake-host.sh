@@ -11,6 +11,8 @@
 #                                     · tdd-delete/tdd-rewrite (lose a seeded function or its behavior,
 #                                     with the new test present) · tdd-refactor (same behavior)
 #                                     · brainstorm-approval (ask for approval despite writing a plan)
+#                                     · codex-four (omit the write guard from the Codex hook trace)
+#                                     · codex-wrong-host (the write guard trace names another host)
 #   AGENT_BLUEPRINT_HOOK_TRACE        a trace line (handler, host, timestamp) is appended here: in
 #                                     fail mode one naming claude, as a handler that acted on a
 #                                     foreign host would; in stand-down mode one naming other
@@ -63,6 +65,26 @@ case "$MODE" in
 esac
 
 case "$PROMPT" in
+    *"Codex hooks smoke check"*)
+        python3 - <<'PY'
+import json
+import os
+from pathlib import Path
+import subprocess
+
+assert json.loads(Path(".agent-blueprint/config.json").read_text())["hooks"]["validateCommit"] is True
+trace = Path(os.environ["AGENT_BLUEPRINT_HOOK_TRACE"]).resolve()
+assert Path.cwd().resolve() in trace.parents, trace
+assert subprocess.run(["git", "check-ignore", "-q", str(trace)]).returncode == 0, trace
+print("Codex hooks seed: validateCommit=true; trace ignored in work folder")
+PY
+        for handler in session-start.js prompt-guard.js validate-commit.js context-monitor.js ship-loop.sh; do
+            if [ "$MODE" = codex-four ] && [ "$handler" = prompt-guard.js ]; then continue; fi
+            trace_host=codex
+            if [ "$MODE" = codex-wrong-host ] && [ "$handler" = prompt-guard.js ]; then trace_host=other; fi
+            printf '%s\t%s\t%s\n' "$handler" "$trace_host" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$AGENT_BLUEPRINT_HOOK_TRACE"
+        done
+        reply "Codex hooks smoke check finished." ;;
     *codename*)
         reply "HARBOR-19" ;;
     *"autonomous ship pipeline"*)

@@ -519,6 +519,10 @@ host_run() {
             exec claude "$@" -p --permission-mode auto --output-format json "$prompt" </dev/null ;;
         codex)
             # No plugin-dir flag: Codex finds skills in ~/.agents/skills and its plugin cache.
+            # The hooks smoke cell opts in for its invocation only; other runs keep hook trust.
+            if [ "${AGENT_BLUEPRINT_CODEX_BYPASS_HOOK_TRUST:-}" = 1 ]; then
+                set -- --dangerously-bypass-hook-trust "$@"
+            fi
             exec codex exec "$@" --skip-git-repo-check -s workspace-write \
                 -c sandbox_workspace_write.network_access=true \
                 -C "$PWD" -o "${lastmsg:-/dev/null}" "$prompt" </dev/null ;;
