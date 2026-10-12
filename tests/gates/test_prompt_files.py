@@ -277,7 +277,13 @@ class DriftGateSiteSource(unittest.TestCase):
                  ("site/motion/loop-waves/composition.html", "\n<!-- thirty helper prompts -->\n", "<!--",
                   ("thirty helper prompts",)),
                  ("site/src/content/tutorials/unattended-run.md", "\nThe run listed eleven hooks.\n", "The run",
-                  ("eleven hooks",)))
+                  ("eleven hooks",)),
+                 ("site/src/content/tutorials/first-feature-new-project.md",
+                  "\nThe plugin ships fifty\nthree skills and thirty  helper prompts.\n", "The plugin",
+                  ("fifty three skills",)),
+                 ("site/src/content/tutorials/feature-existing-codebase.md",
+                  "\nIt counted forty&nbsp;two skills and twenty-\none hooks.\n", "It counted",
+                  ("forty&nbsp;two skills", "twenty- one hooks")))
 
         def append(copy):
             for rel_path, extra, _marker, _counts in cases:

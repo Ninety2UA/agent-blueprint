@@ -265,18 +265,20 @@ def site_files():
 SITE_FILES = list(site_files())
 LITERAL_COUNT = re.compile(r"(?<![\w.])\d+\+?(?:\s|&nbsp;|&#160;)+(?:skills|helper[ -]prompts|helpers|hooks|"
                            r"hook handlers)\b", re.IGNORECASE)
-# The same counts spelled out ("ten hooks", "fifty-three skills") fail too. Tutorials report what one
-# recorded run did ("each task got three helpers"), so there a spelled-out count fails only from ten
-# up, which covers every total the tree ships.
+# The same counts spelled out ("ten hooks", "fifty-three skills") fail too, with a hyphen, spaces, a
+# line break or &nbsp; between the two words of a compound. Tutorials report what one recorded run did
+# ("each task got three helpers"), so there a spelled-out count fails only from ten up, which covers
+# every total the tree ships.
 UNITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
          "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"]
 TENS = ["twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
-WORD_COUNT = re.compile(r"(?<![\w-])((?:%s)(?:[- ](?:%s))?|%s)(?:\s|&nbsp;|&#160;)+(?:skills|helper[ -]prompts|"
+WORD_GAP = r"(?:\s*-\s*|(?:\s|&nbsp;|&#160;)+)"
+WORD_COUNT = re.compile(r"(?<![\w-])((?:%s)(?:%s(?:%s))?|%s)(?:\s|&nbsp;|&#160;)+(?:skills|helper[ -]prompts|"
                         r"helpers|hooks|hook handlers)\b"
-                        % ("|".join(TENS), "|".join(UNITS[1:10]), "|".join(UNITS)), re.IGNORECASE)
+                        % ("|".join(TENS), WORD_GAP, "|".join(UNITS[1:10]), "|".join(UNITS)), re.IGNORECASE)
 
 def word_value(phrase):
-    parts = re.split(r"[- ]", phrase.lower())
+    parts = [w for w in re.split(r"(?:\s|-|&nbsp;|&#160;)+", phrase.lower()) if w]
     if parts[0] in TENS:
         return 20 + 10 * TENS.index(parts[0]) + (UNITS.index(parts[1]) if len(parts) > 1 else 0)
     return UNITS.index(parts[0])
