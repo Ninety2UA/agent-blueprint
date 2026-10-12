@@ -1,6 +1,6 @@
 {
   "name": "agent-blueprint",
-  "version": "4.0.2",
+  "version": "4.1.0",
   "description": "53 skills and 5 hooks that take Codex from an idea to a reviewed pull request: design, plans, test-first code, reviews and handoffs between sessions.",
   "author": {
     "name": "Ninety2UA"

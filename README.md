@@ -746,10 +746,11 @@ An evaluation then ran the same fixture tasks on v3.8.0 and v4.0.0 in Claude Cod
 ## Release history
 
 <details>
-<summary>v2.3 to v4.0.2</summary>
+<summary>v2.3 to v4.1.0</summary>
 
 | Version | Date | What changed |
 |---|---|---|
+| v4.1.0 | 2026-10-12 | Each tool installs Agent Blueprint with its own command, and `install.sh` runs those commands for every tool at once. TDD keeps code that existed before the task, brainstorming accepts a design you already approved, `ab-project-start` refuses the home folder and nested repositories, and Codex gets display names, icons and a setup step. |
 | v4.0.2 | 2026-10-12 | The injection scanners match whole words, so "Blueprint" no longer reads as an injection attempt. New projects get `docs/context/DECISIONS.md`, and `ab-brainstorming` writes each design section out before asking for approval. |
 | v4.0.1 | 2026-10-07 | Cursor CLI and Amp no longer list every skill twice next to Claude Code. On a machine with Claude Code and either of them, `install.sh` writes no shared copy: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder, and the copy an earlier install left in `~/.agents/skills` is removed. |
 | v4.0.0 | 2026-10-07 | `claude-code-blueprint` becomes Agent Blueprint: one set of skills, each named with the `ab-` prefix, that installs natively in eight coding CLIs. Agents became helper prompts inside the skills that use them, `AGENTS.md` is the instructions file, and working files moved to `.agent-blueprint/`. Team work and the ship runner run in every tool, hooks are optional, new gates keep every skill portable, and `ab-migrate` cleans a v3 project. |
