@@ -198,12 +198,12 @@
         },
         "hooks": {
           "cost_usd": null,
-          "date": "2026-10-12T17:10:50Z",
+          "date": "2026-10-12T22:08:34Z",
           "link": "",
-          "log": "tests/smoke/logs/20261012-191004/codex/hooks.log",
-          "plugin_dir": "~/.codex/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
-          "reason": "all five handlers wrote codex trace lines",
-          "seconds": 22,
+          "log": "tests/smoke/logs/20261013-000819/codex/hooks.log",
+          "plugin_dir": "",
+          "reason": "all five handlers wrote codex trace lines; prompt-guard.js:warned and validate-commit.js:flagged recorded codex actions",
+          "seconds": 15,
           "session": "",
           "state": "pass",
           "tokens": null
@@ -505,7 +505,18 @@
         "grok"
       ],
       "plugin_dir": "$TMPDIR/.../ab-src-410"
+    },
+    {
+      "cells": [
+        "hooks"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host codex --cell hooks --plugin-dir $TMPDIR/.../ab-src-410 --out ~/projects/claude-eng/project-template/project-template/docs/releases",
+      "date": "2026-10-12 22:08 UTC",
+      "hosts": [
+        "codex"
+      ],
+      "plugin_dir": "$TMPDIR/.../ab-src-410"
     }
   ],
-  "updated": "2026-10-12 18:03 UTC"
+  "updated": "2026-10-12 22:08 UTC"
 }
