@@ -330,7 +330,7 @@ copy_skills() {
     local dest_dir="$1"; shift
     local record="$dest_dir/.agent-blueprint-install.json"
     info "Copying ${SKILL_COUNT} skills into $dest_dir (for: $*)"
-    local previous=() name src dest src_real copy_real previous_text stage
+    local previous=() name src dest src_real copy_real previous_text stage=''
     # The copy replaces each skill folder, so a destination that is the source itself (the path,
     # or a symlink to it) would delete the checkout's skills before copying them.
     src_real=$(cd "$SOURCE_DIR/skills" && pwd -P)
@@ -346,7 +346,7 @@ copy_skills() {
     fi
     local current=() recorded=() kept=()
     for src in "$SOURCE_DIR"/skills/*/; do
-        name=$(basename "$src")
+        name=${src%/}; name=${name##*/}
         current+=("$name")
         dest="$dest_dir/$name"
         # A folder of that name that this destination's record does not list is someone else's:
@@ -359,15 +359,17 @@ copy_skills() {
         if [ "$DRY_RUN" = true ]; then
             echo -e "    ${DIM}copy  $name${NC}"
         else
-            mkdir -p "$dest_dir"
-            # Copy next to the destination first, then swap, so a failed copy leaves the old skill in place.
-            stage=$(mktemp -d "$dest_dir/.agent-blueprint-copy.XXXXXX")
-            if ! cp -R "$src" "$stage/skill"; then rm -rf "$stage"; return 1; fi
+            if [ -z "$stage" ]; then
+                mkdir -p "$dest_dir"
+                # Copy next to the destination first, then swap, so a failed copy leaves the old skill in place.
+                stage=$(mktemp -d "$dest_dir/.agent-blueprint-copy.XXXXXX")
+            fi
+            if ! cp -R "$src" "$stage/$name"; then rm -rf "$stage"; return 1; fi
             rm -rf "${dest:?}"
-            mv "$stage/skill" "$dest"
-            rmdir "$stage"
+            mv "$stage/$name" "$dest"
         fi
     done
+    if [ -n "$stage" ]; then rmdir "$stage"; fi
     # A skill in the last record that no longer exists in the source was renamed or deleted.
     for name in "${previous[@]:-}"; do
         [ -n "$name" ] || continue
@@ -448,7 +450,8 @@ if listed claude; then
     fi
     claude_plugin=true
     success "Claude Code: $PLUGIN"
-elif have claude; then
+elif have claude && { listed cursor-agent || listed amp; }; then
+    # Only the Cursor and Amp routes read claude_plugin.
     plugins=$(listing claude plugin list)
     if [[ "$plugins" == *"$PLUGIN"* ]]; then claude_plugin=true; fi
 fi
@@ -519,8 +522,7 @@ if listed pi; then
             continue
         fi
         case "$package" in
-            git:*) resolved=$(sources identity "$package") ;;
-            /*|~*) resolved=$(sources identity "$package") ;;
+            git:*|/*|~*) resolved=$(sources identity "$package") ;;
             *) resolved=$(sources identity "$HOME/.pi/agent/$package") ;;
         esac
         if [ "$resolved" = "$SOURCE" ] && [ -z "$same" ]; then

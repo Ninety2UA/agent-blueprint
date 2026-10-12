@@ -4,13 +4,13 @@
 // (naming.mjs), with the tools that use it; a tool that offers the skill right after install (Codex)
 // says so. Then Get started and GitHub.
 import { listJoin } from '../../lib/text.mjs';
-import { callSkill } from '../../lib/naming.mjs';
+import { SETUP_SKILL, callSkill } from '../../lib/naming.mjs';
 import { getSiteData } from '../../lib/site.mjs';
 import { IC } from '../icons';
 import { GET_STARTED } from '../nav';
 import { site, skill } from './home-data';
 
-const start = skill('ab-project-start').name;
+const start = skill(SETUP_SKILL).name;
 const { onboarding } = getSiteData();
 const rows: { call: string; plain: boolean; tools: string[] }[] = [];
 for (const t of site.tools) {

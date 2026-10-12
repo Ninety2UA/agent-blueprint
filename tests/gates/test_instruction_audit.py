@@ -2,7 +2,7 @@
 import unittest
 from pathlib import Path
 
-from gate_helpers import REPO, read
+from gate_helpers import REPO, read, skill_description
 
 
 def skill_text(skill, relative="SKILL.md"):
@@ -11,7 +11,7 @@ def skill_text(skill, relative="SKILL.md"):
 
 class TDDDiscardScope(unittest.TestCase):
     def test_catalog_limits_discard_to_the_models_task_code(self):
-        description = skill_text("ab-test-driven-development").split("description:", 1)[1].splitlines()[0]
+        description = skill_description("ab-test-driven-development")
         self.assertIn("Only code the model wrote in this task before its test", description)
         self.assertIn("unless the user says to keep it", description)
 
@@ -48,7 +48,7 @@ class BrainstormApprovalScope(unittest.TestCase):
         self.assertIn("until the design is presented and approved through the steps below", gate)
 
     def test_description_scopes_implementation_authorization_to_a_seen_design(self):
-        description = skill_text("ab-brainstorming").split("description:", 1)[1].splitlines()[0]
+        description = skill_description("ab-brainstorming")
         self.assertIn("prior design approval, authorization to implement a seen design, or an explicit design waiver", description)
         self.assertIn("including when the user jumps straight to code on such work", description)
 

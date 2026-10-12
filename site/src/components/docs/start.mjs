@@ -8,7 +8,7 @@
 //   startAnchor(heading)   the section's id on Getting started ("set-up-your-project"); throws when the
 //                          page's README Markdown has no H2 with that text.
 
-import { githubSlug } from '../../lib/readme.mjs';
+import { parseHeadings } from '../../lib/readme.mjs';
 import { getReadmePages } from '../../lib/site.mjs';
 
 export const START = {
@@ -22,8 +22,9 @@ let markdown;
 /** @param {string} heading @returns {string} */
 export function startAnchor(heading) {
   markdown ??= getReadmePages().find((page) => page.slug === 'getting-started')?.markdown ?? '';
-  if (!markdown.split('\n').includes(`## ${heading}`)) {
+  const slug = parseHeadings(markdown).find((h) => h.depth === 2 && h.text === heading)?.slug;
+  if (!slug) {
     throw new Error(`Getting started has no README section "${heading}" to link to; update site/src/components/docs/start.mjs`);
   }
-  return githubSlug(heading);
+  return slug;
 }

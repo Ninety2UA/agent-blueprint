@@ -27,6 +27,8 @@
 //                     of letting a long second column squeeze them onto two. With four or more columns
 //                     every column competes for the width, so the keys may wrap there.
 
+import { escapeRegExp } from '../../lib/text.mjs';
+
 export const INSTALL_TABS_ID = 'install-by-tool';
 
 // `before` and `after` surround the link, so each pointer reads on from the README line above it
@@ -63,12 +65,10 @@ export function dropTables(html, tables) {
 
 export const INSTALL_IMAGES = ['eight-tools'];
 
-const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
 export function dropImages(html, names) {
   let out = html;
   for (const name of names) {
-    const image = new RegExp(`<p>\\s*<img\\b[^>]*\\ssrc="[^"]*/${escapeRe(name)}\\.[^"]*"[^>]*>\\s*</p>\\n?`);
+    const image = new RegExp(`<p>\\s*<img\\b[^>]*\\ssrc="[^"]*/${escapeRegExp(name)}\\.[^"]*"[^>]*>\\s*</p>\\n?`);
     if (!image.test(out)) throw new Error(`docs: the rendered README section has no image "${name}" to replace with its loop`);
     out = out.replace(image, '');
   }
@@ -76,7 +76,7 @@ export function dropImages(html, names) {
 }
 
 export function insertAfterHeading(html, id, insert) {
-  const heading = new RegExp(`<h([1-6])\\b[^>]*\\sid="${escapeRe(id)}"[^>]*>[\\s\\S]*?</h\\1>`);
+  const heading = new RegExp(`<h([1-6])\\b[^>]*\\sid="${escapeRegExp(id)}"[^>]*>[\\s\\S]*?</h\\1>`);
   if (!heading.test(html)) throw new Error(`docs: the rendered README section has no heading #${id} to put a figure under`);
   return html.replace(heading, (h) => `${h}\n${insert}`);
 }

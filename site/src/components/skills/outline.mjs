@@ -25,7 +25,7 @@
 //                                later sentence, and the "Not ..." sentence (null without one).
 //   formatText(text, names)      text as HTML: escaped, every name in `names` (a Set) as <code>.
 
-import { capitalize, escapeHtml } from '../../lib/text.mjs';
+import { capitalize, escapeHtml, escapeRegExp } from '../../lib/text.mjs';
 
 /** @typedef {{ depth: number; slug: string; text: string }} Heading */
 /** @typedef {{ label: string; title: string; id: string; intro: string | null }} Step */
@@ -44,11 +44,9 @@ export function parseStep(text) {
   return m ? { label: m[1] ?? m[2], title: m[3].trim() } : null;
 }
 
-const reEscape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
 /** Where a heading sits in the HTML: the end of its element and its level. */
 function locate(html, slug) {
-  const m = new RegExp(`<h([1-6])\\b[^>]*\\bid="${reEscape(slug)}"[^>]*>[\\s\\S]*?</h\\1>`).exec(html);
+  const m = new RegExp(`<h([1-6])\\b[^>]*\\bid="${escapeRegExp(slug)}"[^>]*>[\\s\\S]*?</h\\1>`).exec(html);
   if (!m) throw new Error(`skill outline: no heading with id "${slug}" in the rendered SKILL.md`);
   return { end: m.index + m[0].length, depth: Number(m[1]) };
 }

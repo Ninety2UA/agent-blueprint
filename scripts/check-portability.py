@@ -527,16 +527,8 @@ def openai_implicit_off(skill_dir):
     p = os.path.join(skill_dir, "agents", "openai.yaml")
     if not os.path.isfile(p):
         return None
-    text = read(p)
-    yaml = load_yaml()
-    if yaml is not None:
-        try:
-            data = yaml.safe_load(text) or {}
-            policy = data.get("policy") if isinstance(data, dict) else None
-            return isinstance(policy, dict) and policy.get("allow_implicit_invocation") is False
-        except yaml.YAMLError:
-            return False
-    return bool(re.search(r"^\s+allow_implicit_invocation:\s*false\s*$", text, re.MULTILINE))
+    data, err = parse_openai_metadata(read(p))
+    return err is None and data.get("policy", {}).get("allow_implicit_invocation") is False
 
 
 def check_manual_only(dirs, fm_by_skill, add):

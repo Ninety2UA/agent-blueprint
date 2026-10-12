@@ -79,7 +79,7 @@ process.stdin.on('end', () => {
     if (detectHost(data) === 'other') process.exit(0);
     const toolName = data.tool_name;
 
-    // Keep Write/Edit's content selection; Codex patches can write several files.
+    // Write and Edit carry one file's content; a Codex apply_patch can write several files.
     let writes;
     if (toolName === 'apply_patch') {
       writes = patchWrites(data.tool_input?.command || '');

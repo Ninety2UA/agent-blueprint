@@ -33,14 +33,6 @@ class PluginUpdateRoutes(unittest.TestCase):
 
     def route(self, name):
         body = section(self.text, name)
-        if not body:
-            # The original skill used bold list entries instead of headings.
-            label = "Codex" if name == "Codex plugin" else name
-            match = re.search(
-                rf"^- \*\*{re.escape(label)}\.\*\*(.*?)(?=^- \*\*|^## |\Z)",
-                self.text, re.MULTILINE | re.DOTALL,
-            )
-            body = match.group(1) if match else ""
         self.assertTrue(body, f"Missing actionable route: {name}")
         return body
 

@@ -21,11 +21,11 @@ CELLS = ["discovery", "canary", "hooks", "manual-only", "build", "helpers-off", 
 
 
 def current_version():
-    return json.load(open(".claude-plugin/plugin.json", encoding="utf-8"))["version"]
+    with open(".claude-plugin/plugin.json", encoding="utf-8") as fh:
+        return json.load(fh)["version"]
 
 
-def section(host, doc):
-    release = doc.get("release") or current_version()
+def section(host, doc, release):
     entry = (doc.get("hosts") or {}).get(host) or {}
     cells = entry.get("cells") or {}
     smoke = "docs/releases/v%s-smoke.md" % release
@@ -62,13 +62,14 @@ def main():
     ap.add_argument("--hosts", default="docs/hosts")
     args = ap.parse_args()
     doc = json.load(open(args.json or "docs/releases/v%s-smoke.json" % current_version(), encoding="utf-8"))
+    release = doc.get("release") or current_version()
     for host, note in NOTES.items():
         path = os.path.join(args.hosts, note)
         text = open(path, encoding="utf-8").read()
         head, sep, _ = text.partition("## Smoke status\n")
         if not sep:
             raise SystemExit("%s has no '## Smoke status' section" % path)
-        text = section(host, doc)
+        text = section(host, doc, release)
         open(path, "w", encoding="utf-8").write(head + sep + "\n" + text)
         print("%-12s %s" % (host, "pending" if text.startswith("Pending:") else "written"))
 

@@ -579,7 +579,7 @@ class Installer(unittest.TestCase):
             fh.write("---\nname: my-own-skill\ndescription: mine\n---\n")
         # A second checkout where one skill was renamed.
         checkout = os.path.join(self.root, "checkout")
-        shutil.copytree(REPO, checkout, symlinks=True, ignore=shutil.ignore_patterns(".git", "node_modules"))
+        shutil.copytree(REPO, checkout, symlinks=True, ignore=shutil.ignore_patterns(".git", "node_modules", "dist", ".astro"))
         os.rename(os.path.join(checkout, "skills", "ab-quick-fix"), os.path.join(checkout, "skills", "ab-quick-change"))
         code, out = self.run_install("--copy-dir", copy, source=os.path.join(checkout, "install.sh"))
         self.assertEqual(code, 0, out)
@@ -601,7 +601,7 @@ class Installer(unittest.TestCase):
 
     def test_copy_dir_inside_the_checkout_skills_is_refused(self):
         checkout = os.path.join(self.root, "checkout")
-        shutil.copytree(REPO, checkout, symlinks=True, ignore=shutil.ignore_patterns(".git", "node_modules"))
+        shutil.copytree(REPO, checkout, symlinks=True, ignore=shutil.ignore_patterns(".git", "node_modules", "dist", ".astro"))
         installer = os.path.join(checkout, "install.sh")
         link = os.path.join(self.root, "alias")
         os.symlink(os.path.join(checkout, "skills"), link)

@@ -301,8 +301,23 @@ cell_hooks() {
     fi
 }
 
+# The handler file names hooks/codex.json declares, in file order: the Codex hooks cell checks these.
+codex_handlers() {
+    python3 - "$PLUGIN_DIR/hooks/codex.json" <<'PY'
+import json, re, sys
+with open(sys.argv[1], encoding="utf-8") as fh:
+    for groups in json.load(fh)["hooks"].values():
+        for group in groups:
+            for hook in group.get("hooks", []):
+                m = re.search(r"hooks/handlers/([^\"\s/]+)", hook.get("command", ""))
+                if hook.get("type") == "command" and m:
+                    print(m[1])
+PY
+}
+
 cell_codex_hooks() {
-    local trace prompt secs handler missing=""
+    local trace prompt secs handler handlers count=0 missing=""
+    local words=(no one two three four five six seven eight nine ten)
     # Codex needs its own session: a canary does not exercise file or shell tools, and its
     # trace sits outside the workspace-write sandbox. *.log is ignored by the fixture.
     new_work hooks
@@ -320,14 +335,17 @@ cell_codex_hooks() {
     host_final_message "$HOST" "$LOG" "$LASTMSG" > "$FINAL" 2>/dev/null || true
     usage_fields "$HOST" "$LOG"
     SESSION=$(session_of_log "$LOG")
-    for handler in session-start.js prompt-guard.js validate-commit.js context-monitor.js ship-loop.sh; do
+    handlers=$(codex_handlers) || handlers=""
+    for handler in $handlers; do
+        count=$((count + 1))
         if ! [ -f "$trace" ] || ! awk -F'\t' -v handler="$handler" \
             '$1 == handler && $2 == "codex" { found=1 } END { exit !found }' "$trace"; then
             missing="${missing:+$missing, }$handler"
         fi
     done
-    CHECK_REASON="all five handlers wrote codex trace lines"
-    if [ -n "$missing" ]; then CHECK_REASON="missing codex trace lines: $missing"; fi
+    CHECK_REASON="all ${words[$count]:-$count} handlers wrote codex trace lines"
+    if [ "$count" -eq 0 ]; then missing="no handlers read from hooks/codex.json"; CHECK_REASON="$missing"
+    elif [ -n "$missing" ]; then CHECK_REASON="missing codex trace lines: $missing"; fi
     if [ "$RUN_RC" -eq 124 ]; then
         finish_cell timeout "no result after ${secs}s; $CHECK_REASON"
     elif [ "$RUN_RC" -ne 0 ]; then

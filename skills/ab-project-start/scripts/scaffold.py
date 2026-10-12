@@ -130,15 +130,12 @@ def git_top_level(project):
     while not os.path.exists(directory):
         directory = os.path.dirname(directory)
     try:
-        inside = subprocess.run(["git", "-C", directory, "rev-parse", "--is-inside-work-tree"],
-                                capture_output=True, text=True)
-        if inside.returncode != 0 or inside.stdout.strip() != "true":
-            return None
         top = subprocess.run(["git", "-C", directory, "rev-parse", "--show-toplevel"],
                              capture_output=True, text=True)
     except FileNotFoundError:
         return None  # Git is not installed: treat the folder as outside a work tree.
-    return os.path.realpath(top.stdout.strip()) if top.returncode == 0 else None
+    # Outside a work tree (or inside .git) this fails; older Git printed nothing inside .git instead.
+    return os.path.realpath(top.stdout.strip()) if top.returncode == 0 and top.stdout.strip() else None
 
 
 def main(argv):
