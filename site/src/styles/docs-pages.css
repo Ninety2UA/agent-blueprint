@@ -14,6 +14,28 @@
 .dp-intro a:hover { text-decoration-color: currentColor; }
 .dp-intro code { font-size: 0.85em; }
 
+/* Getting started: the page's steps under the intro, numbered marks on one ink rule (StartSteps.astro).
+   The rule runs behind the marks; a step's mark takes the accent while it is hovered or focused. */
+.gs-steps { list-style: none; position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-5); margin-top: var(--s-6); }
+.gs-steps::before { content: ""; position: absolute; left: 13px; right: 0; top: 13px; height: 1px; background: var(--ink); }
+.gs-steps a { display: grid; align-content: start; gap: 4px; padding-right: var(--s-3); text-decoration: none; color: var(--ink); }
+.gs-steps .bub { position: relative; background: var(--bg); transition: border-color 160ms, color 160ms; }
+.gs-step-t { margin-top: 10px; font-size: 1.0625rem; font-stretch: 110%; font-weight: 640; line-height: 1.3; }
+.gs-step-d { font-size: 0.9375rem; line-height: 1.5; color: var(--ink-2); }
+.gs-step-d code { font-size: 0.84em; }
+.gs-steps a:hover .gs-step-t { text-decoration: underline; text-underline-offset: 0.25em; text-decoration-color: var(--hair-strong); }
+.gs-steps a:hover .bub, .gs-steps a:focus-visible .bub { border-color: var(--accent-strong); color: var(--accent-strong); }
+@media (max-width: 640px) {
+  /* one rule per step, from its mark down to the next one's */
+  .gs-steps { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+  .gs-steps::before { display: none; }
+  .gs-steps li { position: relative; }
+  .gs-steps li:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 13px; width: 1px; height: calc(100% + var(--s-4)); background: var(--ink); }
+  .gs-steps a { grid-template-columns: 26px minmax(0, 1fr); column-gap: 14px; row-gap: 2px; padding-right: 0; }
+  .gs-steps .bub { grid-row: span 2; }
+  .gs-step-t { margin-top: 1px; }
+}
+
 /* The GitHub documents under the intro, ruled like a parts list */
 .doc-refs { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr)); column-gap: var(--s-5); margin-top: var(--s-4); border-top: 1px solid var(--hair); }
 .doc-refs-one { grid-template-columns: minmax(0, max-content); }
@@ -66,6 +88,9 @@
 .hooks-by-tool tbody th { font-weight: 600; color: var(--ink); }
 .readme-section td:last-child, .readme-section th:last-child, .hooks-by-tool td:last-child, .hooks-by-tool th:last-child { padding-right: 0; }
 .readme-section td code, .hooks-by-tool td code { font-size: 0.8125rem; }
+/* a table keyed by short names (a tool per row, markShortKeys in section.mjs) keeps each name on one
+   line where there is room; on a phone the names wrap again */
+@media (min-width: 641px) { .readme-section table.key-short td:first-child { white-space: nowrap; } }
 
 /* FAQ answers: each question a ruled row that opens in place; the plus is a drafting crosshair */
 .readme-section details { border-bottom: 1px solid var(--hair); }
@@ -85,17 +110,30 @@
 .readme-section details > :not(summary) { margin-top: 0; padding-bottom: 18px; }
 .readme-section details > p + p { margin-top: calc(-18px + var(--s-3)); }
 
+/* ---------- Loops on docs pages (VideoFigure, class in-docs) ----------
+   Drawn to be read at about 560 px, so no wider than that needs. Inside a README section the
+   figure keeps its own frame: the section's image, inline code and paragraph rules stay off it. */
+.dpage .vfig.in-docs { max-width: 640px; margin-top: var(--s-6); }
+.readme-section .vfig.in-docs { margin-top: var(--s-4); }
+.readme-section .vfig img { height: 100%; aspect-ratio: auto; margin-top: 0; border: 0; }
+.readme-section .vf-cap code { padding: 0; background: none; font-size: inherit; color: var(--ink-2); }
+
 /* ---------- Getting started: install tabs ---------- */
 .gs-tools .tablist { margin-top: var(--s-5); }
 .gs-tools .tabpanel { padding-top: var(--s-2); }
 .gs-spec { display: grid; grid-template-columns: 150px minmax(0, 1fr); margin: 0; }
 .gs-spec > dt, .gs-spec > dd { padding-block: 16px; border-top: 1px solid var(--hair); }
 .gs-spec > dt:first-of-type, .gs-spec > dd:first-of-type { border-top: 0; }
-.gs-spec > dt { padding-top: 20px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+.gs-spec > dt { padding-top: 20px; padding-right: var(--s-4); font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
 .gs-spec > dd { margin: 0; min-width: 0; }
+/* beside a command box with an "in a session" label, the row label lines up with the command, not the label */
+@media (min-width: 761px) { .gs-spec > dt.dt-where { padding-top: 29px; } }
 .gs-spec .cmd pre { font-size: 0.8125rem; padding-block: 10px; }
 .gs-route { display: grid; gap: 8px; }
 .gs-words { font-size: 0.9375rem; color: var(--ink-2); max-width: 66ch; }
+.gs-more { margin-top: 4px; font-size: 0.9375rem; color: var(--ink-2); }
+.gs-more a { color: var(--ink); text-decoration-color: var(--hair-strong); }
+.gs-more a:hover { text-decoration-color: currentColor; }
 .gs-hint { margin-top: 8px; font-size: 0.875rem; color: var(--ink-2); }
 span.gs-hint { margin-top: 0; }
 .gs-say { font-size: 1rem; }
@@ -119,9 +157,13 @@ span.gs-hint { margin-top: 0; }
 }
 @media (max-width: 640px) {
   /* narrow tables wrap long commands and paths instead of scrolling sideways. A table sizes its
-     columns to their longest unbreakable word, so code in a cell may break anywhere; a path breaks
-     at a slash first (the <wbr>s from wrap-points.mjs) */
-  .readme-section td code, .hooks-by-tool td code { overflow-wrap: anywhere; }
+     columns to their longest unbreakable word, so code in a cell breaks only where wrap-points.mjs
+     put a break (after a slash, |, =, a comma, and in long words after _ or a dot) or at a space
+     or hyphen, and is set a step smaller so a four-column table fits. A name kept whole in prose
+     may break at its hyphens here, or it would set its column's width; a path segment (.seg)
+     never breaks */
+  .readme-section td code, .hooks-by-tool td code { font-size: 0.75rem; }
+  .readme-section td .nowrap, .hooks-by-tool td .nowrap { white-space: normal; }
   .readme-section table, .hooks-by-tool table { font-size: 0.875rem; }
   .readme-section th, .readme-section td { padding-right: 10px; }
   /* header labels at the title block's label size, so a long one (Requirements) does not widen

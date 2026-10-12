@@ -1,10 +1,11 @@
 // Tests for site/src/components/docs/section.mjs: the Getting started page drops the README's
 // install, naming and support tables from its rendered section (the install tabs render those
-// facts from data) and puts a pointer where each table was.
+// facts from data) and puts a pointer where each table was; it leaves out the diagram the install
+// loop stands in for, and puts the setup loop under its heading.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { dropTables, INSTALL_TABLES } from '../src/components/docs/section.mjs';
+import { dropImages, dropTables, insertAfterHeading, INSTALL_IMAGES, INSTALL_TABLES, markShortKeys, SHORT_KEY } from '../src/components/docs/section.mjs';
 
 // The shape remark-gfm gives a Markdown table, with an alignment attribute on one header cell.
 const table = (cells, rows = 1) =>
@@ -39,4 +40,35 @@ test('the three install tables are replaced by their pointers and nothing else c
 test('a table to drop that the section no longer has stops the build, naming its header', () => {
   const withoutNaming = page.replace(table(['Tool', 'How to name a skill'], 2), '');
   assert.throws(() => dropTables(withoutNaming, INSTALL_TABLES), /Tool \| How to name a skill/);
+});
+
+test('the image a loop stands in for is left out, and a missing one stops the build', () => {
+  const [name] = INSTALL_IMAGES;
+  const img = (file) => `<p><img src="/_astro/${file}.a1B2c3.webp" alt="A diagram" loading="lazy" width="1760" height="990"></p>`;
+  const html = `<p>Before.</p>\n${img(name)}\n<p>After.</p>\n${img('dev-loop')}`;
+  const out = dropImages(html, INSTALL_IMAGES);
+  assert.ok(!out.includes(`/${name}.`), 'the image is still there');
+  assert.ok(out.includes('<p>Before.</p>') && out.includes('<p>After.</p>') && out.includes('/dev-loop.'), 'something else went too');
+  // a name that is only part of another file's name is not a match
+  assert.throws(() => dropImages(img(`${name}-old`), INSTALL_IMAGES), new RegExp(name));
+});
+
+test('a figure goes right under its heading, ahead of the section text, and a missing heading stops the build', () => {
+  const html = '<h2 id="a">A</h2>\n<p>One.</p>\n<h2 id="set-up-your-project">Set up your project</h2>\n<p>Two.</p>';
+  const out = insertAfterHeading(html, 'set-up-your-project', '<figure>F</figure>');
+  assert.ok(out.includes('Set up your project</h2>\n<figure>F</figure>\n<p>Two.</p>'));
+  assert.equal(out.indexOf('<figure>'), out.lastIndexOf('<figure>'), 'placed once');
+  assert.throws(() => insertAfterHeading(html, 'nope', '<figure>F</figure>'), /#nope/);
+});
+
+test('a table whose rows start with short names is marked so they stay on one line; others are left alone', () => {
+  const rows = (keys) => `<table>\n<thead>\n<tr>\n<th>Tool</th>\n<th>How to update</th>\n</tr>\n</thead>\n<tbody>\n${keys.map((k) => `<tr>\n<td>${k}</td>\n<td><code>x y</code></td>\n</tr>`).join('\n')}\n</tbody>\n</table>`;
+  const tools = rows(['Claude Code', 'Pi, Hermes, Amp', '<code>docs/decisions/</code>']);
+  assert.match(markShortKeys(tools), /^<table class="key-short">/);
+  const long = rows(['Claude Code', 'x'.repeat(SHORT_KEY + 1)]);
+  assert.equal(markShortKeys(long), long);
+  assert.equal(markShortKeys(`<p>a</p>\n${tools}\n${long}`).match(/key-short/g).length, 1);
+  // four columns compete for the width, so their keys are left free to wrap
+  const wide = tools.replace('<th>How to update</th>', '<th>A</th>\n<th>B</th>\n<th>C</th>');
+  assert.equal(markShortKeys(wide), wide);
 });

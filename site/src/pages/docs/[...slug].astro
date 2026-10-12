@@ -1,16 +1,24 @@
 ---
 // One page per Docs entry of the sidebar (R1, R4): the hand-written intro (content/docs/<slug>.md),
 // the GitHub documents it points to, then the README section(s) the page maps to (readme collection,
-// R13). Getting started opens on the install tabs and leaves out the README tables they replace;
+// R13). Getting started lists its steps under the intro, opens on the install tabs and leaves out
+// the README tables they replace; under the tabs the install loop stands in for the README's
+// eight-tools diagram, and the setup loop opens "Set up your project". Project files shows the setup
+// loop under its intro;
 // Hooks and native features adds the hooks of each tool. Sidebar, previous and next follow
 // lib/docs-sidebar.mjs; the on-page contents list every H2 on the page.
 import { getEntry, render } from 'astro:content';
 import '../../styles/docs-pages.css';
 import DocRefs from '../../components/docs/DocRefs.astro';
+import CodeWrap from '../../components/CodeWrap.astro';
 import HooksByTool from '../../components/docs/HooksByTool.astro';
 import InstallTabs from '../../components/docs/InstallTabs.astro';
 import ReadmeSection from '../../components/docs/ReadmeSection.astro';
-import { INSTALL_TABLES, INSTALL_TABS_ID } from '../../components/docs/section.mjs';
+import StartSteps from '../../components/docs/StartSteps.astro';
+import { INSTALL_IMAGES, INSTALL_TABLES, INSTALL_TABS_ID } from '../../components/docs/section.mjs';
+import { START, startAnchor } from '../../components/docs/start.mjs';
+import { loop } from '../../components/loops';
+import VideoFigure from '../../components/VideoFigure.astro';
 import DocsLayout from '../../layouts/DocsLayout.astro';
 import { docsNeighbors, docsOrder, docsSidebar } from '../../lib/docs-sidebar.mjs';
 import { githubSlug } from '../../lib/readme.mjs';
@@ -34,6 +42,9 @@ const { Content, headings } = await render(section);
 
 const installTabs = slug === 'getting-started';
 const hooks = slug === 'hooks-and-native-features';
+const projectFiles = slug === 'project-files';
+const installLoop = loop('loop-install');
+const setupLoop = loop('loop-setup');
 // Below a section of the page's own, the README part needs a heading of its own too.
 const lead = hooks ? section.data.headings[0] : undefined;
 
@@ -58,12 +69,26 @@ const { prev, next } = docsNeighbors(slug);
     <header class="dp-head">
       <p class="dp-crumb">Docs<span aria-hidden="true">/</span>{group}</p>
       <h1>{label}</h1>
-      <div class="dp-intro"><Intro /></div>
+      <div class="dp-intro"><CodeWrap><Intro /></CodeWrap></div>
       <DocRefs hostDocs={intro.data.hostDocs} repoDoc={intro.data.repoDoc} />
+      {installTabs && <StartSteps />}
     </header>
+    {projectFiles && (
+      <VideoFigure src={setupLoop.src} num={1} alt={setupLoop.alt} label={setupLoop.label} class="in-docs"><Fragment set:html={setupLoop.caption} /></VideoFigure>
+    )}
     {installTabs && <InstallTabs />}
+    {installTabs && (
+      <VideoFigure src={installLoop.src} num={1} alt={installLoop.alt} label={installLoop.label} class="in-docs"><Fragment set:html={installLoop.caption} /></VideoFigure>
+    )}
     {hooks && <HooksByTool />}
     {lead && <h2 id={githubSlug(lead)}>{lead}</h2>}
-    <ReadmeSection drop={installTabs ? INSTALL_TABLES : undefined}><Content /></ReadmeSection>
+    {installTabs ? (
+      <ReadmeSection drop={INSTALL_TABLES} dropImages={INSTALL_IMAGES} insertAfter={startAnchor(START.setup)}>
+        <Content />
+        <VideoFigure slot="insert" src={setupLoop.src} num={2} alt={setupLoop.alt} label={setupLoop.label} class="in-docs"><Fragment set:html={setupLoop.caption} /></VideoFigure>
+      </ReadmeSection>
+    ) : (
+      <ReadmeSection><Content /></ReadmeSection>
+    )}
   </div>
 </DocsLayout>

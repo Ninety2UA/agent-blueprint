@@ -2,7 +2,9 @@
 // One page per skill folder (R2), after the approved Direction 2 skill page: the header with
 // the summary, the command and a title block; when to use it (from the description); how to
 // name it in each tool; what it does (the step headings of its SKILL.md); the helpers it
-// starts (only when it has prompt files in references/agents/); what you get back (only when
+// starts (only when it has prompt files in references/agents/), where Codex's tab adds the name and
+// line its $ picker shows (agents/openai.yaml) and whether Codex offers the skill right after
+// install (.codex-plugin/plugin.json); what you get back (only when
 // its SKILL.md has a report section); related skills; previous and next; then the full
 // SKILL.md body, rendered as plain Markdown with raw HTML shown as text
 // (src/lib/markdown/escape-skill-html.mjs). Everything comes from the repository.
@@ -21,7 +23,8 @@ import SkillCard from '../../components/skills/SkillCard.astro';
 import { formatText, prepareBody, skillOutline, splitDescription } from '../../components/skills/outline.mjs';
 import { siteData } from '../../components/skills/data';
 import { findRepoRoot } from '../../lib/site.mjs';
-import { breakAfterSlashes } from '../../components/wrap-points.mjs';
+import { callSkill } from '../../lib/naming.mjs';
+import { breakAfterSlashes, breakCodeAfterSlashes } from '../../components/wrap-points.mjs';
 import { escapeHtml, inlineCode } from '../../lib/text.mjs';
 import '../../styles/skills.css';
 
@@ -37,7 +40,7 @@ export async function getStaticPaths() {
 }
 
 const { entry, skill } = Astro.props;
-const { version, repoUrl, tools, phases, skills, helpers } = siteData();
+const { version, repoUrl, tools, phases, skills, helpers, onboarding } = siteData();
 const names = new Set(skills.map((s) => s.name));
 const skillByName = new Map(skills.map((s) => [s.name, s]));
 const phaseBySlug = new Map(phases.map((p) => [p.slug, p]));
@@ -47,18 +50,18 @@ const phaseOf = (name: string) => phaseBySlug.get(skillByName.get(name)!.phase)!
 const html = entry.rendered!.html;
 const headings = (entry.rendered!.metadata?.headings ?? []) as MarkdownHeading[];
 const outline = skillOutline(html, headings);
-const body = prepareBody(html, headings);
+// inline code in the body wraps as in the docs: paths after a slash, short names whole (wrap-points.mjs)
+const body = breakCodeAfterSlashes(prepareBody(html, headings));
 const desc = splitDescription(skill.description);
 const use = desc.use.length ? desc.use : [skill.when];
 const alternatives = skillsNamed([desc.not ?? ''], names).filter((name) => name !== skill.name);
 
 const argumentHint = entry.data['argument-hint'] as string | undefined;
 const manualOnly = entry.data['disable-model-invocation'] === true;
-// the naming table's example names one skill; a tool without a command takes that phrase with this skill's name
-const named = tools.find((t) => t.naming.syntax !== null)!;
-const exampleSkill = named.naming.example.slice(named.naming.syntax!.length);
-const nameIn = (tool: (typeof tools)[number]) =>
-  tool.naming.syntax !== null ? `${tool.naming.syntax}${skill.name}` : tool.naming.example.replace(exampleSkill, skill.name);
+const nameIn = (tool: (typeof tools)[number]) => callSkill(tools, tool, skill.name);
+// agents/openai.yaml is Codex's: its tab shows the picker's name for the skill
+const CODEX = 'codex';
+if (!tools.some((t) => t.id === CODEX)) throw new Error(`skills/[name].astro: no tool with the id ${CODEX} in the README install table`);
 
 const helperInfo = new Map(helpers.map((h) => [h.name, h]));
 const refsUrl = existsSync(join(findRepoRoot(), 'skills', skill.name, 'references'))
@@ -140,8 +143,12 @@ const plainSummary = skill.summary.replace(/\x60/g, ''); // \x60: a literal back
           <Tabs id="name-it" label="Tools" class="invoke" items={tools.map((t) => ({ id: t.id, label: t.name }))}>
             {tools.map((t) => (
               <Fragment slot={t.id}>
-                <Cmd lines={[nameIn(t)]} label={`How to name the skill in ${t.name}`} copyLabel={`Copy for ${t.name}`} />
+                <Cmd lines={[nameIn(t)]} where="in a session" label={`How to name the skill in ${t.name}`} copyLabel={`Copy for ${t.name}`} />
                 {t.naming.syntax === null && <p class="hint">Ask for it in plain words.</p>}
+                {t.id === CODEX && skill.codex && (
+                  <p class="picker"><span class="lbl">In Codex's picker</span><b>{skill.codex.displayName}</b><span>{skill.codex.shortDescription}</span></p>
+                )}
+                {onboarding[t.id] === skill.name && <p class="hint">{t.name} offers it right after install.</p>}
                 {manualOnly && <p class="hint">Manual-only skills in {t.name}: <Fragment set:html={inlineCode(t.support.manualOnly)} />.</p>}
               </Fragment>
             ))}
@@ -192,7 +199,7 @@ const plainSummary = skill.summary.replace(/\x60/g, ''); // \x60: a literal back
           <section id="report" class="ss" aria-labelledby="report-h">
             <h2 id="report-h" class="h-sub">What you get back</h2>
             <p class="body">As its SKILL.md defines it, under <a href={`#${outline.report.id}`}>{outline.report.title}</a>.</p>
-            <div class="report-md prose" set:html={outline.report.html} />
+            <div class="report-md prose" set:html={breakCodeAfterSlashes(outline.report.html)} />
           </section>
         )}
 

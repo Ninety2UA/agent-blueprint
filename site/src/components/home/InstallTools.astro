@@ -1,15 +1,26 @@
 ---
-// Install for the tools you use: one tab per row of the README install table, built with
-// the shared Tabs. Each panel shows the tool's route as the Getting started tabs do (each
-// command a copy control, the README's words between them), how to name a skill in that
-// tool, and its hooks and helpers from the support table.
+// Install for the tools you use: one tab per row of the README install table, built with the
+// shared Tabs. Each panel shows the tool's route as the Getting started tabs do: the README's
+// order, so the tool's own command comes first, or, for a tool that reads Claude Code's plugin, the
+// line that says so; each command a copy control, the README's words between them. Then how to
+// call the setup skill there (SetupCall), how to name a skill and the tool's hooks and helpers.
+// Beside the section head, the install loop (Fig. 6, after the runner's Fig. 5). Under the tabs, a
+// smaller block gives the installer that sets up every tool at once.
 import Cmd from '../Cmd.astro';
 import Tabs from '../Tabs.astro';
 import { routeSteps } from '../docs/route.mjs';
+import SetupCall from '../docs/SetupCall.astro';
+import { START, startAnchor } from '../docs/start.mjs';
+import { loop } from '../loops';
+import { GET_STARTED } from '../nav';
+import VideoFigure from '../VideoFigure.astro';
+import { breakCodeAfterSlashes } from '../wrap-points.mjs';
 import type { Tool } from '../../lib/site.mjs';
-import { md, site } from './home-data';
+import { install, md, site } from './home-data';
 
 const { tools } = site;
+const setupHref = `${GET_STARTED}#${startAnchor(START.setup)}`;
+const installLoop = loop('loop-install');
 
 function panel(tool: Tool) {
   const hooks = /^none\b/i.test(tool.support.hooks) ? 'None. Every pipeline runs without them.' : md(tool.support.hooks);
@@ -19,9 +30,12 @@ const panels = tools.map((t) => ({ tool: t, ...panel(t) }));
 ---
 <section class="sec tools" id="tools" aria-labelledby="tools-h">
   <div class="wrap">
-    <div class="sec-head">
-      <h2 id="tools-h" class="h-sec">Install for the tools you use.</h2>
-      <p class="body">Each tool installs Agent Blueprint from GitHub by its own route. Pick yours here; to set up every tool on your <code>PATH</code> at once, clone the repository and run <code>install.sh</code>.</p>
+    <div class="tools-head">
+      <div class="sec-head">
+        <h2 id="tools-h" class="h-sec">Install for the tools you use.</h2>
+        <p class="body">Each tool installs Agent Blueprint from GitHub with its own command, and updates it the same way. Pick yours, then set up your project.</p>
+      </div>
+      <VideoFigure src={installLoop.src} num={6} alt={installLoop.alt} label={installLoop.label} class="in-tools"><Fragment set:html={installLoop.caption} /></VideoFigure>
     </div>
     <Tabs id="install" label="Tools" items={tools.map((t) => ({ id: t.id, label: t.name }))}>
       {panels.map((p) => (
@@ -32,9 +46,12 @@ const panels = tools.map((t) => ({ tool: t, ...panel(t) }));
               {p.steps.map((step) =>
                 step.kind === 'cmd'
                   ? <Cmd lines={[step.text]} prompt label={`Install command for ${p.tool.name}`} copyLabel={`Copy ${step.text}`} />
-                  : <p class="hint" set:html={step.html} />,
+                  : <p class="hint" set:html={breakCodeAfterSlashes(step.html)} />,
               )}
+              {p.tool.section && <p class="hint">For more on {p.tool.name}, see <a href={`${GET_STARTED}#${p.tool.section.slug}`}>{p.tool.section.heading}</a>.</p>}
             </dd>
+            <dt class:list={[{ 'dt-where': p.tool.naming.syntax !== null }]}>Set up your project</dt>
+            <dd><SetupCall tool={p.tool} more={setupHref} /></dd>
             <dt>Name a skill</dt>
             <dd>
               {p.tool.naming.syntax ? (
@@ -60,6 +77,13 @@ const panels = tools.map((t) => ({ tool: t, ...panel(t) }));
         </Fragment>
       ))}
     </Tabs>
+    <aside class="all-tools" aria-labelledby="all-tools-h">
+      <div class="all-tools-l">
+        <p class="lbl" id="all-tools-h">Every tool at once</p>
+        <p>The installer finds the tools on your <code>PATH</code> and runs each one's route from GitHub. Run it with <code>--dry-run</code> first to see what it would do.</p>
+      </div>
+      <Cmd lines={install.lines} copy={install.copy} prompt label="Install command for every tool" copyLabel="Copy the installer command" />
+    </aside>
   </div>
 </section>
 <style>

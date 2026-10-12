@@ -1,5 +1,5 @@
 ---
-description: Install Agent Blueprint in the coding CLI you already use, check that it sees the skills, and name a skill when you want a specific one.
+description: Install Agent Blueprint in your coding CLI, check that it sees the skills, and set up your project with ab-project-start.
 ---
 
-Install the blueprint in the coding CLI you already use. Pick your tool below for its install commands, how to name a skill there and what it supports. To set up several tools at once, clone the repository and run the installer: it finds the tools on your `PATH` and gives each one its route.
+The steps below get the blueprint working in your tool and set up your project. For every tool on your machine at once, use the installer under [Set up every tool at once](/docs/getting-started/#set-up-every-tool-at-once).

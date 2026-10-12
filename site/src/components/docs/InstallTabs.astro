@@ -1,17 +1,25 @@
 ---
 // Getting started: one tab per tool of the README install table, every fact from getSiteData()
 // (R13). Each panel shows the route's commands as copy controls with the README's words between
-// them (a route that needs a clone has it inside its command), how to name a skill, what the tool
-// supports, and its support note on GitHub. With `hashTarget`, each panel's id is the tool id, so
-// the footer's /docs/getting-started/#<tool id> links open that tab.
+// them, in the README's order: the tool's own command first, or, for a tool that reads another
+// tool's plugin, the line that says so before any command (a route that needs a clone has it inside
+// its command). Then how to call the setup skill there (SetupCall), how to name a skill, what the
+// tool supports and its support note on GitHub. A tool with a README section of its own ("Codex in
+// the CLI and the app") links to it; that section renders further down this page. With
+// `hashTarget`, each panel's id is the tool id, so the footer's /docs/getting-started/#<tool id>
+// links open that tab.
 import Cmd from '../Cmd.astro';
 import Tabs from '../Tabs.astro';
 import { getSiteData } from '../../lib/site.mjs';
 import { inlineCode } from '../../lib/text.mjs';
+import { breakCodeAfterSlashes } from '../wrap-points.mjs';
 import { routeSteps } from './route.mjs';
 import { INSTALL_TABS_ID } from './section.mjs';
+import SetupCall from './SetupCall.astro';
+import { START, startAnchor } from './start.mjs';
 
 const { tools, repoUrl } = getSiteData();
+const setupHref = `#${startAnchor(START.setup)}`;
 ---
 <section class="gs-tools" aria-labelledby={INSTALL_TABS_ID}>
   <h2 id={INSTALL_TABS_ID}>Install by tool</h2>
@@ -24,9 +32,12 @@ const { tools, repoUrl } = getSiteData();
             {routeSteps(t.route, t.commands).map((step) =>
               step.kind === 'cmd'
                 ? <Cmd lines={[step.text]} prompt label={`Install command for ${t.name}`} copyLabel={`Copy ${step.text}`} />
-                : <p class="gs-words" set:html={step.html} />,
+                : <p class="gs-words" set:html={breakCodeAfterSlashes(step.html)} />,
             )}
+            {t.section && <p class="gs-more">For more on {t.name}, see <a href={`#${t.section.slug}`}>{t.section.heading}</a> below.</p>}
           </dd>
+          <dt class:list={[{ 'dt-where': t.naming.syntax !== null }]}>Set up your project</dt>
+          <dd><SetupCall tool={t} more={setupHref} /></dd>
           <dt>Name a skill</dt>
           <dd>
             {t.naming.syntax ? (

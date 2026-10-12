@@ -1,0 +1,29 @@
+---
+// Getting started, under the intro: the page's three steps in order (install, check, set up the
+// project), each a link to its section, drawn as numbered marks on one ink rule. The first goes to
+// the install tabs; the other two to README sections on this page, checked by start.mjs so a
+// renamed section stops the build.
+import { setupSkill } from '../../lib/naming.mjs';
+import { breakCodeAfterSlashes } from '../wrap-points.mjs';
+import { getSiteData } from '../../lib/site.mjs';
+import { INSTALL_TABS_ID } from './section.mjs';
+import { START, startAnchor } from './start.mjs';
+
+const skill = setupSkill(getSiteData().skills);
+const steps = [
+  { href: `#${INSTALL_TABS_ID}`, title: 'Install in your tool', text: "Your tool's own command, straight from GitHub." },
+  { href: `#${startAnchor(START.check)}`, title: 'Check that it sees the skills', text: 'Ask your tool which skills start with <code>ab-</code>.' },
+  { href: `#${startAnchor(START.setup)}`, title: 'Set up your project', text: `Run <code>${skill}</code> in the project folder.` },
+];
+---
+<ol class="gs-steps" aria-label="Steps">
+  {steps.map((s, i) => (
+    <li>
+      <a href={s.href}>
+        <span class="bub" aria-hidden="true">{i + 1}</span>
+        <span class="gs-step-t">{s.title}</span>
+        <span class="gs-step-d" set:html={breakCodeAfterSlashes(s.text)} />
+      </a>
+    </li>
+  ))}
+</ol>

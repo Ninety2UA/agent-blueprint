@@ -7,7 +7,15 @@
 //                                 [{ kind: 'cmd', text }  one per command, in order, shown copyable
 //                                  { kind: 'text', html } the README's words between them, inline code kept]
 //                                 The comma, period or semicolon that joined the words to the command
-//                                 before them is dropped (", then" reads "then" under a command block).
+//                                 before them is dropped (", then" reads "then" under a command block),
+//                                 and the words that end the route end with a period, as a sentence
+//                                 under a command block does (README table cells leave it out).
+//   leadRoute(route, commands)    the short form the home hero shows: { commands, note }. `commands` is the
+//                                 route's first run of commands, joined only by "then" (Cursor CLI's and
+//                                 Amp's run is Claude Code's two, before "Without Claude Code:"); `note` is one
+//                                 sentence of the route's words as HTML: the opening sentence when the route
+//                                 starts with words, else the sentence after the run, capitalized; '' when the
+//                                 route has no words.
 
 import { inlineCode } from '../../lib/text.mjs';
 
@@ -35,5 +43,32 @@ export function routeSteps(route, commands) {
     }
   }
   flush();
+  const last = steps.at(-1);
+  if (last?.kind === 'text' && !/[.:;!?]$/.test(last.html.replace(/<[^>]+>/g, ''))) last.html += '.';
   return steps;
+}
+
+// The first sentence of a route's words, ending in a period (a colon that led into a command becomes one).
+function firstSentence(html) {
+  const sentence = (html.match(/^.*?[.:](?=\s|$)/)?.[0] ?? html).replace(/[:.]?$/, '.');
+  return sentence.replace(/^[a-z]/, (c) => c.toUpperCase());
+}
+
+/**
+ * @param {string} route
+ * @param {string[]} commands
+ * @returns {{ commands: string[], note: string }}
+ */
+export function leadRoute(route, commands) {
+  const steps = routeSteps(route, commands);
+  let i = 0;
+  const opening = steps[0]?.kind === 'text' ? steps[i++] : null;
+  const run = [];
+  for (; i < steps.length; i++) {
+    const step = steps[i];
+    if (step.kind === 'cmd') run.push(step.text);
+    else if (!(step.html === 'then' && steps[i + 1]?.kind === 'cmd')) break;
+  }
+  const words = opening ?? (steps[i]?.kind === 'text' ? steps[i] : null);
+  return { commands: run, note: words?.kind === 'text' ? firstSentence(words.html) : '' };
 }

@@ -1,14 +1,48 @@
 ---
-// Hero: the headline, what the blueprint is, the install command, and the loop drawn as a
-// schematic beside it. The headline is the largest element above the fold and is plain
+// Hero: the headline, what the blueprint is, the install command with a tool picker, and the loop
+// drawn as a schematic beside it. The headline is the largest element above the fold and is plain
 // text, so it is the page's LCP element; the drawing is inline SVG that draws itself once.
+//
+// The picker is the shared Tabs, one per tool, labeled with the tool id the parts list pairs with
+// its name, then "all tools" last. Each panel shows the short form of the tool's README route
+// (leadRoute): its first run of commands and one sentence of the README's words, with a link to the
+// tool's tab on Getting started for the rest. "all tools" shows the clone and the installer.
 import Cmd from '../Cmd.astro';
+import Tabs from '../Tabs.astro';
+import { breakCodeAfterSlashes } from '../wrap-points.mjs';
+import { leadRoute } from '../docs/route.mjs';
+import { START, startAnchor } from '../docs/start.mjs';
 import { GET_STARTED } from '../nav';
 import { heroDrawing, heroDrawingMobile } from './hero-drawing';
 import { install, numberWord, site } from './home-data';
 
 const { counts, tools } = site;
 const columns = Array.from({ length: 12 }, (_, i) => i + 1);
+
+// a command that chains with && shows one part per line; the button copies them chained again
+const panel = (id: string, name: string, commands: string[], note: string, more: string) => {
+  const lines = commands.flatMap((c) => c.split(' && '));
+  return { id, name, lines, copy: lines.join(' && '), note, more };
+};
+const panels = [
+  ...tools.map((t) => {
+    const lead = leadRoute(t.route, t.commands);
+    return panel(t.id, t.name, lead.commands, lead.note, `${GET_STARTED}#${t.id}`);
+  }),
+  panel(
+    'all',
+    'every tool at once',
+    [install.copy],
+    'The installer sets up every tool on your <code>PATH</code>, each by its own route.',
+    `${GET_STARTED}#${startAnchor(START.all)}`,
+  ),
+];
+// a screen reader hears the tool's name after its id, unless the two differ only in case ("codex")
+const items = panels.map((p) => ({
+  id: p.id,
+  label: p.id === 'all' ? 'all tools' : p.id,
+  name: p.id === 'all' || p.name.toLowerCase() !== p.id ? p.name : undefined,
+}));
 ---
 <section class="hero hero-a" aria-labelledby="hero-title">
   <div class="cgrid" aria-hidden="true"><div class="wrap cgrid-in">{columns.map((c) => <span data-c={c}></span>)}</div></div>
@@ -16,7 +50,14 @@ const columns = Array.from({ length: 12 }, (_, i) => i + 1);
     <div class="hero-copy">
       <h1 id="hero-title" class="h-display">Draw it up before your agent builds it.</h1>
       <p class="lede"><span data-claim="skills">{counts.skills}</span> skills that take a coding agent from an idea to a reviewed pull request, in <span data-claim="tools">{numberWord(counts.tools)}</span> coding CLIs.</p>
-      <Cmd lines={install.lines} copy={install.copy} prompt trim label="Install command" copyLabel="Copy install command" />
+      <Tabs id="hero" label="Tool to install for" items={items} class="hero-install">
+        {panels.map((p) => (
+          <Fragment slot={p.id}>
+            <Cmd lines={p.lines} copy={p.copy} prompt trim label={`Install command for ${p.name}`} copyLabel={`Copy the install command for ${p.name}`} />
+            <p class="hero-note">{p.note && <Fragment set:html={`${breakCodeAfterSlashes(p.note)} `} />}<a href={p.more}>All steps</a></p>
+          </Fragment>
+        ))}
+      </Tabs>
       <div class="cta-row">
         <a class="btn btn-primary" href={GET_STARTED}>Get started</a>
         <a class="btn btn-ghost" href="/skills/"><span>Browse the <span data-claim="skills">{counts.skills}</span> skills</span></a>

@@ -61,8 +61,32 @@
 .hero-copy { grid-column: 1 / 7; }
 .hero-copy .h-display { font-size: clamp(2.25rem, 1.1rem + 2.45vw, 3.25rem); }
 .hero-copy .lede { margin-top: var(--s-5); }
-.hero-copy .cmd { margin-top: var(--s-6); max-width: 600px; }
 .hero .cmd pre { font-size: 0.75rem; }
+/* the install picker: tool ids in mono over one command box; the selected id alone is underlined
+   in the accent, and the ids wrap on a narrow screen instead of scrolling */
+.hero-install { margin-top: var(--s-6); max-width: 600px; }
+.hero-install .tablist { flex-wrap: wrap; gap: 0 2px; overflow: visible; border-bottom: 0; margin: 0 0 12px -6px; }
+.hero-install .tab-ink { display: none; }
+.hero-install .tab { padding: 4px 6px 7px; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; letter-spacing: 0.01em; color: var(--muted); }
+.hero-install .tab:hover { color: var(--ink); }
+.hero-install .tab[aria-selected="true"] { color: var(--ink); font-weight: 500; }
+.hero-install .tab::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: 1px; height: 2px; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform 300ms var(--ease-out); }
+.hero-install .tab[aria-selected="true"]::after { transform: none; }
+/* "all tools" is the installer, not a tool: a hairline sets it apart from the ids */
+.hero-install .tab:last-of-type { margin-left: 6px; padding-left: 12px; }
+.hero-install .tab:last-of-type::before { content: ""; position: absolute; left: 0; top: 7px; bottom: 9px; width: 1px; background: var(--hair-strong); }
+.hero-install .tab:last-of-type::after { left: 12px; }
+/* below 600px the ids wrap and "all tools" can start a line, where the hairline would hang alone
+   and the extra indent would push it off the column edge: it spaces like the ids there */
+@media (max-width: 599px) {
+  .hero-install .tab:last-of-type { margin-left: 0; padding-left: 6px; }
+  .hero-install .tab:last-of-type::before { display: none; }
+  .hero-install .tab:last-of-type::after { left: 6px; }
+}
+.hero-note { margin-top: 12px; font-size: 0.875rem; line-height: 1.5; color: var(--ink-2); max-width: 62ch; }
+.hero-note code { font-size: 0.84em; }
+.hero-note a { color: var(--ink); white-space: nowrap; text-decoration-color: var(--hair-strong); }
+.hero-note a:hover { text-decoration-color: currentColor; }
 .hero-copy .cta-row { margin-top: var(--s-5); }
 .hero-fig { grid-column: 7 / 13; margin: 0; background: var(--bg); }
 .hero-fig .sch-m { display: none; }
@@ -226,6 +250,8 @@
 .host:hover { border-color: var(--ink); color: var(--ink); }
 .host[aria-checked="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
 .host-note { margin-top: var(--s-3); font-size: 0.875rem; color: var(--ink-2); min-height: 3em; max-width: 60ch; }
+.runner-hint { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px dashed var(--hair); font-size: 0.8125rem; line-height: 1.5; color: var(--muted); max-width: 60ch; }
+.runner-hint code { font-size: 0.84em; color: var(--ink-2); }
 .flow { list-style: none; position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: var(--s-8); counter-reset: f; }
 .flow::before { content: ""; position: absolute; left: 0; right: 0; top: 13px; height: 1.5px; background: var(--ink); }
 .flow li { position: relative; padding-right: var(--s-5); counter-increment: f; }
@@ -259,31 +285,52 @@
 }
 
 /* ---------- Install by tool (the shared Tabs) ---------- */
+/* the section head and the install loop side by side, the head's text level with the figure's top */
+.tools-head { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: var(--s-6) clamp(40px, 5vw, 80px); align-items: start; }
+.tools-head .vfig { justify-self: end; width: 100%; max-width: 580px; }
+@media (max-width: 980px) { .tools-head { grid-template-columns: minmax(0, 1fr); } .tools-head .vfig { justify-self: start; } }
 .tools .tablist { margin-top: var(--s-6); }
 .tools .tabpanel { padding-top: var(--s-3); }
 .spec { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 0; }
 .spec > dt, .spec > dd { padding-block: 18px; }
-.spec > dt { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); padding-top: 22px; }
+.spec > dt { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); padding-top: 22px; padding-right: var(--s-4); }
 .spec > dd { margin: 0; min-width: 0; }
-.spec > dt:nth-of-type(2), .spec > dd:nth-of-type(2), .spec > dt:nth-of-type(3), .spec > dd:nth-of-type(3) { border-top: 1px solid var(--hair); }
+/* beside a command box with an "in a session" label, the row label lines up with the command, not the label */
+@media (min-width: 761px) { .spec > dt.dt-where { padding-top: 31px; } }
+.spec > dt:not(:first-of-type), .spec > dd:not(:first-of-type) { border-top: 1px solid var(--hair); }
 .spec .cmd pre { font-size: 0.8125rem; padding-block: 10px; }
 .spec .hint { margin-top: 10px; font-size: 0.875rem; color: var(--ink-2); max-width: 66ch; }
 .spec .say { font-family: var(--font-mono); font-size: 0.9375rem; }
 .spec .say-plain { font-size: 1rem; }
 .facts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 40px; color: var(--ink-2); font-size: 0.9375rem; }
 .facts b { display: block; font-weight: 600; color: var(--ink); font-size: 0.875rem; }
+.spec .hint a { color: var(--ink); text-decoration-color: var(--hair-strong); }
+.spec .hint a:hover { text-decoration-color: currentColor; }
+/* the installer for every tool, under the tabs and smaller than them: the secondary route */
+.all-tools { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s-4) var(--s-6); align-items: center; margin-top: var(--s-6); padding: var(--s-5); border: 1px solid var(--hair); border-radius: var(--r); }
+.all-tools-l { display: grid; gap: 6px; }
+.all-tools-l p:not(.lbl) { font-size: 0.875rem; color: var(--ink-2); max-width: 52ch; }
+.all-tools-l code { font-size: 0.84em; white-space: nowrap; }
+.all-tools .cmd pre { font-size: 0.75rem; padding-block: 10px; }
 @media (max-width: 760px) {
   .spec { grid-template-columns: minmax(0, 1fr); }
   .spec > dt { padding-bottom: 6px; }
   .spec > dd { padding-top: 0; }
-  .spec > dd:nth-of-type(2), .spec > dd:nth-of-type(3) { border-top: 0; }
+  .spec > dd:not(:first-of-type) { border-top: 0; }
   .facts { grid-template-columns: minmax(0, 1fr); }
 }
+@media (max-width: 900px) { .all-tools { grid-template-columns: minmax(0, 1fr); padding: var(--s-4); } }
 
 /* ---------- Closing ---------- */
 .closing-in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-7); align-items: end; padding-block: var(--s-8); border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
 .closing .h-display { font-size: clamp(2.25rem, 1.3rem + 2.6vw, 3.5rem); }
 .closing .body { margin-top: var(--s-4); }
-.closing .cmd { margin-bottom: var(--s-4); }
-.closing .cmd pre { font-size: 0.75rem; }
+/* how to call the setup skill in each tool, ruled like the title block: the call in mono, then its tools */
+.calls { display: grid; margin: 8px 0 var(--s-5); border-top: 1px solid var(--ink); }
+.calls > div { display: grid; grid-template-columns: minmax(0, 13rem) minmax(0, 1fr); gap: 4px var(--s-4); padding: 10px 0; border-bottom: 1px solid var(--hair); }
+.calls dt { font-size: 0.875rem; color: var(--ink); }
+.calls dt code { font-size: 0.8125rem; font-weight: 560; }
+.calls-plain { font-size: 0.875rem; }
+.calls dd { margin: 0; font-size: 0.875rem; color: var(--ink-2); }
+@media (max-width: 560px) { .calls > div { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 900px) { .closing-in { grid-template-columns: minmax(0, 1fr); gap: var(--s-5); } }

@@ -21,6 +21,7 @@ inputs=(
   ':/skills'
   ':/README.md'
   ':/.claude-plugin/plugin.json'
+  ':/.codex-plugin/plugin.json'
   ':/docs/releases'
   ':/docs/images'
   ':/hooks/claude-code.json'

@@ -1,0 +1,29 @@
+---
+// The "Set up your project" row of an install tab, on Getting started and on the home page: how to
+// call the setup skill in this tool, built from the README naming table (naming.mjs) and shown as a
+// session command, with no "$" prompt and an "in a session" label. A tool with no command for skills
+// gets the plain-words request. A tool that offers the skill right after install says so (Codex
+// names it in .codex-plugin/plugin.json). `more` links to what the skill creates.
+import Cmd from '../Cmd.astro';
+import { callSkill, setupSkill } from '../../lib/naming.mjs';
+import { getSiteData, type Tool } from '../../lib/site.mjs';
+
+interface Props {
+  tool: Tool;
+  /** link to the README's "Set up your project" section */
+  more: string;
+}
+const { tool, more } = Astro.props;
+const { tools, skills, onboarding } = getSiteData();
+const skill = setupSkill(skills);
+const call = callSkill(tools, tool, skill);
+---
+<div class="setup-call">
+  {tool.naming.syntax !== null ? (
+    <Cmd lines={[call]} where="in a session" label={`Set up a project in ${tool.name}`} copyLabel={`Copy ${call}`} />
+  ) : (
+    <p class="setup-say">Ask in plain words: "{call}".</p>
+  )}
+  {onboarding[tool.id] === skill && <p class="setup-offer">{tool.name} offers it right after install.</p>}
+  <p class="setup-note">Run it first in a new project or one you already have; it merges into your files and never overwrites them. <a href={more}>What it creates</a></p>
+</div>

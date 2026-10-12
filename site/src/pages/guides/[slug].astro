@@ -7,6 +7,7 @@
 import { getEntry, render } from 'astro:content';
 import '../../styles/docs-pages.css';
 import '../../styles/guides.css';
+import CodeWrap from '../../components/CodeWrap.astro';
 import ReadmeSection from '../../components/docs/ReadmeSection.astro';
 import GuideSkills from '../../components/guides/GuideSkills.astro';
 import SkillLinked from '../../components/guides/SkillLinked.astro';
@@ -66,7 +67,7 @@ const { prev, next } = guidesNeighbors(slug);
     <header class="dp-head">
       <p class="dp-crumb">Guides</p>
       <h1 id={OVERVIEW}>{label}</h1>
-      <div class="dp-intro"><Intro /></div>
+      <div class="dp-intro"><CodeWrap><Intro /></CodeWrap></div>
     </header>
     <ReadmeSection><SkillLinked names={names} title={label}><Content /></SkillLinked></ReadmeSection>
     {named.length > 0 && <GuideSkills id={SKILLS} names={named} />}

@@ -134,6 +134,16 @@ test('the install, naming and support tables give one entry per host the install
   assert.ok(!byId.hermes.commands.includes('~/.hermes/skills'), 'a path is not a command');
 });
 
+test("a tool with an Install subsection named after it links to that section; the others have none", () => {
+  const { tools } = parseInstall(README);
+  const headings = [...README.split('\n## Install\n')[1].split(/\n## /)[0].matchAll(/^### (.+)$/gm)].map((m) => m[1]);
+  for (const tool of tools) {
+    const own = headings.find((h) => h.startsWith(`${tool.name} `));
+    assert.deepEqual(tool.section, own ? { heading: own, slug: own.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/ /g, '-') } : null, tool.name);
+  }
+  assert.equal(tools.find((t) => t.id === 'codex').section?.slug, 'codex-in-the-cli-and-the-app');
+});
+
 test("each install row's commands are that tool's own route (KTD10), with no clone placeholder", () => {
   const { tools } = parseInstall(README);
   assert.deepEqual(Object.keys(KTD10), tools.map((t) => t.id));

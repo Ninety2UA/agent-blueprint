@@ -223,6 +223,8 @@ kbd { font-size: 0.6875rem; border: 1px solid var(--hair); border-radius: var(--
 :root[data-theme="dark"] .cmd .arg { color: var(--accent); }
 /* a flag such as --host or [--pr] never splits at its hyphens (wrap-points.mjs, in Cmd and TitleBlock) */
 .nowrap { white-space: nowrap; }
+/* a segment of a path in inline code: the path breaks only after a slash (wrap-points.mjs) */
+.seg { white-space: nowrap; }
 .copy-btn {
   flex: none; display: inline-flex; align-items: center; gap: 8px; align-self: stretch;
   padding: 0 14px; border: 0; border-left: 1px solid var(--hair-strong); background: transparent;
@@ -236,6 +238,19 @@ kbd { font-size: 0.6875rem; border: 1px solid var(--hair); border-radius: var(--
 .copy-btn.is-copied .ic-check { display: block; color: var(--accent-strong); animation: tick-in 320ms var(--ease-out); }
 :root[data-theme="dark"] .copy-btn.is-copied .ic-check { color: var(--accent); }
 @keyframes tick-in { from { transform: scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
+/* where a command that is not a shell line runs ("in a session"): a label set on the box's top
+   edge, like a callout written on a drawing's frame line, so it takes no room from the command */
+.cmd.has-where { margin-top: 9px; }
+.cmd-where { position: absolute; left: 10px; top: 0; transform: translateY(-50%); padding: 0 6px; background: var(--cmd-where-bg, var(--bg)); font-family: var(--font-mono); font-size: 0.6875rem; line-height: 1.4; color: var(--muted); white-space: nowrap; pointer-events: none; }
+
+/* The "Set up your project" row of the install tabs (SetupCall.astro), on Getting started and home */
+.setup-call { display: grid; gap: 8px; }
+.setup-say { font-size: 1rem; color: var(--ink); }
+.setup-offer, .setup-note { font-size: 0.875rem; color: var(--ink-2); max-width: 66ch; }
+.setup-note a { color: var(--ink); text-decoration-color: var(--hair-strong); }
+.setup-note a:hover { text-decoration-color: currentColor; }
+.setup-call code { font-size: 0.84em; }
+
 /* crop marks: real drafting trim marks on the primary command */
 .cmd.trim::before, .cmd.trim::after { content: ""; position: absolute; width: 10px; height: 10px; pointer-events: none; }
 .cmd.trim::before { left: -6px; top: -6px; border-left: 1px solid var(--ink); border-top: 1px solid var(--ink); }

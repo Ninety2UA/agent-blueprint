@@ -11,9 +11,12 @@
 //
 // With `hashTarget`, each panel's id is the bare item id, so a link to `#<item id>` (the
 // footer's "Install by tool" links to /docs/getting-started/#<tool id>) opens that tab.
+// An item's `name` is read after a short label by screen readers only (the home hero labels its
+// tabs with tool ids: "cursor-agent", named "Cursor CLI").
 interface Item {
   id: string;
   label: string;
+  name?: string;
 }
 interface Props {
   id: string;
@@ -41,13 +44,13 @@ const panels = await Promise.all(items.map((item) => Astro.slots.render(item.id)
         aria-controls={panelId(item)}
         aria-selected={i === selected ? 'true' : 'false'}
         tabindex={i === selected ? 0 : -1}
-      >{item.label}</button>
+      >{item.label}{item.name && <span class="sr-only">, {item.name}</span>}</button>
     ))}
     <span class="tab-ink" aria-hidden="true"></span>
   </div>
   {items.map((item, i) => (
     <div class="tabpanel" role="tabpanel" id={panelId(item)} aria-labelledby={tabId(item)} hidden={i !== selected}>
-      <p class="tp-name">{item.label}</p>
+      <p class="tp-name">{item.name ?? item.label}</p>
       <Fragment set:html={panels[i]} />
     </div>
   ))}
