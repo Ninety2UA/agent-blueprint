@@ -139,6 +139,131 @@ class Installer(unittest.TestCase):
         self.assertIn("grok plugin install " + GITHUB + " --trust", self.calls())
         self.assertIn("pi install " + PI_SOURCE, self.calls())
 
+    def test_filtered_claude_run_keeps_split_copies(self):
+        copies = [self.earlier_copy(folder, *SKILLS) for folder in
+                  (".grok/skills", ".pi/agent/skills")]
+        records = {copy: (copy / ".agent-blueprint-install.json").read_text() for copy in copies}
+        for tool in ("claude", "grok", "pi"):
+            self.fake_tool(tool)
+        code, out = self.run_install("--only", "claude")
+        self.assertEqual(code, 0, out)
+        for copy in copies:
+            with self.subTest(copy=copy):
+                self.assertEqual(sorted(p.name for p in copy.iterdir() if p.is_dir()), SKILLS)
+                self.assertEqual((copy / ".agent-blueprint-install.json").read_text(), records[copy])
+        self.assertEqual(self.mutations(), ["claude plugin marketplace add " + GITHUB,
+                                           "claude plugin install " + PLUGIN])
+
+    def test_filtered_grok_run_retires_only_groks_split_copy(self):
+        grok = self.earlier_copy(".grok/skills", *SKILLS)
+        pi = self.earlier_copy(".pi/agent/skills", *SKILLS)
+        record = (pi / ".agent-blueprint-install.json").read_text()
+        for tool in ("claude", "grok", "pi"):
+            self.fake_tool(tool)
+        code, out = self.run_install("--only", "grok")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(list(grok.iterdir()), [])
+        self.assertEqual(sorted(p.name for p in pi.iterdir() if p.is_dir()), SKILLS)
+        self.assertEqual((pi / ".agent-blueprint-install.json").read_text(), record)
+        self.assertEqual(self.mutations(), ["grok plugin install " + GITHUB + " --trust"])
+
+    def test_filtered_codex_run_keeps_shared_copy_for_grok(self):
+        copy = self.earlier_copy(".agents/skills", *SKILLS)
+        record = (copy / ".agent-blueprint-install.json").read_text()
+        for tool in ("codex", "grok"):
+            self.fake_tool(tool)
+        code, out = self.run_install("--only", "codex")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(sorted(p.name for p in copy.iterdir() if p.is_dir()), SKILLS)
+        self.assertEqual((copy / ".agent-blueprint-install.json").read_text(), record)
+        self.assertRegex(out, r"(?m)^  ! [^\n]*grok")
+        self.assertIn("install.sh without --only", out)
+        self.assertIn("each skill twice", out)
+        self.assertEqual(self.mutations(), ["codex plugin marketplace add " + GITHUB,
+                                           "codex plugin add " + PLUGIN])
+
+    def test_unfiltered_run_retires_shared_copy(self):
+        copy = self.earlier_copy(".agents/skills", *SKILLS)
+        (copy / "my-own-skill").mkdir()
+        for tool in ("codex", "grok"):
+            self.fake_tool(tool)
+        code, out = self.run_install()
+        self.assertEqual(code, 0, out)
+        self.assertEqual(sorted(p.name for p in copy.iterdir()), ["my-own-skill"])
+        self.assertEqual(self.mutations(), ["codex plugin marketplace add " + GITHUB,
+                                           "codex plugin add " + PLUGIN,
+                                           "grok plugin install " + GITHUB + " --trust"])
+
+    def test_shared_warning_names_all_unselected_readers(self):
+        copy = self.earlier_copy(".agents/skills", "ab-quick-fix")
+        readers = ("codex", "grok", "pi", "cursor-agent", "amp")
+        for tool in ("claude", *readers):
+            self.fake_tool(tool)
+        code, out = self.run_install("--only", "claude")
+        self.assertEqual(code, 0, out)
+        self.assertTrue((copy / "ab-quick-fix").is_dir())
+        self.assertTrue((copy / ".agent-blueprint-install.json").is_file())
+        warning = next(line for line in out.splitlines() if line.startswith("  ! ") and str(copy) in line)
+        for tool in readers:
+            self.assertIn(tool, warning)
+        self.assertIn("install.sh without --only", warning)
+        self.assertIn("each skill twice", warning)
+        # Explicitly selecting all readers is sufficient even with another tool on PATH.
+        code, out = self.run_install("--only", ",".join(readers))
+        self.assertEqual(code, 0, out)
+        self.assertEqual(list(copy.iterdir()), [])
+        self.assertNotIn("each skill twice", out)
+
+    def test_split_cleanup_waits_until_each_hosts_route(self):
+        copies = [self.earlier_copy(folder, "ab-quick-fix") for folder in
+                  (".grok/skills", ".pi/agent/skills")]
+        self.fake_tool("codex", {"plugin add " + PLUGIN: {"code": 1}})
+        for tool in ("grok", "pi"):
+            self.fake_tool(tool)
+        code, out = self.run_install()
+        self.assertNotEqual(code, 0, out)
+        for copy in copies:
+            with self.subTest(copy=copy):
+                self.assertTrue((copy / "ab-quick-fix").is_dir())
+                self.assertTrue((copy / ".agent-blueprint-install.json").is_file())
+        self.assertFalse(any(c.startswith(("grok ", "pi ")) for c in self.calls()))
+
+    def test_dry_run_preserves_legacy_copies_and_prints_scoped_cleanup(self):
+        folders = (".agents/skills", ".grok/skills", ".pi/agent/skills")
+        copies = [self.earlier_copy(folder, "ab-quick-fix") for folder in folders]
+        for copy in copies:
+            (copy / "ab-quick-fix/SKILL.md").write_text("old skill content")
+        for tool in ("claude", "codex", "grok", "pi"):
+            self.fake_tool(tool)
+        before = {p: p.read_bytes() if p.is_file() else None for p in Path(self.home).rglob("*")}
+        for args, retired, readers in (
+            (["--only", "claude"], (), ("codex", "grok", "pi")),
+            (["--only", "grok"], (".grok/skills",), ("codex", "pi")),
+            (["--only", "pi"], (".pi/agent/skills",), ("codex", "grok")),
+            (["--only", "codex"], (), ("grok", "pi")),
+            ([], folders, ()),
+        ):
+            with self.subTest(args=args):
+                code, out = self.run_install("--dry-run", *args)
+                self.assertEqual(code, 0, out)
+                for folder, copy in zip(folders, copies):
+                    self.assertEqual("Would remove the recorded copy in " + str(copy) in out,
+                                     folder in retired)
+                    self.assertEqual("would run: rm -rf " + str(copy / "ab-quick-fix") in out,
+                                     folder in retired)
+                if readers:
+                    warning = next(line for line in out.splitlines()
+                                   if line.startswith("  ! ") and str(copies[0]) in line)
+                    for tool in readers:
+                        self.assertIn(tool, warning)
+                    self.assertIn("install.sh without --only", warning)
+                    self.assertIn("each skill twice", warning)
+                else:
+                    self.assertNotIn("each skill twice", out)
+                self.assertEqual(before, {p: p.read_bytes() if p.is_file() else None
+                                          for p in Path(self.home).rglob("*")})
+                self.assertEqual(self.mutations(), [])
+
     def test_unrecorded_and_foreign_copies_are_kept(self):
         mine = self.earlier_copy(".grok/skills", "ab-quick-fix")
         record = mine / ".agent-blueprint-install.json"

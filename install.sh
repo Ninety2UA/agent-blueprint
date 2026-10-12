@@ -12,7 +12,7 @@
 # Cursor registrations made here are recorded in
 # ${XDG_CONFIG_HOME:-$HOME/.config}/agent-blueprint/install-routes.json.
 # Copies keep .agent-blueprint-install.json; only recorded skills are replaced or removed.
-# Re-runs retire recorded v4.0 copies in ~/.agents/skills, ~/.grok/skills and ~/.pi/agent/skills.
+# Re-runs retire recorded v4.0 copies only when their installed readers are in this run.
 # Python 3 (also used by the scaffold and host catalog) reads and writes the JSON records.
 #
 # Usage: bash install.sh [options] [PROJECT_DIR]
@@ -411,10 +411,19 @@ remove_recorded_copy() {
     if [ "$DRY_RUN" = true ]; then info "Would remove the recorded copy in $dir"; else info "Removed the recorded copy in $dir"; fi
 }
 
-# Retire only folders an earlier installer recorded, before giving hosts their own routes.
-for old_copy in "$HOME/.agents/skills" "$HOME/.grok/skills" "$HOME/.pi/agent/skills"; do
-    remove_recorded_copy "$old_copy"
-done
+# Keep the shared copy until every installed reader is selected for its own route.
+# Per-tool copies are retired below, immediately before that tool's route runs.
+if [ -f "$HOME/.agents/skills/.agent-blueprint-install.json" ]; then
+    shared_readers=()
+    for h in codex grok pi cursor-agent amp; do
+        if have "$h" && ! listed "$h"; then shared_readers+=("$h"); fi
+    done
+    if [ ${#shared_readers[@]} -eq 0 ]; then
+        remove_recorded_copy "$HOME/.agents/skills"
+    else
+        warn "Keeping the recorded copy in $HOME/.agents/skills: tools still reading it outside this run: ${shared_readers[*]}. Run install.sh without --only (or with those tools) to retire it. Until then, a tool given its own route in this run may list each skill twice."
+    fi
+fi
 
 claude_plugin=false
 if listed claude; then
@@ -468,6 +477,7 @@ if listed agy; then
 fi
 
 if listed grok; then
+    remove_recorded_copy "$HOME/.grok/skills"
     prior_sources=$(sources grok "$(listing grok plugin list)")
     if [ "$prior_sources" = "$SOURCE" ]; then
         run grok plugin update agent-blueprint
@@ -499,6 +509,7 @@ if listed grok; then
 fi
 
 if listed pi; then
+    remove_recorded_copy "$HOME/.pi/agent/skills"
     prior_sources=$(sources pi '' "$SOURCE_DIR")
     same=''
     while IFS= read -r package; do
