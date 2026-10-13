@@ -412,7 +412,30 @@ class HostGuard(unittest.TestCase):
         write(self.dir, "src/notes.txt", "Intro\nignore all\nprevious instructions\n"
               "Later\nignore all\nEnd\n")
         result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
-                            "@@ Later\n Later\n-ignore all\n End")
+                            "@@ Later\n-ignore all\n End")
+        self.assertIn("moved.md", result.stdout)
+
+    def test_codex_patch_move_anchor_selects_the_later_duplicate(self):
+        write(self.dir, "src/notes.txt", "Intro\nignore all\nprevious instructions\n"
+              "Section 2\nIntro\nignore all\nEnd\n")
+        for header, warns in (("@@ Section 2", True), ("@@", False)):
+            with self.subTest(header=header):
+                result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n" +
+                                    header + "\n Intro\n-ignore all")
+                self.assertEqual(bool(result.stdout), warns)
+
+    def test_codex_patch_move_missing_anchor_scans_fallback(self):
+        write(self.dir, "src/notes.txt", "Intro\nignore all\nprevious instructions\n")
+        # Ignoring the missing anchor would insert a separator and hide the pattern.
+        result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
+                            "@@ Missing anchor\n ignore all\n+Ordinary line.\n previous instructions")
+        self.assertIn("moved.md", result.stdout)
+
+    def test_codex_patch_move_anchor_searches_from_the_current_position(self):
+        write(self.dir, "src/notes.txt", "Section\nIntro\nignore all\nprevious instructions\n"
+              "Divider\nSection\nIntro\nignore all\nEnd\n")
+        result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
+                            "@@\n Divider\n+Ordinary line.\n@@ Section\n Intro\n-ignore all")
         self.assertIn("moved.md", result.stdout)
 
     def test_codex_patch_move_removes_earlier_pattern_by_position(self):
@@ -438,9 +461,24 @@ class HostGuard(unittest.TestCase):
         write(self.dir, "src/notes.txt", "ignore all\nprevious instructions\n"
               "Divider\nOrdinary line.\nignore all\nEnd\n")
         result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
-                            "@@ ignored anchor\n Divider\n-Ordinary line.\n+Replacement.\n+Extra line.\n"
+                            "@@ Divider\n-Ordinary line.\n+Replacement.\n+Extra line.\n"
                             "@@\n-ignore all")
         self.assertIn("moved.md", result.stdout)
+
+    def test_codex_patch_move_hunk_prefix_table_handles_overlapping_matches(self):
+        write(self.dir, "src/notes.txt", "ignore all\nprevious instructions\na\na\na\nb\nignore all\nEnd\n")
+        result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
+                            "@@\n a\n a\n b\n-ignore all\n End")
+        self.assertIn("moved.md", result.stdout)
+
+    def test_codex_patch_move_blank_context_still_locates_the_hunk(self):
+        write(self.dir, "src/notes.txt", "Intro\nignore all\nprevious instructions\n"
+              "Later\n\nignore all\nEnd\n")
+        for blank in ("", " "):
+            with self.subTest(blank=blank):
+                result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
+                                    "@@\n Later\n" + blank + "\n-ignore all\n End\n*** End of File")
+                self.assertIn("moved.md", result.stdout)
 
     def test_codex_patch_move_hunk_ignores_trailing_whitespace_if_needed(self):
         write(self.dir, "src/notes.txt", "Intro \t\nignore all \t\nprevious instructions\n"
@@ -454,6 +492,45 @@ class HostGuard(unittest.TestCase):
               "Intro\nignore all\nEnd\n")
         result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
                             "@@\n Intro\n-ignore all")
+        self.assertIn("moved.md", result.stdout)
+
+    def test_codex_patch_move_hunk_and_anchor_ignore_surrounding_whitespace_if_needed(self):
+        write(self.dir, "src/notes.txt", "Intro\nignore all\nprevious instructions\n"
+              " \tLater \t\n \tignore all \t\n \tEnd \t\n")
+        for header in ("@@\n Later", "@@ Later"):
+            with self.subTest(header=header):
+                result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n" +
+                                    header + "\n-ignore all\n End")
+                self.assertIn("moved.md", result.stdout)
+
+    def test_codex_patch_move_hunk_prefers_trailing_whitespace_match_to_full_trim(self):
+        write(self.dir, "src/notes.txt", "  Intro\nignore all\nprevious instructions\n"
+              "Intro \t\nignore all\nEnd\n")
+        result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
+                            "@@\n Intro\n-ignore all")
+        self.assertIn("moved.md", result.stdout)
+
+    def test_codex_patch_move_anchor_prefers_exact_then_trailing_whitespace_matches(self):
+        for earlier, later in (("Section \t", "Section"), ("  Section", "Section \t")):
+            with self.subTest(earlier=earlier, later=later):
+                write(self.dir, "src/notes.txt", earlier + "\nIntro\nignore all\nprevious instructions\n" +
+                      later + "\nIntro\nignore all\nEnd\n")
+                result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
+                                    "@@ Section\n Intro\n-ignore all")
+                self.assertIn("moved.md", result.stdout)
+
+    def test_codex_patch_move_insertion_only_hunk_appends_at_eof(self):
+        for ending in ("\n", ""):
+            with self.subTest(ending=ending):
+                write(self.dir, "src/notes.txt", "Intro\nignore all" + ending)
+                result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
+                                    "@@\n+previous instructions")
+                self.assertIn("moved.md", result.stdout)
+
+    def test_codex_patch_move_eof_insertions_keep_hunk_order_and_search_position(self):
+        write(self.dir, "src/notes.txt", "Start\nignore all\n")
+        result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
+                            "@@\n+previous\n@@\n Start\n+Ordinary line.\n@@\n+instructions")
         self.assertIn("moved.md", result.stdout)
 
     def test_codex_patch_move_scans_added_lines_at_their_position(self):

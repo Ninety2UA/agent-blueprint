@@ -84,11 +84,11 @@ function patchWrites(command) {
       section = null;
       updatePath = null;
     } else if (section && line.startsWith('@@')) {
-      section.hunks.push([]);
-    } else if (section && [' ', '-', '+'].includes(line[0])) {
+      section.hunks.push({ anchor: line.startsWith('@@ ') ? line.slice(3) : null, lines: [] });
+    } else if (section && ([' ', '-', '+'].includes(line[0]) || (line === '' && section.hunks.length))) {
       if (line[0] === '+') section.lines.push(line.slice(1));
       if (line[0] === '-') section.removedLines.push(line.slice(1));
-      if (section.hunks.length) section.hunks[section.hunks.length - 1].push(line);
+      if (section.hunks.length) section.hunks[section.hunks.length - 1].lines.push(line || ' ');
       else if (line[0] !== ' ') section.unhunkedChanges = true;
     }
   }
@@ -98,9 +98,9 @@ function patchWrites(command) {
 }
 
 // KMP keeps a duplicate-heavy old block from causing repeated full comparisons.
-function findBlock(lines, block, start, trimTrailing = false) {
+function findBlock(lines, block, start, normalize = null) {
   if (block.length === 0) return start;
-  const needle = trimTrailing ? block.map(line => line.trimEnd()) : block;
+  const needle = normalize ? block.map(normalize) : block;
   const prefixes = new Array(needle.length).fill(0);
   for (let i = 1, matched = 0; i < needle.length; i++) {
     while (matched > 0 && needle[i] !== needle[matched]) matched = prefixes[matched - 1];
@@ -108,7 +108,7 @@ function findBlock(lines, block, start, trimTrailing = false) {
     prefixes[i] = matched;
   }
   for (let i = start, matched = 0; i < lines.length; i++) {
-    const line = trimTrailing ? lines[i].trimEnd() : lines[i];
+    const line = normalize ? normalize(lines[i]) : lines[i];
     while (matched > 0 && line !== needle[matched]) matched = prefixes[matched - 1];
     if (line === needle[matched]) matched++;
     if (matched === needle.length) return i - matched + 1;
@@ -116,31 +116,63 @@ function findBlock(lines, block, start, trimTrailing = false) {
   return -1;
 }
 
-function retainedSourceText({ moveSource, removedLines, hunks, unhunkedChanges, content }, cwd) {
+function seekBlock(lines, block, start) {
+  for (const normalize of [null, line => line.trimEnd(), line => line.trim()]) {
+    const match = findBlock(lines, block, start, normalize);
+    if (match !== -1) return match;
+  }
+  return -1;
+}
+
+// Return the patched source, retained lines plus every addition if placement fails, or only additions if unreadable.
+function movedFileText({ moveSource, removedLines, hunks, unhunkedChanges, content }, cwd) {
   try {
     const sourcePath = path.resolve(cwd, moveSource);
     const stat = fs.statSync(sourcePath);
     if (!stat.isFile() || stat.size > MAX_MOVE_SOURCE_BYTES) return content;
 
     const sourceLines = fs.readFileSync(sourcePath, 'utf8').split(/\r?\n/);
-    const chunks = [];
-    let cursor = 0;
+    // Codex's line reader omits the final newline delimiter.
+    const patchLines = sourceLines[sourceLines.length - 1] === '' ? sourceLines.slice(0, -1) : sourceLines;
+    const replacements = [];
+    let lineIndex = 0;
     let applied = hunks.length > 0 && !unhunkedChanges;
     for (const hunk of hunks) {
-      const oldBlock = hunk.filter(line => line[0] !== '+').map(line => line.slice(1));
-      const newBlock = hunk.filter(line => line[0] !== '-').map(line => line.slice(1));
-      let match = findBlock(sourceLines, oldBlock, cursor);
-      if (match === -1) match = findBlock(sourceLines, oldBlock, cursor, true);
+      if (hunk.anchor !== null) {
+        const anchor = seekBlock(patchLines, [hunk.anchor], lineIndex);
+        if (anchor === -1) {
+          applied = false;
+          break;
+        }
+        lineIndex = anchor + 1;
+      }
+      const oldBlock = hunk.lines.filter(line => line[0] !== '+').map(line => line.slice(1));
+      const newBlock = hunk.lines.filter(line => line[0] !== '-').map(line => line.slice(1));
+      if (oldBlock.length === 0) {
+        const end = patchLines.length - (patchLines[patchLines.length - 1] === '' ? 1 : 0);
+        replacements.push({ match: end, oldLength: 0, newBlock });
+        continue;
+      }
+      const match = seekBlock(patchLines, oldBlock, lineIndex);
       if (match === -1) {
         applied = false;
         break;
       }
-      chunks.push(sourceLines.slice(cursor, match), newBlock);
-      cursor = match + oldBlock.length;
+      replacements.push({ match, oldLength: oldBlock.length, newBlock });
+      lineIndex = match + oldBlock.length;
     }
     if (applied) {
-      chunks.push(sourceLines.slice(cursor));
-      return chunks.flat().join('\n');
+      // EOF insertions may precede earlier replacements; stable sorting preserves their hunk order.
+      replacements.sort((a, b) => a.match - b.match);
+      const chunks = [];
+      let cursor = 0;
+      for (const { match, oldLength, newBlock } of replacements) {
+        chunks.push(patchLines.slice(cursor, match), newBlock);
+        cursor = match + oldLength;
+      }
+      chunks.push(patchLines.slice(cursor));
+      const text = chunks.flat().join('\n');
+      return text && !text.endsWith('\n') ? text + '\n' : text;
     }
 
     // An unexpected patch still gets the original count-based scan, including
@@ -196,7 +228,7 @@ process.stdin.on('end', () => {
 
       let content = write.content;
       const cwd = data.cwd || process.cwd();
-      if (moveSource && !isContextSource(moveSource, cwd)) content = retainedSourceText(write, cwd);
+      if (moveSource && !isContextSource(moveSource, cwd)) content = movedFileText(write, cwd);
       if (!content) continue;
 
       const findings = [];
