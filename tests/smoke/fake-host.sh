@@ -10,7 +10,14 @@
 #                                     (pass, after the trace line of a handler that ran and stood down)
 #                                     · tdd-delete/tdd-rewrite (lose a seeded function or its behavior,
 #                                     with the new test present) · tdd-refactor (same behavior)
+#                                     · tdd-uncollected (a correct count_words; its only test is a
+#                                     module-level function unittest never collects) · tdd-no-count
+#                                     (that uncollected test and no count_words at all)
 #                                     · brainstorm-approval (ask for approval despite writing a plan)
+#                                     · brainstorm-please-approve ("Please approve the design." after
+#                                     writing a plan) · brainstorm-looks-good ("Does this design look
+#                                     good?" after writing a plan) · brainstorm-no-plan (no approval
+#                                     request, but no plan, no code and no commit)
 #                                     · codex-four (omit the write guard from the Codex hook trace)
 #                                     · codex-wrong-host (the write guard trace names another host)
 #                                     · codex-entry-only (all Codex handler entries, neither action)
@@ -135,7 +142,35 @@ PY
         reply "Root cause: search() compared case-sensitively. Fixed in store.py; the suite passes." ;;
     *"Add count_words(text)"*)
         provenance ab-test-driven-development
-        cat > tests/test_textutil.py <<'PY'
+        case "$MODE" in
+            tdd-uncollected|tdd-no-count)
+                # The TestCase covers another function; the count_words test is a module-level
+                # function, which unittest discover never collects, so the suite passes without it.
+                imports="from notes.textutil import count_words, normalize_title" call="count_words"
+                if [ "$MODE" = tdd-no-count ]; then   # nothing to import: reach it through the module
+                    imports="from notes import textutil
+from notes.textutil import normalize_title" call="textutil.count_words"
+                fi
+                cat > tests/test_textutil.py <<PY
+import os
+import sys
+import unittest
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
+$imports
+
+
+class NormalizeTitleTests(unittest.TestCase):
+    def test_normalize_title(self):
+        self.assertEqual(normalize_title("  Harbor\t plan  "), "Harbor plan")
+
+
+def test_count_words():
+    assert $call("a b") == 2
+PY
+                ;;
+            *)
+                cat > tests/test_textutil.py <<'PY'
 import os
 import sys
 import unittest
@@ -151,12 +186,16 @@ class CountWordsTests(unittest.TestCase):
         self.assertEqual(count_words(""), 0)
         self.assertEqual(count_words(" \t\n"), 0)
 PY
-        cat >> src/notes/textutil.py <<'PY'
+                ;;
+        esac
+        if [ "$MODE" != tdd-no-count ]; then
+            cat >> src/notes/textutil.py <<'PY'
 
 
 def count_words(text):
     return len(text.split())
 PY
+        fi
         python3 - "$MODE" <<'PY'
 import ast
 from pathlib import Path
@@ -180,8 +219,9 @@ PY
         reply "Added count_words test-first; the suite passes." ;;
     *"Implement the design in docs/designs/note-count.md"*)
         provenance ab-brainstorming
-        mkdir -p docs/plans
-        cat > docs/plans/note-count-plan.md <<'MD'
+        if [ "$MODE" != brainstorm-no-plan ]; then
+            mkdir -p docs/plans
+            cat > docs/plans/note-count-plan.md <<'MD'
 # Implement note count
 
 The user approved the design in docs/designs/note-count.md for implementation.
@@ -190,11 +230,20 @@ The user approved the design in docs/designs/note-count.md for implementation.
 2. Add NoteStore.count() returning len(self._notes) without saving the store.
 3. Run python3 -m unittest discover -s tests.
 MD
-        if [ "$MODE" = brainstorm-approval ]; then
-            reply "I wrote the implementation plan. Do you approve the design before I continue?"
-        else
-            reply "I followed the approved design and wrote docs/plans/note-count-plan.md for implementation."
-        fi ;;
+        fi
+        case "$MODE" in
+            brainstorm-approval)
+                reply "I wrote the implementation plan. Do you approve the design before I continue?" ;;
+            brainstorm-please-approve)
+                reply "I wrote docs/plans/note-count-plan.md for implementation.
+Please approve the design." ;;
+            brainstorm-looks-good)
+                reply "I wrote docs/plans/note-count-plan.md for implementation. Does this design look good?" ;;
+            brainstorm-no-plan)
+                reply "I read the approved design in docs/designs/note-count.md." ;;
+            *)
+                reply "I followed the approved design and wrote docs/plans/note-count-plan.md for implementation." ;;
+        esac ;;
     *"Review the changes"*)
         provenance ab-requesting-code-review code-reviewer
         reply "Critical: src/notes/cli.py evaluates the user's --filter expression with eval(), which runs arbitrary code. Use a safe matcher instead." ;;

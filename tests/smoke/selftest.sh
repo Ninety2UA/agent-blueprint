@@ -134,6 +134,29 @@ AGENT_BLUEPRINT_SMOKE_FAKE_MODE=brainstorm-approval \
     --cell brainstorm-override > "$WORK/approval.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/approval.log"; exit 1; }
 check "an approval request fails the brainstorming cell" [ "$(state_of "$J" fake brainstorm-override)" = fail ]
 check "the approval request is named" grep -q "design approval request" <<<"$(reason_of "$J" fake brainstorm-override)"
+for mode in tdd-uncollected tdd-no-count; do
+    AGENT_BLUEPRINT_SMOKE_FAKE_MODE="$mode" \
+        bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --keep \
+        --cell tdd-override > "$WORK/$mode.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/$mode.log"; exit 1; }
+    reason=$(reason_of "$J" fake tdd-override)
+    override_root="${reason##* · work: }"
+    override_work="$TMPDIR/${override_root##*/}/work"
+    check "$mode has a passing suite (its count_words test is never collected)" override_suite "$override_work"
+    check "$mode fails the TDD cell" [ "$(state_of "$J" fake tdd-override)" = fail ]
+    if [ "$mode" = tdd-uncollected ]; then
+        check "a count_words test unittest never collects is reported" grep -q "no collected test for count_words" <<<"$reason"
+    else
+        check "a missing count_words is reported" grep -q "count_words missing" <<<"$reason"
+    fi
+done
+for mode in brainstorm-please-approve brainstorm-looks-good brainstorm-no-plan; do
+    AGENT_BLUEPRINT_SMOKE_FAKE_MODE="$mode" \
+        bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 \
+        --cell brainstorm-override > "$WORK/$mode.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/$mode.log"; exit 1; }
+    check "$mode fails the brainstorming cell" [ "$(state_of "$J" fake brainstorm-override)" = fail ]
+    if [ "$mode" = brainstorm-no-plan ]; then expected="no plan or code"; else expected="design approval request"; fi
+    check "$mode is reported as $expected" grep -q "$expected" <<<"$(reason_of "$J" fake brainstorm-override)"
+done
 
 echo "== pass mode: every cell on the fake host (hooks foreign, helpers switch present)"
 AGENT_BLUEPRINT_FAKE_HOOKS=foreign AGENT_BLUEPRINT_FAKE_HELPERS_OFF=--no-helpers \
