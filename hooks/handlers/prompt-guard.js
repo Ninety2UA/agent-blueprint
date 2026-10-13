@@ -12,6 +12,7 @@
 // The goal is to surface suspicious content so the operator can inspect it,
 // not to create false-positive deadlocks.
 
+const fs = require('fs');
 const path = require('path');
 const { detectHost, traceAction } = require('./host');
 
@@ -47,23 +48,36 @@ const CONTEXT_PATHS = [
   '.claude/skills/',
 ];
 
-// Codex sends apply_patch as tool_input.command. Only added lines enter context;
-// removed/context lines and deleted files do not contribute content to scan.
+// Codex sends apply_patch as tool_input.command. Scan added lines, plus retained
+// source text for moves into context. Track removals for those moves; context
+// lines and deleted files do not contribute patch content to scan.
 function patchWrites(command) {
   const writes = [];
   let section = null;
+  let updatePath = null;
   for (const line of command.split(/\r?\n/)) {
-    const header = line.match(/^\*\*\* (?:Add File|Update File|Move to): (.+)$/);
+    const header = line.match(/^\*\*\* (Add File|Update File|Move to): (.+)$/);
     if (header) {
-      section = { filePath: header[1], lines: [] };
+      section = {
+        filePath: header[2],
+        moveSource: header[1] === 'Move to' ? updatePath : null,
+        lines: [],
+        removedLines: [],
+      };
+      updatePath = header[1] === 'Update File' ? header[2] : null;
       writes.push(section);
     } else if (line.startsWith('*** Delete File: ') || line === '*** End Patch') {
       section = null;
+      updatePath = null;
     } else if (section && line.startsWith('+')) {
       section.lines.push(line.slice(1));
+    } else if (section && line.startsWith('-')) {
+      section.removedLines.push(line.slice(1));
     }
   }
-  return writes.map(({ filePath, lines }) => ({ filePath, content: lines.join('\n') }));
+  return writes.map(({ filePath, moveSource, lines, removedLines }) => ({
+    filePath, moveSource, removedLines, content: lines.join('\n'),
+  }));
 }
 
 let input = '';
@@ -93,10 +107,28 @@ process.stdin.on('end', () => {
     }
 
     const warnings = [];
-    for (const { filePath, content } of writes) {
+    for (const write of writes) {
+      const { filePath, moveSource, removedLines } = write;
       // Only scan files that become agent context
       const isContextFile = CONTEXT_PATHS.some(p => filePath.includes(p));
-      if (!isContextFile || !content) continue;
+      if (!isContextFile) continue;
+
+      let content = write.content;
+      if (moveSource && !CONTEXT_PATHS.some(p => moveSource.includes(p))) {
+        try {
+          const sourcePath = path.resolve(data.cwd || process.cwd(), moveSource);
+          const stat = fs.statSync(sourcePath);
+          if (stat.isFile() && stat.size <= 1024 * 1024) {
+            const retainedLines = fs.readFileSync(sourcePath, 'utf8').split(/\r?\n/);
+            for (const removed of removedLines) {
+              const index = retainedLines.indexOf(removed);
+              if (index !== -1) retainedLines.splice(index, 1);
+            }
+            content = retainedLines.join('\n') + '\n' + content;
+          }
+        } catch { /* Keep scanning added lines when the source cannot be read. */ }
+      }
+      if (!content) continue;
 
       const findings = [];
 
