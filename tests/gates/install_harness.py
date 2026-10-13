@@ -144,7 +144,7 @@ class InstallerHarness(unittest.TestCase):
 
     def cursor_plugin_cache(self):
         """Cursor's own install of agent-blueprint, where /plugin caches it."""
-        cache = Path(self.home, ".cursor/plugins/cache/agent-blueprint/agent-blueprint/0123abc/skills")
+        cache = Path(self.home, ".cursor/plugins/cache/team-marketplace/agent-blueprint/0123abc/skills")
         cache.mkdir(parents=True)
         return cache
 

@@ -454,6 +454,20 @@ class InstallerFailures(InstallerHarness):
                          r" because Claude Code's route failed")
         self.assertRegex(out, r"(?m)^  ✗ Failed: Claude Code\. ")
 
+    def test_failed_claude_route_keeps_a_cursor_install_found_only_in_its_cache(self):
+        # The cache folder alone shows Cursor's own install (a marketplace another computer added).
+        self.fake_tool("claude", {"plugin list": PLUGIN + " (enabled)",
+                                  "plugin marketplace list": "❯ agent-blueprint\n  Source: GitHub (" + GITHUB + ")",
+                                  "plugin marketplace update agent-blueprint": {"code": 1}})
+        self.fake_tool("cursor-agent")
+        self.cursor_plugin_cache()
+        code, out = self.run_install("--only", "claude,cursor-agent")
+        self.assertEqual(code, 1, out)
+        self.assertEqual(self.cursor_calls(), [])
+        self.assertRegex(out, r"(?m)^  ! Cursor CLI: kept its own install because Claude Code's route failed")
+        self.assertEqual(self.cursor_uninstall_notes(out), [])
+        self.assertFalse(self.routes().exists())
+
     def test_failed_claude_route_leaves_amp_without_a_copy_on_its_plugin(self):
         # Claude Code's refresh fails while its plugin is still listed, and Amp has no copy of its own to keep.
         self.fake_tool("claude", {"plugin list": PLUGIN + " (enabled)",

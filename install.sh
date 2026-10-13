@@ -8,8 +8,8 @@
 #   Pi                   pi install git:github.com/Ninety2UA/agent-blueprint
 #   Cursor CLI           marketplace add the GitHub URL, then /plugin inside a session
 #   Hermes / Amp         recorded copies in ~/.hermes/skills / ~/.config/amp/skills
-# Cursor and Amp use Claude Code's plugin when present. Amp's recorded copy is retired; Cursor's
-# marketplace stays, because Cursor shares it with every computer on the account.
+# Cursor and Amp use Claude Code's plugin when present. Then Amp's recorded copy is retired and
+# Cursor's marketplace stays, because Cursor shares it with every computer on the account.
 # A tool whose route fails is reported at the end (exit 1); the other tools still install.
 # Ctrl-C, or a tool that exits 130 or 143, stops the whole run with that status.
 # Cursor registrations made here are recorded in
@@ -657,9 +657,11 @@ route_pi() {
 # Cursor and Amp lean on the Claude Code plugin when claude_plugin is true. When Claude Code's
 # route failed in this run, that plugin may be one the run could not refresh, so each keeps the
 # install it has of its own. Cursor keeps marketplaces on the account, where every computer signed
-# in to it shares them, so this route never removes Cursor's marketplace. When this computer has
-# Cursor's own install (the marketplace this installer recorded adding, or the folder /plugin
-# installs into), it says where to uninstall that second copy.
+# in to it shares them, so with the Claude Code plugin this route never touches Cursor's
+# marketplace. When this computer has Cursor's own install (the marketplace this installer recorded
+# adding, or the folder /plugin installs into), it says where to uninstall that second copy.
+# Without the Claude Code plugin, reconcile_marketplace still replaces a marketplace from another
+# source with the GitHub one, once GitHub answers.
 route_cursor_agent() {
     local prior_sources has_record=false own=false cached
     if [ "$claude_plugin" = true ]; then
