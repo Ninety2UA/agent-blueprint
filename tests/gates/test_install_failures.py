@@ -234,7 +234,7 @@ class InstallerFailures(InstallerHarness):
                                         "plugin marketplace update agent-blueprint": {"code": 1}})
         code, out = self.run_install("--only", "cursor-agent")
         self.assertEqual(code, 0, out)
-        self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
+        self.assertEqual(self.cursor_calls(), [])
         self.assertRegex(out, r"(?m)^  ✓ Finished: Cursor CLI$")
         self.assertNotIn("did not finish", out)
 
@@ -444,7 +444,7 @@ class InstallerFailures(InstallerHarness):
             self.fake_tool(tool)
         code, out = self.run_install()
         self.assertEqual(code, 1, out)
-        self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
+        self.assertEqual(self.cursor_calls(), [])
         self.assertIn("cursor-agent", json.loads(self.routes().read_text()))
         self.assertEqual(self.ab_skills(".config", "amp", "skills"), ["ab-quick-fix"])
         self.assertTrue((amp / ".agent-blueprint-install.json").is_file())

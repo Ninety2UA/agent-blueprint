@@ -112,6 +112,9 @@ class InstallerHarness(unittest.TestCase):
     def calls(self):
         return [" ".join(json.loads(line)) for line in Path(self.log).read_text().splitlines()] if Path(self.log).exists() else []
 
+    def cursor_calls(self):
+        return [c for c in self.calls() if c.startswith("cursor-agent ")]
+
     def mutations(self):
         # The reachability check before a marketplace swap is asserted where it matters.
         return [c for c in self.calls() if " list" not in c and not c.startswith("git ")]

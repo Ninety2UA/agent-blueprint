@@ -295,14 +295,14 @@ class Installer(InstallerHarness):
         code, out = self.run_install()
         self.assertEqual(code, 0, out)
         # Cursor keeps marketplaces on the account: removing it here would remove it on every computer.
-        self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
+        self.assertEqual(self.cursor_calls(), [])
         self.assertEqual(len(self.cursor_uninstall_notes(out)), 1, out)
         self.assertEqual(sorted(p.name for p in amp.iterdir()), ["my-own-skill"])
         self.assertNotIn("cursor-agent", json.loads(self.routes().read_text()))
         Path(self.log).unlink()
         code, out = self.run_install()
         self.assertEqual(code, 0, out)
-        self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
+        self.assertEqual(self.cursor_calls(), [])
         self.assertEqual(self.cursor_uninstall_notes(out), [])
         self.assertIn("Cursor CLI: covered by the Claude Code plugin", out)
 
@@ -313,7 +313,7 @@ class Installer(InstallerHarness):
         self.cursor_plugin_cache()
         code, out = self.run_install("--only", "cursor-agent")
         self.assertEqual(code, 0, out)
-        self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
+        self.assertEqual(self.cursor_calls(), [])
         self.assertEqual(len(self.cursor_uninstall_notes(out)), 1, out)
         self.assertFalse(self.routes().exists())
         # The note repeats while Cursor's own install is still there.
@@ -330,7 +330,7 @@ class Installer(InstallerHarness):
         self.assertEqual(code, 0, out)
         self.assertEqual(len(self.cursor_uninstall_notes(out)), 1, out)
         self.assertEqual(self.routes().read_text(), before)
-        self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
+        self.assertEqual(self.cursor_calls(), [])
 
     def test_amp_and_hermes_have_private_copies(self):
         for tool in ("amp", "hermes"):
@@ -472,7 +472,7 @@ class Installer(InstallerHarness):
         self.fake_tool("cursor-agent", {"plugin marketplace list": "agent-blueprint user " + URL})
         code, out = self.run_install("--only", "cursor-agent")
         self.assertEqual(code, 0, out)
-        self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
+        self.assertEqual(self.cursor_calls(), [])
         self.assertEqual(self.cursor_uninstall_notes(out), [])
         self.assertIn("Cursor CLI: covered by the Claude Code plugin", out)
 

@@ -665,7 +665,7 @@ route_cursor_agent() {
     if [ "$claude_plugin" = true ]; then
         if cursor_record has; then has_record=true; own=true; fi
         for cached in "$HOME"/.cursor/plugins/cache/*/agent-blueprint; do
-            if [ -d "$cached" ]; then own=true; fi
+            if [ -d "$cached" ]; then own=true; break; fi
         done
         if [ "$own" = true ]; then
             if failed_route claude; then
