@@ -112,6 +112,9 @@ class InstallerHarness(unittest.TestCase):
     def calls(self):
         return [" ".join(json.loads(line)) for line in Path(self.log).read_text().splitlines()] if Path(self.log).exists() else []
 
+    def cursor_calls(self):
+        return [c for c in self.calls() if c.startswith("cursor-agent ")]
+
     def mutations(self):
         # The reachability check before a marketplace swap is asserted where it matters.
         return [c for c in self.calls() if " list" not in c and not c.startswith("git ")]
@@ -138,6 +141,23 @@ class InstallerHarness(unittest.TestCase):
         self.routes().parent.mkdir(parents=True, exist_ok=True)
         self.routes().write_text(json.dumps({"plugin": "agent-blueprint",
                                              "cursor-agent": {"marketplace": "agent-blueprint", "source": URL}}))
+
+    def cursor_plugin_cache(self):
+        """An agent-blueprint folder in Cursor's plugin cache, which also holds plugins that are not installed."""
+        cache = Path(self.home, ".cursor/plugins/cache/team-marketplace/agent-blueprint/0123abc/skills")
+        cache.mkdir(parents=True)
+        return cache
+
+    def cursor_uninstall_notes(self, out):
+        # Cursor keeps marketplaces on the account, so the note points at /plugin and leaves the marketplace.
+        return [line for line in out.splitlines() if line.startswith("  ! Cursor CLI: in /plugin, uninstall the "
+                "agent-blueprint not marked (Claude Code)") and "cursor-agent plugin marketplace remove agent-blueprint" in line]
+
+    def cursor_source_notes(self, out):
+        # A marketplace from another source stays; the note names it and the two commands that switch it.
+        return len([line for line in out.splitlines() if line.startswith("  ! Cursor CLI: your Cursor account's "
+                    "agent-blueprint marketplace comes from ") and "cursor-agent plugin marketplace remove agent-blueprint"
+                    in line and "cursor-agent plugin marketplace add " + URL in line])
 
     def pi_packages(self, *packages):
         settings = Path(self.home, ".pi/agent/settings.json")

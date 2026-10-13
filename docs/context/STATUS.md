@@ -17,12 +17,13 @@ _Kept current by the ab-session-wrap and ab-context-checkpoint skills. Full hist
 
 The checklist items that can run on the build machine passed (`docs/releases/v4.1.0-checklist.md`), and the site deployed from `main`.
 
+v4.1.1 (pull request #28, tagged `v4.1.1` with its GitHub release) stops `install.sh` from removing or replacing Cursor's `agent-blueprint` marketplace. Cursor keeps marketplaces on the account, so 4.1.0's changes reached the maintainer's other computers too. Where the installer had added that marketplace itself, it now says to uninstall Cursor's own copy in `/plugin`. For a marketplace from another source, it prints the commands that switch it. Compound Engineering never touches a Cursor marketplace either.
+
 **What's remaining:**
 
 - In the Codex app (`ChatGPT.app` on this Mac): the setup check, which the checklist marks must-pass and the maintainer chose to run right after the merge; trusting the hooks in `/hooks`; and the display names in the `$` picker.
 - In Cursor CLI: the `/plugin` install, then the changeover check with `install.sh`.
 - The checklist's after-merge section.
-- Open question: on a machine that has the Claude Code plugin, `install.sh` removes Cursor's `agent-blueprint` marketplace. Cursor keeps marketplaces on the account, so the removal also reaches the maintainer's other machines. Compound Engineering never adds or removes a Cursor marketplace; users install it from Cursor's own plugin store.
 - Next release: 4.2.0 adds nine more tools. Its plan is not written yet.
 
 **Start here:** `docs/releases/v4.1.0-checklist.md`, then the description of pull request #26.

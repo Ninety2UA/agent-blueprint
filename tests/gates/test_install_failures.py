@@ -101,11 +101,13 @@ class InstallerFailures(InstallerHarness):
         self.assertEqual(code, 1, out)
         # Removing a marketplace uninstalls its plugin, so nothing is removed while GitHub is down.
         self.assertFalse(any("marketplace remove" in c for c in self.calls()))
-        self.assertEqual(self.github_checks(), [GITHUB_CHECK] * 3)
+        self.assertEqual(self.github_checks(), [GITHUB_CHECK] * 2)
         self.assertIn("grok plugin install " + GITHUB + " --trust", self.calls())
         self.assertNotIn("claude plugin install " + PLUGIN, self.calls())
         self.assertNotIn("codex plugin add " + PLUGIN, self.calls())
-        for label in ("Claude Code", "Codex", "Cursor CLI"):
+        # Cursor's marketplace is shared by the account, so a different source is left alone, unchecked.
+        self.assertEqual(self.cursor_source_notes(out), 1, out)
+        for label in ("Claude Code", "Codex"):
             self.assertRegex(out, r"(?m)^  ✗ " + re.escape(label) + r": could not reach " + re.escape(URL) +
                              r", so its current install was left as it was\. ")
             # Nothing was removed, so the route's failure line says the install is as it was.
@@ -113,9 +115,10 @@ class InstallerFailures(InstallerHarness):
                                   r"install and recorded copies stay as they were\.$")
         self.assertNotIn("old install was removed", out)
         failed = next(line for line in out.splitlines() if "Failed:" in line)
-        for label in ("Claude Code", "Codex", "Cursor CLI"):
+        for label in ("Claude Code", "Codex"):
             self.assertIn(label, failed)
         self.assertNotIn("Grok", failed)
+        self.assertNotIn("Cursor", failed)
         self.assertFalse(self.routes().exists())
 
     def test_missing_git_keeps_the_old_marketplace(self):
@@ -136,8 +139,7 @@ class InstallerFailures(InstallerHarness):
 
     def test_marketplace_swap_checks_github_answers_before_removing(self):
         self.fake_local_marketplaces()
-        # Cursor swaps only without the Claude Code plugin, so it runs on its own.
-        for only in ("claude,codex", "cursor-agent"):
+        for only in ("claude,codex",):
             with self.subTest(only=only):
                 Path(self.log).write_text("")
                 code, out = self.run_install("--dry-run", "--only", only)
@@ -150,8 +152,21 @@ class InstallerFailures(InstallerHarness):
                 for tool in only.split(","):
                     remove = calls.index(tool + " plugin marketplace remove agent-blueprint")
                     self.assertEqual(calls[remove - 1], GITHUB_CHECK)
-                    self.assertIn(tool + " plugin marketplace add " + (URL if tool == "cursor-agent" else GITHUB),
-                                  calls[remove + 1:])
+                    self.assertIn(tool + " plugin marketplace add " + GITHUB, calls[remove + 1:])
+
+    def test_cursor_marketplace_from_another_source_is_left_alone(self):
+        # Without the Claude Code plugin: another computer added the account's marketplace from a checkout.
+        self.fake_tool("cursor-agent", {"plugin marketplace list": "agent-blueprint user /old/checkout"})
+        for args in (("--dry-run", "--only", "cursor-agent"), ("--only", "cursor-agent")):
+            with self.subTest(args=args):
+                Path(self.log).write_text("")
+                code, out = self.run_install(*args)
+                self.assertEqual(code, 0, out)
+                self.assertEqual(self.mutations(), [])
+                self.assertEqual(self.github_checks(), [])
+                self.assertEqual(self.cursor_source_notes(out), 1, out)
+                self.assertNotIn("would run: cursor-agent plugin marketplace", out)
+                self.assertFalse(self.routes().exists())
 
     def test_unreachable_github_keeps_pi_and_grok_installs(self):
         # Pi and Grok remove the old install before installing from GitHub, so they check it first.
@@ -214,9 +229,6 @@ class InstallerFailures(InstallerHarness):
             ("pi", "Pi", lambda: (self.pi_packages(str(old), PI_SOURCE), self.fake_tool("pi", {
                 "update --extension " + PI_SOURCE: {"code": 1}})),
              ["pi remove " + str(old), "pi update --extension " + PI_SOURCE]),
-            ("cursor-agent", "Cursor CLI", lambda: (self.fake_claude_with_plugin(), self.record_cursor_route(),
-                self.fake_tool("cursor-agent", {"plugin marketplace remove agent-blueprint": {"code": 1}})),
-             ["cursor-agent plugin marketplace remove agent-blueprint"]),
         ):
             with self.subTest(tool=tool):
                 prepare()
@@ -227,6 +239,19 @@ class InstallerFailures(InstallerHarness):
                 self.assertIn("  ✗ " + label + " did not finish (exit 1); its current install and recorded copies "
                               "stay as they were.", out.splitlines())
                 self.assertNotIn("old install was removed", out)
+
+    def test_cursor_beside_the_claude_plugin_runs_no_cursor_command(self):
+        # Cursor's marketplace is shared by every computer on the account, so this route touches nothing.
+        self.fake_claude_with_plugin()
+        self.record_cursor_route()
+        self.fake_tool("cursor-agent", {"plugin marketplace remove agent-blueprint": {"code": 1},
+                                        "plugin marketplace list": {"code": 1},
+                                        "plugin marketplace update agent-blueprint": {"code": 1}})
+        code, out = self.run_install("--only", "cursor-agent")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.cursor_calls(), [])
+        self.assertRegex(out, r"(?m)^  ✓ Finished: Cursor CLI$")
+        self.assertNotIn("did not finish", out)
 
     def test_local_swap_skips_the_github_check(self):
         # Under --local the new source is this checkout, so nothing remote is checked before a removal.
@@ -434,14 +459,29 @@ class InstallerFailures(InstallerHarness):
             self.fake_tool(tool)
         code, out = self.run_install()
         self.assertEqual(code, 1, out)
-        self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
+        self.assertEqual(self.cursor_calls(), [])
         self.assertIn("cursor-agent", json.loads(self.routes().read_text()))
         self.assertEqual(self.ab_skills(".config", "amp", "skills"), ["ab-quick-fix"])
         self.assertTrue((amp / ".agent-blueprint-install.json").is_file())
-        self.assertRegex(out, r"(?m)^  ! Cursor CLI: kept its own marketplace because Claude Code's route failed")
+        self.assertRegex(out, r"(?m)^  ! Cursor CLI: kept its own install because Claude Code's route failed")
+        self.assertEqual(self.cursor_uninstall_notes(out), [])
         self.assertRegex(out, r"(?m)^  ! Amp: kept its own copy in " + re.escape(str(amp)) +
                          r" because Claude Code's route failed")
         self.assertRegex(out, r"(?m)^  ✗ Failed: Claude Code\. ")
+
+    def test_failed_claude_route_ignores_a_cursor_cache_folder(self):
+        # Without the installer's record, a cached folder is no sign of Cursor's own install.
+        self.fake_tool("claude", {"plugin list": PLUGIN + " (enabled)",
+                                  "plugin marketplace list": "❯ agent-blueprint\n  Source: GitHub (" + GITHUB + ")",
+                                  "plugin marketplace update agent-blueprint": {"code": 1}})
+        self.fake_tool("cursor-agent")
+        self.cursor_plugin_cache()
+        code, out = self.run_install("--only", "claude,cursor-agent")
+        self.assertEqual(code, 1, out)
+        self.assertEqual(self.cursor_calls(), [])
+        self.assertNotIn("kept its own install", out)
+        self.assertEqual(self.cursor_uninstall_notes(out), [])
+        self.assertFalse(self.routes().exists())
 
     def test_failed_claude_route_leaves_amp_without_a_copy_on_its_plugin(self):
         # Claude Code's refresh fails while its plugin is still listed, and Amp has no copy of its own to keep.

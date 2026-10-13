@@ -8,7 +8,9 @@
 #   Pi                   pi install git:github.com/Ninety2UA/agent-blueprint
 #   Cursor CLI           marketplace add the GitHub URL, then /plugin inside a session
 #   Hermes / Amp         recorded copies in ~/.hermes/skills / ~/.config/amp/skills
-# Cursor and Amp use Claude Code's plugin when present. Recorded standalone routes are retired.
+# Cursor and Amp use Claude Code's plugin when present; then Amp's recorded copy is retired. The
+# installer never removes Cursor's marketplace, because Cursor shares it with every computer on the
+# account.
 # A tool whose route fails is reported at the end (exit 1); the other tools still install.
 # Ctrl-C, or a tool that exits 130 or 143, stops the whole run with that status.
 # Cursor registrations made here are recorded in
@@ -655,19 +657,24 @@ route_pi() {
 
 # Cursor and Amp lean on the Claude Code plugin when claude_plugin is true. When Claude Code's
 # route failed in this run, that plugin may be one the run could not refresh, so each keeps the
-# install it has of its own.
+# install it has of its own. Cursor keeps marketplaces on the account, where every computer signed
+# in to it shares them, so with the Claude Code plugin this route never touches Cursor's
+# marketplace. When this installer recorded adding that marketplace on this computer, Cursor may
+# hold its own copy too, so it says where to uninstall it: /plugin marks Claude Code's copy
+# "(Claude Code)". Cursor's plugin cache is no sign of an install, because it also keeps plugins
+# that are not installed. Without the Claude Code plugin, a marketplace from another source (a
+# checkout or a fork another computer added) stays too: the route names it and the commands that
+# switch it, and adds or updates only a missing or GitHub marketplace.
 route_cursor_agent() {
     local prior_sources
     if [ "$claude_plugin" = true ]; then
         if cursor_record has; then
             if failed_route claude; then
-                warn "Cursor CLI: kept its own marketplace because Claude Code's route failed; run install.sh again once Claude Code installs."
+                warn "Cursor CLI: kept its own install because Claude Code's route failed; run install.sh again once Claude Code installs."
                 return 0
             fi
-            run cursor-agent plugin marketplace remove agent-blueprint
-            mark_removed cursor-agent
+            warn "Cursor CLI: in /plugin, uninstall the agent-blueprint not marked (Claude Code), if one is listed, so Cursor reads only the Claude Code plugin. Its marketplace stays, because Cursor shares it with every computer signed in to your account; once no computer uses it, run cursor-agent plugin marketplace remove agent-blueprint."
             if [ "$DRY_RUN" = false ]; then cursor_record remove; fi
-            warn "Cursor CLI: if /plugin still lists agent-blueprint from Cursor's own marketplace, uninstall it there, so Cursor reads only the Claude Code plugin."
         fi
         success "Cursor CLI: covered by the Claude Code plugin"
     elif [ "$LOCAL" = true ]; then
@@ -675,6 +682,12 @@ route_cursor_agent() {
         printf '    cursor-agent --plugin-dir %q\n' "$SOURCE_DIR"
     else
         prior_sources=$(sources cursor-agent "$(listing cursor-agent plugin marketplace list)")
+        case "$prior_sources" in
+            ''|*'@unknown'*|"$GITHUB") ;;
+            *)
+                warn "Cursor CLI: your Cursor account's agent-blueprint marketplace comes from ${prior_sources//$'\n'/, }, not GitHub. The installer leaves it, because every computer signed in to the account shares it. To switch it: cursor-agent plugin marketplace remove agent-blueprint, then cursor-agent plugin marketplace add $GITHUB_URL."
+                return 0 ;;
+        esac
         reconcile_marketplace cursor-agent "$prior_sources" "$GITHUB" "$GITHUB_URL" \
             plugin marketplace update agent-blueprint
         if [ "$DRY_RUN" = false ]; then cursor_record add; fi
