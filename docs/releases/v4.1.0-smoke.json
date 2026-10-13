@@ -198,12 +198,12 @@
         },
         "hooks": {
           "cost_usd": null,
-          "date": "2026-10-13T09:56:46Z",
+          "date": "2026-10-13T12:20:18Z",
           "link": "",
-          "log": "tests/smoke/logs/20261013-115606/codex/hooks.log",
+          "log": "tests/smoke/logs/20261013-141946/codex/hooks.log",
           "plugin_dir": "$TMPDIR/.../skills",
           "reason": "all five handlers wrote codex trace lines; prompt-guard.js:warned and validate-commit.js:flagged recorded codex actions",
-          "seconds": 40,
+          "seconds": 32,
           "session": "",
           "state": "pass",
           "tokens": null
@@ -222,12 +222,12 @@
         },
         "tdd-override": {
           "cost_usd": null,
-          "date": "2026-10-13T09:58:09Z",
+          "date": "2026-10-13T12:21:40Z",
           "link": "",
-          "log": "tests/smoke/logs/20261013-115606/codex/tdd-override.log",
+          "log": "tests/smoke/logs/20261013-141946/codex/tdd-override.log",
           "plugin_dir": "$TMPDIR/.../skills",
-          "reason": "seeded functions retain their recorded behavior; count_words gives the recorded counts; a collected test covers count_words; suite passes",
-          "seconds": 83,
+          "reason": "seeded functions retain their recorded behavior; count_words gives the recorded counts; a collected test calls count_words and passes; suite passes",
+          "seconds": 82,
           "session": "",
           "state": "pass",
           "tokens": null
@@ -528,7 +528,19 @@
         "codex"
       ],
       "plugin_dir": "$TMPDIR/.../wt"
+    },
+    {
+      "cells": [
+        "hooks",
+        "tdd-override"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host codex --cell hooks,tdd-override --plugin-dir $TMPDIR/.../wt --out ~/projects/claude-eng/project-template/project-template/docs/releases",
+      "date": "2026-10-13 12:21 UTC",
+      "hosts": [
+        "codex"
+      ],
+      "plugin_dir": "$TMPDIR/.../wt"
     }
   ],
-  "updated": "2026-10-13 09:58 UTC"
+  "updated": "2026-10-13 12:21 UTC"
 }
