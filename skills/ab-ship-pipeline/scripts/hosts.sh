@@ -266,7 +266,7 @@ try:
             if git:
                 # Where Pi clones it: <agent dir>/git/<host>/<path>, whatever the ref.
                 path = base / "git" / git.host / git.path
-            elif source.startswith(("npm:", "git:", "https://", "http://", "ssh://")):
+            elif not pi_source.is_local(source):
                 continue
             else:
                 path = Path(os.path.expanduser(source))
