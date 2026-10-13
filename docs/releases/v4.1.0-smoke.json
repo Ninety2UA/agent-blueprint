@@ -198,12 +198,12 @@
         },
         "hooks": {
           "cost_usd": null,
-          "date": "2026-10-12T22:08:34Z",
+          "date": "2026-10-13T09:56:46Z",
           "link": "",
-          "log": "tests/smoke/logs/20261013-000819/codex/hooks.log",
-          "plugin_dir": "",
+          "log": "tests/smoke/logs/20261013-115606/codex/hooks.log",
+          "plugin_dir": "$TMPDIR/.../skills",
           "reason": "all five handlers wrote codex trace lines; prompt-guard.js:warned and validate-commit.js:flagged recorded codex actions",
-          "seconds": 15,
+          "seconds": 40,
           "session": "",
           "state": "pass",
           "tokens": null
@@ -222,12 +222,12 @@
         },
         "tdd-override": {
           "cost_usd": null,
-          "date": "2026-10-12T17:15:02Z",
+          "date": "2026-10-13T09:58:09Z",
           "link": "",
-          "log": "tests/smoke/logs/20261012-191004/codex/tdd-override.log",
-          "plugin_dir": "~/.codex/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
-          "reason": "seeded functions retain their recorded behavior; count_words test present; suite passes",
-          "seconds": 81,
+          "log": "tests/smoke/logs/20261013-115606/codex/tdd-override.log",
+          "plugin_dir": "$TMPDIR/.../skills",
+          "reason": "seeded functions retain their recorded behavior; count_words gives the recorded counts; a collected test covers count_words; suite passes",
+          "seconds": 83,
           "session": "",
           "state": "pass",
           "tokens": null
@@ -516,7 +516,19 @@
         "codex"
       ],
       "plugin_dir": "$TMPDIR/.../ab-src-410"
+    },
+    {
+      "cells": [
+        "hooks",
+        "tdd-override"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host codex --cell hooks,tdd-override --plugin-dir $TMPDIR/.../wt --out ~/projects/claude-eng/project-template/project-template/docs/releases",
+      "date": "2026-10-13 09:58 UTC",
+      "hosts": [
+        "codex"
+      ],
+      "plugin_dir": "$TMPDIR/.../wt"
     }
   ],
-  "updated": "2026-10-12 22:08 UTC"
+  "updated": "2026-10-13 09:58 UTC"
 }

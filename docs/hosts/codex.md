@@ -35,7 +35,7 @@ Codex truncates skill text at 8,000 bytes, silently; every SKILL.md stays under 
 
 ## What is missing or different
 
-- Hooks: `hooks/codex.json` carries five handlers: the session-start pointer to `docs/context/STATUS.md`, the injection scanner on writes (`Edit|Write`; it also scans the lines an `apply_patch` edit adds, and the text of a file that edit moves into a guarded folder), the commit-message check (`Bash`, on when `.agent-blueprint/config.json` sets `hooks.validateCommit`), the context monitor and the ship-pipeline Stop guard. A Codex 0.160.0 session ran all five (2026-10-12), and in it the guard warned on an `apply_patch` edit and the commit check flagged a commit message. Absent, because Codex has no event for them: the read-injection scanner and the fetch cache (Codex has no `Read` or `WebFetch` tool) and the Agent Teams gates (Claude Code only). Until you trust the hooks in `/hooks`, none of the five runs, and the injection guard is inactive.
+- Hooks: `hooks/codex.json` carries five handlers: the session-start pointer to `docs/context/STATUS.md`, the injection scanner on writes (`Edit|Write`; it also scans the lines an `apply_patch` edit adds, and the text of a file that edit moves into a guarded folder), the commit-message check (`Bash`, on when `.agent-blueprint/config.json` sets `hooks.validateCommit`), the context monitor and the ship-pipeline Stop guard. A Codex 0.160.0 session ran all five (2026-10-12), and in it the guard warned on an `apply_patch` edit and the commit check flagged a commit message. In a second session (2026-10-13) an `apply_patch` edit moved a file whose text carries a marker from `src/` to `docs/`, keeping that line unchanged, and the guard warned on the moved text. Absent, because Codex has no event for them: the read-injection scanner and the fetch cache (Codex has no `Read` or `WebFetch` tool) and the Agent Teams gates (Claude Code only). Until you trust the hooks in `/hooks`, none of the five runs, and the injection guard is inactive.
 - Helpers: `spawn_agent` (the `multi_agent` feature, on by default). Helpers share the parent's checkout and sandbox, so team work isolates by file ownership.
 - Team work: 4 helpers per wave (`agents.max_concurrent_threads_per_session`). `multi_agent_v2` is an optional extra: with `[features] multi_agent_v2 = true`, team work uses named agents with `send_message` and `followup_task`, and that also works under `codex exec`.
 - Questions: a Codex question tool is not verified; the skills fall back to a plain-text numbered list, and a headless run takes the documented default.
@@ -70,13 +70,13 @@ Nothing beyond the host's own terms is known.
 
 Install: the v4.1.0 install record ([docs/releases/v4.1.0-installs.md](../releases/v4.1.0-installs.md)) shows this tool installing Agent Blueprint by its own route and listing each skill once.
 
-From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-smoke.md)), host version codex-cli 0.160.0, last cell 2026-10-12.
+From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-smoke.md)), host version codex-cli 0.160.0, last cell 2026-10-13.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
 | `discovery` | pass | 23s | 53 ab- skills once each in 11 location(s); the answer names ab-ship-pipeline |
-| `hooks` | pass | 15s | all five handlers wrote codex trace lines; prompt-guard.js:warned and validate-commit.js:flagged recorded codex actions |
+| `hooks` | pass | 40s | all five handlers wrote codex trace lines; prompt-guard.js:warned and validate-commit.js:flagged recorded codex actions |
 | `manual-only` | pass | 12s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
 | `debug` | pass | 2m39s | suite passes; store.py fixed; regression test present · helper steps: helper |
-| `tdd-override` | pass | 1m21s | seeded functions retain their recorded behavior; count_words test present; suite passes |
+| `tdd-override` | pass | 1m23s | seeded functions retain their recorded behavior; count_words gives the recorded counts; a collected test covers count_words; suite passes |
 | `brainstorm-override` | pass | 9m34s | no design approval request; plan or code: src/notes/store.py, docs/plans/2026-10-12-note-count.md |
