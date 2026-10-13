@@ -12,7 +12,14 @@
 #                                     with the new test present) · tdd-refactor (same behavior)
 #                                     · tdd-uncollected (a correct count_words; its only test is a
 #                                     module-level function unittest never collects) · tdd-no-count
-#                                     (that uncollected test and no count_words at all)
+#                                     (that uncollected test and no count_words at all) · tdd-skipped
+#                                     (a correct count_words; its only test is @unittest.skip, beside a
+#                                     passing unrelated test) · tdd-wrong-count (count_words splits on
+#                                     single spaces; its passing test uses an input where that agrees)
+#                                     · tdd-helper (a correct count_words; the collected test method,
+#                                     inherited from a mixin, reaches it through a helper method)
+#                                     · tdd-import-error (the pass-mode test, plus a test module that
+#                                     raises on import)
 #                                     · brainstorm-approval (ask for approval despite writing a plan)
 #                                     · brainstorm-please-approve ("Please approve the design." after
 #                                     writing a plan) · brainstorm-looks-good ("Does this design look
@@ -169,6 +176,69 @@ def test_count_words():
     assert $call("a b") == 2
 PY
                 ;;
+            tdd-skipped)
+                # The count_words test is collected but never runs; the suite still passes.
+                cat > tests/test_textutil.py <<'PY'
+import os
+import sys
+import unittest
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
+from notes.textutil import count_words, normalize_title
+
+
+class NormalizeTitleTests(unittest.TestCase):
+    def test_normalize_title(self):
+        self.assertEqual(normalize_title("  Harbor\t plan  "), "Harbor plan")
+
+
+class CountWordsTests(unittest.TestCase):
+    @unittest.skip("count_words is not written yet")
+    def test_count_words(self):
+        self.assertEqual(count_words("Harbor plan"), 2)
+PY
+                ;;
+            tdd-wrong-count)
+                # One input where splitting on single spaces gives the right answer.
+                cat > tests/test_textutil.py <<'PY'
+import os
+import sys
+import unittest
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
+from notes.textutil import count_words
+
+
+class CountWordsTests(unittest.TestCase):
+    def test_count_words(self):
+        self.assertEqual(count_words("Harbor plan"), 2)
+PY
+                ;;
+            tdd-helper)
+                # No test* method names count_words, and the collected class defines no method itself.
+                cat > tests/test_textutil.py <<'PY'
+import os
+import sys
+import unittest
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
+from notes.textutil import count_words
+
+
+class WordCountChecks:
+    def assert_words(self, text, expected):
+        self.assertEqual(count_words(text), expected)
+
+    def test_count_words(self):
+        self.assert_words("Harbor plan", 2)
+        self.assert_words(" one\t two\nthree ", 3)
+        self.assert_words("", 0)
+
+
+class CountWordsTests(WordCountChecks, unittest.TestCase):
+    pass
+PY
+                ;;
             *)
                 cat > tests/test_textutil.py <<'PY'
 import os
@@ -188,12 +258,26 @@ class CountWordsTests(unittest.TestCase):
 PY
                 ;;
         esac
+        if [ "$MODE" = tdd-import-error ]; then
+            cat > tests/test_startup.py <<'PY'
+import unittest
+
+raise RuntimeError("NOTES_HOME is not set")
+
+
+class StartupTests(unittest.TestCase):
+    def test_starts(self):
+        pass
+PY
+        fi
         if [ "$MODE" != tdd-no-count ]; then
-            cat >> src/notes/textutil.py <<'PY'
+            split='text.split()'
+            [ "$MODE" = tdd-wrong-count ] && split='text.split(" ")'
+            cat >> src/notes/textutil.py <<PY
 
 
 def count_words(text):
-    return len(text.split())
+    return len($split)
 PY
         fi
         python3 - "$MODE" <<'PY'

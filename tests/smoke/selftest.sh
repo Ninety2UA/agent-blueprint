@@ -138,10 +138,36 @@ for mode in tdd-uncollected tdd-no-count; do
     check "$mode has a passing suite (its count_words test is never collected)" override_suite "$override_work"
     check "$mode fails the TDD cell" [ "$(state_of "$J" fake tdd-override)" = fail ]
     if [ "$mode" = tdd-uncollected ]; then
-        check "a count_words test unittest never collects is reported" grep -q "no collected test for count_words" <<<"$reason"
+        check "a count_words test unittest never collects is reported" grep -q "no test calls count_words" <<<"$reason"
     else
         check "a missing count_words is reported" grep -q "count_words missing" <<<"$reason"
     fi
+done
+override_suite_fails() { ! override_suite "$1" > /dev/null 2>&1; }
+for mode in tdd-skipped tdd-wrong-count tdd-helper tdd-import-error; do
+    AGENT_BLUEPRINT_SMOKE_FAKE_MODE="$mode" \
+        bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --keep \
+        --cell tdd-override > "$WORK/$mode.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/$mode.log"; exit 1; }
+    reason=$(reason_of "$J" fake tdd-override)
+    override_work=$(override_work_of "$reason")
+    state=$(state_of "$J" fake tdd-override)
+    case "$mode" in
+        tdd-skipped)
+            check "tdd-skipped has a passing suite (its count_words test never runs)" override_suite "$override_work"
+            check "a skipped count_words test fails the TDD cell" [ "$state" = fail ]
+            check "the skipped count_words test is reported" grep -q "count_words test was skipped" <<<"$reason" ;;
+        tdd-wrong-count)
+            check "tdd-wrong-count has a passing suite (its test uses an input the wrong count gets right)" override_suite "$override_work"
+            check "a wrong count_words with a passing test fails the TDD cell" [ "$state" = fail ]
+            check "the wrong count is reported against a recorded input" grep -q "count_words(.*expected" <<<"$reason" ;;
+        tdd-helper)
+            check "tdd-helper has a passing suite" override_suite "$override_work"
+            check "an inherited test method that calls count_words through a helper passes" [ "$state" = pass ] ;;
+        tdd-import-error)
+            check "tdd-import-error has a failing suite" override_suite_fails "$override_work"
+            check "a test module that fails to import fails the TDD cell" [ "$state" = fail ]
+            check "the module that fails to import is named" grep -q "test module test_startup failed to import" <<<"$reason" ;;
+    esac
 done
 for mode in brainstorm-approval brainstorm-please-approve brainstorm-looks-good brainstorm-no-plan; do
     AGENT_BLUEPRINT_SMOKE_FAKE_MODE="$mode" \

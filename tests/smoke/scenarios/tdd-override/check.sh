@@ -1,18 +1,24 @@
 #!/usr/bin/env bash
 # TDD override check: call every seeded function with recorded inputs, so deletion and same-name
 # rewrites fail while behavior-preserving refactors pass. Call count_words with recorded inputs too,
-# so a missing or wrong implementation fails. Load tests/ the way `unittest discover -s tests` does:
-# at least one collected test method must reference count_words (directly, through a module, or via
-# an imported alias), so a module-level test_ function unittest never runs does not count. The
-# suite must pass.
+# so a missing or wrong implementation fails. Then replace notes.textutil.count_words with a probe
+# that records the running test, load tests/ the way `unittest discover -s tests` does (src on
+# sys.path) and run that suite in this process: at least one test must call count_words, directly
+# or through a helper, and pass. A skipped or expected-failure test, or a module-level test_
+# function unittest never collects, does not count, and a test module that fails to import is named.
+# The suite must also pass when `python3 -m unittest discover -s tests` runs it on its own.
 # Arguments: WORK BASE FINAL LOG REMOTE. Prints one reason; exit 0 = pass, 1 = fail.
 set -euo pipefail
 WORK="$1"
 cd "$WORK"
 python3 - <<'PY'
-import ast
+import contextlib
+import functools
 import importlib
+import inspect
+import io
 from pathlib import Path
+import re
 import sys
 import unittest
 
@@ -62,44 +68,112 @@ for argument, expected in count_cases:
         fail(f"count_words({argument!r}) gives {actual!r}, expected {expected!r}")
 
 
-def collected_ids(suite):
+class Recorder(unittest.TestResult):
+    """Tracks the running test, so the probe knows which tests call count_words."""
+
+    def __init__(self):
+        super().__init__()
+        self.current = None
+        self.callers = []
+        self.passed = []
+
+    def startTest(self, test):
+        super().startTest(test)
+        self.current = test
+
+    def stopTest(self, test):
+        super().stopTest(test)
+        self.current = None
+
+    def addSuccess(self, test):
+        super().addSuccess(test)
+        self.passed.append(test)
+
+
+result = Recorder()
+
+
+@functools.wraps(count_words)
+def count_words_probe(*args, **kwargs):
+    if result.current is not None and result.current not in result.callers:
+        result.callers.append(result.current)
+    return count_words(*args, **kwargs)
+
+
+# Patched before discovery imports a test module, so `from notes.textutil import count_words` binds
+# the probe, and so does a call through the module.
+module.count_words = count_words_probe
+
+
+def quietly(call):
+    """CALL's result, with whatever the tests print kept out of the reason."""
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        return call()
+
+
+def tests_in(suite):
     for item in suite:
         if isinstance(item, unittest.TestSuite):
-            yield from collected_ids(item)
+            yield from tests_in(item)
         else:
-            yield item.id()
+            yield item
 
 
-# The ids `python3 -m unittest discover -s tests` runs: module (relative to tests/), class, method.
-collected = set(collected_ids(unittest.TestLoader().discover("tests")))
+def load_failure(test):
+    """What discovery recorded for a test module it could not load: the module and the error."""
+    message = str(getattr(test, "_exception", "")).strip()
+    error = message.splitlines()[-1].strip() if message else "no error recorded"
+    verb = "import" if not message or message.startswith("Failed to import") else "load"
+    return f"test module {test._testMethodName} failed to {verb} ({error[:120]})"
 
 
-def count_words_methods(module_name, tree):
-    """Ids of the test* methods in TREE whose body references count_words."""
-    names = {"count_words"}
-    names.update(alias.asname or alias.name for node in ast.walk(tree)
-                 if isinstance(node, ast.ImportFrom) for alias in node.names if alias.name == "count_words")
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ClassDef):
-            for item in node.body:
-                if (isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)) and item.name.startswith("test")
-                        and any((isinstance(ref, ast.Name) and ref.id in names)
-                                or (isinstance(ref, ast.Attribute) and ref.attr == "count_words")
-                                for ref in ast.walk(item))):
-                    yield f"{module_name}.{node.name}.{item.name}"
+def case_of(test):
+    """The test case a subtest belongs to; any other test is its own case."""
+    return test.test_case if type(test).__name__ == "_SubTest" else test
 
 
-for test_file in Path("tests").rglob("test*.py"):
+def names_count_words(test):
+    """True when the source of TEST's method names count_words (for a test that never called it)."""
+    method = getattr(type(test), getattr(test, "_testMethodName", "") or "", None)
     try:
-        tree = ast.parse(test_file.read_text(encoding="utf-8"))
-    except (SyntaxError, UnicodeError):
-        continue  # The suite below reports an invalid test file.
-    module_name = ".".join(test_file.relative_to("tests").with_suffix("").parts)
-    if any(test_id in collected for test_id in count_words_methods(module_name, tree)):
-        sys.exit(0)
-fail("no collected test for count_words under tests/")
+        return method is not None and re.search(r"\bcount_words\b", inspect.getsource(method)) is not None
+    except (OSError, TypeError):
+        return False
+
+
+# Discovered the way `python3 -m unittest discover -s tests` does: module (relative to tests/),
+# class, method.
+try:
+    suite = quietly(lambda: unittest.TestLoader().discover("tests"))
+except Exception as exc:
+    fail(f"cannot discover tests under tests/ ({type(exc).__name__}: {str(exc)[:120]}), so no count_words test runs")
+tests = list(tests_in(suite))
+broken = [load_failure(test) for test in tests if type(test).__name__ == "_FailedTest"]
+if broken:
+    fail("; ".join(broken) + ", so a count_words test there cannot run")
+quietly(lambda: suite.run(result))
+
+outcomes = {}
+for label, entries in (("fails", result.failures), ("raises an error", result.errors),
+                       ("is marked expectedFailure", result.expectedFailures),
+                       ("is marked expectedFailure", [(test, "") for test in result.unexpectedSuccesses]),
+                       ("was skipped", result.skipped)):
+    for test, _ in entries:
+        outcomes.setdefault(case_of(test), label)
+if any(test in result.passed and test not in outcomes for test in result.callers):
+    sys.exit(0)
+# No caller passed. Name the count_words tests that did not pass: those that called it, and those
+# that never got to (skipped, or stopped before the call) but whose source names it.
+named = result.callers + [test for test in tests
+                          if test in outcomes and test not in result.callers and names_count_words(test)]
+if not named:
+    fail("no test calls count_words under tests/")
+groups = {}
+for test in named:
+    groups.setdefault(outcomes.get(test, "did not pass"), []).append(test.id())
+fail("; ".join(f"the count_words test {label}: {', '.join(ids)}" for label, ids in groups.items()))
 PY
 if ! PYTHONPATH="$WORK/src${PYTHONPATH:+:$PYTHONPATH}" python3 -m unittest discover -s tests >/dev/null 2>&1; then
     echo "the test suite fails"; exit 1
 fi
-echo "seeded functions retain their recorded behavior; count_words gives the recorded counts; a collected test covers count_words; suite passes"
+echo "seeded functions retain their recorded behavior; count_words gives the recorded counts; a collected test calls count_words and passes; suite passes"
