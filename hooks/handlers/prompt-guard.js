@@ -49,12 +49,20 @@ const CONTEXT_PATHS = [
 ];
 const isContextPath = p => CONTEXT_PATHS.some(c => p.includes(c));
 
+function isContextSource(source, cwd) {
+  const root = path.resolve(cwd);
+  const relative = path.relative(root, path.resolve(root, source));
+  if (relative.startsWith('..') || path.isAbsolute(relative)) return false;
+  const normalized = relative.split(path.sep).join('/');
+  return CONTEXT_PATHS.some(c => c.endsWith('/') ? normalized.startsWith(c) : normalized === c);
+}
+
 // Keep the synchronous read well inside the hook's time budget.
 const MAX_MOVE_SOURCE_BYTES = 1024 * 1024;
 
 // Codex sends apply_patch as tool_input.command. Scan added lines, plus retained
-// source text for moves into context. Track removals for those moves; context
-// lines and deleted files do not contribute patch content to scan.
+// source text for moves into context. Keep ordered hunks to reconstruct moves,
+// and removals for the fallback when a hunk cannot be located in the source.
 function patchWrites(command) {
   const writes = [];
   let section = null;
@@ -67,30 +75,76 @@ function patchWrites(command) {
         moveSource: header[1] === 'Move to' ? updatePath : null,
         lines: [],
         removedLines: [],
+        hunks: [],
+        unhunkedChanges: false,
       };
       updatePath = header[1] === 'Update File' ? header[2] : null;
       writes.push(section);
     } else if (line.startsWith('*** Delete File: ') || line === '*** End Patch') {
       section = null;
       updatePath = null;
-    } else if (section && line.startsWith('+')) {
-      section.lines.push(line.slice(1));
-    } else if (section && line.startsWith('-')) {
-      section.removedLines.push(line.slice(1));
+    } else if (section && line.startsWith('@@')) {
+      section.hunks.push([]);
+    } else if (section && [' ', '-', '+'].includes(line[0])) {
+      if (line[0] === '+') section.lines.push(line.slice(1));
+      if (line[0] === '-') section.removedLines.push(line.slice(1));
+      if (section.hunks.length) section.hunks[section.hunks.length - 1].push(line);
+      else if (line[0] !== ' ') section.unhunkedChanges = true;
     }
   }
-  return writes.map(({ filePath, moveSource, lines, removedLines }) => ({
-    filePath, moveSource, removedLines, content: lines.join('\n'),
+  return writes.map(({ filePath, moveSource, lines, removedLines, hunks, unhunkedChanges }) => ({
+    filePath, moveSource, removedLines, hunks, unhunkedChanges, content: lines.join('\n'),
   }));
 }
 
-function retainedSourceText(moveSource, removedLines, cwd) {
+// KMP keeps a duplicate-heavy old block from causing repeated full comparisons.
+function findBlock(lines, block, start, trimTrailing = false) {
+  if (block.length === 0) return start;
+  const needle = trimTrailing ? block.map(line => line.trimEnd()) : block;
+  const prefixes = new Array(needle.length).fill(0);
+  for (let i = 1, matched = 0; i < needle.length; i++) {
+    while (matched > 0 && needle[i] !== needle[matched]) matched = prefixes[matched - 1];
+    if (needle[i] === needle[matched]) matched++;
+    prefixes[i] = matched;
+  }
+  for (let i = start, matched = 0; i < lines.length; i++) {
+    const line = trimTrailing ? lines[i].trimEnd() : lines[i];
+    while (matched > 0 && line !== needle[matched]) matched = prefixes[matched - 1];
+    if (line === needle[matched]) matched++;
+    if (matched === needle.length) return i - matched + 1;
+  }
+  return -1;
+}
+
+function retainedSourceText({ moveSource, removedLines, hunks, unhunkedChanges, content }, cwd) {
   try {
     const sourcePath = path.resolve(cwd, moveSource);
     const stat = fs.statSync(sourcePath);
-    if (!stat.isFile() || stat.size > MAX_MOVE_SOURCE_BYTES) return '';
+    if (!stat.isFile() || stat.size > MAX_MOVE_SOURCE_BYTES) return content;
 
     const sourceLines = fs.readFileSync(sourcePath, 'utf8').split(/\r?\n/);
+    const chunks = [];
+    let cursor = 0;
+    let applied = hunks.length > 0 && !unhunkedChanges;
+    for (const hunk of hunks) {
+      const oldBlock = hunk.filter(line => line[0] !== '+').map(line => line.slice(1));
+      const newBlock = hunk.filter(line => line[0] !== '-').map(line => line.slice(1));
+      let match = findBlock(sourceLines, oldBlock, cursor);
+      if (match === -1) match = findBlock(sourceLines, oldBlock, cursor, true);
+      if (match === -1) {
+        applied = false;
+        break;
+      }
+      chunks.push(sourceLines.slice(cursor, match), newBlock);
+      cursor = match + oldBlock.length;
+    }
+    if (applied) {
+      chunks.push(sourceLines.slice(cursor));
+      return chunks.flat().join('\n');
+    }
+
+    // An unexpected patch still gets the original count-based scan, including
+    // every added line, even if some earlier hunks could be located.
     const removedCounts = new Map();
     for (const removed of removedLines) {
       removedCounts.set(removed, (removedCounts.get(removed) || 0) + 1);
@@ -103,9 +157,9 @@ function retainedSourceText(moveSource, removedLines, cwd) {
       }
       return true;
     });
-    return retainedLines.join('\n') + '\n';
+    return retainedLines.join('\n') + '\n' + content;
   } catch { /* Keep scanning added lines when the source cannot be read. */ }
-  return '';
+  return content;
 }
 
 let input = '';
@@ -136,12 +190,13 @@ process.stdin.on('end', () => {
 
     const warnings = [];
     for (const write of writes) {
-      const { filePath, moveSource, removedLines } = write;
+      const { filePath, moveSource } = write;
       // Only scan files that become agent context
       if (!isContextPath(filePath)) continue;
 
       let content = write.content;
-      if (moveSource && !isContextPath(moveSource)) content = retainedSourceText(moveSource, removedLines, data.cwd || process.cwd()) + content;
+      const cwd = data.cwd || process.cwd();
+      if (moveSource && !isContextSource(moveSource, cwd)) content = retainedSourceText(write, cwd);
       if (!content) continue;
 
       const findings = [];
