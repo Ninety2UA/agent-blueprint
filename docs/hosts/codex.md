@@ -75,8 +75,8 @@ From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
 | `discovery` | pass | 23s | 53 ab- skills once each in 11 location(s); the answer names ab-ship-pipeline |
-| `hooks` | pass | 32s | all five handlers wrote codex trace lines; prompt-guard.js:warned and validate-commit.js:flagged recorded codex actions |
+| `hooks` | pass | 1m06s | all five handlers wrote codex trace lines; prompt-guard.js:warned and validate-commit.js:flagged recorded codex actions |
 | `manual-only` | pass | 12s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
 | `debug` | pass | 2m39s | suite passes; store.py fixed; regression test present · helper steps: helper |
-| `tdd-override` | pass | 1m22s | seeded functions retain their recorded behavior; count_words gives the recorded counts; a collected test calls count_words and passes; suite passes |
+| `tdd-override` | pass | 2m04s | seeded functions retain their recorded behavior; count_words gives the recorded counts; a collected test calls count_words and passes; suite passes |
 | `brainstorm-override` | pass | 9m34s | no design approval request; plan or code: src/notes/store.py, docs/plans/2026-10-12-note-count.md |
