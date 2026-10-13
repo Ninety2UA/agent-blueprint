@@ -661,7 +661,7 @@ route_pi() {
 # marketplace. When this installer recorded adding that marketplace on this computer, Cursor may
 # hold its own copy too, so it says where to uninstall it: /plugin marks Claude Code's copy
 # "(Claude Code)". Cursor's plugin cache is no sign of an install, because it also keeps plugins
-# that were never installed. Without the Claude Code plugin, reconcile_marketplace still replaces
+# that are not installed. Without the Claude Code plugin, reconcile_marketplace still replaces
 # a marketplace from another source with the GitHub one, once GitHub answers.
 route_cursor_agent() {
     local prior_sources

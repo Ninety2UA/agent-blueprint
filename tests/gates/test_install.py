@@ -307,7 +307,7 @@ class Installer(InstallerHarness):
         self.assertIn("Cursor CLI: covered by the Claude Code plugin", out)
 
     def test_cursor_cache_folder_alone_is_not_taken_as_an_install(self):
-        # Cursor caches plugins it never installed (observed: four cached, none installed), so only the
+        # Cursor's cache also keeps plugins that are not installed (observed: four cached, none installed), so only the
         # installer's own record means Cursor has its own copy.
         self.fake_claude_with_plugin()
         self.fake_tool("cursor-agent")
