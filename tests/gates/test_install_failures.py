@@ -214,9 +214,6 @@ class InstallerFailures(InstallerHarness):
             ("pi", "Pi", lambda: (self.pi_packages(str(old), PI_SOURCE), self.fake_tool("pi", {
                 "update --extension " + PI_SOURCE: {"code": 1}})),
              ["pi remove " + str(old), "pi update --extension " + PI_SOURCE]),
-            ("cursor-agent", "Cursor CLI", lambda: (self.fake_claude_with_plugin(), self.record_cursor_route(),
-                self.fake_tool("cursor-agent", {"plugin marketplace remove agent-blueprint": {"code": 1}})),
-             ["cursor-agent plugin marketplace remove agent-blueprint"]),
         ):
             with self.subTest(tool=tool):
                 prepare()
@@ -227,6 +224,19 @@ class InstallerFailures(InstallerHarness):
                 self.assertIn("  ✗ " + label + " did not finish (exit 1); its current install and recorded copies "
                               "stay as they were.", out.splitlines())
                 self.assertNotIn("old install was removed", out)
+
+    def test_cursor_beside_the_claude_plugin_runs_no_cursor_command(self):
+        # Cursor's marketplace is shared by every computer on the account, so this route touches nothing.
+        self.fake_claude_with_plugin()
+        self.record_cursor_route()
+        self.fake_tool("cursor-agent", {"plugin marketplace remove agent-blueprint": {"code": 1},
+                                        "plugin marketplace list": {"code": 1},
+                                        "plugin marketplace update agent-blueprint": {"code": 1}})
+        code, out = self.run_install("--only", "cursor-agent")
+        self.assertEqual(code, 0, out)
+        self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
+        self.assertRegex(out, r"(?m)^  ✓ Finished: Cursor CLI$")
+        self.assertNotIn("did not finish", out)
 
     def test_local_swap_skips_the_github_check(self):
         # Under --local the new source is this checkout, so nothing remote is checked before a removal.
@@ -438,7 +448,8 @@ class InstallerFailures(InstallerHarness):
         self.assertIn("cursor-agent", json.loads(self.routes().read_text()))
         self.assertEqual(self.ab_skills(".config", "amp", "skills"), ["ab-quick-fix"])
         self.assertTrue((amp / ".agent-blueprint-install.json").is_file())
-        self.assertRegex(out, r"(?m)^  ! Cursor CLI: kept its own marketplace because Claude Code's route failed")
+        self.assertRegex(out, r"(?m)^  ! Cursor CLI: kept its own install because Claude Code's route failed")
+        self.assertEqual(self.cursor_uninstall_notes(out), [])
         self.assertRegex(out, r"(?m)^  ! Amp: kept its own copy in " + re.escape(str(amp)) +
                          r" because Claude Code's route failed")
         self.assertRegex(out, r"(?m)^  ✗ Failed: Claude Code\. ")

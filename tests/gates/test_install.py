@@ -279,9 +279,10 @@ class Installer(InstallerHarness):
         self.assertEqual(self.mutations(), [])
         self.assertEqual(self.ab_skills(".config", "amp", "skills"), [])
         self.assertIn("Cursor CLI: covered by the Claude Code plugin", out)
+        self.assertEqual(self.cursor_uninstall_notes(out), [])
         self.assertIn("Amp: covered by the Claude Code plugin", out)
 
-    def test_standalone_cursor_and_amp_are_retired_when_claude_is_added(self):
+    def test_claude_plugin_retires_amp_and_leaves_cursors_shared_marketplace(self):
         for tool in ("cursor-agent", "amp"):
             self.fake_tool(tool)
         code, out = self.run_install()
@@ -290,14 +291,45 @@ class Installer(InstallerHarness):
         self.assertEqual(self.ab_skills(".config", "amp", "skills"), SKILLS)
         (amp / "my-own-skill").mkdir()
         self.fake_claude_with_plugin()
+        Path(self.log).unlink()
         code, out = self.run_install()
         self.assertEqual(code, 0, out)
-        self.assertIn("cursor-agent plugin marketplace remove agent-blueprint", self.calls())
+        # Cursor keeps marketplaces on the account: removing it here would remove it on every computer.
+        self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
+        self.assertEqual(len(self.cursor_uninstall_notes(out)), 1, out)
         self.assertEqual(sorted(p.name for p in amp.iterdir()), ["my-own-skill"])
         self.assertNotIn("cursor-agent", json.loads(self.routes().read_text()))
         Path(self.log).unlink()
         code, out = self.run_install()
         self.assertEqual(code, 0, out)
+        self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
+        self.assertEqual(self.cursor_uninstall_notes(out), [])
+        self.assertIn("Cursor CLI: covered by the Claude Code plugin", out)
+
+    def test_cursor_plugin_cache_without_a_record_gets_the_uninstall_note(self):
+        # /plugin installed agent-blueprint on this computer from a marketplace another computer added.
+        self.fake_claude_with_plugin()
+        self.fake_tool("cursor-agent", {"plugin marketplace remove agent-blueprint": {"code": 1}})
+        self.cursor_plugin_cache()
+        code, out = self.run_install("--only", "cursor-agent")
+        self.assertEqual(code, 0, out)
+        self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
+        self.assertEqual(len(self.cursor_uninstall_notes(out)), 1, out)
+        self.assertFalse(self.routes().exists())
+        # The note repeats while Cursor's own install is still there.
+        code, out = self.run_install("--only", "cursor-agent")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(len(self.cursor_uninstall_notes(out)), 1, out)
+
+    def test_cursor_uninstall_note_in_a_dry_run_keeps_the_record(self):
+        self.fake_claude_with_plugin()
+        self.fake_tool("cursor-agent")
+        self.record_cursor_route()
+        before = self.routes().read_text()
+        code, out = self.run_install("--dry-run", "--only", "cursor-agent")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(len(self.cursor_uninstall_notes(out)), 1, out)
+        self.assertEqual(self.routes().read_text(), before)
         self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
 
     def test_amp_and_hermes_have_private_copies(self):
@@ -441,6 +473,8 @@ class Installer(InstallerHarness):
         code, out = self.run_install("--only", "cursor-agent")
         self.assertEqual(code, 0, out)
         self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
+        self.assertEqual(self.cursor_uninstall_notes(out), [])
+        self.assertIn("Cursor CLI: covered by the Claude Code plugin", out)
 
     def test_same_local_sources_use_the_hosts_update_routes(self):
         self.fake_tool("claude", {"plugin marketplace list": "❯ agent-blueprint\n Source: Folder (" + REPO + ")",

@@ -8,7 +8,8 @@
 #   Pi                   pi install git:github.com/Ninety2UA/agent-blueprint
 #   Cursor CLI           marketplace add the GitHub URL, then /plugin inside a session
 #   Hermes / Amp         recorded copies in ~/.hermes/skills / ~/.config/amp/skills
-# Cursor and Amp use Claude Code's plugin when present. Recorded standalone routes are retired.
+# Cursor and Amp use Claude Code's plugin when present. Amp's recorded copy is retired; Cursor's
+# marketplace stays, because Cursor shares it with every computer on the account.
 # A tool whose route fails is reported at the end (exit 1); the other tools still install.
 # Ctrl-C, or a tool that exits 130 or 143, stops the whole run with that status.
 # Cursor registrations made here are recorded in
@@ -655,19 +656,24 @@ route_pi() {
 
 # Cursor and Amp lean on the Claude Code plugin when claude_plugin is true. When Claude Code's
 # route failed in this run, that plugin may be one the run could not refresh, so each keeps the
-# install it has of its own.
+# install it has of its own. Cursor keeps marketplaces on the account, where every computer signed
+# in to it shares them, so this route never removes Cursor's marketplace. When this computer has
+# Cursor's own install (the marketplace this installer recorded adding, or the folder /plugin
+# installs into), it says where to uninstall that second copy.
 route_cursor_agent() {
-    local prior_sources
+    local prior_sources has_record=false own=false cached
     if [ "$claude_plugin" = true ]; then
-        if cursor_record has; then
+        if cursor_record has; then has_record=true; own=true; fi
+        for cached in "$HOME"/.cursor/plugins/cache/*/agent-blueprint; do
+            if [ -d "$cached" ]; then own=true; fi
+        done
+        if [ "$own" = true ]; then
             if failed_route claude; then
-                warn "Cursor CLI: kept its own marketplace because Claude Code's route failed; run install.sh again once Claude Code installs."
+                warn "Cursor CLI: kept its own install because Claude Code's route failed; run install.sh again once Claude Code installs."
                 return 0
             fi
-            run cursor-agent plugin marketplace remove agent-blueprint
-            mark_removed cursor-agent
-            if [ "$DRY_RUN" = false ]; then cursor_record remove; fi
-            warn "Cursor CLI: if /plugin still lists agent-blueprint from Cursor's own marketplace, uninstall it there, so Cursor reads only the Claude Code plugin."
+            warn "Cursor CLI: uninstall agent-blueprint in /plugin on this computer, so Cursor reads only the Claude Code plugin. Its marketplace stays, because Cursor shares it with every computer signed in to your account; once no computer uses it, run cursor-agent plugin marketplace remove agent-blueprint."
+            if [ "$has_record" = true ] && [ "$DRY_RUN" = false ]; then cursor_record remove; fi
         fi
         success "Cursor CLI: covered by the Claude Code plugin"
     elif [ "$LOCAL" = true ]; then
