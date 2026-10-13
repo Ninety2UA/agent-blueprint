@@ -8,8 +8,9 @@
 #   Pi                   pi install git:github.com/Ninety2UA/agent-blueprint
 #   Cursor CLI           marketplace add the GitHub URL, then /plugin inside a session
 #   Hermes / Amp         recorded copies in ~/.hermes/skills / ~/.config/amp/skills
-# Cursor and Amp use Claude Code's plugin when present. Then Amp's recorded copy is retired and
-# Cursor's marketplace stays, because Cursor shares it with every computer on the account.
+# Cursor and Amp use Claude Code's plugin when present; then Amp's recorded copy is retired. The
+# installer never removes Cursor's marketplace, because Cursor shares it with every computer on the
+# account.
 # A tool whose route fails is reported at the end (exit 1); the other tools still install.
 # Ctrl-C, or a tool that exits 130 or 143, stops the whole run with that status.
 # Cursor registrations made here are recorded in
@@ -661,8 +662,9 @@ route_pi() {
 # marketplace. When this installer recorded adding that marketplace on this computer, Cursor may
 # hold its own copy too, so it says where to uninstall it: /plugin marks Claude Code's copy
 # "(Claude Code)". Cursor's plugin cache is no sign of an install, because it also keeps plugins
-# that are not installed. Without the Claude Code plugin, reconcile_marketplace still replaces
-# a marketplace from another source with the GitHub one, once GitHub answers.
+# that are not installed. Without the Claude Code plugin, a marketplace from another source (a
+# checkout or a fork another computer added) stays too: the route names it and the commands that
+# switch it, and adds or updates only a missing or GitHub marketplace.
 route_cursor_agent() {
     local prior_sources
     if [ "$claude_plugin" = true ]; then
@@ -680,6 +682,12 @@ route_cursor_agent() {
         printf '    cursor-agent --plugin-dir %q\n' "$SOURCE_DIR"
     else
         prior_sources=$(sources cursor-agent "$(listing cursor-agent plugin marketplace list)")
+        case "$prior_sources" in
+            ''|*'@unknown'*|"$GITHUB") ;;
+            *)
+                warn "Cursor CLI: your Cursor account's agent-blueprint marketplace comes from ${prior_sources//$'\n'/, }, not GitHub. The installer leaves it, because every computer signed in to the account shares it. To switch it: cursor-agent plugin marketplace remove agent-blueprint, then cursor-agent plugin marketplace add $GITHUB_URL."
+                return 0 ;;
+        esac
         reconcile_marketplace cursor-agent "$prior_sources" "$GITHUB" "$GITHUB_URL" \
             plugin marketplace update agent-blueprint
         if [ "$DRY_RUN" = false ]; then cursor_record add; fi

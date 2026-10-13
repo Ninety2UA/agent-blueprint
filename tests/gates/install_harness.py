@@ -153,6 +153,12 @@ class InstallerHarness(unittest.TestCase):
         return [line for line in out.splitlines() if line.startswith("  ! Cursor CLI: in /plugin, uninstall the "
                 "agent-blueprint not marked (Claude Code)") and "cursor-agent plugin marketplace remove agent-blueprint" in line]
 
+    def cursor_source_notes(self, out):
+        # A marketplace from another source stays; the note names it and the two commands that switch it.
+        return len([line for line in out.splitlines() if line.startswith("  ! Cursor CLI: your Cursor account's "
+                    "agent-blueprint marketplace comes from ") and "cursor-agent plugin marketplace remove agent-blueprint"
+                    in line and "cursor-agent plugin marketplace add " + URL in line])
+
     def pi_packages(self, *packages):
         settings = Path(self.home, ".pi/agent/settings.json")
         settings.parent.mkdir(parents=True, exist_ok=True)
