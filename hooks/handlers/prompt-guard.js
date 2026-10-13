@@ -85,6 +85,8 @@ function patchWrites(command) {
       updatePath = null;
     } else if (section && line.startsWith('@@')) {
       section.hunks.push({ anchor: line.startsWith('@@ ') ? line.slice(3) : null, lines: [] });
+    } else if (section && line === '*** End of File' && section.hunks.length) {
+      section.hunks[section.hunks.length - 1].eof = true;
     } else if (section && ([' ', '-', '+'].includes(line[0]) || (line === '' && section.hunks.length))) {
       if (line[0] === '+') section.lines.push(line.slice(1));
       if (line[0] === '-') section.removedLines.push(line.slice(1));
@@ -153,7 +155,10 @@ function movedFileText({ moveSource, removedLines, hunks, unhunkedChanges, conte
         replacements.push({ match: end, oldLength: 0, newBlock });
         continue;
       }
-      const match = seekBlock(patchLines, oldBlock, lineIndex);
+      // An EOF hunk prefers the suffix, including normalized matches, before searching forward.
+      const eofStart = patchLines.length - oldBlock.length;
+      let match = hunk.eof && eofStart >= lineIndex ? seekBlock(patchLines, oldBlock, eofStart) : -1;
+      if (match === -1) match = seekBlock(patchLines, oldBlock, lineIndex);
       if (match === -1) {
         applied = false;
         break;

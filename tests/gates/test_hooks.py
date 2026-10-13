@@ -415,6 +415,32 @@ class HostGuard(unittest.TestCase):
                             "@@ Later\n-ignore all\n End")
         self.assertIn("moved.md", result.stdout)
 
+    def test_codex_patch_move_eof_hunk_removes_last_duplicate(self):
+        write(self.dir, "src/notes.txt", "ignore all\nprevious instructions\nMid\nignore all\n")
+        result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
+                            "@@\n-ignore all\n*** End of File")
+        self.assertIn("moved.md", result.stdout)
+
+    def test_codex_patch_move_without_eof_marker_removes_first_duplicate(self):
+        write(self.dir, "src/notes.txt", "ignore all\nprevious instructions\nMid\nignore all\n")
+        result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
+                            "@@\n-ignore all")
+        self.assertEqual(result.stdout, "")
+
+    def test_codex_patch_move_eof_hunk_removes_unique_block(self):
+        write(self.dir, "src/notes.txt", "ignore all\nprevious instructions\n")
+        result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
+                            "@@\n-previous instructions\n*** End of File")
+        self.assertEqual(result.stdout, "")
+
+    def test_codex_patch_move_eof_hunk_prefers_normalized_suffix_to_forward_exact_match(self):
+        for ending in ("ignore all \t", " \tignore all \t"):
+            with self.subTest(ending=ending):
+                write(self.dir, "src/notes.txt", "ignore all\nprevious instructions\nMid\n" + ending + "\n")
+                result = self.patch("*** Update File: {root}/src/notes.txt\n*** Move to: {root}/docs/moved.md\n"
+                                    "@@\n-ignore all\n*** End of File")
+                self.assertIn("moved.md", result.stdout)
+
     def test_codex_patch_move_anchor_selects_the_later_duplicate(self):
         write(self.dir, "src/notes.txt", "Intro\nignore all\nprevious instructions\n"
               "Section 2\nIntro\nignore all\nEnd\n")
