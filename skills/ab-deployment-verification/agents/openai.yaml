@@ -1,0 +1,3 @@
+interface:
+  display_name: "Deployment Verification"
+  short_description: "Decide go or no-go before a deployment"

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Project Setup"
+  short_description: "Scaffold project docs without overwriting files"

@@ -2,7 +2,7 @@
 name: ab-autonomous-loop
 description: "Runs a plan's tasks one after another with no human checkpoints: do the next unchecked task, verify it, tick it and commit, retry failures after a written reflection, and stop on a fatal error, a circuit breaker, a risk score or a hard cap. Often started by the pipeline skills. Use when a plan of mostly sequential tasks should run to the end unattended, or the user says to keep going until all of it is done. Not for review checkpoints between batches (ab-executing-plans) or tasks that can run in parallel (ab-orchestrate)."
 metadata:
-  version: "4.0.2"
+  version: "4.1.0"
 ---
 
 # Autonomous Loop
@@ -11,7 +11,7 @@ The run ends with every plan task ticked, verified and committed plus a final re
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-autonomous-loop", "version": "4.0.2", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-autonomous-loop.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-autonomous-loop", "version": "4.1.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-autonomous-loop.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 **Verify after every task, not at the end.** A chain of unverified changes is a chain of compounding bugs, and the stop signals below mean something only when each task was checked on its own.
 
@@ -21,7 +21,7 @@ Read the plan. Each task needs a description, a completion check and a checkbox 
 
 **Tracking tasks.** The plan file's checkboxes are the record of progress: tick each one when its task is done and verified, so another session or another tool can continue from there. A host task list, if you have one, may mirror them, but it never replaces them.
 
-**Pre-flight danger scan (advisory):** before the first task, run the scan in `references/loop-details.md` § Pre-flight danger scan. It routes each hit through the ab-executing-plans decision boundary and never stops the loop by itself.
+**Pre-flight danger scan (advisory):** before the first task, run the scan in `references/loop-details.md` § Pre-flight danger scan. It routes each hit through the ab-executing-plans decision boundary; missing authority for destruction or publishing stops the run.
 
 ## Step 2: Run the loop
 
@@ -29,7 +29,7 @@ Each pass (diagram: `references/loop-details.md` § Loop diagram): **pick** the 
 
 **On success,** tick its checkbox, log "Task N complete. [N/total] done.", and commit, so a later failure can return to the last good state without losing earlier work. An unticked task gets attempted again.
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 **On failure,** classify the error. Transient (rate limit, timeout, flaky test): retry with backoff. Fixable (an implementation bug): debug with the ab-systematic-debugging skill, fix, retry. Fatal (missing dependency, wrong architecture, unclear requirement): stop and escalate (Step 4). An unclear requirement is Fatal only when the ab-executing-plans decision boundary says to stop (a must-ask category in the project instructions file); anything else it lets an autonomous run decide is decided, recorded, and continued.
 

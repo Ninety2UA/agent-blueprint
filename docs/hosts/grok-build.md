@@ -1,23 +1,24 @@
 # Agent Blueprint on Grok Build
 
-Binary `grok`; facts checked against Grok Build 1.0.34 on 2026-09-30.
+Binary `grok`; facts checked against Grok Build 1.0.34 on 2026-09-30, and the install against the same version on 2026-10-12.
 
 ## Install
 
-One route: one copy of `skills/` in `~/.agents/skills`, which Grok scans. `bash install.sh` writes it, and the same copy serves Codex, Pi, Cursor CLI and Amp. On a machine with Claude Code and Cursor CLI or Amp, it copies the skills into `~/.grok/skills` instead, which only Grok reads:
+One route: Grok's plugin manager, straight from GitHub. Grok asks you to confirm the install:
 
 ```bash
-git clone https://github.com/Ninety2UA/agent-blueprint.git
-bash agent-blueprint/install.sh --only grok
+grok plugin install Ninety2UA/agent-blueprint
 ```
 
-Leave out `--only` to install for every tool on the machine. The installer keeps a record at `~/.agents/skills/.agent-blueprint-install.json`, so a re-run removes skills that were renamed or deleted since and leaves every other skill in that folder alone.
+Grok 1.0.34 reads the root `plugin.json` and discovers `skills/` by convention. `bash install.sh` runs the same command with `--trust`, so it does not stop to ask, and takes the clone as the source with `--local`; `grok --plugin-dir <checkout>` loads a checkout for one session. On a re-run, once Grok's own install succeeds, the installer removes the `~/.grok/skills` copy that 4.0 recorded, since Grok would list a second set. A local install is a copy that `grok plugin update` reports as live without refreshing, so a `--local` re-run uninstalls and installs it again.
 
-Grok's plugin manager also accepts this repository (`grok plugin install Ninety2UA/agent-blueprint` after the rename, a local path, or `grok --plugin-dir <checkout>` for one session), because Grok 1.0.34 reads the root `plugin.json` and discovers `skills/` by convention. Do not combine it with the copy: Grok would list every skill twice. Grok also reads `~/.claude/skills`, a project's `.claude/skills` and the marketplaces Claude Code has registered, so a Claude Code user looks at `grok plugin marketplace list` and `grok plugin list` before adding a route here.
+What covers what: Grok needs this command even when Claude Code has the plugin. It lists the marketplaces Claude Code has registered but loads no skills from Claude Code's installed plugin. It does read `~/.claude/skills` and a project's `.claude/skills`, so skills placed there show up in Grok too.
 
-Trust step: none for skills. Project hooks need `/hooks-trust` or `--trust`, and this plugin ships no Grok hooks.
+Trust step: none for skills beyond the confirmation. Project hooks need `/hooks-trust` or `--trust`, and this plugin ships no Grok hooks.
 
-Check: not verified for a copy install (Grok's listing commands, `grok plugin list` and `grok plugin details <name>`, cover plugins); `grok plugin validate <checkout>` prints the name, version and components of a checkout. Update: re-run `bash install.sh`, or the ab-plugin-update skill. Docs: <https://docs.x.ai/build/features/skills-plugins-marketplaces>.
+Check: `grok plugin list` shows one agent-blueprint install, and `grok plugin details agent-blueprint` lists its components; `grok plugin validate <checkout>` prints the name, version and components of a checkout. Update: `grok plugin update agent-blueprint`, or the ab-plugin-update skill. Docs: <https://docs.x.ai/build/features/skills-plugins-marketplaces>.
+
+Set up a project: `/ab-project-start` in a session. The README's [Set up your project](../../README.md#set-up-your-project) says what it creates and when to run it.
 
 ## Invoke a skill
 
@@ -63,21 +64,13 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version grok 1.0.34 (3736acbc8658) [stable], last cell 2026-10-07.
+Install: the v4.1.0 install record ([docs/releases/v4.1.0-installs.md](../releases/v4.1.0-installs.md)) shows this tool installing Agent Blueprint by its own route and listing each skill once.
+
+From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-smoke.md)), host version grok 1.0.52 (0920c8169e27) [stable], last cell 2026-10-12.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | pass | 9s | 53 ab- skills once each in 3 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 8s | final message names HARBOR-19 |
-| `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
-| `manual-only` | pass | 12s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
-| `build` | fail | 1m42s | the host refused the run: usage or rate limit reached. acceptance test failed: tabulate is not declared in pyproject.toml or requirements.txt (host exited 1) |
-| `helpers-off` | n/a | 0s | no helper switch on grok |
-| `effort` | n/a | 0s | no per-dispatch effort metadata on grok |
-| `review` | fail | 4s | no provenance record for ab-requesting-code-review; the host refused the run: usage or rate limit reached. the review output does not name: eval, cli.py (host exited 1) |
-| `debug` | fail | 5s | no provenance record for ab-systematic-debugging; the host refused the run: usage or rate limit reached. the test suite still fails (host exited 1) |
-| `ship` | fail | 3m35s | runner exit 3:   status: needs-human — the host failed 6 times in a row with a transient error (see $TMPDIR/.../state the runner did not report a publish (see the log) |
-| `team` | fail | 14s | no provenance record for ab-orchestrate; the host refused the run: usage or rate limit reached. no .agent-blueprint/team/<run>/ledger.md (host exited 1) |
-| `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |
-
-A `fail` cell blocks the release until it passes or is confirmed as a vendor bug (then it renders `degraded (vendor bug)` with the upstream link; see `docs/releases/v4.0.0-checklist.md`).
+| `discovery` | pass | 7s | 53 ab- skills once each in 4 location(s); the answer names ab-ship-pipeline |
+| `hooks` | pass | 9s | no blueprint hook fired (canary prompt run with the trace exported) |
+| `manual-only` | pass | 10s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `debug` | pass | 3m16s | the host refused the run: usage or rate limit reached. suite passes; store.py fixed; regression test present (host exited 1) · helper steps: helper |

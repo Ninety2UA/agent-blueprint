@@ -1,0 +1,3 @@
+interface:
+  display_name: "Quick Fix"
+  short_description: "Make a small change through a test-first loop"

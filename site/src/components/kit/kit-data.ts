@@ -5,7 +5,7 @@
 import { join } from 'node:path';
 
 import { findRepoRoot, getSiteData } from '../../lib/site.mjs';
-import { escapeHtml, listJoin } from '../../lib/text.mjs';
+import { capitalize, escapeHtml, listJoin } from '../../lib/text.mjs';
 import { numberWord } from '../number-word';
 
 const data = getSiteData();
@@ -62,16 +62,7 @@ export const LONG = claimed([
   site.repoUrl.replace(/^https:\/\//, ''),
 ]);
 
-// The sheet index at the top of the page: anchor, contents, file types.
-export const INDEX = [
-  { id: 'readme', title: 'README header', files: 'GIF, MP4' },
-  { id: 'film', title: 'The film', files: 'MP4, chapters' },
-  { id: 'loops', title: 'Four loops', files: 'MP4' },
-  { id: 'mark', title: 'The mark', files: 'SVG' },
-  { id: 'blurb', title: 'Description', files: 'Text' },
-];
-
-// The loops, in the order the gallery shows them, with the text alternatives the home page uses.
+// The loops, in the order the gallery shows them, with the text alternatives every page that embeds them uses.
 export const LOOPS = [
   {
     name: 'loop-review',
@@ -109,6 +100,36 @@ export const LOOPS = [
       'docs/context/STATUS.md and a docs/solutions/ entry. Session 2 in Codex runs ab-resume-session, reads both and ' +
       'starts on task 4.',
   },
+  {
+    name: 'loop-install',
+    caption: "Each tool's own command, then all at once",
+    label: 'the install loop',
+    alt:
+      'Looping animation, no sound: each tool installs with its own command in turn. Claude Code adds the marketplace ' +
+      'and installs the plugin; Codex adds the marketplace, adds the plugin and trusts its hooks in /hooks; Antigravity ' +
+      "installs from the GitHub URL; Grok Build installs and confirms; Pi installs from git; Cursor CLI and Amp read " +
+      "Claude Code's plugin; Hermes gets the installer's copy. Then one line, git clone and bash install.sh, sets up " +
+      'every tool the same way.',
+  },
+  {
+    name: 'loop-setup',
+    caption: '<code>ab-project-start</code> sets up a project',
+    label: 'the setup loop',
+    alt:
+      'Looping animation, no sound: after the plugin is added, Codex offers ab-project-start. The skill runs in an ' +
+      'empty folder: AGENTS.md, CLAUDE.md, docs/context/ with CONVENTIONS, GOALS, STATUS and DECISIONS, BACKLOG.md and ' +
+      ".gitignore appear one by one, each marked created. CONVENTIONS.md gets the project's test command, the scaffold " +
+      'is committed, and the summary points to ab-brainstorming.',
+  },
+];
+
+// The sheet index at the top of the page: anchor, contents, file types.
+export const INDEX = [
+  { id: 'readme', title: 'README header', files: 'GIF, MP4' },
+  { id: 'film', title: 'The film', files: 'MP4, chapters' },
+  { id: 'loops', title: `${capitalize(numberWord(LOOPS.length))} loops`, files: 'MP4' },
+  { id: 'mark', title: 'The mark', files: 'SVG' },
+  { id: 'blurb', title: 'Description', files: 'Text' },
 ];
 
 // ---------- The mark at drawing scale (f/src/parts.py mark_cells, f/src/kit.py small_mark) ----------

@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1200, height=750" />
+<title>Project setup loop</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+/*{{DS_CSS}}*/
+html, body { width: 1200px; height: 750px; }
+#stage { position: absolute; inset: 0; background: var(--bg); }
+#stage > svg { position: absolute; left: 0; top: 0; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="10" data-width="1200" data-height="750">
+  <div id="stage" class="clip" data-start="0" data-duration="10" data-track-index="0"></div>
+</div>
+<script>
+//{{DS_JS}}
+</script>
+<script>
+(function () {
+  // Shown at about 560 px wide: smallest text 24 px, main labels 28 px and up.
+  // After the plugin is added, ab-project-start turns an empty folder into a project.
+  const { S, svg, G, T, L, P, R, head, draw, C } = DS;
+  function build() {
+    const tl = gsap.timeline({ paused: true });
+    const s = svg(document.getElementById("stage"), 1200, 750);
+    const up = (els, t, d, y) => tl.fromTo(els, { opacity: 0, y: y == null ? 8 : y }, { opacity: 1, y: 0, duration: d || 0.35, ease: "expo.out", immediateRender: false }, t);
+    const out = (els, t, d) => tl.to(els, { opacity: 0, duration: d || 0.35, ease: "power2.in" }, t);
+    const tick = (x, y) => {
+      const p = P(s, `M${x} ${y - 9} l8 8 l16 -18`, "ln");
+      gsap.set(p, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+      return p;
+    };
+
+    // ---- the install line, and the offer that follows it ----
+    T(s, 40, 86, "codex plugin add agent-blueprint@agent-blueprint", "t-mono", 24);
+    const inTick = tick(806, 86);
+    const offer = G(s, 0, 0);
+    const offLead = L(offer, 840, 77, 856, 77, "ln-2");
+    const offBox = R(offer, 858.5, 42.5, 301, 88, "acc");
+    offBox.setAttribute("pathLength", 1);
+    const offTx = [T(offer, 878, 78, "Codex offers", "t-sans", 26), T(offer, 878, 114, "$ab-project-start", "t-mono-b", 24)];
+    gsap.set(offLead, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+    gsap.set(offBox, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+    gsap.set(offTx, { opacity: 0 });
+
+    // ---- the session frame ----
+    const SF = G(s, 0, 0);
+    R(SF, 40.5, 160.5, 430, 340, "box");
+    T(SF, 66, 200, "in Codex", "t-mono ink2", 24);
+    L(SF, 62, 222, 448, 222, "hair");
+    L(SF, 62, 428, 448, 428, "hair");
+    gsap.set(SF, { opacity: 0.4 });
+    const call = T(s, 66, 278, "$ab-project-start", "t-mono-b", 30);
+    const other = [T(s, 66, 326, "other tools", "t-sans mut", 24), T(s, 66, 364, "/ab-project-start", "t-mono mut", 24),
+      T(s, 66, 400, "/skill:ab-project-start", "t-mono mut", 24)];
+    const next = G(s, 0, 0);
+    T(next, 66, 474, "next:", "t-sans ink2", 26);
+    const nextSk = T(next, 136, 474, "ab-brainstorming", "t-mono-b", 26);
+    gsap.set([call, next].concat(other), { opacity: 0 });
+
+    // ---- the folder: empty, then one file at a time ----
+    const TX = 530, TR = 542, GR = 582;
+    T(s, TX, 196, "my-app/", "t-mono-b", 28);
+    const empty = T(s, TX + 142, 196, "empty", "t-mono mut", 24);
+    const rowY = (i) => 240 + i * 38;
+    // [label, depth, tagged, kind]
+    const ITEMS = [
+      ["AGENTS.md", 1, true], ["CLAUDE.md", 1, true], ["@AGENTS.md", 2, false, "line"],
+      ["docs/context/", 1, true], ["CONVENTIONS.md", 2], ["GOALS.md", 2], ["STATUS.md", 2], ["DECISIONS.md", 2],
+      ["BACKLOG.md", 1, true], [".gitignore", 1, true],
+    ];
+    let lastChild = 206, lastGc = 0;
+    const items = ITEMS.map(([label, depth, tagged, kind], i) => {
+      const y = rowY(i);
+      const g = G(s, 0, 0);
+      let elbow = null;
+      if (kind === "line") {
+        L(g, 596, y - 21, 596, y + 5, "hair-s");
+        T(g, 610, y, label, "t-mono mut", 24);
+      } else if (depth === 1) {
+        elbow = P(s, `M${TR} ${lastChild} V${y - 8} H${TR + 18}`, "hair-s");
+        lastChild = y - 8;
+        T(g, TX + 40, y, label, "t-mono", 24);
+        if (label === "docs/context/") lastGc = y + 8;
+      } else {
+        elbow = P(s, `M${GR} ${lastGc} V${y - 8} H${GR + 18}`, "hair-s");
+        lastGc = y - 8;
+        T(g, TX + 80, y, label, "t-mono", 24);
+      }
+      const tag = tagged ? T(s, 1160, y, "created", "t-mono ink2", 24, "end") : null;
+      gsap.set(g, { opacity: 0 });
+      if (elbow) gsap.set(elbow, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+      if (tag) gsap.set(tag, { opacity: 0 });
+      return { g, elbow, tag };
+    });
+    // what the skill fills in after the scaffold
+    const DX = 862;
+    const conv = [T(s, DX, rowY(4), "[test command]", "t-mono mut", 24), T(s, DX, rowY(4), "npm test", "t-mono-b", 24)];
+    const stat = T(s, DX, rowY(6), "Start here: the first goal", "t-sans", 24);
+    const statBox = R(s, DX - 12, rowY(6) - 27, Math.ceil(stat.getComputedTextLength()) + 24, 38, "acc");
+    statBox.setAttribute("pathLength", 1);
+    gsap.set(conv.concat([stat]), { opacity: 0 });
+    gsap.set(statBox, { strokeDasharray: "1 1", strokeDashoffset: 1 });
+
+    // the note: the scaffold merges, it never overwrites; a bracket ties it to the whole folder
+    const note = [T(s, 40, 556, "merges into files you already have,", "t-sans ink2", 24), T(s, 40, 586, "never overwrites", "t-sans ink2", 24)];
+    const noteX = 40 + Math.ceil(note[0].getComputedTextLength()) + 14;
+    const BX = 506;
+    const bracket = P(s, `M${BX + 9} 172 H${BX} V${rowY(9) + 8} H${BX + 9}`, "ln-2");
+    const noteLead = L(s, noteX, 548, BX - 12, 548, "ln-2");
+    const noteHead = head(s, BX - 4, 548, 0, 9, "ahm");
+    gsap.set(note.concat([noteHead]), { opacity: 0 });
+    gsap.set([noteLead, bracket], { strokeDasharray: "1 1", strokeDashoffset: 1 });
+
+    // ---- the commit ----
+    L(s, 40, 626, 1160, 626, "hair-s");
+    const cLine = [L(s, 52, 646, 52, 668, "ln-2"), L(s, 52, 684, 52, 706, "ln-2")];
+    const cRing = S("circle", { cx: 52, cy: 676, r: 7, class: "st-ring" }, s);
+    const cMsg = T(s, 80, 684, "chore: initialize project with Agent Blueprint", "t-mono", 24);
+    gsap.set([cRing, cMsg].concat(cLine), { opacity: 0 });
+
+    // ---- the run ----
+    // install, then the offer (the offer box holds the accent)
+    draw(tl, inTick, 0.3, 0.32, { ease: "power2.out" });
+    draw(tl, offLead, 0.6, 0.25, { ease: "power2.out" });
+    tl.to(offBox, { strokeDashoffset: 0, duration: 0.55, ease: "expo.out" }, 0.7);
+    up(offTx, 0.8, 0.4, 6);
+    // the call lands in the session; the accent moves to it
+    tl.to(SF, { opacity: 1, duration: 0.4, ease: "power2.out" }, 1.5);
+    tl.to(offBox, { stroke: C.hairS, strokeWidth: 1, duration: 0.3 }, 1.65);
+    tl.set(call, { fill: C.accentInk }, 1.65);
+    up(call, 1.65, 0.4);
+    tl.to(call, { fill: C.ink, duration: 0.3, ease: "power2.out" }, 2.35);
+    up(other, 1.95, 0.4);
+    // the folder fills, one file at a time; "created" carries the accent as each lands
+    tl.to(empty, { opacity: 0, duration: 0.2 }, 2.35);
+    const land = [[0, 2.45], [1, 2.9], [2, 3.15], [3, 3.5], [4, 3.72], [5, 3.84], [6, 3.96], [7, 4.08], [8, 4.5], [9, 4.95]];
+    let prevTag = null;
+    land.forEach(([i, t]) => {
+      const it = items[i];
+      if (it.elbow) draw(tl, it.elbow, t, 0.3, { ease: "power2.out" });
+      up(it.g, t + 0.06, 0.35, 0);
+      tl.fromTo(it.g, { x: -10 }, { x: 0, duration: 0.4, ease: "expo.out", immediateRender: false }, t + 0.06);
+      if (it.tag) {
+        tl.fromTo(it.tag, { opacity: 0, fill: C.accentInk }, { opacity: 1, duration: 0.3, ease: "power2.out", immediateRender: false }, t + 0.12);
+        if (prevTag) tl.to(prevTag, { fill: C.ink2, duration: 0.3 }, t + 0.12);
+        prevTag = it.tag;
+      }
+    });
+    tl.to(prevTag, { fill: C.ink2, duration: 0.3 }, 5.5);
+    up(note, 5.5, 0.45);
+    draw(tl, bracket, 5.55, 0.5, { ease: "power2.inOut" });
+    draw(tl, noteLead, 5.75, 0.3, { ease: "power2.out" });
+    tl.to(noteHead, { opacity: 1, duration: 0.12 }, 6.0);
+    // CONVENTIONS.md gets the test command; STATUS.md says where to start
+    up(conv[0], 6.15, 0.3, 0);
+    tl.to(conv[0], { opacity: 0, duration: 0.15, ease: "power2.in" }, 6.55);
+    tl.fromTo(conv[1], { opacity: 0, fill: C.accentInk }, { opacity: 1, duration: 0.25, ease: "power2.out", immediateRender: false }, 6.72);
+    tl.to(conv[1], { fill: C.ink, duration: 0.3 }, 7.05);
+    tl.to(statBox, { strokeDashoffset: 0, duration: 0.5, ease: "expo.out" }, 7.05);
+    up(stat, 7.15, 0.35, 0);
+    // the scaffold is committed; the accent moves to the commit
+    tl.to(statBox, { opacity: 0, duration: 0.25 }, 7.75);
+    tl.to([cRing].concat(cLine), { opacity: 1, duration: 0.25 }, 7.75);
+    tl.set(cRing, { fill: C.accent, stroke: C.accent }, 7.75);
+    up(cMsg, 7.85, 0.4);
+    // next: ab-brainstorming
+    tl.to(cRing, { fill: C.bg, stroke: C.ink, duration: 0.3 }, 8.5);
+    up(next, 8.5, 0.4);
+    tl.set(nextSk, { fill: C.accentInk }, 8.5);
+
+    // ---- back to the opening frame ----
+    const R0 = 9.25;
+    const leaving = [call, next, cRing, cMsg, stat, noteHead].concat(other, note, cLine, offTx, [conv[1]], items.map((x) => x.g), items.filter((x) => x.tag).map((x) => x.tag));
+    out(leaving, R0, 0.35);
+    const drawn = items.filter((x) => x.elbow).map((x) => x.elbow).concat([offBox, offLead, inTick, noteLead, bracket]);
+    out(drawn, R0, 0.35);
+    tl.set(drawn, { strokeDashoffset: 1, opacity: 1 }, R0 + 0.4);
+    tl.set(offBox, { stroke: C.accent, strokeWidth: 1.5 }, R0 + 0.4);
+    tl.set(nextSk, { fill: C.ink }, R0 + 0.4);
+    tl.set(statBox, { strokeDashoffset: 1, opacity: 1 }, R0 + 0.4);
+    tl.to(SF, { opacity: 0.4, duration: 0.4, ease: "power2.inOut" }, R0 + 0.1);
+    tl.to(empty, { opacity: 1, duration: 0.3, ease: "power2.out" }, R0 + 0.3);
+    window.__timelines["main"] = tl;
+  }
+  DS.fontsReady().then(build);
+})();
+</script>
+</body>
+</html>

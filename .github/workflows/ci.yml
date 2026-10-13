@@ -28,22 +28,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Direct routes and recorded-copy migrations (stub tools, isolated homes)
+        run: python3 -m unittest tests/gates/test_install.py tests/gates/test_install_failures.py tests/gates/test_pi_source.py -v
+
       - name: Dry run reports absent tools
         run: |
+          INSTALL_HOME=$(mktemp -d)
+          trap 'rm -rf "$INSTALL_HOME"' EXIT
           set +e
-          bash install.sh --dry-run 2>&1 | tee /tmp/dry-run.log
+          HOME="$INSTALL_HOME" PATH=/usr/bin:/bin bash install.sh --dry-run 2>&1 | tee /tmp/dry-run.log
+          code=${PIPESTATUS[0]}
           set -e
+          test "$code" -eq 1
           grep -q "not installed" /tmp/dry-run.log
           grep -q -- "--copy-dir" /tmp/dry-run.log
 
       - name: Copy install into a skills folder
         run: |
-          bash install.sh --copy-dir /tmp/ab-skills
-          SKILLS=$(find /tmp/ab-skills -mindepth 2 -maxdepth 2 -name 'SKILL.md' | wc -l | tr -d ' ')
+          INSTALL_HOME=$(mktemp -d)
+          COPY_ROOT=$(mktemp -d)
+          trap 'rm -rf "$INSTALL_HOME" "$COPY_ROOT"' EXIT
+          HOME="$INSTALL_HOME" PATH=/usr/bin:/bin bash install.sh --copy-dir "$COPY_ROOT"
+          SKILLS=$(find "$COPY_ROOT" -mindepth 2 -maxdepth 2 -name 'SKILL.md' | wc -l | tr -d ' ')
+          EXPECTED=$(find skills -mindepth 2 -maxdepth 2 -name 'SKILL.md' | wc -l | tr -d ' ')
           echo "Skills: $SKILLS"
-          test "$SKILLS" -ge 53 || { echo "Expected >= 53 skills, got $SKILLS"; exit 1; }
-          test -f /tmp/ab-skills/.agent-blueprint-install.json
-          grep -q '"ab-quick-fix"' /tmp/ab-skills/.agent-blueprint-install.json
+          test "$SKILLS" -eq "$EXPECTED"
+          test -f "$COPY_ROOT/.agent-blueprint-install.json"
+          grep -q '"ab-quick-fix"' "$COPY_ROOT/.agent-blueprint-install.json"
+          test ! -e "$INSTALL_HOME/.agents/skills"
 
       - name: Scaffold a project
         run: |

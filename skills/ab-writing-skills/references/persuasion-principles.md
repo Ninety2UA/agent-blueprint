@@ -23,7 +23,7 @@ LLMs respond to the same persuasion principles as humans. Understanding this psy
 
 **Example:**
 ```markdown
-✅ Write code before test? Delete it. Start over. No exceptions.
+✅ Discard only code the model wrote in this task before its test, unless the user says to keep it. Keep pre-existing and user-written code.
 ❌ Consider writing tests first when feasible.
 ```
 

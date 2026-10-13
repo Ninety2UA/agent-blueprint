@@ -51,7 +51,7 @@ Each of these loses work or hands on broken code, so stop if you are about to:
 Every finish does these:
 - Verify tests before offering options
 - Run the plan audit before the menu; NO PLAN is a report, not a block
-- Present exactly 3 options
+- Honor the user's already stated merge, PR or keep choice after the gates; otherwise present the 3 options
 - List untracked and modified files before asking for the typed discard confirmation
 - Clean up worktree for Option 1 and the discard path only
 

@@ -15,6 +15,9 @@ One committed manifest per tool points at the shared skills/ tree. Rule ids:
   hooks-json        no hooks/hooks.json: Grok loads that conventional path from
                     any plugin and would run handlers written for another host.
   hook-files        every hook file a manifest declares exists.
+  interface-assets  interface asset paths start with ./, name existing files,
+                    and stay inside the repository after resolving symlinks.
+  codex-category    Codex's plugin and marketplace use a supported category.
 
 Allowlist: the "manifests" section of scripts/portability-allowlist.json, with
 the same shrink-only rules as check-portability.py (stale entries fail).
@@ -36,6 +39,9 @@ MARKETPLACES = [".claude-plugin/marketplace.json", ".agents/plugins/marketplace.
 PACKAGE = "package.json"
 NEEDS_SKILLS_KEY = [".codex-plugin/plugin.json", ".grok-plugin/plugin.json"]
 ALLOWLIST_SECTION = "manifests"
+# U6's sourced subset, not the full submission category catalog.
+CODEX_CATEGORIES = {"Developer Tools"}
+INTERFACE_ASSETS = ("composerIcon", "composerIconDark", "logo", "logoDark")
 
 
 def _load_portability_gate():
@@ -68,6 +74,33 @@ def skill_metadata_versions(repo):
         if ver is not None:
             out[os.path.basename(skill_dir)] = str(ver)
     return out
+
+
+def check_interface_assets(repo, rel_path, doc, add):
+    interface = doc.get("interface")
+    if not isinstance(interface, dict):
+        return
+    assets = [(key, interface[key]) for key in INTERFACE_ASSETS if key in interface]
+    if "screenshots" in interface:
+        screenshots = interface["screenshots"]
+        if not isinstance(screenshots, list):
+            add(rel_path, "interface-assets", "interface.screenshots must be a list of ./ file paths")
+        else:
+            assets.extend(("screenshots[%d]" % i, path) for i, path in enumerate(screenshots))
+    root = os.path.realpath(repo)
+    for key, path in assets:
+        label = "interface.%s" % key
+        if not isinstance(path, str) or not path.startswith("./"):
+            add(rel_path, "interface-assets", "%s path %r must start with ./" % (label, path))
+            continue
+        try:
+            target = os.path.realpath(os.path.join(root, path))
+            if os.path.commonpath([root, target]) != root:
+                add(rel_path, "interface-assets", "%s path %r must stay inside the repository" % (label, path))
+            elif not os.path.isfile(target):
+                add(rel_path, "interface-assets", "%s path %r does not name an existing file" % (label, path))
+        except (OSError, ValueError) as exc:
+            add(rel_path, "interface-assets", "%s path %r cannot be resolved (%s)" % (label, path, exc))
 
 
 def collect(repo):
@@ -152,6 +185,7 @@ def collect(repo):
             "files by path instead (KTD11)")
 
     for rel_path, doc in docs.items():
+        check_interface_assets(repo, rel_path, doc, add)
         if not isinstance(doc, dict) or "hooks" not in doc:
             continue
         declared = doc["hooks"]
@@ -159,6 +193,20 @@ def collect(repo):
         for hp in paths:
             if not os.path.isfile(os.path.normpath(os.path.join(repo, hp))):
                 add(rel_path, "hook-files", "declared hook file %s does not exist" % hp)
+
+    codex = ".codex-plugin/plugin.json"
+    marketplace = ".agents/plugins/marketplace.json"
+    categories = []
+    if codex in docs:
+        interface = docs[codex].get("interface")
+        categories.append((codex, interface.get("category") if isinstance(interface, dict) else None))
+    for entry in (docs.get(marketplace) or {}).get("plugins") or []:
+        if isinstance(entry, dict):
+            categories.append((marketplace, entry.get("category")))
+    for rel_path, category in categories:
+        if not isinstance(category, str) or category not in CODEX_CATEGORIES:
+            add(rel_path, "codex-category", "category %r is unsupported; expected one of %s"
+                % (category, ", ".join(sorted(CODEX_CATEGORIES))))
     return found
 
 

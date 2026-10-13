@@ -15,9 +15,13 @@
 //   parsePhases(markdown)     [{ slug, title, skills: [{ name, path, summary, when }] }] from the
 //                             "Skills reference" tables; title is the heading without " phase",
 //                             slug its anchor ("Session management" -> "session-management").
-//   parseInstall(markdown)    { cloneCommand, installCommand, tools } from the "Install" section;
-//                             tools: [{ name, id, route, commands, hostDoc, naming: { syntax, example },
+//   parseInstall(markdown)    { allToolsCommand, tools } from the "Install" section; allToolsCommand
+//                             is the first fenced block under "Set up every tool at once" (the clone,
+//                             then the installer) with its lines joined by " && ", tools:
+//                             [{ name, id, route, commands, hostDoc, section, naming: { syntax, example },
 //                             support: { hooks, helpers, manualOnly } }] in install-table order.
+//                             `section` is { heading, slug } of the "Install" subsection whose heading starts
+//                             with the tool's name ("Codex in the CLI and the app"), or null.
 //                             `commands` are the route cell's code spans that contain a space (paths
 //                             and config keys have none). A naming cell without an example gets one
 //                             built from the syntax and the skill another row's example names.
@@ -175,15 +179,22 @@ function namingFor(cell, exampleSkill, where) {
   throw new Error(`README "${where}": table "Tool | How to name a skill" cell "${cell}" gives no syntax or example`);
 }
 
+function toolSection(subs, name) {
+  const found = subs.find((s) => s.text.startsWith(`${name} `));
+  return found ? { heading: found.text, slug: found.slug } : null;
+}
+
 export function parseInstall(markdown) {
   const install = getSection(markdown, 'Install');
+  const subs = subsections(markdown, install);
   const sub = (title) => {
-    const found = subsections(markdown, install).find((s) => s.text === title);
+    const found = subs.find((s) => s.text === title);
     if (!found) throw new Error(`README "Install": section "${title}" not found`);
     return found;
   };
-  const cloneCommand = firstFence(sub('1. Get the code').lines, 'Install > 1. Get the code');
-  const installCommand = firstFence(sub('2. Install for the tools you use').lines, 'Install > 2. Install for the tools you use');
+  const allToolsCommand = firstFence(sub('Set up every tool at once').lines, 'Install > Set up every tool at once')
+    .split('\n')
+    .join(' && ');
 
   const where = 'Install';
   const routes = parseTable(install.lines, ['Tool', 'Command', 'Install route', 'Support note'], where);
@@ -211,11 +222,12 @@ export function parseInstall(markdown) {
       route,
       commands: codeSpans(route).filter((span) => /\s/.test(span)),
       hostDoc: parseLink(note, where).href,
+      section: toolSection(subs, name),
       naming: namingFor(nameCell, exampleSkill, where),
       support: { hooks, helpers, manualOnly },
     };
   });
-  return { cloneCommand, installCommand, tools };
+  return { allToolsCommand, tools };
 }
 
 export function parseHelpers(markdown) {

@@ -1,0 +1,1 @@
+{{SKILL_REF}} Add count_words(text) to src/notes/textutil.py, test-first. It returns the number of whitespace-separated words, or zero for empty or whitespace-only text. Write a failing unittest under tests/ before implementing this independent function, then run `python3 -m unittest discover -s tests` until the suite passes.

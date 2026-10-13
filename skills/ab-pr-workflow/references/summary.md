@@ -11,7 +11,7 @@ Loaded on demand from SKILL.md when checking which step a situation calls for, o
 | Received feedback | Read all → Triage → Resolve → Commit → Re-run checks → Push |
 | Single comment to fix | One pr-comment-resolver helper |
 | Multiple independent comments | Parallel pr-comment-resolver helpers |
-| Ready to merge | Base CI green? → Rebase → Test → Merge → Delete branch |
+| Ready to merge | Base CI green? → Update without unapproved history rewriting → Test → Merge → Delete branch |
 | Runner-driven run, or body only | Checks and plan audit → Body at `.agent-blueprint/run/pr-body.md` → Scan → Stop; the ship runner publishes |
 
 ## Common Mistakes

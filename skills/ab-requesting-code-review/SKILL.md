@@ -2,7 +2,7 @@
 name: ab-requesting-code-review
 description: "Runs a fast single-reviewer code review: picks a guarded review range (one task's commit, a whole branch from its merge base, or the working tree in no-commit mode), hands it with the plan to the code-reviewer helper, and acts on the Critical, Important and Suggestion findings it returns. Use when a task or bug fix is finished, before committing or merging, when stuck, or when the user asks to review or check recent changes. Not for a multi-perspective or thorough review, or a change that could fail silently or touches auth, money, data or a public contract (ab-review-swarm)."
 metadata:
-  version: "4.0.2"
+  version: "4.1.0"
 ---
 
 # Requesting Code Review
@@ -11,7 +11,7 @@ The outcome is one well-defined range of changes reviewed by the code-reviewer h
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-requesting-code-review", "version": "4.0.2", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-requesting-code-review.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-requesting-code-review", "version": "4.1.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-requesting-code-review.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## When to review
 
@@ -33,7 +33,7 @@ git merge-base --is-ancestor "$BASE_SHA" "$HEAD_SHA" && [ -n "$(git rev-list "$B
 
 Use the merge base for a branch, not bare `origin/main`: once main moves past your branch point, its new files show up as phantom deletions in the diff. If the guard refuses, fix the range; an empty or unrelated diff produces a review of nothing.
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 Here that means: set `BASE_SHA=$(git merge-base origin/main HEAD)` and `HEAD_SHA` to `working tree`, and skip the guard, since the changes have no commits yet. The request's Range section then has the reviewer diff the working tree against the base and read every untracked file, so nothing the session wrote is left out.
 

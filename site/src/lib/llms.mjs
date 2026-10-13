@@ -15,7 +15,7 @@ import { tutorialsOrder } from './tutorials-order.mjs';
 
 // What each section holds, keyed by its header label. A section missing here is listed without a note.
 const SECTION_NOTES = {
-  Home: 'What Agent Blueprint is, the loop from idea to pull request, the film and the install command',
+  Home: 'What Agent Blueprint is, the loop from idea to pull request, the film and the install commands',
   Skills: 'Every skill by phase with its summary, and the helper prompts the skills start',
   Docs: 'Install in each coding CLI, how the blueprint works, customization, updates and the upgrade from v3',
   Tutorials: 'Walkthroughs that take a feature through the skills, step by step',

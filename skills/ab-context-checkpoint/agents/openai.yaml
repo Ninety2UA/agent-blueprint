@@ -1,0 +1,3 @@
+interface:
+  display_name: "Context Checkpoint"
+  short_description: "Save a recovery point partway through a session"

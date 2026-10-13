@@ -1,23 +1,24 @@
 # Agent Blueprint on Pi
 
-Binary `pi`; docs only (the Pi docs at release v0.87.1, read on 2026-09-28): Pi is not installed on the maintainer's machine.
+Binary `pi`; facts from the Pi docs at release v0.87.1, read on 2026-09-28, and the install checked against Pi 0.73.1 on 2026-10-12.
 
 ## Install
 
-One route: one copy of `skills/` in `~/.agents/skills`, which Pi scans recursively. `bash install.sh` writes it, and the same copy serves Codex, Grok Build, Cursor CLI and Amp. On a machine with Claude Code and Cursor CLI or Amp, it copies the skills into `~/.pi/agent/skills` instead, which only Pi reads:
+One route: Pi's package manager, straight from GitHub. `package.json` carries a `pi` key that points at `./skills`:
 
 ```bash
-git clone https://github.com/Ninety2UA/agent-blueprint.git
-bash agent-blueprint/install.sh --only pi
+pi install git:github.com/Ninety2UA/agent-blueprint
 ```
 
-Pi's package manager also accepts this repository, since `package.json` carries a `pi` key pointing at `./skills` (`pi install git:github.com/Ninety2UA/agent-blueprint` after the rename, `pi install ./agent-blueprint` from a checkout). Do not combine it with the copy: on a name collision Pi keeps the first skill found and warns. A project-level install (`-l`) is written to `.pi/settings.json` and loads only after you trust the project; the global copy needs no trust step.
+`bash install.sh` runs the same command, or `pi install <checkout>` with the clone under `--local`, and on a re-run, once Pi's own install succeeds, removes the `~/.pi/agent/skills` copy that 4.0 recorded, since Pi keeps the first skill of a name it finds and warns about the rest. A project-level install (`-l`) is written to `.pi/settings.json` and loads only after you trust the project; the global install needs no trust step.
 
 Recommended add-ons, both from npm: `pi install npm:pi-subagents` gives Pi a `subagent` tool, without which every Helper step runs inline, and `pi install npm:pi-ask-user` gives it a blocking question tool.
 
 What covers what: an `amp skill add` into a project writes `.agents/skills/`, which Pi also reads. A Claude Code install covers nothing here: Pi reads neither `.claude/skills` nor the Claude Code plugin cache.
 
-Check: `pi list` shows installed packages; a listing command for skills copied into `~/.agents/skills` is not verified. Update: re-run `bash install.sh`, or the ab-plugin-update skill; `pi update --extensions` refreshes packages. Docs: <https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/skills.md>.
+Check: `pi list` shows one agent-blueprint package. Update: `pi update --extensions`, or the ab-plugin-update skill. Docs: <https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/skills.md>.
+
+Set up a project: `/skill:ab-project-start` in a session. The README's [Set up your project](../../README.md#set-up-your-project) says what it creates and when to run it.
 
 ## Invoke a skill
 
@@ -46,7 +47,7 @@ Run from the project root, with the path to the skill folder as installed (a che
 bash /path/to/agent-blueprint/skills/ab-ship-pipeline/scripts/run.sh --host pi --allow-unguarded "<feature>"
 ```
 
-Posture: `pi -p --approve`. `-p` prints the final assistant text and exits non-zero on an error or abort; `--approve` trusts the project's resources, since headless mode cannot prompt. Pi has no permission system and no sandbox (it "does not ask for approval before every tool call"), so nothing blocks a destructive command; the docs advise a container. The runner therefore requires `--allow-unguarded`, which means: the agent holds your git and `gh` credentials for the whole run, and the runner's secret scan and publish checks cannot contain what it does before it publishes. Run it in a throwaway clone or a container. Per-iteration timeout: 3600 s. Preflight: Pi has no auth status command; a provider key must be configured (run `pi` once). This row of the adapter table is unverified, since Pi is not installed on the maintainer's machine. Docs: <https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/security.md>.
+Posture: `pi -p --approve`. `-p` prints the final assistant text and exits non-zero on an error or abort; `--approve` trusts the project's resources, since headless mode cannot prompt. Pi has no permission system and no sandbox (it "does not ask for approval before every tool call"), so nothing blocks a destructive command; the docs advise a container. The runner therefore requires `--allow-unguarded`, which means: the agent holds your git and `gh` credentials for the whole run, and the runner's secret scan and publish checks cannot contain what it does before it publishes. Run it in a throwaway clone or a container. Per-iteration timeout: 3600 s. Preflight: Pi has no auth status command; a provider key must be configured (run `pi` once). This row of the adapter table follows the vendor docs. Docs: <https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/security.md>.
 
 ## Privacy
 
@@ -61,21 +62,10 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version not installed, last cell 2026-10-04.
+Install: the v4.1.0 install record ([docs/releases/v4.1.0-installs.md](../releases/v4.1.0-installs.md)) shows this tool installing Agent Blueprint by its own route and listing each skill once.
+
+From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-smoke.md)), host version unknown, last cell 2026-10-12.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | not-installed | 0s | pi not on PATH |
-| `canary` | not-installed | 0s | pi not on PATH |
-| `hooks` | not-installed | 0s | pi not on PATH |
-| `manual-only` | not-installed | 0s | pi not on PATH |
-| `build` | not-installed | 0s | pi not on PATH |
-| `helpers-off` | not-installed | 0s | pi not on PATH |
-| `effort` | not-installed | 0s | pi not on PATH |
-| `review` | not-installed | 0s | pi not on PATH |
-| `debug` | not-installed | 0s | pi not on PATH |
-| `ship` | not-installed | 0s | pi not on PATH |
-| `team` | not-installed | 0s | pi not on PATH |
-| `upgrade` | not-installed | 0s | pi not on PATH |
-
-The tool is not installed on the build machine, so nothing ran; the adapter row in `hosts.sh` follows the vendor docs and is unverified.
+| `hooks` | n/a | 0s | no hook path on this host |

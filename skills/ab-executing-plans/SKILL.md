@@ -2,7 +2,7 @@
 name: ab-executing-plans
 description: "Executes a written plan in this session in batches of three tasks: each task is followed step by step, verified, committed and ticked in a progress file; each batch ends with a report and a checkpoint for the user's feedback; a whole-branch review closes the run. Reads plans that use v3 skill names. Use when the user wants to work through a plan with human review between batches. Not for parallel or team work (ab-orchestrate) or fully autonomous runs (ab-autonomous-loop)."
 metadata:
-  version: "4.0.2"
+  version: "4.1.0"
 ---
 
 # Executing Plans
@@ -15,7 +15,7 @@ Announce at start: "I'm using the ab-executing-plans skill to implement this pla
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-executing-plans", "version": "4.0.2", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-executing-plans.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-executing-plans", "version": "4.1.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-executing-plans.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 Read the plan and review it critically; raise concerns before starting (§ When to stop and ask). A skill named by its v3 name, with or without a leading slash (such as `executing-plans` or `writing-plans`), is the v4 skill in the second column of `references/v4-skill-names.tsv`.
 
@@ -29,13 +29,13 @@ Prompt: `references/agents/pattern-mapper.md`. Inputs: the plan path, the codeba
 
 **Tracking tasks.** The plan file's checkboxes are the record of progress: tick each one when its task is done and verified, so another session or another tool can continue from there. A host task list, if you have one, may mirror them, but it never replaces them.
 
-Here they live in `.agent-blueprint/plans/<plan-basename>.progress.md`, one box per task (`references/progress-file.md`); tick the plan's own boxes too if it has them. An existing file keeps its ticks; an interrupted run leaves it for the STATE.md handoff (ab-session-continuity).
+Keep progress in `.agent-blueprint/plans/<plan-basename>.progress.md`; follow `references/progress-file.md` for creation, ticking and resuming.
 
 ## Step 2: Execute a batch
 
 A batch is the next three tasks. Work in an isolated workspace (ab-using-git-worktrees); on main or master, branch first unless the user said to work there. For each task, from the first unticked box: follow its steps exactly, run its verifications, commit, tick the box (`- [ ]` → `- [x]`), and record interpretive choices (`references/assumption-tracking.md`).
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 A task that touches a framework or library API (forms, routing, data fetching, hooks, ORM queries, config) uses the ab-source-driven-development skill: detect the version, fetch the docs page, follow its pattern, cite the URL.
 
@@ -55,13 +55,13 @@ Apply the feedback and run the next batch until every box is ticked. Return to S
 
 ## Decision Boundary
 
-A decision in a must-ask category of the project instructions (new tables or schema changes, a framework switch, a public API contract, auth logic, new environment variables) stops here for the user. Outside those, a choice you can detect and roll back is decided, recorded under `### Assumptions` and continued; the rest is asked. Claims that something is impossible or blocked need evidence. The full rule, which other skills cite, and examples: `references/decision-boundary.md`.
+An approval already given in the user's own messages satisfies that action's ask-first rule. Destructive actions and pushes follow `references/decision-boundary.md` § The rule. A decision in an unapproved must-ask category of the project instructions (new tables or schema changes, a framework switch, a public API contract, auth logic, new environment variables) stops here for the user. Outside those, a choice you can detect and roll back is decided, recorded under `### Assumptions` and continued; the rest is asked. Claims that something is impossible or blocked need evidence. The full rule, which other skills cite, and examples: `references/decision-boundary.md`.
 
 Fix what the current task caused or needs; everything else goes to `BACKLOG.md`. After three failed fixes on one issue, list it under `### Deferred Issues` in the batch report and move on (`references/deviations.md`).
 
 ## When to stop and ask
 
-Stop at a blocker (a missing dependency, a failing test, an unclear instruction), a gap that keeps the plan from starting, repeated verification failures, or a must-ask decision; a guess builds what nobody asked for. After five read-only steps in a row, act (`references/staying-on-course.md`).
+Stop at a blocker (a missing dependency, a failing test, an unclear instruction), a gap that keeps the plan from starting, repeated verification failures, or a must-ask decision; a guess builds what nobody asked for. After five read-only steps, apply the scoped guard in `references/staying-on-course.md`.
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 

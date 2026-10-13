@@ -1,14 +1,15 @@
 ---
 // The Kit page's head: breadcrumbs, the title and the sheet index, a small title block that is
 // also the page's table of contents.
-import { INDEX } from './kit-data';
+import { numberWord } from '../number-word';
+import { INDEX, LOOPS } from './kit-data';
 ---
 <section class="kit-head" aria-labelledby="kit-h">
   <div class="wrap kit-head-in">
     <div class="kh-l">
       <nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">Home</a></li><li><span aria-current="page">Kit</span></li></ol></nav>
       <h1 id="kit-h" class="h-display">Media kit.</h1>
-      <p class="lede">The film, four loops, the README header, the mark and a short description, for anyone writing about Agent Blueprint or adding it to a README.</p>
+      <p class="lede">The film, {numberWord(LOOPS.length)} loops, the README header, the mark and a short description, for anyone writing about Agent Blueprint or adding it to a README.</p>
     </div>
     <nav class="kit-index" aria-label="Sheets on this page">
       <p class="ki-h"><span>Sheet</span><span>Contents</span><span>Files</span></p>

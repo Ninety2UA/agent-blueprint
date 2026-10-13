@@ -27,6 +27,9 @@ Every rule below has an id; a violation prints "path: [rule-id] message".
   manual-only        a manual-only skill (disable-model-invocation: true) has
                      agents/openai.yaml with allow_implicit_invocation: false and
                      the reverse; no other skill references it (R10, KTD12).
+  openai-metadata    every skill has agents/openai.yaml with only display fields
+                     and the optional invocation policy; display names are unique
+                     and at most 30 characters, descriptions are 25-60 characters.
   hermes-pattern     no text Hermes treats as prompt injection in a context file
                      or as a critical finding in a skill (blocked or quarantined).
   html-comment       no HTML comment in instruction, skill or prompt files; Hermes
@@ -57,6 +60,8 @@ import sys
 
 SPEC_KEYS = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
 EXTRA_KEYS = {"argument-hint", "disable-model-invocation"}
+OPENAI_KEYS = {"interface": {"display_name", "short_description"},
+               "policy": {"allow_implicit_invocation"}}
 SIZE_CAP = 8000
 DESCRIPTION_CAP = 1024
 NAME_CAP = 64
@@ -430,19 +435,101 @@ def check_shared(repo, add):
         add(path, rule, msg)
 
 
+def openai_scalar(value):
+    """The single-line strings and booleans used in openai.yaml, without PyYAML.
+
+    Accept plain, single-quoted and JSON-style double-quoted strings and comments;
+    reject complex YAML instead of silently accepting a different structure.
+    """
+    if value.startswith('"'):
+        scalar, end = json.JSONDecoder().raw_decode(value)
+        tail = value[end:]
+    elif value.startswith("'"):
+        match = re.match(r"'((?:[^']|'')*)'", value)
+        if not match:
+            raise ValueError("unclosed single-quoted string")
+        scalar, tail = match.group(1).replace("''", "'"), value[match.end():]
+    else:
+        scalar = re.split(r"\s+#", value, maxsplit=1)[0].rstrip()
+        if (not scalar or scalar[0] in "[]{}&*!|>@`#%" or re.search(r":(?:\s|$)", scalar)
+                or re.match(r"[-?](?:\s|$)", scalar)):
+            raise ValueError("expected a single-line string or boolean")
+        if scalar in ("true", "false"):
+            return scalar == "true"
+        if scalar.lower() in ("null", "~", "true", "false", "yes", "no", "on", "off") or re.match(r"^[+-]?(?:\d|\.\d)", scalar):
+            raise ValueError("quote non-string YAML scalars used as display text")
+        return scalar
+    if tail.strip() and not re.fullmatch(r"\s+#.*", tail):
+        raise ValueError("unexpected text after quoted string")
+    return scalar
+
+
+def parse_openai_metadata(text):
+    """Parse the repository's two-level YAML mapping; fail on unknown/duplicate keys."""
+    data, section = {}, None
+    for number, line in enumerate(text.splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        match = re.fullmatch(r"( *)([A-Za-z_][A-Za-z0-9_-]*):(?:[ ]+(.*))?", line)
+        if not match:
+            return None, "line %d: expected a YAML mapping entry" % number
+        indent, key, value = len(match.group(1)), match.group(2), (match.group(3) or "").strip()
+        if indent == 0:
+            if key not in OPENAI_KEYS:
+                return None, "line %d: unknown key %s" % (number, key)
+            if key in data:
+                return None, "line %d: duplicate key %s" % (number, key)
+            if value and not value.startswith("#"):
+                return None, "line %d: %s must be a mapping" % (number, key)
+            section = key
+            data[section] = {}
+        elif indent == 2 and section:
+            if key not in OPENAI_KEYS[section]:
+                return None, "line %d: unknown key %s.%s" % (number, section, key)
+            if key in data[section]:
+                return None, "line %d: duplicate key %s.%s" % (number, section, key)
+            try:
+                data[section][key] = openai_scalar(value)
+            except ValueError as exc:
+                return None, "line %d: %s" % (number, exc)
+        else:
+            return None, "line %d: expected a field indented by two spaces under interface or policy" % number
+    return data, None
+
+
+def check_openai_metadata(dirs, add):
+    names = {}
+    for skill_dir in dirs:
+        path = os.path.join(skill_dir, "agents", "openai.yaml")
+        if not os.path.isfile(path):
+            add(path, "openai-metadata", "agents/openai.yaml is missing")
+            continue
+        data, err = parse_openai_metadata(read(path))
+        if err:
+            add(path, "openai-metadata", err)
+            continue
+        interface = data.get("interface", {})
+        name = interface.get("display_name")
+        if not isinstance(name, str) or not name.strip() or len(name) > 30:
+            add(path, "openai-metadata", "interface.display_name must be a nonempty string of at most 30 characters")
+        elif name in names:
+            add(path, "openai-metadata", "duplicate display_name %r; also used by %s" % (name, names[name]))
+        else:
+            names[name] = os.path.basename(skill_dir)
+        desc = interface.get("short_description")
+        if not isinstance(desc, str) or not desc.strip() or not 25 <= len(desc) <= 60:
+            add(path, "openai-metadata", "interface.short_description must be a string of 25-60 characters")
+        policy = data.get("policy", {})
+        if "allow_implicit_invocation" in policy and not isinstance(policy["allow_implicit_invocation"], bool):
+            add(path, "openai-metadata", "policy.allow_implicit_invocation must be a boolean")
+
+
 def openai_implicit_off(skill_dir):
     p = os.path.join(skill_dir, "agents", "openai.yaml")
     if not os.path.isfile(p):
         return None
-    text = read(p)
-    yaml = load_yaml()
-    if yaml is not None:
-        try:
-            data = yaml.safe_load(text) or {}
-            return (data.get("policy") or {}).get("allow_implicit_invocation") is False
-        except yaml.YAMLError:
-            return False
-    return bool(re.search(r"^\s+allow_implicit_invocation:\s*false\s*$", text, re.MULTILINE))
+    data, err = parse_openai_metadata(read(p))
+    return err is None and data.get("policy", {}).get("allow_implicit_invocation") is False
 
 
 def check_manual_only(dirs, fm_by_skill, add):
@@ -498,6 +585,7 @@ def collect(repo):
     check_instruction_length(repo, add)
     check_stray_skill_md(repo, add)
     check_shared(repo, add)
+    check_openai_metadata(dirs, add)
     check_manual_only(dirs, fm_by_skill, add)
     return found, len(dirs)
 

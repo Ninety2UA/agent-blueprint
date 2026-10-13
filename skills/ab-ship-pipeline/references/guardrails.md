@@ -9,7 +9,7 @@ Loaded on demand from SKILL.md when deciding whether a request fits this skill, 
 - **First feature in a new codebase** — conventions aren't established yet; use ab-build-pipeline to set patterns with human oversight
 - **Database migrations** — a person should read a migration before it runs, because a bad one can lose data that no revert brings back; use ab-build-pipeline with `--deploy`
 
-A must-ask category from the project instructions file stops the ab-build-pipeline and ab-autonomous-loop skills for the user; this skill decides it conservatively instead (SKILL.md Stage 1), so a request likely to hit several of them fits ab-build-pipeline better.
+A must-ask category from the project instructions file stops the ab-build-pipeline and ab-autonomous-loop skills for the user; this skill decides it conservatively only within the authorization boundary (SKILL.md Stage 1), so a request likely to hit several of them fits ab-build-pipeline better.
 
 ## Common Rationalizations
 

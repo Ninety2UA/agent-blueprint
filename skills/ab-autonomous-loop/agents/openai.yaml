@@ -1,0 +1,3 @@
+interface:
+  display_name: "Autonomous Loop"
+  short_description: "Finish a plan's tasks unattended, one after another"

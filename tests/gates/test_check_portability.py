@@ -11,6 +11,7 @@ from gate_helpers import Repo, fixture, run_gate
 
 SKILL = "skills/ab-fixture/SKILL.md"
 GUIDE = "skills/ab-fixture/references/guide.md"
+OPENAI = "skills/ab-fixture/agents/openai.yaml"
 
 
 class PortabilityGate(unittest.TestCase):
@@ -35,6 +36,84 @@ class PortabilityGate(unittest.TestCase):
         code, out = self.gate()
         self.assertEqual(code, 0, out)
         self.assertIn("OK", out)
+
+    def test_missing_openai_yaml(self):
+        os.remove(self.repo.path(OPENAI))
+        self.assertFails(OPENAI, "openai-metadata", "missing")
+
+    def test_missing_display_name(self):
+        self.repo.edit(OPENAI, '  display_name: "ab-fixture"\n', "")
+        self.assertFails(OPENAI, "openai-metadata", "display_name")
+
+    def test_duplicate_display_name(self):
+        self.repo.edit(OPENAI, '"ab-fixture"', '"ab-helper"')
+        self.assertFails("skills/ab-helper/agents/openai.yaml", "openai-metadata", "duplicate", "ab-fixture")
+
+    def test_display_name_length(self):
+        for name in ("", "   ", "x" * 31):
+            with self.subTest(name=name):
+                self.repo.write(OPENAI, 'interface:\n  display_name: "%s"\n'
+                                '  short_description: "Check a temporary gate test fixture"\n' % name)
+                self.assertFails(OPENAI, "openai-metadata", "display_name")
+
+    def test_short_description_length(self):
+        for length in (24, 61):
+            with self.subTest(length=length):
+                self.repo.write(OPENAI, 'interface:\n  display_name: "Fixture"\n'
+                                '  short_description: "%s"\n' % ("x" * length))
+                self.assertFails(OPENAI, "openai-metadata", "short_description", "25-60")
+
+    def test_display_field_boundaries_pass_without_pyyaml(self):
+        for length in (25, 60):
+            with self.subTest(length=length):
+                self.repo.write(OPENAI, 'interface:\n  display_name: "%s"\n'
+                                '  short_description: "%s"\n' % ("x" * 30, "é" * length))
+                code, out = self.gate(env={"PORTABILITY_FORCE_NO_YAML": "1"})
+                self.assertEqual(code, 0, out)
+
+    def test_unknown_openai_keys(self):
+        original = self.repo.read(OPENAI)
+        for extra in ("products: codex\n", "  icon: icon.svg\n",
+                      "policy:\n  products: codex\n", "policy:\n  allow_implicit_invocation: true\n  products: codex\n"):
+            with self.subTest(extra=extra):
+                self.repo.write(OPENAI, original + extra)
+                self.assertFails(OPENAI, "openai-metadata", "unknown key")
+
+    def test_invalid_openai_yaml(self):
+        original = self.repo.read(OPENAI)
+        for content in ("[]\n", "interface: [\n", original + "interface:\n",
+                        original + '  display_name: "Again"\n',
+                        original.replace('"ab-fixture"', '"unclosed'),
+                        original.replace("  display_name", "\tdisplay_name"),
+                        original + "policy: []\n"):
+            with self.subTest(content=content):
+                self.repo.write(OPENAI, content)
+                self.assertFails(OPENAI, "openai-metadata")
+
+    def test_display_fields_must_be_strings_and_policy_boolean(self):
+        original = self.repo.read(OPENAI)
+        for content in (original.replace('"ab-fixture"', "false"),
+                        original.replace('"ab-fixture"', "12345"),
+                        original.replace('"Check a temporary gate test fixture"', "null"),
+                        original + 'policy:\n  allow_implicit_invocation: "false"\n',
+                        # A plain value that opens with a YAML block indicator is a list or a key, not text.
+                        original.replace('"ab-fixture"', "- Fixture"),
+                        original.replace('"ab-fixture"', "? Fixture"),
+                        original.replace('"ab-fixture"', "-")):
+            with self.subTest(content=content):
+                self.repo.write(OPENAI, content)
+                self.assertFails(OPENAI, "openai-metadata")
+
+    def test_quoted_and_plain_metadata_scalars_pass(self):
+        self.repo.write(OPENAI, "# Metadata\ninterface:\n  display_name: 'Fixture''s name'\n"
+                        '  short_description: "Check \\"quoted\\" text and # signs in a fixture" # note\n'
+                        "policy:\n  allow_implicit_invocation: true # enabled\n")
+        code, out = self.gate()
+        self.assertEqual(code, 0, out)
+        self.repo.write(OPENAI, "interface:\n  display_name: Fixture # name\n"
+                        "  short_description: Check a temporary gate test fixture\n")
+        code, out = self.gate()
+        self.assertEqual(code, 0, out)
 
     def test_extra_frontmatter_key(self):
         self.repo.edit(SKILL, "argument-hint:", "allowed-colors: blue\nargument-hint:")
@@ -193,25 +272,30 @@ class PortabilityGate(unittest.TestCase):
     def manual_only(self):
         self.repo.edit("skills/ab-helper/SKILL.md", "description:", "disable-model-invocation: true\ndescription:")
 
+    def implicit_off(self):
+        path = "skills/ab-helper/agents/openai.yaml"
+        self.repo.write(path, fixture("openai-implicit-off.yaml") + self.repo.read(path))
+
     def test_manual_only_skill_referenced_by_another(self):
         self.manual_only()
-        self.repo.write("skills/ab-helper/agents/openai.yaml", fixture("openai-implicit-off.yaml"))
+        self.implicit_off()
         self.assertFails(SKILL, "manual-only", "references manual-only skill ab-helper")
 
     def test_manual_only_skill_without_openai_yaml(self):
         self.manual_only()
+        os.remove(self.repo.path("skills/ab-helper/agents/openai.yaml"))
         self.repo.edit(SKILL, "Use the `ab-helper` skill", "Take a second look")
         self.assertFails("skills/ab-helper/SKILL.md", "manual-only", "agents/openai.yaml")
 
     def test_manual_only_pairing_passes(self):
         self.manual_only()
-        self.repo.write("skills/ab-helper/agents/openai.yaml", fixture("openai-implicit-off.yaml"))
+        self.implicit_off()
         self.repo.edit(SKILL, "Use the `ab-helper` skill", "Take a second look")
         code, out = self.gate()
         self.assertEqual(code, 0, out)
 
     def test_openai_yaml_without_the_frontmatter_flag(self):
-        self.repo.write("skills/ab-helper/agents/openai.yaml", fixture("openai-implicit-off.yaml"))
+        self.implicit_off()
         self.repo.edit(SKILL, "Use the `ab-helper` skill", "Take a second look")
         self.assertFails("skills/ab-helper/SKILL.md", "manual-only", "disable-model-invocation")
 

@@ -1,29 +1,23 @@
 # Agent Blueprint on Claude Code
 
-Binary `claude`; facts checked against Claude Code 2.1.284 on 2026-09-30.
+Binary `claude`; facts checked against Claude Code 2.1.284 on 2026-09-30, and the install against 2.1.296 on 2026-10-12.
 
 ## Install
 
-One route: the plugin, through Claude Code's marketplace commands. Once the repository carries its v4 name:
+One route: the plugin, through Claude Code's marketplace commands, straight from GitHub:
 
 ```bash
 claude plugin marketplace add Ninety2UA/agent-blueprint
 claude plugin install agent-blueprint@agent-blueprint
 ```
 
-Before the rename, or for a pre-release checkout, both commands take the local path:
+There is no trust step: the plugin's hooks run as soon as it is enabled. Claude Code caches the plugin under `~/.claude/plugins/cache/`. `bash install.sh` in a clone of the repository runs the same two commands with GitHub as the source (`marketplace update` and `plugin update` instead, when the plugin is already there), takes the clone as the source with `--local`, and warns when the v3 plugin is still installed next to this one.
 
-```bash
-git clone https://github.com/Ninety2UA/agent-blueprint.git
-claude plugin marketplace add ./agent-blueprint
-claude plugin install agent-blueprint@agent-blueprint
-```
+What covers what: no other host's install covers Claude Code. The other way round, Cursor CLI and Amp read this plugin, so once it is installed they need nothing more, and a second route for either would list every skill twice. Grok Build loads no skills from Claude Code's install, so it needs its own command.
 
-`bash install.sh` from the checkout runs the same two commands (`marketplace update` and `plugin update` instead, when the plugin is already there) and warns when the v3 plugin is still installed next to this one. There is no trust step: the plugin's hooks run as soon as it is enabled. Claude Code caches the plugin under `~/.claude/plugins/cache/`.
+Check: `claude plugin list` shows `agent-blueprint@agent-blueprint`; `claude plugin validate --strict ./agent-blueprint` checks a checkout. Update: `claude plugin marketplace update agent-blueprint`, then `claude plugin update agent-blueprint@agent-blueprint`, then `/reload-plugins` in a session, or the ab-plugin-update skill. Remove v3 with `claude plugin uninstall claude-code-blueprint@claude-code-blueprint`; the ab-migrate skill cleans a project's old copies. Docs: <https://code.claude.com/docs/en/plugins-reference>.
 
-What covers what: no other host's install covers Claude Code, because it does not scan `~/.agents/skills`. The other way round, a Claude Code install already covers Amp, which loads that plugin cache, and Cursor CLI and Grok Build import Claude Code plugins and marketplaces; on those three, do not add a second route.
-
-Check: `claude plugin list` shows `agent-blueprint@agent-blueprint`; `claude plugin validate --strict ./agent-blueprint` checks a checkout. Update: `claude plugin marketplace update agent-blueprint`, then `claude plugin update agent-blueprint@agent-blueprint`, or the ab-plugin-update skill. Remove v3 with `claude plugin uninstall claude-code-blueprint@claude-code-blueprint`; the ab-migrate skill cleans a project's old copies. Docs: <https://code.claude.com/docs/en/plugins-reference>.
+Set up a project: `/ab-project-start` in a session (`/agent-blueprint:ab-project-start` in the menu). The README's [Set up your project](../../README.md#set-up-your-project) says what it creates and when to run it.
 
 ## Invoke a skill
 
@@ -68,19 +62,15 @@ Nothing beyond the host's own terms is known.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 2.1.291 (Claude Code), last cell 2026-10-07.
+Install: the v4.1.0 install record ([docs/releases/v4.1.0-installs.md](../releases/v4.1.0-installs.md)) shows this tool installing Agent Blueprint by its own route and listing each skill once.
+
+From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-smoke.md)), host version 2.1.296 (Claude Code), last cell 2026-10-13.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | pass | 7s | 53 ab- skills once each in 7 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 8s | final message names HARBOR-19 |
-| `hooks` | pass | 0s | handlers wrote the trace: session-start.js x1, ship-loop.sh x1 (from the canary run) |
-| `manual-only` | pass | 9s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
-| `build` | pass | 27m30s | acceptance test passes (deps: tabulate>=0.9); 7 commit(s) after the base · helper steps: helper,helper,helper,helper |
-| `helpers-off` | degraded-pass (inline) | 12m31s | acceptance test passes (deps: tabulate); 6 commit(s) after the base · helper steps: inline,inline,inline,inline |
-| `effort` | pass | 0s | session effort xhigh; 12 helper transcript(s) at the same effort |
-| `review` | pass | 3m51s | the review reports eval in cli.py as a finding (security: exploitable) · helper steps: helper |
-| `debug` | pass | 2m03s | suite passes; store.py fixed; regression test present · helper steps: helper |
-| `ship` | pass | 49m43s | published; pr create recorded; acceptance test passes (deps: tabulate>=0.9) on the pushed branch |
-| `team` | pass | 7m22s | ledger done; 3 commits; tests pass · helper steps: helper,helper,helper,helper,helper |
-| `upgrade` | pass | 4s | 14 checks passed: both plugin ids listed, detect-v3.sh reported and removed the v3 traces, the session-start warning names the v3 plugin |
+| `discovery` | pass | 5s | 53 ab- skills once each in 7 location(s); the answer names ab-ship-pipeline |
+| `hooks` | pass | 5s | handlers wrote the trace: session-start.js x1, ship-loop.sh x1 (canary prompt run with the trace exported) |
+| `manual-only` | pass | 12s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `debug` | degraded-pass (inline) | 1m49s | suite passes; store.py fixed; regression test present · helper steps: inline |
+| `tdd-override` | pass | 33s | seeded functions retain their recorded behavior; count_words gives the recorded counts; a collected test calls count_words and passes; suite passes |
+| `brainstorm-override` | pass | 2m22s | no design approval request; plan or code: docs/plans/2026-10-12-note-count.md, src/notes/store.py |

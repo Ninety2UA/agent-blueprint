@@ -1,0 +1,3 @@
+interface:
+  display_name: "Finishing a Development Branch"
+  short_description: "Test a finished branch, then merge it or open a PR"

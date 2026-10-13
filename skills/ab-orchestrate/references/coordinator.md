@@ -143,7 +143,7 @@ Judge progress by artifacts, not the clock. A worker whose commits or expected f
 
 ### Worker Failure Protocol
 
-A `NEEDS_INPUT` return is a decision, not a failure: route it rather than start the worker again with a narrower scope, which would only bury the question. Supervised: put the worker's options to the user (§ Question Format). Under ab-ship-pipeline: take the conservative option and lock it in `docs/context/DECISIONS.md` (ab-ship-pipeline Stage 1's locked-decision rule). Either way, send the decision back to the worker — message it if your host lets you message a running helper or teammate, or start it again with the decision in its task packet if it has gone. A `BLOCKED` return that describes a sub-task the worker wanted a helper for is yours to decide: start it as its own task or fold it into another.
+A `NEEDS_INPUT` return is a decision, not a failure: route it rather than start the worker again with a narrower scope, which would only bury the question. Supervised: put the worker's options to the user (§ Question Format). Under ab-ship-pipeline: take the conservative option only within the ab-executing-plans authorization boundary; missing authority stops as `needs-human`. Otherwise lock the decision in `docs/context/DECISIONS.md` (ab-ship-pipeline Stage 1's locked-decision rule). Either way, send the decision back to the worker — message it if your host lets you message a running helper or teammate, or start it again with the decision in its task packet if it has gone. A `BLOCKED` return that describes a sub-task the worker wanted a helper for is yours to decide: start it as its own task or fold it into another.
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
@@ -199,7 +199,7 @@ Prompt: a fix task packet, built like a wave task packet (§ Start the Wave's Wo
 
 Run the ab-review-swarm skill on all changes since the run started (`git diff <base commit>...HEAD`, with the base commit from the ledger). It starts all configured reviewers in parallel and synthesizes their findings via findings-synthesizer.
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 In this mode the review covers the working tree and untracked files against the ledger's base commit, since the run has made no commits (`references/team-ledger.md` § Isolation).
 

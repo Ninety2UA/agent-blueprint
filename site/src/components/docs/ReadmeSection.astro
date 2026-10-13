@@ -1,17 +1,30 @@
 ---
 // A docs or guide page's README section: renders the section's <Content /> (the default slot) and,
-// with `drop`, replaces the listed tables with their pointers (section.mjs). Each image becomes a
-// link to its own file, so a diagram opens full size (readme-images.mjs), and paths in inline code
-// wrap at a slash on a phone (wrap-points.mjs). Everything else is the README's own text, so a
-// README edit changes the page on the next build (R13).
+// with `drop`, replaces the listed tables with their pointers; with `dropImages`, leaves out the
+// listed images (a loop on the page shows the same thing); with `insertAfter`, puts the `insert`
+// slot (a figure) right under the heading with that id (section.mjs). A table whose rows start with
+// short names (a tool per row) is marked so those names stay on one line (markShortKeys), and each
+// table sits in a container that scrolls sideways only when the table cannot fit (wrapTables). Each
+// image becomes a link to
+// its own file, so a diagram opens full size (readme-images.mjs), and paths in inline code wrap at a
+// slash on a phone (wrap-points.mjs). Everything else is the README's own text, so a README edit
+// changes the page on the next build (R13).
 import { linkFullSize } from './readme-images.mjs';
-import { dropTables } from './section.mjs';
+import { dropImages as withoutImages, dropTables, insertAfterHeading, markShortKeys, wrapTables } from './section.mjs';
 import { breakCodeAfterSlashes } from '../wrap-points.mjs';
 
 interface Props {
   drop?: { header: string[]; pointer: string }[];
+  dropImages?: string[];
+  /** id of the heading the `insert` slot goes under */
+  insertAfter?: string;
 }
-const { drop } = Astro.props;
-const html = await Astro.slots.render('default');
+const { drop, dropImages, insertAfter } = Astro.props;
+let html = await Astro.slots.render('default');
+if (drop?.length) html = dropTables(html, drop);
+if (dropImages?.length) html = withoutImages(html, dropImages);
+html = wrapTables(linkFullSize(breakCodeAfterSlashes(markShortKeys(html))));
+// the inserted figure goes in last, so its poster is not turned into a full-size link
+if (insertAfter) html = insertAfterHeading(html, insertAfter, await Astro.slots.render('insert'));
 ---
-<div class="readme-section"><Fragment set:html={linkFullSize(breakCodeAfterSlashes(drop?.length ? dropTables(html, drop) : html))} /></div>
+<div class="readme-section"><Fragment set:html={html} /></div>

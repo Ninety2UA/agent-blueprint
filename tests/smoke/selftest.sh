@@ -29,10 +29,165 @@ reason_of() { python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print
 J="$WORK/out/v$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$REPO/.claude-plugin/plugin.json")-smoke.json"
 M="${J%.json}.md"
 
+echo "== Codex hooks: five handlers, two actions, a work-local trace, and the commit-check opt-in"
+mkdir -p "$WORK/codex-bin" "$WORK/codex-home/.codex"
+cat > "$WORK/codex-bin/codex" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+case "$1" in
+    --version) echo "codex fake"; exit 0 ;;
+    login) exit 0 ;;
+    exec)
+        python3 - "$@" <<'PY'
+import json, os, sys
+with open(os.environ["AB_SMOKE_CODEX_ARGS"], "a") as f:
+    f.write(json.dumps(sys.argv[1:]) + "\n")
+PY
+        # The adapter passes the prompt last and closes stdin.
+        if IFS= read -r unexpected; then echo "Codex stdin was not closed" >&2; exit 1; fi
+        lastmsg="" previous=""
+        for arg in "$@"; do
+            if [ "$previous" = -o ]; then lastmsg="$arg"; fi
+            prompt="$arg"; previous="$arg"
+        done
+        bash "$AGENT_BLUEPRINT_FAKE_HOST" "$prompt" | tee "$lastmsg" ;;
+    *) exit 1 ;;
+esac
+SH
+chmod +x "$WORK/codex-bin/codex"
+codex_hooks_run() {
+    HOME="$WORK/codex-home" CODEX_HOME="$WORK/codex-home/.codex" PATH="$WORK/codex-bin:$PATH" \
+        AB_SMOKE_CODEX_ARGS="$WORK/codex-args.jsonl" AGENT_BLUEPRINT_SMOKE_FAKE_MODE="$1" \
+        bash "$HERE/run-smoke.sh" --host codex --jobs 2 --plugin-dir "$REPO" --out "$WORK/out" \
+        --timeout 30 --cell "$2"
+}
+codex_hooks_run pass canary,hooks,manual-only > "$WORK/codex-hooks.log" 2>&1 || { cat "$WORK/codex-hooks.log"; exit 1; }
+check "Codex hooks passes with five codex handler lines and both action records" [ "$(state_of "$J" codex hooks)" = pass ]
+for c in canary manual-only; do check "Codex · $c still passes around the hooks run" [ "$(state_of "$J" codex "$c")" = pass ]; done
+check "the Codex cell seeded the commit-check opt-in and an ignored work-local trace" \
+    grep -q "Codex hooks seed: validateCommit=true; trace ignored in work folder" "$WORK"/logs/*/codex/hooks.log
+check "Codex hooks uses its own run; only that invocation bypasses hook trust" python3 - "$WORK/codex-args.jsonl" <<'PY'
+import json, sys
+runs = [json.loads(line) for line in open(sys.argv[1])]
+assert len(runs) == 3, runs
+for args in runs:
+    hooks = "Codex hooks smoke check" in args[-1]
+    assert ("--dangerously-bypass-hook-trust" in args) == hooks, args
+    assert args[args.index("-s") + 1] == "workspace-write", args
+assert sum("Codex hooks smoke check" in args[-1] for args in runs) == 1, runs
+prompt = next(args[-1] for args in runs if "Codex hooks smoke check" in args[-1])
+assert "file-edit tool (apply_patch)" in prompt and "docs/hook-smoke.md" in prompt, prompt
+assert "[SYSTEM]" in prompt and "git commit -m 'smoke check'" in prompt, prompt
+assert "even if this sandbox cannot write .git" in prompt, prompt
+PY
+codex_hooks_run codex-four hooks > "$WORK/codex-four.log" 2>&1 || { cat "$WORK/codex-four.log"; exit 1; }
+check "Codex hooks fails with only four codex handler lines" [ "$(state_of "$J" codex hooks)" = fail ]
+check "the missing Codex handler is named" grep -q "missing.*prompt-guard.js" <<<"$(reason_of "$J" codex hooks)"
+codex_hooks_run codex-wrong-host hooks > "$WORK/codex-wrong-host.log" 2>&1 || { cat "$WORK/codex-wrong-host.log"; exit 1; }
+check "a write guard trace line naming another host does not pass Codex hooks" [ "$(state_of "$J" codex hooks)" = fail ]
+check "the handler without a codex line is named" grep -q "missing.*prompt-guard.js" <<<"$(reason_of "$J" codex hooks)"
+codex_hooks_run codex-entry-only hooks > "$WORK/codex-entry-only.log" 2>&1 || { cat "$WORK/codex-entry-only.log"; exit 1; }
+check "Codex hooks fails when every handler entered but neither action was recorded" [ "$(state_of "$J" codex hooks)" = fail ]
+for action in prompt-guard.js:warned validate-commit.js:flagged; do
+    check "the missing Codex action $action is named" grep -q "missing.*$action" <<<"$(reason_of "$J" codex hooks)"
+done
+for mode in codex-no-warning codex-no-flag; do
+    codex_hooks_run "$mode" hooks > "$WORK/$mode.log" 2>&1 || { cat "$WORK/$mode.log"; exit 1; }
+    check "Codex hooks fails with just one action missing ($mode)" [ "$(state_of "$J" codex hooks)" = fail ]
+    if [ "$mode" = codex-no-warning ]; then action=prompt-guard.js:warned; else action=validate-commit.js:flagged; fi
+    check "the single missing Codex action $action is named" grep -q "missing.*$action" <<<"$(reason_of "$J" codex hooks)"
+done
+
+echo "== override cells: existing code survives TDD and an approved design needs no new approval"
+AGENT_BLUEPRINT_SMOKE_FAKE_MODE=pass \
+    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 \
+    --cell tdd-override,brainstorm-override > "$WORK/overrides.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/overrides.log"; exit 1; }
+for c in tdd-override brainstorm-override; do
+    check "fake · $c is pass" [ "$(state_of "$J" fake "$c")" = pass ]
+done
+check "the compliant answer mentions the approved design" grep -q "the approved design" "$WORK"/logs/*/fake/brainstorm-override.final
+override_suite() { ( cd "$1" && python3 -m unittest discover -s tests ); }
+# The report replaces the temporary root with the literal $TMPDIR; the folder name survives.
+override_work_of() { local root="${1##* · work: }"; printf '%s\n' "$TMPDIR/${root##*/}/work"; }
+for mode in tdd-delete tdd-rewrite tdd-refactor; do
+    AGENT_BLUEPRINT_SMOKE_FAKE_MODE="$mode" \
+        bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --keep \
+        --cell tdd-override > "$WORK/$mode.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/$mode.log"; exit 1; }
+    reason=$(reason_of "$J" fake tdd-override)
+    override_work=$(override_work_of "$reason")
+    check "$mode keeps the new function's test" test -f "$override_work/tests/test_textutil.py"
+    check "$mode has a passing suite despite the seed edit" override_suite "$override_work"
+    if [ "$mode" = tdd-refactor ]; then
+        check "a harmless refactor of a seeded function passes" [ "$(state_of "$J" fake tdd-override)" = pass ]
+    else
+        check "$mode fails even with the new test present" [ "$(state_of "$J" fake tdd-override)" = fail ]
+        check "$mode names the affected seeded function" grep -q "normalize_title" <<<"$reason"
+        if [ "$mode" = tdd-delete ]; then
+            check "the deleted function is reported missing" grep -q "missing" <<<"$reason"
+        else
+            check "the same-name rewrite is reported as changed behavior" grep -q "behavior changed" <<<"$reason"
+        fi
+    fi
+done
+for mode in tdd-uncollected tdd-no-count; do
+    AGENT_BLUEPRINT_SMOKE_FAKE_MODE="$mode" \
+        bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --keep \
+        --cell tdd-override > "$WORK/$mode.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/$mode.log"; exit 1; }
+    reason=$(reason_of "$J" fake tdd-override)
+    override_work=$(override_work_of "$reason")
+    check "$mode has a passing suite (its count_words test is never collected)" override_suite "$override_work"
+    check "$mode fails the TDD cell" [ "$(state_of "$J" fake tdd-override)" = fail ]
+    if [ "$mode" = tdd-uncollected ]; then
+        check "a count_words test unittest never collects is reported" grep -q "no test calls count_words" <<<"$reason"
+    else
+        check "a missing count_words is reported" grep -q "count_words missing" <<<"$reason"
+    fi
+done
+override_suite_fails() { ! override_suite "$1" > /dev/null 2>&1; }
+for mode in tdd-skipped tdd-wrong-count tdd-helper tdd-import-error tdd-src-import tdd-subtest-skip; do
+    AGENT_BLUEPRINT_SMOKE_FAKE_MODE="$mode" \
+        bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --keep \
+        --cell tdd-override > "$WORK/$mode.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/$mode.log"; exit 1; }
+    reason=$(reason_of "$J" fake tdd-override)
+    override_work=$(override_work_of "$reason")
+    state=$(state_of "$J" fake tdd-override)
+    case "$mode" in
+        tdd-skipped)
+            check "tdd-skipped has a passing suite (its count_words test never runs)" override_suite "$override_work"
+            check "a skipped count_words test fails the TDD cell" [ "$state" = fail ]
+            check "the skipped count_words test is reported" grep -q "count_words test was skipped" <<<"$reason" ;;
+        tdd-wrong-count)
+            check "tdd-wrong-count has a passing suite (its test uses an input the wrong count gets right)" override_suite "$override_work"
+            check "a wrong count_words with a passing test fails the TDD cell" [ "$state" = fail ]
+            check "the wrong count is reported against a recorded input" grep -q "count_words(.*expected" <<<"$reason" ;;
+        tdd-helper)
+            check "tdd-helper has a passing suite" override_suite "$override_work"
+            check "an inherited test method that calls count_words through a helper passes" [ "$state" = pass ] ;;
+        tdd-import-error)
+            check "tdd-import-error has a failing suite" override_suite_fails "$override_work"
+            check "a test module that fails to import fails the TDD cell" [ "$state" = fail ]
+            check "the module that fails to import is named" grep -q "test module test_startup failed to import" <<<"$reason" ;;
+        tdd-src-import)
+            check "tdd-src-import has a passing suite" override_suite "$override_work"
+            check "a test that imports count_words as src.notes.textutil passes" [ "$state" = pass ] ;;
+        tdd-subtest-skip)
+            check "tdd-subtest-skip has a passing suite" override_suite "$override_work"
+            check "a count_words test with an unrelated skipped subtest passes" [ "$state" = pass ] ;;
+    esac
+done
+for mode in brainstorm-approval brainstorm-please-approve brainstorm-looks-good brainstorm-no-plan; do
+    AGENT_BLUEPRINT_SMOKE_FAKE_MODE="$mode" \
+        bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 \
+        --cell brainstorm-override > "$WORK/$mode.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/$mode.log"; exit 1; }
+    check "$mode fails the brainstorming cell" [ "$(state_of "$J" fake brainstorm-override)" = fail ]
+    if [ "$mode" = brainstorm-no-plan ]; then expected="no plan or code"; else expected="design approval request"; fi
+    check "$mode is reported as $expected" grep -q "$expected" <<<"$(reason_of "$J" fake brainstorm-override)"
+done
+
 echo "== pass mode: every cell on the fake host (hooks foreign, helpers switch present)"
 AGENT_BLUEPRINT_FAKE_HOOKS=foreign AGENT_BLUEPRINT_FAKE_HELPERS_OFF=--no-helpers \
     bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 60 > "$WORK/pass.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/pass.log"; exit 1; }
-for c in discovery canary hooks manual-only build review debug ship team; do
+for c in discovery canary hooks manual-only build review debug tdd-override brainstorm-override ship team; do
     check "fake · $c is pass" [ "$(state_of "$J" fake "$c")" = pass ]
 done
 check "fake · helpers-off is degraded-pass (inline)" [ "$(state_of "$J" fake helpers-off)" = "degraded-pass (inline)" ]
@@ -42,9 +197,24 @@ check "the table lists the fake row" grep -q '^| fake |' "$M"
 check "the JSON records tokens for the build cell" [ "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["hosts"]["fake"]["cells"]["build"]["tokens"])' "$J")" = 150 ]
 
 echo "== fail mode with a vendor-bug row, a not-installed host, a native-hooks fake, and --jobs 2"
+# Pi stands in for a host that is not installed. Mirror each PATH folder that holds pi without it,
+# so the run sees no pi even where Pi is installed, and every other tool stays reachable.
+nopi_path=""
+IFS=: read -r -a path_dirs <<< "$PATH"
+for d in "${path_dirs[@]}"; do
+    if [ -n "$d" ] && [ -e "$d/pi" ]; then
+        mirror="$WORK/nopi/${#nopi_path}"
+        mkdir -p "$mirror"
+        for entry in "$d"/*; do
+            [ "$(basename "$entry")" = pi ] || ln -s "$entry" "$mirror/"
+        done
+        d="$mirror"
+    fi
+    nopi_path="${nopi_path:+$nopi_path:}$d"
+done
 printf 'host\tcell\turl\tnote\nfake\tdebug\thttps://example.com/vendor/1\tselftest\n' > "$WORK/bugs.tsv"
 AB_SMOKE_VENDOR_BUGS="$WORK/bugs.tsv" AGENT_BLUEPRINT_SMOKE_FAKE_MODE=fail AGENT_BLUEPRINT_FAKE_HOOKS=native AGENT_BLUEPRINT_FAKE_HELPERS_OFF=--no-helpers \
-    bash "$HERE/run-smoke.sh" --host fake,pi --jobs 2 --plugin-dir "$REPO" --out "$WORK/out" --timeout 60 \
+    PATH="$nopi_path" bash "$HERE/run-smoke.sh" --host fake,pi --jobs 2 --plugin-dir "$REPO" --out "$WORK/out" --timeout 60 \
     --cell canary,hooks,manual-only,build,helpers-off,review,debug,ship,team > "$WORK/fail.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/fail.log"; exit 1; }
 for c in canary manual-only build helpers-off review ship team; do
     check "fake · $c is fail" [ "$(state_of "$J" fake "$c")" = fail ]

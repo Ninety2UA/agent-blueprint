@@ -1,0 +1,3 @@
+interface:
+  display_name: "Wave Orchestration"
+  short_description: "Group dependent tasks into parallel waves"

@@ -63,9 +63,9 @@ Write code before test? Delete it.
 
 <Good>
 ```markdown
-Write code before test? Delete it. Start over.
+Wrote code in this task before its test? Discard only your own new code, unless the user says to keep it. Keep pre-existing and user-written code.
 
-**No exceptions:**
+**Within that discard scope:**
 - Don't keep it as "reference"
 - Don't "adapt" it while writing tests
 - Don't look at it
@@ -108,7 +108,7 @@ Make it easy for agents to self-check when rationalizing:
 - "It's about spirit not ritual"
 - "This is different because..."
 
-**All of these mean: Delete code. Start over with TDD.**
+**All of these mean: restart test-first, discarding only the model's own pre-test code from this task unless the user says to keep it. Never delete pre-existing or user-written code.**
 ```
 
 ### Update CSO for Violation Symptoms

@@ -5,6 +5,10 @@
 // command needs highlighted arguments (<span class="arg">). On a phone a long line wraps at
 // a slash inside a path or URL and never inside a flag such as --host (wrap-points.mjs); the
 // <wbr>s and spans this adds carry no text, so what the button copies is unchanged.
+//
+// A command typed in a tool's session (/hooks, /ab-project-start, $ab-project-start) takes no "$"
+// prompt and passes `where` ("in a session"): a small label set on the box's top edge says where
+// it runs, so Codex's $ab-project-start never reads as a shell line.
 import { escapeHtml } from '../lib/text.mjs';
 import CopyButton from './CopyButton.astro';
 import { breakAfterSlashes, keepFlagsWhole } from './wrap-points.mjs';
@@ -20,16 +24,22 @@ interface Props {
   prompt?: boolean;
   /** drafting trim marks at two corners, for the page's primary command */
   trim?: boolean;
+  /** where a command that is not a shell line runs, e.g. "in a session", shown on the box's top edge */
+  where?: string;
   id?: string;
   class?: string;
 }
-const { lines = [], copy, label, copyLabel, prompt = false, trim = false, id, class: cls } = Astro.props;
+const { lines = [], copy, label, copyLabel, prompt = false, trim = false, where, id, class: cls } = Astro.props;
 const wrapPoints = (html: string) => breakAfterSlashes(keepFlagsWhole(html));
+// Without `copy`, the button copies the shown lines and drops each "$ " prompt, which would also drop
+// the $ that starts a Codex call, so lines shown without a prompt are copied as they are.
+const copyText = copy ?? (prompt || Astro.slots.has('default') ? undefined : lines.join('\n'));
 const slot = Astro.slots.has('default') ? wrapPoints(await Astro.slots.render('default')) : null;
 ---
-<div class:list={['cmd', { trim }, cls]} id={id}>
+<div class:list={['cmd', { trim, 'has-where': where }, cls]} id={id}>
+  {where && <span class="cmd-where">{where}</span>}
   <pre tabindex="0" aria-label={label}><code>{slot !== null ? <Fragment set:html={slot} /> : lines.map((line) => (
     <span class="ln">{prompt && <span class="pr" aria-hidden="true">$</span>}<Fragment set:html={wrapPoints(escapeHtml(line))} /></span>
   ))}</code></pre>
-  <CopyButton label={copyLabel} text={copy} />
+  <CopyButton label={copyLabel} text={copyText} />
 </div>

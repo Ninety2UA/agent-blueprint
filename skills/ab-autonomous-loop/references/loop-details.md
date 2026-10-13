@@ -12,7 +12,7 @@ It fits a multi-step implementation plan, a PRD or task list worked end to end, 
 
 ## Pre-flight danger scan
 
-Advisory, once before the first task. Scan the plan for irreversible operations (deleting data, shared-database migrations, force-push, publishing outside the repo), protected-branch pushes, and deleting or skipping tests. Route each hit through the decision boundary in the ab-executing-plans skill; the scan never stops the loop by itself.
+Advisory, once before the first task. Scan the plan for irreversible operations (deleting data, shared-database migrations, force-push, publishing outside the repo), protected-branch pushes, and deleting or skipping tests. Route each hit through the decision boundary in the ab-executing-plans skill; stop for any missing user authorization that boundary requires. Otherwise the scan is advisory, not a reason to stop.
 
 ## Loop diagram
 

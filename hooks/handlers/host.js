@@ -31,6 +31,14 @@ function detectHost(input) {
   return host;
 }
 
+function traceAction(event, input) {
+  if (process.env.AGENT_BLUEPRINT_HOOK_TRACE) {
+    const handler = path.basename(process.argv[1] || 'unknown');
+    const host = classifyHost(input);
+    try { fs.appendFileSync(process.env.AGENT_BLUEPRINT_HOOK_TRACE, handler + ':' + event + '\t' + host + '\t' + new Date().toISOString() + '\n'); } catch { /* ignore */ }
+  }
+}
+
 function classifyHost(input) {
   const env = process.env;
   // The transcript path is the host's own statement and wins over inherited variables: Claude Code
@@ -67,4 +75,4 @@ function readInput(done, timeoutMs) {
   process.stdin.resume();
 }
 
-module.exports = { detectHost, readInput };
+module.exports = { detectHost, traceAction, readInput };

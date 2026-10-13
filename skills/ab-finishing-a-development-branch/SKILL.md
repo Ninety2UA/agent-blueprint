@@ -2,7 +2,7 @@
 name: ab-finishing-a-development-branch
 description: "Finishes a development branch whose work is done: runs the tests, has a read-only helper audit each plan item against the diff, offers to merge locally, push and open a PR, or keep the branch, and carries out the choice; discarding needs an explicit request and typed confirmation. Use when implementation is complete and tests pass, or the user says the work is done or ready to merge, or asks what now. Not for creating a PR alone (use ab-pr-workflow), or while work is in progress or tests fail."
 metadata:
-  version: "4.0.2"
+  version: "4.1.0"
 ---
 
 # Finishing a Development Branch
@@ -13,7 +13,7 @@ Bring finished work to a clean end: verify tests → audit the plan → present 
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-finishing-a-development-branch", "version": "4.0.2", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-finishing-a-development-branch.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-finishing-a-development-branch", "version": "4.1.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-finishing-a-development-branch.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ### Step 1: Verify Tests
 
@@ -37,7 +37,7 @@ With neither `main` nor `master`, use the remote's default branch (`git symbolic
 
 Before any option, a fresh read-only helper classifies every plan item against the branch diff. This step owns the audit procedure; `ab-pr-workflow` renders the result, and `ab-executing-plans` and `ab-subagent-driven-development` pass the plan path.
 
-Find the plan per `references/plan-audit.md` § Plan path; its items are `### U<N>.` headings, `### Task N:` headings, or checklist lines. No plan file, or one with no items, reports `NO PLAN`: show that line, skip the table and go on to Step 4, since a missing plan never blocks.
+Find the plan and identify its items per `references/plan-audit.md` § Plan path. No plan file, or one with no items, reports `NO PLAN`: show that line, skip the table and go on to Step 4, since a missing plan never blocks.
 
 **Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
 
@@ -51,7 +51,7 @@ Prompt: `references/agents/code-reviewer.md`, in a fresh helper. Inputs: the req
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-Offer exactly the three below, without explanation: a structured choice gets a clear answer where "what now?" does not. When Step 3 blocked, mark 1 and 2 `(blocked by plan audit)` and accept only 3. Default when nobody answers: 3, keep the branch; 2 when the calling pipeline asked for a PR and the audit did not block.
+If the user's own messages already chose merge, PR or keep, carry out that choice after the gates pass; do not ask again. Otherwise offer the three below: a structured choice gets a clear answer where "what now?" does not. When Step 3 blocked, mark 1 and 2 `(blocked by plan audit)` and accept only 3. Default when nobody answers: 3, keep the branch; 2 when the calling pipeline asked for a PR and the audit did not block.
 
 ```
 Implementation complete. What would you like to do?
@@ -64,7 +64,7 @@ Discarding the branch is not on the menu: it deletes commits and a worktree for 
 
 ### Step 5: Execute Choice
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 A merge is a commit, so in this mode Option 1 cannot run: say so and keep the branch (Option 3). Option 2 leaves uncommitted work and its message as above.
 

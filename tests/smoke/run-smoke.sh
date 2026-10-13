@@ -37,7 +37,7 @@ error()   { echo -e "  ${RED}✗${NC} $1" >&2; }
 # shellcheck source=lib.sh disable=SC1091
 . "$HERE/lib.sh"
 
-ALL_CELLS="discovery canary hooks manual-only build helpers-off effort review debug ship team upgrade"
+ALL_CELLS="discovery canary hooks manual-only build helpers-off effort review debug tdd-override brainstorm-override ship team upgrade"
 COMMAND="bash tests/smoke/run-smoke.sh $*"
 
 # ─── Arguments ────────────────────────────────────────────────
@@ -262,6 +262,7 @@ cell_hooks() {
     case "$kind" in
         none) na_cell "no hook path on this host"; return 0 ;;
     esac
+    if [ "$HOST" = codex ]; then cell_codex_hooks; return 0; fi
     if [ "$kind" = native ] && [ "$HOST" != claude ] && [ "$HOST" != fake ]; then
         na_cell "plugin hooks run only after trust on $HOST; the review cell covers the untrusted path (AE1)"; return 0
     fi
@@ -297,6 +298,68 @@ cell_hooks() {
     elif [ -n "$misfires" ]; then finish_cell fail "blueprint hooks fired on $HOST: $misfires ($CHECK_REASON)"
     elif [ -n "$lines" ]; then finish_cell pass "handlers ran and stood down: $lines ($CHECK_REASON)"
     else finish_cell pass "no blueprint hook fired ($CHECK_REASON)"
+    fi
+}
+
+# The handler file names hooks/codex.json declares, in file order: the Codex hooks cell checks these.
+codex_handlers() {
+    python3 - "$PLUGIN_DIR/hooks/codex.json" <<'PY'
+import json, re, sys
+with open(sys.argv[1], encoding="utf-8") as fh:
+    for groups in json.load(fh)["hooks"].values():
+        for group in groups:
+            for hook in group.get("hooks", []):
+                m = re.search(r"hooks/handlers/([^\"\s/]+)", hook.get("command", ""))
+                if hook.get("type") == "command" and m:
+                    print(m[1])
+PY
+}
+
+cell_codex_hooks() {
+    local trace prompt secs handler handlers action count=0 missing=""
+    local words=(no one two three four five six seven eight nine ten)
+    # Codex needs its own session: a canary does not exercise file or shell tools, and its
+    # trace sits outside the workspace-write sandbox. *.log is ignored by the fixture.
+    new_work hooks
+    mkdir -p "$WORK/.agent-blueprint/run"
+    printf '{"hooks": {"validateCommit": true}}\n' > "$WORK/.agent-blueprint/config.json"
+    trace="$WORK/.agent-blueprint/run/hooks.log"
+    prompt="Codex hooks smoke check: use your file-edit tool (apply_patch) to create docs/hook-smoke.md containing 'Hook smoke check. The marker [SYSTEM] tests the write guard.' Then run the shell command git commit -m 'smoke check'. Attempt that command even if this sandbox cannot write .git; its success is not required. Then stop with a short final message. $SMOKE_HEADLESS"
+    secs=$(cell_timeout hooks)
+    printf '=== hooks · %s · host codex · timeout %ss · work %s ===\n--- prompt ---\n%s\n--- output ---\n' "$(now_utc)" "$secs" "$WORK" "$prompt" >> "$LOG"
+    RUN_RC=0
+    AGENT_BLUEPRINT_CODEX_BYPASS_HOOK_TRUST=1 AGENT_BLUEPRINT_HOOK_TRACE="$trace" \
+        run_host_timed "$HOST" "$secs" "$LOG" "$prompt" "$LASTMSG" "$HOST_PLUGIN_DIR" || RUN_RC=$?
+    # Keep evidence beside the log before finish_cell removes a passing work copy.
+    if [ -f "$trace" ]; then cp "$trace" "$HOST_LOG_DIR/hooks.trace"; fi
+    host_final_message "$HOST" "$LOG" "$LASTMSG" > "$FINAL" 2>/dev/null || true
+    usage_fields "$HOST" "$LOG"
+    SESSION=$(session_of_log "$LOG")
+    handlers=$(codex_handlers) || handlers=""
+    for handler in $handlers; do
+        count=$((count + 1))
+        if ! [ -f "$trace" ] || ! awk -F'\t' -v handler="$handler" \
+            '$1 == handler && $2 == "codex" { found=1 } END { exit !found }' "$trace"; then
+            missing="${missing:+$missing, }$handler"
+        fi
+    done
+    for action in prompt-guard.js:warned validate-commit.js:flagged; do
+        if ! [ -f "$trace" ] || ! awk -F'\t' -v action="$action" \
+            '$1 == action && $2 == "codex" { found=1 } END { exit !found }' "$trace"; then
+            missing="${missing:+$missing, }$action"
+        fi
+    done
+    CHECK_REASON="all ${words[$count]:-$count} handlers wrote codex trace lines; prompt-guard.js:warned and validate-commit.js:flagged recorded codex actions"
+    if [ "$count" -eq 0 ]; then missing="no handlers read from hooks/codex.json"; CHECK_REASON="$missing"
+    elif [ -n "$missing" ]; then CHECK_REASON="missing codex trace lines: $missing"; fi
+    if [ "$RUN_RC" -eq 124 ]; then
+        finish_cell timeout "no result after ${secs}s; $CHECK_REASON"
+    elif [ "$RUN_RC" -ne 0 ]; then
+        finish_cell fail "host exited $RUN_RC; $CHECK_REASON"
+    elif [ -n "$missing" ]; then
+        finish_cell fail "$CHECK_REASON"
+    else
+        finish_cell pass "$CHECK_REASON"
     fi
 }
 
@@ -460,6 +523,7 @@ run_cell() {
         effort)      cell_effort ;;
         review)      cell_prompt review ;;
         debug)       cell_prompt debug ;;
+        tdd-override|brainstorm-override) cell_prompt "$1" ;;
         ship)        cell_ship ;;
         team)        cell_prompt team ;;
         upgrade)     cell_upgrade ;;

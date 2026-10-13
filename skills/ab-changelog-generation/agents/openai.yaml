@@ -1,0 +1,3 @@
+interface:
+  display_name: "Changelog Generation"
+  short_description: "Write release notes from git history"

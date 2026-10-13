@@ -6,6 +6,7 @@
 # entries the plugin actually ships, plus the release version — and
 # then compared against every hardcoded claim in the manifests and docs. Any
 # mismatch prints "LOCATION: expected X, found Y" and the script exits non-zero.
+# Codex's description uses the command count from hooks/codex.json.
 # This replaces manual count sweeps, which drifted three times.
 # The site source is checked too: site/src/ and the film and loop compositions in
 # site/motion/ carry no literal skill, helper-prompt or hook count (KTD4), and the
@@ -71,7 +72,7 @@ if [[ $missing -ne 0 ]]; then
 fi
 
 # ── Derive ground truth from the filesystem ───────────────────
-SKILLS=$(find "$SKILLS_DIR" -type f -name 'SKILL.md' | wc -l | tr -d ' ')
+SKILLS=$(python3 -c 'from pathlib import Path; import sys; print(sum(p.is_file() for p in Path(sys.argv[1]).glob("*/SKILL.md")))' "$SKILLS_DIR")
 # Helper prompts: distinct file names, since a shared prompt has byte-identical copies. A companion
 # note (<prompt>-<topic>.md beside <prompt>.md, loaded by the prompt at a point of use) is not a prompt.
 # The same rule is is_companion() in tests/gates/test_prompt_files.py; change both together.
@@ -174,7 +175,7 @@ def no_agent_count(label, rel, text):
         failures.append("%s (%s): still claims an agent count (%r); v4 has helper prompts, not agents"
                         % (label, rel, m.group(0)))
 
-def check_triple(label, rel, text, min_matches=1, pattern=TRIPLE):
+def check_triple(label, rel, text, min_matches=1, pattern=TRIPLE, hooks=HK):
     if text is None:
         return
     matches = list(pattern.finditer(text))
@@ -185,9 +186,9 @@ def check_triple(label, rel, text, min_matches=1, pattern=TRIPLE):
         return
     for m in matches:
         got = [int(m.group(1)), int(m.group(2))]
-        if got != [SK, HK]:
+        if got != [SK, hooks]:
             failures.append("%s (%s): expected %d skills / %d hooks, found %d / %d"
-                            % (label, rel, SK, HK, got[0], got[1]))
+                            % (label, rel, SK, hooks, got[0], got[1]))
     no_agent_count(label, rel, text)
 
 def check_single(label, rel, text, pattern, name):
@@ -209,6 +210,20 @@ marketplace = ".claude-plugin/marketplace.json"
 check_triple("plugin.json description", plugin_json, json_get(plugin_json, ["description"]))
 check_triple("marketplace.json plugin description", marketplace,
              json_get(marketplace, ["plugins", 0, "description"]))
+codex_hooks = json_get("hooks/codex.json", ["hooks"])
+try:
+    codex_count = sum(hook.get("type") == "command"
+                      for groups in codex_hooks.values()
+                      for group in groups for hook in group.get("hooks", []))
+except (AttributeError, TypeError):
+    failures.append("hooks/codex.json: expected event groups with inner hook handler objects")
+else:
+    if codex_count == 0:
+        failures.append("hooks/codex.json: derived 0 command hooks — refusing to pass vacuously")
+    else:
+        codex = ".codex-plugin/plugin.json"
+        check_triple("Codex plugin.json description", codex, json_get(codex, ["description"]),
+                     hooks=codex_count)
 # install.sh derives its version and skill count from the tree at run time, so it carries no claim to check.
 
 readme = rd("README.md")

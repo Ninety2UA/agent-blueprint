@@ -24,7 +24,7 @@ Judge against the volume the repo shows (fixtures, pagination limits, job batch 
 
 ## Performance Benchmarks
 
-You enforce these standards:
+Use these default standards unless the user explicitly supplied different performance requirements. Review against those requirements when they did; a default budget must not override them. In either case, the Calibration evidence bar below still applies:
 
 - No algorithms worse than O(n log n) without explicit justification
 - All database queries must use appropriate indexes

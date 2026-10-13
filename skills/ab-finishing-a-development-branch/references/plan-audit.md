@@ -4,6 +4,8 @@ Loaded on demand from SKILL.md when Step 3 finds the plan and dispatches the aud
 
 ## Plan path
 
+The plan's items are `### U<N>.` headings, `### Task N:` headings, or checklist lines.
+
 Use the path the caller passed. Without one, take the newest `docs/plans/*.md` file added or modified on the branch, skipping design documents:
 
 ```bash

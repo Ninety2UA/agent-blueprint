@@ -1,0 +1,1 @@
+{{SKILL_REF}} Implement the design in docs/designs/note-count.md. Run the tests for any code you change.

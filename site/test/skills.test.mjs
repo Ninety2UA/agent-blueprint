@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { parsePhases } from '../src/lib/readme.mjs';
-import { joinSkills, listHelperFiles, listSkillFolders } from '../src/lib/skills.mjs';
+import { joinSkills, listHelperFiles, listSkillFolders, readCodexInterface } from '../src/lib/skills.mjs';
 import { getSiteData } from '../src/lib/site.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -140,4 +140,31 @@ test('release notes come from docs/releases where a file exists for the version'
     }
   }
   assert.ok(data.releases.some((r) => r.notes), 'no release has notes');
+});
+
+test("each skill carries the name and line Codex's picker shows, from its agents/openai.yaml", () => {
+  const data = getSiteData();
+  for (const skill of data.skills) {
+    const file = join(ROOT, 'skills', skill.name, 'agents', 'openai.yaml');
+    if (!existsSync(file)) {
+      assert.equal(skill.codex, null, skill.name);
+      continue;
+    }
+    const yaml = readFileSync(file, 'utf8');
+    const field = (key) => JSON.parse(yaml.match(new RegExp(`^\\s+${key}: (".*")$`, 'm'))[1]);
+    assert.deepEqual(skill.codex, { displayName: field('display_name'), shortDescription: field('short_description') }, skill.name);
+  }
+  assert.equal(data.skills.find((s) => s.name === 'ab-project-start').codex.displayName, 'Project Setup');
+});
+
+test('a skill without agents/openai.yaml has no Codex fields, and one missing a field stops the build', () => {
+  const root = mkdtempSync(join(tmpdir(), 'ab-codex-'));
+  try {
+    mkdirSync(join(root, 'skills', 'ab-x', 'agents'), { recursive: true });
+    assert.equal(readCodexInterface(root, 'ab-y'), null);
+    writeFileSync(join(root, 'skills', 'ab-x', 'agents', 'openai.yaml'), '# a comment\npolicy:\n  allow_implicit_invocation: false\ninterface:\n  display_name: "X"\n');
+    assert.throws(() => readCodexInterface(root, 'ab-x'), /skills\/ab-x\/agents\/openai\.yaml: interface needs display_name and short_description/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

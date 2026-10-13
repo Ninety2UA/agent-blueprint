@@ -1,0 +1,3 @@
+interface:
+  display_name: "Using Git Worktrees"
+  short_description: "Set up an isolated git worktree for new work"

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Session Continuity"
+  short_description: "Keep execution state current across sessions"

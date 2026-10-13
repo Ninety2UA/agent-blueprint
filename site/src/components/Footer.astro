@@ -1,7 +1,7 @@
 ---
 // The footer as an engineering title block: the mark and what the blueprint is, the
-// Product, Install by tool and Resources groups, the install command, the license and
-// the revision. Counts, tools, the version and the commands come from the repository
+// Product, Install by tool and Resources groups, the installer that sets up every tool at
+// once, the license and the revision. Counts, tools, the version and the commands come from the repository
 // through getSiteData(); nothing here is typed by hand.
 //
 // "Install by tool" links to /docs/getting-started/#<tool id>: the Getting started page
@@ -18,12 +18,12 @@ interface Props {
   sheet: string;
 }
 const { sheet } = Astro.props;
-const { version, repoUrl, counts, cloneCommand, installCommand, tools } = getSiteData();
+const { version, repoUrl, counts, allToolsCommand, tools } = getSiteData();
 
 const PRODUCT = ['Skills', 'Workflow', 'Tutorials', 'Guides', 'Kit', 'Changelog'];
 const product = PRODUCT.map((label) => NAV.find((n) => n.label === label)!);
-const clone: string[] = cloneCommand.split('\n');
-const installLines = [...clone.slice(0, -1), `${clone.at(-1)} && ${installCommand}`];
+// the clone and the installer, one line each; the copy button copies them joined by &&
+const installLines = allToolsCommand.split(' && ');
 const resources = [
   { label: 'GitHub', href: repoUrl },
   { label: 'Contributing', href: `${repoUrl}/blob/main/CONTRIBUTING.md` },
@@ -53,8 +53,8 @@ const resources = [
         <ul>{resources.map((r) => <li><a href={r.href}>{r.label}</a></li>)}</ul>
       </nav>
       <div class="tb-install">
-        <span class="f">Install</span>
-        <Cmd lines={installLines} copy={[...clone, installCommand].join(' && ')} prompt label="Install command" copyLabel="Copy install command" />
+        <span class="f">Every tool at once</span>
+        <Cmd lines={installLines} copy={allToolsCommand} prompt label="Install command for every tool" copyLabel="Copy the installer command" />
       </div>
       <div class="tb-meta tb-last">
         <div><span class="f">License</span><span class="v">MIT</span></div>

@@ -5,6 +5,7 @@ manifest-shaped file sits in the tree for a host to pick up.
 """
 import json
 import os
+import tempfile
 import unittest
 
 from gate_helpers import Repo, run_gate
@@ -18,9 +19,11 @@ def valid_manifests():
         ".claude-plugin/plugin.json": {"name": "agent-blueprint", "version": VERSION},
         ".claude-plugin/marketplace.json": {"name": "agent-blueprint", "owner": {"name": "t"},
                                             "plugins": [{"name": "agent-blueprint", "source": "./"}]},
-        ".codex-plugin/plugin.json": {"name": "agent-blueprint", "version": VERSION, "skills": "./skills/"},
+        ".codex-plugin/plugin.json": {"name": "agent-blueprint", "version": VERSION, "skills": "./skills/",
+                                     "interface": {"category": "Developer Tools"}},
         ".agents/plugins/marketplace.json": {"name": "agent-blueprint",
-                                             "plugins": [{"name": "agent-blueprint", "source": {"source": "local", "path": "./"}}]},
+                                             "plugins": [{"name": "agent-blueprint", "category": "Developer Tools",
+                                                          "source": {"source": "local", "path": "./"}}]},
         "plugin.json": {"name": "agent-blueprint", "version": VERSION},
         ".grok-plugin/plugin.json": {"name": "agent-blueprint", "version": VERSION, "skills": "./skills/"},
         ".grok-plugin/marketplace.json": {"name": "agent-blueprint",
@@ -138,6 +141,61 @@ class ManifestGate(unittest.TestCase):
         self.repo.write("hooks/codex.json", '{"hooks": {}}\n')
         code, out = self.gate()
         self.assertEqual(code, 0, out)
+
+    def test_codex_categories(self):
+        for path, entry in (
+            (".codex-plugin/plugin.json", self.manifests[".codex-plugin/plugin.json"]["interface"]),
+            (".agents/plugins/marketplace.json", self.manifests[".agents/plugins/marketplace.json"]["plugins"][0]),
+        ):
+            for category in ("Coding", "Unknown", None, ["Developer Tools"]):
+                with self.subTest(path=path, category=category):
+                    entry["category"] = category
+                    self.save()
+                    self.assertFails(path, "codex-category", "category")
+            entry["category"] = "Developer Tools"
+            self.save()
+        code, out = self.gate()
+        self.assertEqual(code, 0, out)
+
+    def test_each_interface_asset_must_be_a_local_file(self):
+        interface = self.manifests[".codex-plugin/plugin.json"]["interface"]
+        self.repo.write("docs/images/icon.svg", "<svg/>\n")
+        for key in ("composerIcon", "composerIconDark", "logo", "logoDark", "screenshots"):
+            for path in ("./docs/images/missing.svg", "docs/images/icon.svg", "./docs/images",
+                         "https://example.com/icon.svg", 7):
+                with self.subTest(key=key, path=path):
+                    interface[key] = [path] if key == "screenshots" else path
+                    self.save()
+                    self.assertFails(".codex-plugin/plugin.json", "interface-assets", key)
+            interface[key] = ["./docs/images/icon.svg"] if key == "screenshots" else "./docs/images/icon.svg"
+            self.save()
+            code, out = self.gate()
+            self.assertEqual(code, 0, out)
+
+    def test_interface_asset_cannot_escape_via_parent_or_symlink(self):
+        with tempfile.TemporaryDirectory(prefix="ab-assets-") as outside:
+            target = os.path.join(outside, "icon.svg")
+            with open(target, "w", encoding="utf-8") as fh:
+                fh.write("<svg/>\n")
+            os.symlink(outside, self.repo.path("linked-images"))
+            for path in ("./" + os.path.relpath(target, self.repo.root), "./linked-images/icon.svg"):
+                with self.subTest(path=path):
+                    self.manifests[".codex-plugin/plugin.json"]["interface"]["logo"] = path
+                    self.save()
+                    self.assertFails(".codex-plugin/plugin.json", "interface-assets", "inside the repository")
+
+    def test_interface_asset_symlink_inside_repo_passes(self):
+        self.repo.write("docs/images/icon.svg", "<svg/>\n")
+        os.symlink("icon.svg", self.repo.path("docs/images/logo.svg"))
+        self.manifests[".codex-plugin/plugin.json"]["interface"]["logo"] = "./docs/images/logo.svg"
+        self.save()
+        code, out = self.gate()
+        self.assertEqual(code, 0, out)
+
+    def test_screenshots_must_be_a_list_of_paths(self):
+        self.manifests[".codex-plugin/plugin.json"]["interface"]["screenshots"] = "./docs/images/icon.svg"
+        self.save()
+        self.assertFails(".codex-plugin/plugin.json", "interface-assets", "screenshots")
 
     def test_missing_manifest(self):
         os.remove(self.repo.path(".cursor-plugin/plugin.json"))

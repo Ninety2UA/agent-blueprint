@@ -1,23 +1,24 @@
 # Agent Blueprint on Antigravity
 
-Binary `agy`; facts checked against Antigravity CLI 1.2.12 on 2026-09-30.
+Binary `agy`; facts checked against Antigravity CLI 1.2.12 on 2026-09-30, and the install against 1.3.3 on 2026-10-12.
 
 ## Install
 
-One route: `agy plugin install` from a checkout. The source root must hold `plugin.json`, which this repository has at its root.
+One route: `agy plugin install` with the repository's GitHub URL. Antigravity needs the full URL and rejects the `owner/repo` shorthand:
 
 ```bash
-git clone https://github.com/Ninety2UA/agent-blueprint.git
-agy plugin install ./agent-blueprint
+agy plugin install https://github.com/Ninety2UA/agent-blueprint
 ```
 
-The docs document the directory form. A git URL (`agy plugin install https://github.com/Ninety2UA/agent-blueprint`) worked for another plugin on 1.0.10 per a third-party report and is not verified on 1.2.12; it is checked after the repository rename. `bash install.sh` runs `agy plugin install <checkout>` for Antigravity, because a copy in `~/.agents/skills` would not reach it: Antigravity does not scan that folder. The installed copy lives at `~/.gemini/config/plugins/agent-blueprint` on 1.2.12; `agy plugin list` shows it.
+The source root must hold `plugin.json`, which this repository has at its root. `bash install.sh` runs the same command, or `agy plugin install <checkout>` with the clone under `--local`. The installed copy lives at `~/.gemini/config/plugins/agent-blueprint`; `agy plugin list` shows it.
 
 Trust step: none. On 1.2.16 a headless run with `--dangerously-skip-permissions` reads the installed plugin's files outside the workspace, writes files and runs commands without any settings change (verified 2026-10-04). Version 1.2.12 stalled the first time a skill read a file outside the workspace unless `allowNonWorkspaceAccess` was `true` in `~/.gemini/antigravity-cli/settings.json`; if an older version stalls that way, set the key. The runner's preflight warns when it is unset and does not stop.
 
 What covers what: no other host's install covers Antigravity, and an Antigravity install covers no other host. Antigravity does read a project's `.agents/skills/`, so an `amp skill add` into a project shows its skills here too; keep one route.
 
-Check: `agy plugin list` shows `agent-blueprint` with its components; `agy plugin validate ./agent-blueprint` checks a checkout and reports each section as processed or skipped. Update: pull the checkout and run `agy plugin install` again, or the ab-plugin-update skill. Docs: <https://antigravity.google/docs/plugins>.
+Check: `agy plugin list` shows `agent-blueprint` with its components; `agy plugin validate ./agent-blueprint` checks a checkout and reports each section as processed or skipped. Update: run the same `agy plugin install` command again, or the ab-plugin-update skill. Docs: <https://antigravity.google/docs/plugins>.
+
+Set up a project: `/ab-project-start` in a session. The README's [Set up your project](../../README.md#set-up-your-project) says what it creates and when to run it.
 
 ## Invoke a skill
 
@@ -57,25 +58,21 @@ Nothing beyond the host's own terms is known.
 ## Paths to avoid
 
 - `.claude/`: not read by Antigravity (per a third-party report), and v4 keeps working files under `.agent-blueprint/`.
-- `~/.agents/skills`: not scanned, so the copy route does not reach Antigravity.
+- `~/.agents/skills`: not scanned, so a skills copy there does not reach Antigravity.
 - `.claude-plugin/`: not read natively; `agy plugin import claude` converts a Claude Code install, which would give you a second copy.
 - `hooks/hooks.json` and a root `hooks.json`: neither is present in this plugin.
 
 ## Smoke status
 
-From the v4.0.0 smoke table ([docs/releases/v4.0.0-smoke.md](../releases/v4.0.0-smoke.md)), host version 1.3.1, last cell 2026-10-07.
+Install: the v4.1.0 install record ([docs/releases/v4.1.0-installs.md](../releases/v4.1.0-installs.md)) shows this tool installing Agent Blueprint by its own route and listing each skill once.
+
+From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-smoke.md)), host version 1.3.4, last cell 2026-10-13.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
-| `discovery` | pass | 11s | 53 ab- skills once each in 1 location(s); the answer names ab-ship-pipeline |
-| `canary` | pass | 11s | final message names HARBOR-19 |
-| `hooks` | pass | 0s | no blueprint hook fired (from the canary run) |
-| `manual-only` | pass | 11s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
-| `build` | pass | 2m05s | acceptance test passes (deps: tabulate); 1 commit(s) after the base |
-| `helpers-off` | n/a | 0s | no helper switch on agy |
-| `effort` | n/a | 0s | no per-dispatch effort metadata on agy |
-| `review` | degraded-pass (inline) | 1m43s | the review reports eval in cli.py as a finding (security: arbitrary) · helper steps: inline |
-| `debug` | degraded-pass (inline) | 54s | suite passes; store.py fixed; regression test present · helper steps: inline |
-| `ship` | pass | 2m45s | published; pr create recorded; acceptance test passes (deps: tabulate) on the pushed branch |
-| `team` | pass | 4m32s | ledger done; 3 commits; tests pass |
-| `upgrade` | n/a | 0s | the upgrade scenario is Claude Code's (v3.8.0 plugin, then v4) |
+| `discovery` | pass | 10s | 53 ab- skills once each in 1 location(s); the answer names ab-ship-pipeline |
+| `hooks` | pass | 9s | no blueprint hook fired (canary prompt run with the trace exported) |
+| `manual-only` | pass | 12s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
+| `debug` | pass | 4m48s | suite passes; store.py fixed; regression test present · helper steps: helper |
+| `tdd-override` | pass | 5m23s | seeded functions retain their recorded behavior; count_words gives the recorded counts; a collected test calls count_words and passes; suite passes |
+| `brainstorm-override` | pass | 4m34s | no design approval request; plan or code: docs/plans/2026-10-12-note-count-design.md, docs/plans/2026-10-12-note-count.md, src/notes/store.py |

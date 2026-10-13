@@ -55,7 +55,9 @@ BEFORE asserting on any mock element:
   Ask: "Am I testing real component behavior or just mock existence?"
 
   IF testing mock existence:
-    STOP - Delete the assertion or unmock the component
+    STOP - Unmock the component and test its behavior. Discard an assertion only
+    if the model added it in this task and the user has not asked to keep it;
+    preserve existing and user-written tests and add behavioral coverage.
 
   Test real behavior instead
 ```

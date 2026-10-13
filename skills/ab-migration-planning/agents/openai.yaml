@@ -1,0 +1,3 @@
+interface:
+  display_name: "Migration Planning"
+  short_description: "Plan a migration where every step can be undone"

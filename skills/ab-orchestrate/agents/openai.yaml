@@ -1,0 +1,3 @@
+interface:
+  display_name: "Team Orchestration"
+  short_description: "Run a plan as waves of parallel helpers"

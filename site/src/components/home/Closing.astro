@@ -1,21 +1,43 @@
 ---
-// Closing call to action: start with one feature, the install command, Get started and GitHub.
-import Cmd from '../Cmd.astro';
+// Closing call to action: start with one feature by setting up the project. Beside the copy, how
+// to call the setup skill in each tool, one row per distinct call from the README naming table
+// (naming.mjs), with the tools that use it; a tool that offers the skill right after install (Codex)
+// says so. Then Get started and GitHub.
+import { listJoin } from '../../lib/text.mjs';
+import { SETUP_SKILL, callSkill } from '../../lib/naming.mjs';
+import { getSiteData } from '../../lib/site.mjs';
 import { IC } from '../icons';
 import { GET_STARTED } from '../nav';
-import { install, site, skill } from './home-data';
+import { site, skill } from './home-data';
 
-const start = skill('ab-project-start').name;
+const start = skill(SETUP_SKILL).name;
+const { onboarding } = getSiteData();
+const rows: { call: string; plain: boolean; tools: string[] }[] = [];
+for (const t of site.tools) {
+  const call = callSkill(site.tools, t, start);
+  const name = onboarding[t.id] === start ? `${t.name}, which offers it right after install` : t.name;
+  const row = rows.find((r) => r.call === call);
+  if (row) row.tools.push(name);
+  else rows.push({ call, plain: t.naming.syntax === null, tools: [name] });
+}
 ---
 <section class="sec closing" aria-labelledby="close-h">
   <div class="wrap">
     <div class="closing-in">
       <div>
         <h2 id="close-h" class="h-display">Start with one feature.</h2>
-        <p class="body">Install, open a session in your project and ask for <code>{start}</code>. It adds <code>AGENTS.md</code> and <code>docs/context/</code>, merging into the files you already have.</p>
+        <p class="body">Install, open a session in your project and ask for <code class="nowrap">{start}</code>. It adds <code>AGENTS.md</code> and <code>docs/context/</code>, merging into the files you already have.</p>
       </div>
       <div>
-        <Cmd lines={install.lines} copy={install.copy} prompt label="Install command" copyLabel="Copy install command" />
+        <p class="lbl calls-lbl" id="calls-h">Call it in your tool</p>
+        <dl class="calls" aria-labelledby="calls-h">
+          {rows.map((r) => (
+            <div>
+              <dt>{r.plain ? <span class="calls-plain">"{r.call}"</span> : <code>{r.call}</code>}</dt>
+              <dd>{listJoin(r.tools)}</dd>
+            </div>
+          ))}
+        </dl>
         <div class="cta-row">
           <a class="btn btn-primary" href={GET_STARTED}>Get started</a>
           <a class="btn btn-ghost" href={site.repoUrl}><Fragment set:html={IC.github} />Star on GitHub</a>

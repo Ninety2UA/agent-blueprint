@@ -9,6 +9,7 @@ bash copy of that rule for its prompt count; CompanionRuleCrossCheck runs the
 copy over the same paths and fails when the two disagree.
 """
 import glob
+import json
 import os
 import re
 import shutil
@@ -224,6 +225,57 @@ def edit_copy(copy, rel_path, pattern, replacement):
         raise AssertionError("%s no longer matches %r" % (rel_path, pattern))
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(text)
+
+
+class DriftGateCodexCount(unittest.TestCase):
+    def description(self, hooks=5, skills=53):
+        return run_drift_on_copy(lambda copy: edit_copy(
+            copy, ".codex-plugin/plugin.json", r"\d+ skills and \d+ hooks",
+            "%d skills and %d hooks" % (skills, hooks)))
+
+    def test_five_codex_hooks_pass(self):
+        code, out = self.description()
+        self.assertEqual(code, 0, out)
+
+    def test_ten_codex_hooks_fail(self):
+        code, out = self.description(hooks=10)
+        self.assertEqual(code, 1, out)
+        self.assertIn(".codex-plugin/plugin.json", out)
+        self.assertIn("expected 53 skills / 5 hooks, found 53 / 10", out)
+
+    def test_wrong_codex_skill_count_fails(self):
+        code, out = self.description(skills=52)
+        self.assertEqual(code, 1, out)
+        self.assertIn("expected 53 skills / 5 hooks, found 52 / 5", out)
+
+    def test_codex_counts_commands_not_groups_or_other_handler_types(self):
+        def change(copy):
+            path = os.path.join(copy, "hooks/codex.json")
+            data = json.loads(read(path))
+            data["hooks"]["PreToolUse"].append({"hooks": [{"type": "prompt", "prompt": "Check"}]})
+            data["hooks"]["Stop"][0]["hooks"].append({"type": "command", "command": "true"})
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump(data, fh)
+        code, out = run_drift_on_copy(change)
+        self.assertEqual(code, 1, out)
+        self.assertIn("expected 53 skills / 6 hooks, found 53 / 5", out)
+
+    def test_missing_codex_count_claim_fails(self):
+        code, out = run_drift_on_copy(lambda copy: edit_copy(
+            copy, ".codex-plugin/plugin.json", r"\d+ skills and \d+ hooks", "Engineering tools"))
+        self.assertEqual(code, 1, out)
+        self.assertIn(".codex-plugin/plugin.json", out)
+        self.assertIn("'N skills ... N hooks'", out)
+
+    def test_codex_hook_ground_truth_cannot_be_null_or_empty(self):
+        for hooks in (None, {}):
+            with self.subTest(hooks=hooks):
+                def change(copy):
+                    with open(os.path.join(copy, "hooks/codex.json"), "w", encoding="utf-8") as fh:
+                        json.dump({"hooks": hooks}, fh)
+                code, out = run_drift_on_copy(change)
+                self.assertEqual(code, 1, out)
+                self.assertIn("hooks/codex.json", out)
 
 
 class DriftGateAgentCount(unittest.TestCase):

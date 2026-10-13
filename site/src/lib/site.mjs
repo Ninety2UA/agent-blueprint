@@ -7,8 +7,9 @@
 //                            README.md, memoized per start. The default start is this module's folder, which
 //                            also works from a bundled build chunk because the build output stays inside site/.
 //   getSiteData(root?)       a SiteData (the typedefs below), synchronous and memoized per root. version
-//                            and repoUrl come from .claude-plugin/plugin.json (`version`, `repository`);
-//                            the rest from README.md, skills/ and hooks/ through readme.mjs and skills.mjs.
+//                            and repoUrl come from .claude-plugin/plugin.json (`version`, `repository`),
+//                            onboarding from .codex-plugin/plugin.json; the rest from README.md, skills/ and
+//                            hooks/ through readme.mjs and skills.mjs.
 //                            The typedefs are the one statement of the shape: .ts and .astro files get
 //                            them from the return type, or by name with `import type { Skill } from`
 //                            this file, so a field renamed in a typedef fails `astro check` wherever it
@@ -43,6 +44,8 @@ export const SITE_URL = 'https://agent-blueprint.dbenger.com';
  * @property {string} route  the Install route cell, as Markdown
  * @property {string[]} commands  the commands in that cell, in order
  * @property {string} hostDoc  "docs/hosts/claude-code.md"
+ * @property {{ heading: string, slug: string } | null} section  the README "Install" subsection named after the
+ *   tool ("Codex in the CLI and the app"), which renders on Getting started; null when it has none
  * @property {{ syntax: string | null, example: string }} naming  from the naming table
  * @property {{ hooks: string, helpers: string, manualOnly: string }} support  cells of the support table
  */
@@ -59,6 +62,8 @@ export const SITE_URL = 'https://agent-blueprint.dbenger.com';
  * @property {string} summary  the README row's summary cell
  * @property {string} when  the README row's "use when" cell
  * @property {string} description  the SKILL.md frontmatter description
+ * @property {{ displayName: string, shortDescription: string } | null} codex  the name and line Codex's $ picker
+ *   shows, from the skill's agents/openai.yaml; null without that file
  * @property {{ name: string, path: string }[]} helpers  the prompts in its references/agents/
  * @property {string[]} related  the other skills of its phase
  * @property {string | null} prev  the neighbor in phase-table order, null at the ends
@@ -88,9 +93,11 @@ export const SITE_URL = 'https://agent-blueprint.dbenger.com';
  * @property {string} repoUrl
  * @property {string} siteUrl
  * @property {Counts} counts
- * @property {string} cloneCommand  the lines under README "### 1. Get the code", newline-separated
- * @property {string} installCommand  "bash install.sh"
+ * @property {string} allToolsCommand  the command under README "### Set up every tool at once": the clone
+ *   and the installer joined by " && "
  * @property {Tool[]} tools
+ * @property {Record<string, string>} onboarding  tool id -> the skill that tool offers right after install:
+ *   { codex: "ab-project-start" } from `extensions["com.openai"].onboardingSkill` in .codex-plugin/plugin.json
  * @property {Phase[]} phases
  * @property {Skill[]} skills
  * @property {Helper[]} helpers
@@ -112,6 +119,17 @@ export function findRepoRoot(start = dirname(fileURLToPath(import.meta.url))) {
 
 function readPlugin(root) {
   return JSON.parse(readFileSync(join(root, '.claude-plugin', 'plugin.json'), 'utf8'));
+}
+
+// The skills a tool offers right after install, by tool id. Codex names its own in its manifest.
+function readOnboarding(root) {
+  const file = join(root, '.codex-plugin', 'plugin.json');
+  if (!existsSync(file)) return {};
+  const path = JSON.parse(readFileSync(file, 'utf8')).extensions?.['com.openai']?.onboardingSkill;
+  if (!path) return {};
+  const skill = path.match(/^(?:\.\/)?skills\/([^/]+)\/SKILL\.md$/)?.[1];
+  if (!skill) throw new Error(`.codex-plugin/plugin.json: onboardingSkill "${path}" is not a skills/<name>/SKILL.md path`);
+  return { codex: skill };
 }
 
 function readReleaseNotes(root, version) {
@@ -153,9 +171,9 @@ export function getSiteData(root = findRepoRoot()) {
       tools: install.tools.length,
       phases: phases.length,
     },
-    cloneCommand: install.cloneCommand,
-    installCommand: install.installCommand,
+    allToolsCommand: install.allToolsCommand,
     tools: install.tools,
+    onboarding: readOnboarding(root),
     phases: phases.map(({ slug, title, skills }) => ({ slug, title, skills: skills.map((s) => s.name) })),
     skills: joinSkills({ root, folders, phases, repoUrl, helpersOf }),
     helpers: parseHelpers(readme).map((helper) => ({ ...helper, usedBy: usedBy(helper.name) })),

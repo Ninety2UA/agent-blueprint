@@ -6,7 +6,8 @@ Loaded on demand from SKILL.md when checking a situation against the quick refer
 
 | Situation | Action |
 |-----------|--------|
-| `.worktrees/` exists | Use it (verify ignored) |
+| User named a location | Use it; verify ignored if project-local |
+| `.worktrees/` exists and no user location | Use it (verify ignored) |
 | `worktrees/` exists | Use it (verify ignored) |
 | Both exist | Use `.worktrees/` |
 | Neither exists | Check the instructions file, then ask the user (headless: the global location) |
@@ -25,7 +26,7 @@ Loaded on demand from SKILL.md when checking a situation against the quick refer
 ### Assuming directory location
 
 - **Problem:** Creates inconsistency, violates project conventions
-- **Fix:** Follow the priority: an existing directory, then the instructions file's preference, then ask
+- **Fix:** Follow the priority: the user's explicit location, then an existing directory, then the instructions file's preference, then ask
 
 ### Proceeding with failing tests
 
@@ -66,7 +67,7 @@ Each of these breaks the isolation or hides a failure the baseline exists to cat
 - Force a worktree removal, or tidy a dirty worktree so the removal passes
 
 **Always:**
-- Follow the directory priority: an existing directory, then the instructions file's preference, then ask
+- Follow the directory priority: the user's explicit location, then an existing directory, then the instructions file's preference, then ask
 - Verify directory is ignored for project-local
 - Auto-detect and run project setup
 - Verify clean test baseline

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Resume Session"
+  short_description: "Pick up where the last session left off"

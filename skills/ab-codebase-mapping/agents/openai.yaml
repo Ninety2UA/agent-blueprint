@@ -1,0 +1,3 @@
+interface:
+  display_name: "Codebase Mapping"
+  short_description: "Map an unfamiliar codebase before changing it"

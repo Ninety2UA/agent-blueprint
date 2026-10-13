@@ -2,7 +2,7 @@
 name: ab-iterative-refinement
 description: "Runs review-fix-review cycles on a change until quality converges: a deslop pass, then per iteration an ab-review-swarm review, findings routed by tier, fixes through ab-resolve-in-parallel, tests, build and a commit, until the convergence mode is met (fast: no P1, deep: no P1 or P2, perfect: none) or max_iterations (default 3) runs out. Use when ab-ship-pipeline or ab-build-pipeline reaches review, or when the user wants code polished past a single review pass. Not for a trivial change (one ab-review-swarm pass) or findings that need an architecture change (re-plan)."
 metadata:
-  version: "4.0.2"
+  version: "4.1.0"
 ---
 
 # Iterative Refinement
@@ -11,7 +11,7 @@ This skill takes an implemented change through review→fix→review cycles and 
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-iterative-refinement", "version": "4.0.2", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-iterative-refinement.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-iterative-refinement", "version": "4.1.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-iterative-refinement.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## Configuration
 
@@ -29,7 +29,7 @@ Only P3s left in fast mode means converged: they are suggestions, not blockers. 
 
 Take the `scope` to review (a diff, a branch or specific files; ab-ship-pipeline passes the branch against main) and record the start with `references/reports.md` § Start.
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 Here each 2a review covers the working tree and untracked files against the merge base, which holds the earlier iterations' uncommitted fixes, and 2f records its message instead of committing.
 

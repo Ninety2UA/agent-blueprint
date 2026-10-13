@@ -1,0 +1,3 @@
+interface:
+  display_name: "Iterative Refinement"
+  short_description: "Review and fix a change until it converges"

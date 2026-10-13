@@ -6,6 +6,7 @@
 //   inlineCode(s)      README inline Markdown as HTML: escaped, `code` spans as <code>.
 //   listJoin(items)    "a", "a and b", "a, b and c"; an empty list gives "".
 //   capitalize(s)      s with its first character upper-cased: "eight" -> "Eight".
+//   escapeRegExp(s)    s with the characters a RegExp gives meaning to escaped, to match it literally.
 
 /** @param {string} s @returns {string} */
 export const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -18,3 +19,6 @@ export const listJoin = (items) => (items.length < 2 ? items.join('') : `${items
 
 /** @param {string} s @returns {string} */
 export const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** @param {string} s @returns {string} */
+export const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

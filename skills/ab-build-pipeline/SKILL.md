@@ -3,7 +3,7 @@ name: ab-build-pipeline
 description: "Runs a feature through eight supervised stages (discuss, brainstorm, plan, execute, review, verify, optional deploy check, knowledge capture) with a checkpoint after each where the user approves, changes or stops; research and plan-check helpers feed the plan, and complex plans run as team waves. Use when building a non-trivial feature or multi-file change with oversight or approval between steps. Not for hands-off runs with no checkpoints (ab-ship-pipeline) or a change under three files with an obvious approach (ab-quick-fix)."
 argument-hint: "<feature description> [--quick] [--iterate N] [--deploy] [--team]"
 metadata:
-  version: "4.0.2"
+  version: "4.1.0"
 ---
 
 # Build Pipeline — Full-Cycle Development
@@ -14,7 +14,7 @@ This skill runs a feature from requirements to verified code one stage at a time
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-build-pipeline", "version": "4.0.2", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-build-pipeline.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-build-pipeline", "version": "4.1.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-build-pipeline.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 Not for a refactor with no behavior change (ab-iterative-refinement), a plan only (ab-writing-plans), or research first (ab-deep-research, ab-spike-exploration).
 
@@ -59,7 +59,7 @@ Checkpoint: the user approves the plan. Default when nobody answers: the plan as
 - **Under four tasks, or all sequential:** invoke the ab-executing-plans skill.
 - **Four or more tasks with mixed dependencies, or `--team`:** invoke the ab-orchestrate skill with `--no-review`. Stage 5, not that skill, does the review.
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 No-commit mode covers the skill Stage 4 runs, the Stage 5 fixes and the Stage 5 review.
 

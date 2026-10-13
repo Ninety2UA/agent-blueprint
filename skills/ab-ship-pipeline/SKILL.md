@@ -3,7 +3,7 @@ name: ab-ship-pipeline
 description: "Ships a feature end to end with no checkpoints: recorded assumptions, a verified and deepened plan, execution through ab-orchestrate, review until it converges, then commits and a PR body, tracked in .agent-blueprint/run/state.json. Use when the user wants a well-defined feature built hands-off, fire and forget, through to a pull request. Not for work the user approves stage by stage (ab-build-pipeline) or a change under three files (ab-quick-fix)."
 argument-hint: "<feature description> [--swarm] [--iterations N] [--convergence fast|deep|perfect] [--deploy] [--external]"
 metadata:
-  version: "4.0.2"
+  version: "4.1.0"
 ---
 
 # Ship Pipeline — Autonomous End-to-End
@@ -14,7 +14,7 @@ Announce at start: "Starting ship pipeline: autonomous, no checkpoints, a PR at 
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-ship-pipeline", "version": "4.0.2", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-ship-pipeline.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-ship-pipeline", "version": "4.1.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-ship-pipeline.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## Run state
 
@@ -39,7 +39,7 @@ Ship only a feature: route the request with `references/stages.md` § Intake, th
 
 ### Stage 1: Requirements (Auto-Discuss)
 
-Lock clear requirements as decisions; where they are ambiguous, lock reasonable assumptions from `docs/context/CONVENTIONS.md` and `docs/context/GOALS.md` instead of asking. Other decisions follow the ab-executing-plans skill's decision boundary, except that a must-ask category from the project instructions file is decided conservatively and locked the same way. Append decisions to `docs/context/DECISIONS.md` (append, don't overwrite) and score the requirements with `references/stages.md` § Ambiguity gate.
+Lock clear requirements as decisions; where they are ambiguous, lock reasonable assumptions from `docs/context/CONVENTIONS.md` and `docs/context/GOALS.md` instead of asking. Other decisions follow the ab-executing-plans decision boundary: conservative defaults never authorize destruction, history rewriting or an unrequested push. Apply `references/stages.md` § Authorization. Append decisions to `docs/context/DECISIONS.md` (append, don't overwrite) and score the requirements with `references/stages.md` § Ambiguity gate.
 
 ### Stage 2: Plan
 
@@ -58,7 +58,7 @@ Invoke the ab-orchestrate skill with the plan file, the `--no-review` flag and a
 
 ### Stage 5: Iterative Review
 
-**No-commit mode.** When the environment variable `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or a commit fails because `.git` is read-only, make no commits: leave the changes in the working tree and add the commit message you would have used to `.agent-blueprint/run/commit-msg.md`, and the ship runner commits them after the session. A review step in this mode reviews the working tree and untracked files against the merge base instead of a commit range.
+**No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 
 Invoke the ab-iterative-refinement skill (with `--swarm`, alongside browser testing: `references/modes-and-reports.md` § Swarm-mode review), passing `max_iterations` (`--iterations`, default 3), `convergence` (`--convergence`, default `fast`), `scope` (this branch against its merge base with the default branch, or in no-commit mode the working tree) and earlier rounds' Skip and Defer decisions, so declined findings stay declined (ab-iterative-refinement Step 2a).
 

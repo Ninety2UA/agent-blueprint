@@ -15,6 +15,9 @@
 //   readFrontmatter(text, where)    the SKILL.md frontmatter as an object: top-level scalars and one level
 //                                   of nested scalars (metadata.version). Throws naming `where` on a line it
 //                                   cannot read or a block scalar (| or >), rather than guess.
+//   readCodexInterface(root, skill) { displayName, shortDescription } from skills/<skill>/agents/openai.yaml
+//                                   (`interface.display_name`, `interface.short_description`): the name and line
+//                                   Codex's $ picker shows. null without that file; throws when it lacks either key.
 //   listHelperFiles(root, skill)    [{ name, path }] for the helper prompts in skills/<skill>/references/agents/,
 //                                   sorted by name, companion notes left out; path is repository-relative.
 //   helperLister(root)              skill => listHelperFiles(root, skill), memoized: each folder is read once and
@@ -22,10 +25,10 @@
 //                                   without it they read the folders themselves.
 //   countHelperPrompts(root, helpersOf?), countHooks(root)  the helper and hook counts.
 //   joinSkills({ root, folders, phases, repoUrl, helpersOf? })
-//                                   [{ name, phase, summary, when, description, helpers, related, prev, next,
-//                                   githubUrl }] in phase-table order. phase is the phase slug, summary and
+//                                   [{ name, phase, summary, when, description, codex, helpers, related, prev,
+//                                   next, githubUrl }] in phase-table order. phase is the phase slug, summary and
 //                                   when the README row's cells, description the SKILL.md frontmatter's,
-//                                   related the other skills in the same phase, prev and next the neighbors
+//                                   codex readCodexInterface's, related the other skills in the same phase, prev and next the neighbors
 //                                   in that order (null at the ends). Throws naming every folder that is in
 //                                   no phase table.
 
@@ -47,15 +50,14 @@ function scalar(raw, where) {
   return raw;
 }
 
-export function readFrontmatter(text, where) {
-  const block = text.match(/^---\n([\s\S]*?)\n---\n/);
-  if (!block) throw new Error(`${where}: no frontmatter`);
+// Top-level scalars and one level of nested scalars, one per line; comment lines are skipped.
+function readYamlLines(lines, where) {
   const data = {};
   let parent = null;
-  for (const line of block[1].split('\n')) {
-    if (!line.trim()) continue;
+  for (const line of lines) {
+    if (!line.trim() || line.trim().startsWith('#')) continue;
     const m = line.match(/^(\s*)([A-Za-z0-9_-]+):\s*(.*)$/);
-    if (!m) throw new Error(`${where}: cannot read frontmatter line "${line}"`);
+    if (!m) throw new Error(`${where}: cannot read line "${line}"`);
     const [, indent, key, raw] = m;
     if (indent) {
       if (!parent) throw new Error(`${where}: indented line "${line}" has no parent key`);
@@ -69,6 +71,21 @@ export function readFrontmatter(text, where) {
     }
   }
   return data;
+}
+
+export function readFrontmatter(text, where) {
+  const block = text.match(/^---\n([\s\S]*?)\n---\n/);
+  if (!block) throw new Error(`${where}: no frontmatter`);
+  return readYamlLines(block[1].split('\n'), `${where} frontmatter`);
+}
+
+export function readCodexInterface(root, skill) {
+  const file = join(root, 'skills', skill, 'agents', 'openai.yaml');
+  if (!existsSync(file)) return null;
+  const where = `skills/${skill}/agents/openai.yaml`;
+  const ui = readYamlLines(readFileSync(file, 'utf8').split('\n'), where).interface ?? {};
+  if (!ui.display_name || !ui.short_description) throw new Error(`${where}: interface needs display_name and short_description`);
+  return { displayName: ui.display_name, shortDescription: ui.short_description };
 }
 
 function isCompanion(stem, stems) {
@@ -130,6 +147,7 @@ export function joinSkills({ root, folders, phases, repoUrl, helpersOf = (skill)
       summary: row.summary,
       when: row.when,
       description: frontmatter.description,
+      codex: readCodexInterface(root, row.name),
       helpers: helpersOf(row.name),
       related: phase.skills.map((s) => s.name).filter((name) => name !== row.name),
       prev: i > 0 ? order[i - 1].row.name : null,

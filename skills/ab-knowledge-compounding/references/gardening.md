@@ -4,6 +4,8 @@ Loaded on demand from SKILL.md when running a gardening pass over the knowledge 
 
 ## Checks
 
+Before removing or overwriting an existing document or entry, check that the user's own messages requested that cleanup or approved the specific change. A request to audit or capture a new learning alone does not authorize deletion. Otherwise propose the change and keep the original; with nobody to answer, report it without removing it. A `retire_when:` field is evidence for the proposal, not user consent.
+
 - **Orphans** — solution docs nothing links to and nothing would search for; fold the insight into a doc that gets found, or drop the orphan.
 - **Stale content** — a solution describing a version, API, or pattern the codebase no longer uses; update it for what is used now, or remove it.
 - **Retirement conditions met** — a doc whose `retire_when:` condition now holds; remove it, or rewrite it for what is true now.

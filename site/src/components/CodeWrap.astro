@@ -1,0 +1,9 @@
+---
+// Renders its slot (rendered Markdown, such as a docs page's intro) with inline code wrapped as
+// breakCodeAfterSlashes in wrap-points.mjs says: short hyphenated names stay whole on a phone,
+// paths wrap at a slash.
+import { breakCodeAfterSlashes } from './wrap-points.mjs';
+
+const html = await Astro.slots.render('default');
+---
+<Fragment set:html={breakCodeAfterSlashes(html)} />

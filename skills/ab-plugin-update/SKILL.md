@@ -14,17 +14,28 @@ Say at the start: "Upgrading Agent Blueprint..."
 
 ## Step 1: Find the install route
 
-Look at where this skill's own folder (the one holding this SKILL.md) lives, and which tool is running it:
+Look at where this skill's own folder (the one holding this SKILL.md) lives, and which tool is running it. The locations below use default homes; honor the host's configured home when it differs.
+
+When running in Codex, first run `codex plugin list --json`. Find the entry in `installed` whose `pluginId` is `agent-blueprint@agent-blueprint`. If present, use the Codex plugin route even if this skill was loaded from an older copy. If the listing fails or cannot be read, report it and stop; that is not evidence of a copy install.
 
 | This skill's folder is in | Route |
 |---|---|
-| Claude Code's plugin cache, under `~/.claude/plugins/cache/` | Claude Code plugin |
-| a plugin another tool installed from its marketplace or a git URL (Codex, Antigravity, Grok Build, Pi, Cursor CLI, Amp) | that tool's plugin or skill manager |
-| a plain skills folder that `install.sh` filled, such as `~/.agents/skills/` or Hermes's skills folder | copy install |
-| a git checkout of Agent Blueprint (a local development install, or a folder the tool reads directly) | checkout |
+| Claude Code's plugin cache, under `~/.claude/plugins/cache/`, also read by Cursor and Amp | Claude Code plugin |
+| Codex's `plugins/cache/agent-blueprint/agent-blueprint/<version>/` under `CODEX_HOME` (default `~/.codex`) | Codex plugin |
+| `~/.gemini/config/plugins/agent-blueprint/` | Antigravity |
+| `~/.grok/installed-plugins/<dir>-<hash>/` | Grok Build |
+| `~/.pi/agent/git/github.com/Ninety2UA/agent-blueprint/`, or a local package path in `~/.pi/agent/settings.json` | Pi |
+| `~/.cursor/plugins/cache/<marketplace>/agent-blueprint/<sha>/` | Cursor |
+| `~/.hermes/skills/` | Hermes |
+| `~/.config/amp/skills/` | Amp |
+| a recorded legacy copy in `~/.agents/skills/`, `~/.grok/skills/` or `~/.pi/agent/skills/` | Copy install, to migrate to each tool's own route |
+| another skills folder recorded by `install.sh --copy-dir` | Copy install, preserving that explicit destination |
+| a git checkout of Agent Blueprint (local development or a folder the tool reads directly) | Checkout, followed by the host's local refresh if it keeps a cache or copy |
 | a project's `.claude/skills/`, `.claude/agents/` or `.claude/commands/` | old in-project copy |
 
-Note the installed version: in Claude Code from `claude plugin list --json` (the `agent-blueprint@agent-blueprint` row, with its scope); elsewhere from `.claude-plugin/plugin.json` at the root of the installed plugin (walk up from this skill's folder); otherwise "unknown".
+A checkout path does not override an identified host registration. Where a route distinguishes Git and local sources, read that distinction and the original checkout path from the host's install metadata; a cache directory alone does not establish the source. If that source is unknown, report it and stop before updating.
+
+Note the installed version: for Claude Code use `claude plugin list --json` (the `agent-blueprint@agent-blueprint` row, with its scope); for Codex use the cached `.codex-plugin/plugin.json` as described in Step 2's route notes; for copies read `version` in the containing skills folder's `.agent-blueprint-install.json`; otherwise read `.claude-plugin/plugin.json` at the installed plugin or checkout root. If unreadable, record "unknown".
 
 If the folder fits no row, ask which route applies.
 
@@ -34,45 +45,25 @@ Options: 1. the tool's plugin or skill manager; 2. a copy install, so re-run `in
 
 ## Step 2: Run the route's command
 
-The user started this skill to get the upgrade done, so run a command yourself when it is a shell command you can run. Show interactive commands, such as Claude Code's `/plugin`, for the user to type.
+The user started this skill to get the upgrade done, so run a command yourself when it is a shell command you can run. Show interactive commands, such as Claude Code's `/plugin`, for the user to type. If unavailable here, show the exact command and report the update as pending.
 
-- **Claude Code plugin.** From the project root, refresh the catalog, then upgrade the plugin:
+Read `references/update-routes.md` at this step and follow the matching route. Run each command only after the preceding one succeeds. If an update fails, report the command and error and stop; never fall back to a copy install or create a shared `~/.agents/skills` copy. An existing plugin stays on its plugin route, including during version recovery.
 
-  ```bash
-  claude plugin marketplace update agent-blueprint
-  claude plugin update agent-blueprint@agent-blueprint
-  ```
-
-  Add `--scope project` or `--scope local` when the `claude plugin list --json` row shows it is installed for one project, and `--yes` when no terminal is attached. If the update command rejects the `plugin@marketplace` name, use `/plugin` and pick the update, or `/plugin install agent-blueprint@agent-blueprint`, which refreshes the marketplace first and installs the latest version.
-- **Codex.** Upgrade it through Codex's plugin command (`codex plugin`; its `--help` lists the subcommands), from the marketplace it was added from. If that command has no update subcommand, use the copy-install route.
-- **Another tool's plugin or skill manager** (Antigravity's `agy plugin`, Grok Build's plugin command, Pi's `pi`, Cursor CLI's `cursor-agent plugin`, Amp's `amp skill`): tell the user to run that manager's update for agent-blueprint. Where you are not sure the manager has an update, use the copy-install route instead.
-- **Copy install.** Re-run the installer from a fresh checkout. It detects the installed tools and installs into each, replacing the copied skills. Run the dry run first and show its output.
-
-  ```bash
-  CHECKOUT=$(mktemp -d)
-  git clone --depth 1 https://github.com/Ninety2UA/agent-blueprint.git "$CHECKOUT/agent-blueprint"
-  bash "$CHECKOUT/agent-blueprint/install.sh" --dry-run
-  ```
-
-  **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
-
-  Ask whether to run it for real (`bash "$CHECKOUT/agent-blueprint/install.sh"`). Default when nobody answers: proceed, since the user started this skill to get the upgrade done.
-
-  Keep the checkout until Step 3 has read its version, then remove that temporary folder.
-- **Checkout.** Pull it with `git -C <checkout> pull --ff-only`. If the pull stops because the checkout has local changes, show them and stop: they are the user's.
-- **Old in-project copy.** Agent Blueprint v4 has no in-project install, so there is nothing to upgrade in place. Tell the user to install the plugin with their tool's installer or `install.sh`, then clear out the old copy with the Agent Blueprint migration skill, and stop here.
+**Old in-project copy.** Agent Blueprint v4 has no in-project install, so there is nothing to upgrade in place. Tell the user to install the plugin with their tool's installer or `install.sh`, then clear out the old copy with the Agent Blueprint migration skill, and stop here.
 
 ## Step 3: Check the version
 
-Read the latest release's version from `.claude-plugin/plugin.json` on `main`: in the fresh checkout if Step 2 made one, otherwise from `https://raw.githubusercontent.com/Ninety2UA/agent-blueprint/main/.claude-plugin/plugin.json` with a web fetch tool or a plain `curl -fsSL`. Then read the installed version again, as in Step 1.
+Read the latest release's version from `.claude-plugin/plugin.json` on `main`: in the fresh checkout if Step 2 made one, otherwise from `https://raw.githubusercontent.com/Ninety2UA/agent-blueprint/main/.claude-plugin/plugin.json` with a web fetch tool or a plain `curl -fsSL`. Then resolve the updated install location through its manager and read the installed version again as in Step 1; the folder this session loaded may still be the old cache. For a migrated copy, re-detect its new route. The fresh checkout's version alone does not prove the install succeeded.
 
 - Equal: the upgrade worked, or it was already current.
-- Installed still older: say which route did not take and give the next one to try, `/plugin install agent-blueprint@agent-blueprint` in Claude Code or a re-run of `install.sh` elsewhere.
+- Installed still older: report the mismatch and the same route's next step; do not switch to a copy install. A Codex cache is keyed by version, so report a stale same-version cache rather than rewriting it by hand.
 - Either version unreadable: report what you could read and say the check was not possible.
 
 ## Step 4: Report
 
-```
+Use the success report only after verification; otherwise report failed, pending or unverified with the observed version and the remaining step.
+
+```text
 ✓ Agent Blueprint at v[VERSION] (was v[OLD VERSION]; or "already up to date")
   Route: [Claude Code plugin, scope user|project|local | Codex plugin | copy install | checkout | ...]
   Verified: installed version matches .claude-plugin/plugin.json on main
