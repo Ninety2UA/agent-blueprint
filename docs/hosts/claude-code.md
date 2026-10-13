@@ -64,7 +64,7 @@ Nothing beyond the host's own terms is known.
 
 Install: the v4.1.0 install record ([docs/releases/v4.1.0-installs.md](../releases/v4.1.0-installs.md)) shows this tool installing Agent Blueprint by its own route and listing each skill once.
 
-From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-smoke.md)), host version 2.1.296 (Claude Code), last cell 2026-10-12.
+From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-smoke.md)), host version 2.1.296 (Claude Code), last cell 2026-10-13.
 
 | Cell | State | Time | Reason |
 |------|-------|------|--------|
@@ -72,5 +72,5 @@ From the v4.1.0 smoke table ([docs/releases/v4.1.0-smoke.md](../releases/v4.1.0-
 | `hooks` | pass | 5s | handlers wrote the trace: session-start.js x1, ship-loop.sh x1 (canary prompt run with the trace exported) |
 | `manual-only` | pass | 12s | ab-plugin-update is not in the catalog the model sees; ab-pr-workflow and ab-project-start are |
 | `debug` | degraded-pass (inline) | 1m49s | suite passes; store.py fixed; regression test present · helper steps: inline |
-| `tdd-override` | pass | 1m34s | seeded functions retain their recorded behavior; count_words test present; suite passes |
+| `tdd-override` | pass | 33s | seeded functions retain their recorded behavior; count_words gives the recorded counts; a collected test calls count_words and passes; suite passes |
 | `brainstorm-override` | pass | 2m22s | no design approval request; plan or code: docs/plans/2026-10-12-note-count.md, src/notes/store.py |

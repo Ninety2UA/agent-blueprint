@@ -64,18 +64,18 @@
         },
         "tdd-override": {
           "cost_usd": null,
-          "date": "2026-10-12T17:33:23Z",
+          "date": "2026-10-13T16:20:39Z",
           "link": "",
-          "log": "tests/smoke/logs/20261012-192455/agy/tdd-override.log",
+          "log": "tests/smoke/logs/20261013-181515/agy/tdd-override.log",
           "plugin_dir": "~/.gemini/config/plugins/agent-blueprint/skills",
-          "reason": "seeded functions retain their recorded behavior; count_words test present; suite passes",
-          "seconds": 189,
+          "reason": "seeded functions retain their recorded behavior; count_words gives the recorded counts; a collected test calls count_words and passes; suite passes",
+          "seconds": 323,
           "session": "",
           "state": "pass",
-          "tokens": 154458
+          "tokens": 145716
         }
       },
-      "version": "1.3.3"
+      "version": "1.3.4"
     },
     "amp": {
       "cells": {},
@@ -144,16 +144,16 @@
           "tokens": 36501
         },
         "tdd-override": {
-          "cost_usd": 1.0565,
-          "date": "2026-10-12T17:13:51Z",
+          "cost_usd": 0.3255,
+          "date": "2026-10-13T16:15:48Z",
           "link": "",
-          "log": "tests/smoke/logs/20261012-191004/claude/tdd-override.log",
-          "plugin_dir": "~/.claude/plugins/cache/agent-blueprint/agent-blueprint/4.1.0/skills",
-          "reason": "seeded functions retain their recorded behavior; count_words test present; suite passes",
-          "seconds": 94,
-          "session": "ac8215d3-063d-4ed8-8e2f-a428e930e9ac",
+          "log": "tests/smoke/logs/20261013-181515/claude/tdd-override.log",
+          "plugin_dir": "~/projects/claude-eng/project-template/project-template",
+          "reason": "seeded functions retain their recorded behavior; count_words gives the recorded counts; a collected test calls count_words and passes; suite passes",
+          "seconds": 33,
+          "session": "7f75b14a-9d37-4cf7-b04b-79be7d695fa4",
           "state": "pass",
-          "tokens": 303659
+          "tokens": 228914
         }
       },
       "version": "2.1.296 (Claude Code)"
@@ -299,13 +299,13 @@
         },
         "tdd-override": {
           "cost_usd": null,
-          "date": "2026-10-12T17:41:06Z",
+          "date": "2026-10-13T16:18:31Z",
           "link": "",
-          "log": "tests/smoke/logs/20261012-193757/cursor-agent/tdd-override.log",
-          "plugin_dir": "$TMPDIR/.../ab-src-410",
-          "reason": "seeded functions retain their recorded behavior; count_words test present; suite passes",
-          "seconds": 63,
-          "session": "68ff070e-8c06-4359-8ba9-05e3850a6dc0",
+          "log": "tests/smoke/logs/20261013-181515/cursor-agent/tdd-override.log",
+          "plugin_dir": "~/projects/claude-eng/project-template/project-template",
+          "reason": "seeded functions retain their recorded behavior; count_words gives the recorded counts; a collected test calls count_words and passes; suite passes",
+          "seconds": 195,
+          "session": "84867536-56e9-4002-acb7-f0251c176413",
           "state": "pass",
           "tokens": null
         }
@@ -552,7 +552,20 @@
         "codex"
       ],
       "plugin_dir": "$TMPDIR/.../wt"
+    },
+    {
+      "cells": [
+        "tdd-override"
+      ],
+      "command": "bash tests/smoke/run-smoke.sh --host claude,agy,cursor-agent --cell tdd-override --jobs 3 --out $TMPDIR/.../smoke-out",
+      "date": "2026-10-13 16:20 UTC",
+      "hosts": [
+        "agy",
+        "claude",
+        "cursor-agent"
+      ],
+      "plugin_dir": "~/projects/claude-eng/project-template/project-template"
     }
   ],
-  "updated": "2026-10-13 14:11 UTC"
+  "updated": "2026-10-13 16:20 UTC"
 }
