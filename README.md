@@ -122,6 +122,8 @@ bash agent-blueprint/install.sh
 
 It adds `--trust` to Grok Build's install so Grok does not stop to ask. For Cursor CLI without Claude Code, it adds the marketplace and lists `/plugin` as the step left for you, because a script cannot run it. It writes no shared `~/.agents/skills` copy, removes the copies an earlier version recorded, and ends by pointing you to the setup skill.
 
+The installer needs `python3`, which it uses to read each tool's install records. If one tool's install fails, it still installs the others, then lists which tools finished and which failed and exits with an error; the failed tool keeps its current install. Before it replaces a marketplace that points somewhere else, it checks that GitHub answers, because removing a marketplace uninstalls its plugin.
+
 In the clone, `install.sh` takes these options:
 
 ```bash
@@ -885,7 +887,7 @@ Each tool updates through its own route, and [Update](#update) gives the command
 <details>
 <summary><strong>How do I move a 4.0 install to the new routes?</strong></summary>
 
-Run the installer once more, without `--only`: `git pull` and `bash install.sh` in the clone you have, or clone it again with the command under [Set up every tool at once](#set-up-every-tool-at-once). It installs each tool by its own route, then removes the copies 4.0 recorded in `~/.agents/skills`, `~/.grok/skills` and `~/.pi/agent/skills`, touching only the skills it recorded. If a route fails, the copies it would replace stay until a later run succeeds. A run with `--only` retires an old copy only for the tools in that run, and keeps the shared copy, with a warning, while a tool outside the run still reads it. If you install with a tool's own command instead and keep the old copy, that tool lists every skill twice.
+Run the installer once more, without `--only`: `git pull` and `bash install.sh` in the clone you have, or clone it again with the command under [Set up every tool at once](#set-up-every-tool-at-once). It installs each tool by its own route, then removes the copies 4.0 recorded in `~/.agents/skills`, `~/.grok/skills` and `~/.pi/agent/skills`, touching only the skills it recorded. If one tool's install fails, the others still install, the installer names the one that failed, and the copies that install would replace stay until a later run succeeds. A run with `--only` retires an old copy only for the tools in that run, and keeps the shared copy, with a warning, while a tool outside the run still reads it. If you install with a tool's own command instead and keep the old copy, that tool lists every skill twice.
 </details>
 
 <details>
