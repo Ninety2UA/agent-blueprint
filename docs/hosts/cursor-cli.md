@@ -17,7 +17,9 @@ Without Claude Code, add Cursor's own marketplace from GitHub (through `.cursor-
 cursor-agent plugin marketplace add https://github.com/Ninety2UA/agent-blueprint
 ```
 
-There is no `plugin install` shell subcommand in 2026.09.10, so `/plugin` is a step you take in the session. `bash install.sh` does nothing for Cursor when Claude Code has the plugin; otherwise it adds the marketplace and lists `/plugin` as unfinished, and with `--local` it prints `cursor-agent --plugin-dir <checkout>`, which loads a checkout for one session. Do not combine Cursor's own install with Claude Code's plugin: Cursor would list every skill twice.
+There is no `plugin install` shell subcommand in 2026.09.10, so `/plugin` is a step you take in the session. When Claude Code has the plugin, `bash install.sh` runs no Cursor command; if this computer also has Cursor's own install, it says to uninstall agent-blueprint in `/plugin` and leaves the marketplace in place. Otherwise it adds the marketplace and lists `/plugin` as unfinished, and with `--local` it prints `cursor-agent --plugin-dir <checkout>`, which loads a checkout for one session. Do not combine Cursor's own install with Claude Code's plugin: Cursor would list every skill twice.
+
+Cursor keeps marketplaces on your account, not on the computer: on 2026-10-13, with 2026.10.01, a marketplace added from one profile was listed in every profile signed in to the account. Removing it removes it for every computer signed in, including any that installs agent-blueprint from it, so the installer never removes it. Remove it yourself with `cursor-agent plugin marketplace remove agent-blueprint` once no computer uses it.
 
 Cursor's import of Claude Code plugins includes plugins Claude Code installed for other projects: with the v3 `claude-code-blueprint` plugin still installed anywhere, Cursor sees its unprefixed skills (for example `systematic-debugging`) beside the v4 `ab-` skills and may follow the old one. Remove the v3 plugin as `docs/upgrade/v4.md` describes.
 
