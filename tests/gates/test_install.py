@@ -306,20 +306,17 @@ class Installer(InstallerHarness):
         self.assertEqual(self.cursor_uninstall_notes(out), [])
         self.assertIn("Cursor CLI: covered by the Claude Code plugin", out)
 
-    def test_cursor_plugin_cache_without_a_record_gets_the_uninstall_note(self):
-        # /plugin installed agent-blueprint on this computer from a marketplace another computer added.
+    def test_cursor_cache_folder_alone_is_not_taken_as_an_install(self):
+        # Cursor caches plugins it never installed (observed: four cached, none installed), so only the
+        # installer's own record means Cursor has its own copy.
         self.fake_claude_with_plugin()
-        self.fake_tool("cursor-agent", {"plugin marketplace remove agent-blueprint": {"code": 1}})
+        self.fake_tool("cursor-agent")
         self.cursor_plugin_cache()
         code, out = self.run_install("--only", "cursor-agent")
         self.assertEqual(code, 0, out)
         self.assertEqual(self.cursor_calls(), [])
-        self.assertEqual(len(self.cursor_uninstall_notes(out)), 1, out)
-        self.assertFalse(self.routes().exists())
-        # The note repeats while Cursor's own install is still there.
-        code, out = self.run_install("--only", "cursor-agent")
-        self.assertEqual(code, 0, out)
-        self.assertEqual(len(self.cursor_uninstall_notes(out)), 1, out)
+        self.assertFalse([line for line in out.splitlines() if line.startswith("  ! Cursor CLI:")], out)
+        self.assertIn("Cursor CLI: covered by the Claude Code plugin", out)
 
     def test_cursor_uninstall_note_in_a_dry_run_keeps_the_record(self):
         self.fake_claude_with_plugin()

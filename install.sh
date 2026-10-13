@@ -658,24 +658,21 @@ route_pi() {
 # route failed in this run, that plugin may be one the run could not refresh, so each keeps the
 # install it has of its own. Cursor keeps marketplaces on the account, where every computer signed
 # in to it shares them, so with the Claude Code plugin this route never touches Cursor's
-# marketplace. When this computer has Cursor's own install (the marketplace this installer recorded
-# adding, or the folder /plugin installs into), it says where to uninstall that second copy.
-# Without the Claude Code plugin, reconcile_marketplace still replaces a marketplace from another
-# source with the GitHub one, once GitHub answers.
+# marketplace. When this installer recorded adding that marketplace on this computer, Cursor may
+# hold its own copy too, so it says where to uninstall it: /plugin marks Claude Code's copy
+# "(Claude Code)". Cursor's plugin cache is no sign of an install, because it also keeps plugins
+# that were never installed. Without the Claude Code plugin, reconcile_marketplace still replaces
+# a marketplace from another source with the GitHub one, once GitHub answers.
 route_cursor_agent() {
-    local prior_sources has_record=false own=false cached
+    local prior_sources
     if [ "$claude_plugin" = true ]; then
-        if cursor_record has; then has_record=true; own=true; fi
-        for cached in "$HOME"/.cursor/plugins/cache/*/agent-blueprint; do
-            if [ -d "$cached" ]; then own=true; break; fi
-        done
-        if [ "$own" = true ]; then
+        if cursor_record has; then
             if failed_route claude; then
                 warn "Cursor CLI: kept its own install because Claude Code's route failed; run install.sh again once Claude Code installs."
                 return 0
             fi
-            warn "Cursor CLI: uninstall agent-blueprint in /plugin on this computer, so Cursor reads only the Claude Code plugin. Its marketplace stays, because Cursor shares it with every computer signed in to your account; once no computer uses it, run cursor-agent plugin marketplace remove agent-blueprint."
-            if [ "$has_record" = true ] && [ "$DRY_RUN" = false ]; then cursor_record remove; fi
+            warn "Cursor CLI: in /plugin, uninstall the agent-blueprint not marked (Claude Code), if one is listed, so Cursor reads only the Claude Code plugin. Its marketplace stays, because Cursor shares it with every computer signed in to your account; once no computer uses it, run cursor-agent plugin marketplace remove agent-blueprint."
+            if [ "$DRY_RUN" = false ]; then cursor_record remove; fi
         fi
         success "Cursor CLI: covered by the Claude Code plugin"
     elif [ "$LOCAL" = true ]; then

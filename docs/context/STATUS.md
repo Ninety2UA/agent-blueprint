@@ -22,7 +22,7 @@ The checklist items that can run on the build machine passed (`docs/releases/v4.
 - In the Codex app (`ChatGPT.app` on this Mac): the setup check, which the checklist marks must-pass and the maintainer chose to run right after the merge; trusting the hooks in `/hooks`; and the display names in the `$` picker.
 - In Cursor CLI: the `/plugin` install, then the changeover check with `install.sh`.
 - The checklist's after-merge section.
-- 4.1.1, not yet tagged: `install.sh` no longer removes Cursor's `agent-blueprint` marketplace on a computer that has the Claude Code plugin. Cursor keeps marketplaces on the account, so the removal reached the maintainer's other computers too. The installer now says to uninstall Cursor's own copy in `/plugin` instead. Compound Engineering never removes a Cursor marketplace either.
+- 4.1.1, not yet tagged: `install.sh` no longer removes Cursor's `agent-blueprint` marketplace on a computer that has the Claude Code plugin. Cursor keeps marketplaces on the account, so the removal reached the maintainer's other computers too. Where it had added that marketplace itself, the installer now says to uninstall Cursor's own copy in `/plugin` instead. Compound Engineering never removes a Cursor marketplace either.
 - Next release: 4.2.0 adds nine more tools. Its plan is not written yet.
 
 **Start here:** `docs/releases/v4.1.0-checklist.md`, then the description of pull request #26.

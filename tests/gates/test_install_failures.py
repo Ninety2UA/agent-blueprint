@@ -454,8 +454,8 @@ class InstallerFailures(InstallerHarness):
                          r" because Claude Code's route failed")
         self.assertRegex(out, r"(?m)^  ✗ Failed: Claude Code\. ")
 
-    def test_failed_claude_route_keeps_a_cursor_install_found_only_in_its_cache(self):
-        # The cache folder alone shows Cursor's own install (a marketplace another computer added).
+    def test_failed_claude_route_ignores_a_cursor_cache_folder(self):
+        # Without the installer's record, a cached folder is no sign of Cursor's own install.
         self.fake_tool("claude", {"plugin list": PLUGIN + " (enabled)",
                                   "plugin marketplace list": "❯ agent-blueprint\n  Source: GitHub (" + GITHUB + ")",
                                   "plugin marketplace update agent-blueprint": {"code": 1}})
@@ -464,7 +464,7 @@ class InstallerFailures(InstallerHarness):
         code, out = self.run_install("--only", "claude,cursor-agent")
         self.assertEqual(code, 1, out)
         self.assertEqual(self.cursor_calls(), [])
-        self.assertRegex(out, r"(?m)^  ! Cursor CLI: kept its own install because Claude Code's route failed")
+        self.assertNotIn("kept its own install", out)
         self.assertEqual(self.cursor_uninstall_notes(out), [])
         self.assertFalse(self.routes().exists())
 

@@ -143,15 +143,15 @@ class InstallerHarness(unittest.TestCase):
                                              "cursor-agent": {"marketplace": "agent-blueprint", "source": URL}}))
 
     def cursor_plugin_cache(self):
-        """Cursor's own install of agent-blueprint, where /plugin caches it."""
+        """An agent-blueprint folder in Cursor's plugin cache, which also holds plugins that are not installed."""
         cache = Path(self.home, ".cursor/plugins/cache/team-marketplace/agent-blueprint/0123abc/skills")
         cache.mkdir(parents=True)
         return cache
 
     def cursor_uninstall_notes(self, out):
         # Cursor keeps marketplaces on the account, so the note points at /plugin and leaves the marketplace.
-        return [line for line in out.splitlines() if line.startswith("  ! Cursor CLI: uninstall agent-blueprint "
-                "in /plugin") and "cursor-agent plugin marketplace remove agent-blueprint" in line]
+        return [line for line in out.splitlines() if line.startswith("  ! Cursor CLI: in /plugin, uninstall the "
+                "agent-blueprint not marked (Claude Code)") and "cursor-agent plugin marketplace remove agent-blueprint" in line]
 
     def pi_packages(self, *packages):
         settings = Path(self.home, ".pi/agent/settings.json")
