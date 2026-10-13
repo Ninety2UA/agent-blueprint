@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import stat
 import subprocess
@@ -34,6 +35,8 @@ class Installer(unittest.TestCase):
         self.fixtures.write_text("{}")
         # Use the test interpreter even in a deliberately restricted PATH.
         os.symlink(sys.executable, os.path.join(self.bin, "python3"))
+        # PATH reaches /usr/bin, so a real git would check GitHub over the network before a swap.
+        self.fake_tool("git")
 
     def tearDown(self):
         shutil.rmtree(self.root)
@@ -75,7 +78,8 @@ class Installer(unittest.TestCase):
         return [" ".join(json.loads(line)) for line in Path(self.log).read_text().splitlines()] if Path(self.log).exists() else []
 
     def mutations(self):
-        return [c for c in self.calls() if " list" not in c]
+        # The reachability check before a marketplace swap is asserted where it matters.
+        return [c for c in self.calls() if " list" not in c and not c.startswith("git ")]
 
     def ab_skills(self, *parts):
         path = os.path.join(self.home, *parts)
@@ -240,23 +244,31 @@ class Installer(unittest.TestCase):
         self.assertNotIn("external_dirs", out)
 
     def test_failed_route_keeps_the_copies_it_would_replace(self):
-        # Routes run codex, grok, pi in that order; a copy leaves only after its own tool's route
-        # succeeded, and the shared copy only after every route did.
-        for tool, failing, kept in (
-            ("codex", "plugin add " + PLUGIN, (".agents/skills", ".grok/skills", ".pi/agent/skills")),
-            ("grok", "plugin install " + GITHUB + " --trust", (".agents/skills", ".grok/skills", ".pi/agent/skills")),
-            ("pi", "install " + PI_SOURCE, (".agents/skills", ".pi/agent/skills")),
+        # Every route runs even when an earlier one fails. A tool's own copy leaves only after its
+        # route succeeded, and the shared copy stays while a reader's route failed.
+        folders = (".agents/skills", ".grok/skills", ".pi/agent/skills")
+        for tool, label, failing, kept in (
+            ("codex", "Codex", "plugin add " + PLUGIN, (".agents/skills",)),
+            ("grok", "Grok Build", "plugin install " + GITHUB + " --trust", (".agents/skills", ".grok/skills")),
+            ("pi", "Pi", "install " + PI_SOURCE, (".agents/skills", ".pi/agent/skills")),
         ):
             with self.subTest(failing=tool):
-                copies = {folder: self.earlier_copy(folder, "ab-quick-fix") for folder in
-                          (".agents/skills", ".grok/skills", ".pi/agent/skills")}
+                copies = {folder: self.earlier_copy(folder, "ab-quick-fix") for folder in folders}
                 for other in ("codex", "grok", "pi"):
                     self.fake_tool(other, {failing: {"code": 1}} if other == tool else None)
+                Path(self.log).write_text("")
                 code, out = self.run_install()
-                self.assertNotEqual(code, 0, out)
+                self.assertEqual(code, 1, out)
                 for folder, copy in copies.items():
                     self.assertEqual((copy / "ab-quick-fix").is_dir(), folder in kept, folder)
                     self.assertEqual((copy / ".agent-blueprint-install.json").is_file(), folder in kept, folder)
+                for command in ("codex plugin add " + PLUGIN, "grok plugin install " + GITHUB + " --trust",
+                                "pi install " + PI_SOURCE):
+                    self.assertIn(command, self.calls())
+                self.assertRegex(out, r"(?m)^  ✗ Failed: [^\n]*\b" + re.escape(label) + r"\b")
+                warning = next(line for line in out.splitlines()
+                               if line.startswith("  ! ") and str(copies[".agents/skills"]) in line)
+                self.assertRegex(warning, r"failed[^\n]*\b" + tool + r"\b")
 
     def test_codex_marketplace_only_registration(self):
         root = Path(self.root, "old marketplace")
@@ -280,19 +292,23 @@ class Installer(unittest.TestCase):
                 self.assertEqual(self.mutations(), expected)
                 self.assertEqual("Could not read Codex" in out, marketplace_root == foreign)
 
-    def test_split_cleanup_waits_until_each_hosts_route(self):
+    def test_failed_route_does_not_stop_later_routes(self):
         copies = [self.earlier_copy(folder, "ab-quick-fix") for folder in
                   (".grok/skills", ".pi/agent/skills")]
         self.fake_tool("codex", {"plugin add " + PLUGIN: {"code": 1}})
         for tool in ("grok", "pi"):
             self.fake_tool(tool)
         code, out = self.run_install()
-        self.assertNotEqual(code, 0, out)
+        self.assertEqual(code, 1, out)
+        self.assertIn("grok plugin install " + GITHUB + " --trust", self.calls())
+        self.assertIn("pi install " + PI_SOURCE, self.calls())
+        # Each split copy leaves with its own tool's route, which ran after Codex failed.
         for copy in copies:
             with self.subTest(copy=copy):
-                self.assertTrue((copy / "ab-quick-fix").is_dir())
-                self.assertTrue((copy / ".agent-blueprint-install.json").is_file())
-        self.assertFalse(any(c.startswith(("grok ", "pi ")) for c in self.calls()))
+                self.assertEqual(list(copy.iterdir()), [])
+        self.assertRegex(out, r"(?m)^  ✓ Finished: Grok Build, Pi$")
+        self.assertRegex(out, r"(?m)^  ✗ Failed: Codex\. [^\n]*current installs and copies stay as they were")
+        self.assertNotIn("Done.", out)
 
     def test_dry_run_preserves_legacy_copies_and_prints_scoped_cleanup(self):
         folders = (".agents/skills", ".grok/skills", ".pi/agent/skills")
@@ -577,10 +593,12 @@ class Installer(unittest.TestCase):
 
     def test_grok_failed_removal_stops_before_adding_a_duplicate(self):
         self.fake_tool("grok", {"plugin list": "  repo-hash: agent-blueprint [local: /old/checkout]"})
+        self.fake_tool("pi")
         code, out = self.run_install()
-        self.assertNotEqual(code, 0, out)
+        self.assertEqual(code, 1, out)
         self.assertIn("Could not confirm Grok removed", out)
-        self.assertEqual(self.mutations(), ["grok plugin uninstall agent-blueprint"])
+        # The stop ends only Grok's route; Pi's still runs.
+        self.assertEqual(self.mutations(), ["grok plugin uninstall agent-blueprint", "pi install " + PI_SOURCE])
 
     def test_legacy_record_with_unescaped_source_is_migrated(self):
         copy = self.earlier_copy(".agents/skills", "ab-quick-fix")
@@ -601,6 +619,118 @@ class Installer(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertTrue((project / "AGENTS.md").is_file())
         self.assertEqual(self.ab_skills(".config", "amp", "skills"), SKILLS)
+
+    def test_unreachable_github_keeps_the_old_marketplace(self):
+        old = "/old/checkout"
+        check = "git ls-remote --exit-code " + URL + " HEAD"
+        self.fake_tool("git", {check.split(" ", 1)[1]: {"code": 128}})
+        self.fake_tool("claude", {"plugin marketplace list": "❯ agent-blueprint\n  Source: Local (" + old + ")"})
+        self.fake_tool("codex", {"plugin list --json": json.dumps({"installed": [{"pluginId": PLUGIN,
+            "marketplaceSource": {"sourceType": "local", "source": old}}]})})
+        self.fake_tool("cursor-agent", {"plugin marketplace list": "agent-blueprint user " + old})
+        self.fake_tool("grok")
+        code, out = self.run_install()
+        self.assertEqual(code, 1, out)
+        # Removing a marketplace uninstalls its plugin, so nothing is removed while GitHub is down.
+        self.assertFalse(any("marketplace remove" in c for c in self.calls()))
+        self.assertEqual([c for c in self.calls() if c.startswith("git ")], [check] * 3)
+        self.assertIn("grok plugin install " + GITHUB + " --trust", self.calls())
+        self.assertNotIn("claude plugin install " + PLUGIN, self.calls())
+        self.assertNotIn("codex plugin add " + PLUGIN, self.calls())
+        for label in ("Claude Code", "Codex", "Cursor CLI"):
+            self.assertRegex(out, r"(?m)^  ✗ " + re.escape(label) + r": [^\n]*" + re.escape(URL))
+        failed = next(line for line in out.splitlines() if "Failed:" in line)
+        for label in ("Claude Code", "Codex", "Cursor CLI"):
+            self.assertIn(label, failed)
+        self.assertNotIn("Grok", failed)
+        self.assertFalse(self.routes().exists())
+
+    def test_missing_git_keeps_the_old_marketplace(self):
+        # A PATH with the installer's utilities but no git at all.
+        tools = Path(self.root, "no-git")
+        tools.mkdir()
+        for name in ("bash", "sed", "head", "find", "wc", "tr", "grep", "awk", "dirname", "cat"):
+            found = shutil.which(name, path="/usr/bin:/bin")
+            if found:
+                os.symlink(found, tools / name)
+        os.remove(os.path.join(self.bin, "git"))
+        self.fake_tool("claude", {"plugin marketplace list": "❯ agent-blueprint\n  Source: Local (/old/checkout)"})
+        code, out = self.run_install("--only", "claude", env_extra={"PATH": self.bin + ":" + str(tools)})
+        self.assertEqual(code, 1, out)
+        self.assertRegex(out, r"(?m)^  ✗ Claude Code: git is needed[^\n]*" + re.escape(URL))
+        self.assertEqual(self.mutations(), [])
+
+    def test_marketplace_swap_checks_github_answers_before_removing(self):
+        old = "/old/checkout"
+        check = "git ls-remote --exit-code " + URL + " HEAD"
+        self.fake_tool("claude", {"plugin marketplace list": "❯ agent-blueprint\n  Source: Local (" + old + ")"})
+        self.fake_tool("codex", {"plugin list --json": json.dumps({"installed": [{"pluginId": PLUGIN,
+            "marketplaceSource": {"sourceType": "local", "source": old}}]})})
+        self.fake_tool("cursor-agent", {"plugin marketplace list": "agent-blueprint user " + old})
+        # Cursor swaps only without the Claude Code plugin, so it runs on its own.
+        for only in ("claude,codex", "cursor-agent"):
+            with self.subTest(only=only):
+                Path(self.log).write_text("")
+                code, out = self.run_install("--dry-run", "--only", only)
+                self.assertEqual(code, 0, out)
+                self.assertEqual(out.count("would run: " + check), len(only.split(",")))
+                self.assertFalse(any(c.startswith("git ") for c in self.calls()))
+                code, out = self.run_install("--only", only)
+                self.assertEqual(code, 0, out)
+                calls = self.calls()
+                for tool in only.split(","):
+                    remove = calls.index(tool + " plugin marketplace remove agent-blueprint")
+                    self.assertEqual(calls[remove - 1], check)
+                    self.assertIn(tool + " plugin marketplace add " + (URL if tool == "cursor-agent" else GITHUB),
+                                  calls[remove + 1:])
+
+    def test_unreadable_marketplace_listing_warns_once(self):
+        for tool, listing in (("claude", "plugin marketplace list"), ("codex", "plugin list --json"),
+                              ("cursor-agent", "plugin marketplace list")):
+            with self.subTest(tool=tool):
+                self.fake_tool(tool, {listing: {"code": 1}})
+                Path(self.log).write_text("")
+                code, out = self.run_install("--only", tool)
+                self.assertEqual(code, 0, out)
+                warnings = [line for line in out.splitlines() if line.startswith("  ! ") and "Could not read" in line]
+                self.assertEqual(len(warnings), 1, out)
+                self.assertIn(tool + " " + listing, warnings[0])
+                self.assertIn(tool + " plugin marketplace add " + (URL if tool == "cursor-agent" else GITHUB),
+                              self.calls())
+                self.assertFalse(any(" remove " in c for c in self.calls()))
+
+    def test_pi_git_source_forms_are_one_source(self):
+        base = Path(self.home, ".pi/agent")
+        base.mkdir(parents=True)
+        self.fake_tool("pi")
+        for form in ("git:https://github.com/" + GITHUB, "git:http://github.com/" + GITHUB,
+                     "git:ssh://git@github.com/" + GITHUB, "git:git@github.com:" + GITHUB,
+                     "git:github.com/" + GITHUB + ".git", "git:https://github.com/" + GITHUB + ".git"):
+            with self.subTest(form=form):
+                (base / "settings.json").write_text(json.dumps({"packages": [form]}))
+                Path(self.log).write_text("")
+                code, out = self.run_install("--only", "pi")
+                self.assertEqual(code, 0, out)
+                self.assertEqual(self.mutations(), ["pi update --extension " + form])
+
+    def test_pinned_pi_source_is_replaced_with_a_warning(self):
+        base = Path(self.home, ".pi/agent")
+        base.mkdir(parents=True)
+        self.fake_tool("pi")
+        pinned = PI_SOURCE + "#v4.0.2"
+        https = "git:https://github.com/" + GITHUB
+        for packages, expected, replacement in (
+            ([pinned], ["pi remove " + pinned, "pi install " + PI_SOURCE], PI_SOURCE),
+            ([pinned, https], ["pi remove " + pinned, "pi update --extension " + https], https),
+        ):
+            with self.subTest(packages=packages):
+                (base / "settings.json").write_text(json.dumps({"packages": packages}))
+                Path(self.log).write_text("")
+                code, out = self.run_install("--only", "pi")
+                self.assertEqual(code, 0, out)
+                self.assertEqual(self.mutations(), expected)
+                warning = next(line for line in out.splitlines() if line.startswith("  ! ") and pinned in line)
+                self.assertIn(replacement, warning.replace(pinned, ""))
 
     def test_host_catalog_finds_native_grok_pi_and_cursor_copies(self):
         grok = Path(self.home, ".grok/installed-plugins/agent-blueprint-hash/skills")
@@ -627,6 +757,23 @@ class Installer(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual({os.path.realpath(p) for p in result.stdout.splitlines()},
                              {os.path.realpath(p) for p in expected}, host)
+
+    def test_host_catalog_reads_every_pi_git_form(self):
+        pi_base = Path(self.home, ".pi/agent")
+        skills = pi_base / "git/github.com/x/y/skills"
+        skills.mkdir(parents=True)
+        for form in ("git:github.com/x/y", "git:https://github.com/x/y", "git:http://github.com/x/y",
+                     "git:ssh://git@github.com/x/y", "git:git@github.com:x/y", "git:github.com/x/y.git",
+                     "git:https://github.com/x/y.git", "git:github.com/x/y#v1.0"):
+            with self.subTest(form=form):
+                (pi_base / "settings.json").write_text(json.dumps({"packages": [form]}))
+                result = subprocess.run(["bash", "-c", '. "$1"; host_catalog_dirs pi', "catalog",
+                    os.path.join(REPO, "skills/ab-ship-pipeline/scripts/hosts.sh")],
+                    env={"HOME": self.home, "PATH": self.bin + ":/usr/bin:/bin"}, cwd=self.root,
+                    text=True, capture_output=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual([os.path.realpath(p) for p in result.stdout.splitlines()],
+                                 [os.path.realpath(skills)])
 
     def test_no_tool_says_so_and_stops(self):
         code, out = self.run_install("--dry-run")
@@ -677,10 +824,12 @@ class Installer(unittest.TestCase):
         installer = os.path.join(checkout, "install.sh")
         link = os.path.join(self.root, "alias")
         os.symlink(os.path.join(checkout, "skills"), link)
+        self.fake_tool("agy")
         for target in (os.path.join(checkout, "skills"), link, os.path.join(link, "not-created")):
             code, out = self.run_install("--copy-dir", target, source=installer)
             self.assertEqual(code, 2, out)
             self.assertIn("own skills folder", out)
+            self.assertEqual(self.mutations(), [], "refused before any route ran")
             self.assertEqual(sorted(d for d in os.listdir(os.path.join(checkout, "skills")) if d.startswith("ab-")), SKILLS)
             self.assertTrue(os.path.isfile(os.path.join(checkout, "skills", "ab-quick-fix", "SKILL.md")))
 

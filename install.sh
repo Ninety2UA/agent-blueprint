@@ -9,6 +9,7 @@
 #   Cursor CLI           marketplace add the GitHub URL, then /plugin inside a session
 #   Hermes / Amp         recorded copies in ~/.hermes/skills / ~/.config/amp/skills
 # Cursor and Amp use Claude Code's plugin when present. Recorded standalone routes are retired.
+# A tool whose route fails is reported at the end (exit 1); the other tools still install.
 # Cursor registrations made here are recorded in
 # ${XDG_CONFIG_HOME:-$HOME/.config}/agent-blueprint/install-routes.json.
 # Copies keep .agent-blueprint-install.json; only recorded skills are replaced or removed.
@@ -170,19 +171,39 @@ listing() {
 
 # Sources belonging to agent-blueprint, one per line. @unknown never authorizes removal.
 # Normalize the GitHub shorthand/URL to one identity; local paths are physical paths.
+# Each unreadable listing is warned about once: by listing() when the command fails, or here
+# when an entry cannot be attributed, so the routes act on @unknown without warning again.
 sources() {
     python3 - "$@" <<'PY'
 import json, os, re, sys
 from pathlib import Path
 host, raw = sys.argv[1:3]
 github = "Ninety2UA/agent-blueprint"
+names = {"claude": "Claude Code", "codex": "Codex"}
 def identity(value):
     value = value.strip().rstrip("/")
-    if value.endswith(".git") and not value.startswith(("/", "~", ".")):
+    if value.startswith(("/", "~", ".")):
+        return os.path.realpath(os.path.expanduser(value))
+    if value.endswith(".git"):
         value = value[:-4]
-    if value in (github, "https://github.com/" + github, "git:github.com/" + github):
+    if value in (github, "https://github.com/" + github):
         return github
-    return os.path.realpath(os.path.expanduser(value)) if value.startswith(("/", "~", ".")) else value
+    if value.startswith("git:"):
+        # Pi's git sources, in every form hosts.sh's _native_package_skill_dirs reads.
+        repo = value[4:]
+        for prefix in ("https://", "http://", "ssh://git@"):
+            if repo.startswith(prefix):
+                repo = repo[len(prefix):]
+                break
+        if repo.startswith("git@"):
+            repo = repo[4:].replace(":", "/", 1)
+        if repo == "github.com/" + github:
+            return github
+    return value
+def unknown(why):
+    print("  ! Could not read " + names[host] + "'s marketplace source (" + why + "); adding without removing it.",
+          file=sys.stderr)
+    print("@unknown")
 try:
     if raw == "@unknown":
         print(raw)
@@ -196,7 +217,7 @@ try:
                     m = re.fullmatch(r"(?:GitHub|Git|Local|Folder|Directory|Local directory)\s*\((.*)\)", source, re.I)
                     print(identity(m[1] if m else source))
                 else:
-                    print("@unknown")
+                    unknown("agent-blueprint is listed without one")
     elif host == "codex":
         # plugin list --json carries the original source; marketplace list's ROOT may be a cache.
         data = json.loads(raw or '{"installed": []}')
@@ -204,7 +225,10 @@ try:
         for plugin in data["installed"]:
             if plugin.get("pluginId") == "agent-blueprint@agent-blueprint":
                 source = plugin.get("marketplaceSource", {}).get("source")
-                print(identity(source) if isinstance(source, str) else "@unknown")
+                if isinstance(source, str):
+                    print(identity(source))
+                else:
+                    unknown("the plugin list names none")
                 found = True
         if not found:
             markets = sys.argv[3]
@@ -215,9 +239,12 @@ try:
                     # A local root is attributable when its own marketplace manifest names it.
                     try:
                         manifest = json.loads((root / ".agents/plugins/marketplace.json").read_text())
-                        print(identity(str(root)) if manifest.get("name") == "agent-blueprint" else "@unknown")
                     except (OSError, ValueError):
-                        print("@unknown")
+                        manifest = {}
+                    if manifest.get("name") == "agent-blueprint":
+                        print(identity(str(root)))
+                    else:
+                        unknown(str(root) + " has no marketplace manifest naming agent-blueprint")
     elif host == "grok":
         for line in raw.splitlines():
             m = re.fullmatch(r"\s*[^:]+:\s*agent-blueprint\s+\[(?:git|local): (.+)\]\s*", line)
@@ -239,8 +266,11 @@ try:
             if not isinstance(source, str):
                 continue
             if identity(source.split("#", 1)[0]) == github:
-                # A pinned ref (#...) is not the plain source, so the installer replaces it.
-                print(identity(source) + "\t" + source)
+                # A pinned ref (#...) is not the plain source, so the installer replaces it and says so.
+                if "#" in source:
+                    print(source + "\t" + source + "\tpinned")
+                else:
+                    print(github + "\t" + source)
             elif not source.startswith(("git:", "npm:", "https://", "git@")):
                 path = Path(os.path.expanduser(source))
                 if not path.is_absolute():
@@ -325,22 +355,28 @@ in_list() {   # in_list WORD ITEM...: true when WORD is one of the items
     return 1
 }
 
+# inside_own_skills DIR: true when DIR is this checkout's own skills folder, or resolves into it.
+# The copy replaces each skill folder, so such a destination would delete the checkout's skills
+# before copying them.
+inside_own_skills() {
+    local src_real copy_real
+    src_real=$(cd "$SOURCE_DIR/skills" && pwd -P)
+    copy_real=$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1")
+    case "$copy_real/" in "$src_real"/*) return 0 ;; esac
+    return 1
+}
+
 # copy_skills DEST HOST...: copies every skill into DEST and keeps an install record there, so a
 # re-run removes skills renamed or deleted since and leaves every other skill in DEST alone.
 copy_skills() {
     local dest_dir="$1"; shift
     local record="$dest_dir/.agent-blueprint-install.json"
     info "Copying ${SKILL_COUNT} skills into $dest_dir (for: $*)"
-    local previous=() name src dest src_real copy_real previous_text stage=''
-    # The copy replaces each skill folder, so a destination that is the source itself (the path,
-    # or a symlink to it) would delete the checkout's skills before copying them.
-    src_real=$(cd "$SOURCE_DIR/skills" && pwd -P)
-    copy_real=$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$dest_dir")
-    case "$copy_real/" in
-        "$src_real"/*)
-            error "--copy-dir points into this checkout's own skills folder ($src_real); choose another directory"
-            exit 2 ;;
-    esac
+    local previous=() name src dest previous_text stage=''
+    if inside_own_skills "$dest_dir"; then
+        error "$dest_dir points into this checkout's own skills folder; choose another directory"
+        return 1
+    fi
     if [ -f "$record" ]; then
         if ! previous_text=$(recorded_skills "$record"); then return 1; fi
         while IFS= read -r name; do [ -z "$name" ] || previous+=("$name"); done <<< "$previous_text"
@@ -414,59 +450,86 @@ remove_recorded_copy() {
     if [ "$DRY_RUN" = true ]; then info "Would remove the recorded copy in $dir"; else info "Removed the recorded copy in $dir"; fi
 }
 
-claude_plugin=false
-if listed claude; then
+# github_answers LABEL: succeeds when the GitHub source answers. It runs before a marketplace is
+# removed, because removing one uninstalls its plugin (Claude Code 2.1.296 also deletes the
+# plugin's data), so a swap while GitHub is unreachable would leave the tool without the plugin.
+github_answers() {
+    if ! have git; then
+        error "$1: git is needed to check that $GITHUB_URL answers before the old marketplace is replaced; left it and its plugin as they were."
+        return 1
+    fi
+    if [ "$DRY_RUN" = true ]; then
+        plan "git ls-remote --exit-code $GITHUB_URL HEAD"
+        return 0
+    fi
+    # No credential prompt, and a stalled transfer gives up rather than hanging the run.
+    if ! GIT_TERMINAL_PROMPT=0 GIT_HTTP_LOW_SPEED_LIMIT=1000 GIT_HTTP_LOW_SPEED_TIME=30 \
+            git ls-remote --exit-code "$GITHUB_URL" HEAD >/dev/null 2>&1; then
+        error "$1: could not reach $GITHUB_URL, so the old marketplace and its plugin were left as they were. Check the connection and run install.sh again."
+        return 1
+    fi
+}
+
+# reconcile_marketplace TOOL LABEL PRIOR SAME ADD [REFRESH...]: points TOOL's agent-blueprint
+# marketplace at ADD. PRIOR is what sources() read: SAME runs the refresh command, if any;
+# nothing, or an unreadable listing (@unknown, already warned about), adds without removing;
+# any other source is removed and replaced, once the GitHub source answers.
+reconcile_marketplace() {
+    local tool="$1" label="$2" prior="$3" same="$4" add="$5"
+    shift 5
+    case "$prior" in
+        "$same")
+            if [ $# -gt 0 ]; then run "$tool" "$@"; fi ;;
+        ''|*'@unknown'*)
+            run "$tool" plugin marketplace add "$add" ;;
+        *)
+            # Under --local the new source is this checkout, so there is nothing remote to check.
+            if [ "$LOCAL" = false ]; then github_answers "$label"; fi
+            run "$tool" plugin marketplace remove agent-blueprint
+            run "$tool" plugin marketplace add "$add" ;;
+    esac
+}
+
+# ─── Routes, one per tool ─────────────────────────────────────
+# run_route runs each in a subshell under set -e, so a failing command ends that route alone.
+route_claude() {
+    local markets prior_sources plugins action=install
     markets=$(listing claude plugin marketplace list)
     prior_sources=$(sources claude "$markets")
     plugins=$(listing claude plugin list)
-    action=install
-    case "$prior_sources" in
-        "$SOURCE")
-            run claude plugin marketplace update agent-blueprint
-            if [[ "$plugins" == *"$PLUGIN"* ]]; then action=update; fi ;;
-        '') run claude plugin marketplace add "$SOURCE" ;;
-        *'@unknown'*)
-            warn "Could not read Claude Code's marketplace source; trying add without removing it."
-            run claude plugin marketplace add "$SOURCE" ;;
-        *) run claude plugin marketplace remove agent-blueprint
-           run claude plugin marketplace add "$SOURCE" ;;
-    esac
+    if [ "$prior_sources" = "$SOURCE" ] && [[ "$plugins" == *"$PLUGIN"* ]]; then action=update; fi
+    reconcile_marketplace claude "Claude Code" "$prior_sources" "$SOURCE" "$SOURCE" \
+        plugin marketplace update agent-blueprint
     run claude plugin "$action" "$PLUGIN"
     if [[ "$plugins" == *'claude-code-blueprint@'* ]]; then
         warn "The v3 plugin is still installed; run the ab-migrate skill to retire it."
     fi
-    claude_plugin=true
     success "Claude Code: $PLUGIN"
-elif have claude && { listed cursor-agent || listed amp; }; then
-    # Only the Cursor and Amp routes read claude_plugin.
-    plugins=$(listing claude plugin list)
-    if [[ "$plugins" == *"$PLUGIN"* ]]; then claude_plugin=true; fi
-fi
+}
 
-if listed codex; then
+route_codex() {
+    local markets plugins prior_sources
     markets=$(listing codex plugin marketplace list)
     plugins=$(listing codex plugin list --json)
     prior_sources=$(sources codex "$plugins" "$markets")
-    case "$prior_sources" in
-        "$SOURCE")
-            if [ "$LOCAL" = false ]; then run codex plugin marketplace upgrade agent-blueprint; fi ;;
-        '') run codex plugin marketplace add "$SOURCE" ;;
-        *'@unknown'*)
-            warn "Could not read Codex's marketplace source; trying add without removing it."
-            run codex plugin marketplace add "$SOURCE" ;;
-        *) run codex plugin marketplace remove agent-blueprint
-           run codex plugin marketplace add "$SOURCE" ;;
-    esac
+    if [ "$LOCAL" = true ]; then
+        # The marketplace is this checkout, so there is nothing to upgrade.
+        reconcile_marketplace codex Codex "$prior_sources" "$SOURCE" "$SOURCE"
+    else
+        reconcile_marketplace codex Codex "$prior_sources" "$SOURCE" "$SOURCE" \
+            plugin marketplace upgrade agent-blueprint
+    fi
     run codex plugin add "$PLUGIN"
     success "Codex: $PLUGIN. Trust the plugin in /hooks to enable its hooks."
-fi
+}
 
-if listed agy; then
+route_agy() {
     run agy plugin install "$URL_SOURCE"
     success "Antigravity: agent-blueprint"
-fi
+}
 
-if listed grok; then
+route_grok() {
+    local prior_sources remaining before_count after_count
     prior_sources=$(sources grok "$(listing grok plugin list)")
     # A local install is a copy that grok plugin update reports as live without refreshing it.
     if [ "$prior_sources" = "$SOURCE" ] && [ "$LOCAL" = false ]; then
@@ -487,7 +550,7 @@ if listed grok; then
                     after_count=$(printf '%s\n' "$remaining" | awk 'NF {n++} END {print n+0}')
                     if [[ "$remaining" == *'@unknown'* ]] || [ "$after_count" -ge "$before_count" ]; then
                         error "Could not confirm Grok removed the recorded plugin; stopped before installing a duplicate."
-                        exit 1
+                        exit 1   # ends this route only
                     fi
                     prior_sources="$remaining"
                 fi
@@ -497,12 +560,12 @@ if listed grok; then
     fi
     remove_recorded_copy "$HOME/.grok/skills"
     success "Grok Build: agent-blueprint"
-fi
+}
 
-if listed pi; then
+route_pi() {
+    local prior_sources resolved package pin same='' removals=() pinned=()
     prior_sources=$(sources pi '' "$SOURCE_DIR")
-    same=''
-    while IFS=$'\t' read -r resolved package; do
+    while IFS=$'\t' read -r resolved package pin; do
         [ -n "$resolved" ] || continue
         if [ "$resolved" = '@unknown' ]; then
             warn "Could not read Pi's packages; trying install without removing them."
@@ -511,16 +574,21 @@ if listed pi; then
         if [ "$resolved" = "$SOURCE" ] && [ -z "$same" ]; then
             same="$package"
         else
-            run pi remove "$package"
+            removals+=("$package")
+            if [ "$pin" = pinned ]; then pinned+=("$package"); fi
         fi
     done <<< "$prior_sources"
+    for package in ${pinned[@]+"${pinned[@]}"}; do
+        warn "Pi: replacing the pinned source $package with ${same:-$PI_SOURCE}; pin it again in Pi if you need that version."
+    done
+    for package in ${removals[@]+"${removals[@]}"}; do run pi remove "$package"; done
     if [ -n "$same" ]; then run pi update --extension "$same"; else run pi install "$PI_SOURCE"; fi
     remove_recorded_copy "$HOME/.pi/agent/skills"
     success "Pi: agent-blueprint"
-fi
+}
 
-unfinished=()
-if listed cursor-agent; then
+route_cursor_agent() {
+    local prior_sources
     if [ "$claude_plugin" = true ]; then
         if cursor_record has; then
             run cursor-agent plugin marketplace remove agent-blueprint
@@ -531,50 +599,124 @@ if listed cursor-agent; then
     elif [ "$LOCAL" = true ]; then
         info "Cursor CLI: start a session with:"
         printf '    cursor-agent --plugin-dir %q\n' "$SOURCE_DIR"
-        unfinished+=("Cursor CLI (start the printed --plugin-dir session)")
     else
         prior_sources=$(sources cursor-agent "$(listing cursor-agent plugin marketplace list)")
-        case "$prior_sources" in
-            "$GITHUB") run cursor-agent plugin marketplace update agent-blueprint ;;
-            ''|'@unknown') run cursor-agent plugin marketplace add "$GITHUB_URL" ;;
-            *) run cursor-agent plugin marketplace remove agent-blueprint
-               run cursor-agent plugin marketplace add "$GITHUB_URL" ;;
-        esac
+        reconcile_marketplace cursor-agent "Cursor CLI" "$prior_sources" "$GITHUB" "$GITHUB_URL" \
+            plugin marketplace update agent-blueprint
         if [ "$DRY_RUN" = false ]; then cursor_record add; fi
         info "Cursor CLI: REQUIRED next step: open a session, run /plugin and install agent-blueprint."
-        unfinished+=("Cursor CLI (/plugin installation required)")
     fi
-fi
+}
 
-if listed hermes; then copy_skills "$HOME/.hermes/skills" hermes; fi
-if listed amp; then
+route_hermes() { copy_skills "$HOME/.hermes/skills" hermes; }
+
+route_amp() {
     if [ "$claude_plugin" = true ]; then
         remove_recorded_copy "$HOME/.config/amp/skills"
         success "Amp: covered by the Claude Code plugin"
     else
         copy_skills "$HOME/.config/amp/skills" amp
     fi
-fi
-if [ "$COPY_DIR_SET" = true ]; then copy_skills "$COPY_DIR" --copy-dir; fi
+}
 
-# Retire the 4.0 shared copy only after every route above succeeded (set -e stops the run at a
-# failed one), and only once every installed reader has its own route in this run. 4.0 pointed
-# Hermes at it through skills.external_dirs in ~/.hermes/config.yaml.
+route_copy_dir() { copy_skills "$COPY_DIR" --copy-dir; }
+
+host_label() {
+    case "$1" in
+        claude) echo "Claude Code" ;;  codex) echo "Codex" ;;  agy) echo "Antigravity" ;;
+        grok) echo "Grok Build" ;;  pi) echo "Pi" ;;  cursor-agent) echo "Cursor CLI" ;;
+        hermes) echo "Hermes" ;;  amp) echo "Amp" ;;  *) echo "the copy in $COPY_DIR" ;;
+    esac
+}
+labels() {   # labels HOST...: their display names, comma-separated
+    local list='' host
+    for host in "$@"; do list="${list:+$list, }$(host_label "$host")"; done
+    printf '%s' "$list"
+}
+
+# run_route HOST: runs route_HOST and records whether it finished. Never call it, or a route, as
+# a condition (if, ||, &&): bash ignores set -e inside a function or subshell run that way, so a
+# failing command would not stop the route.
+finished_hosts=()
+failed_hosts=()
+run_route() {
+    local status
+    set +e
+    ( set -e; "route_${1//-/_}" )
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ]; then
+        finished_hosts+=("$1")
+    else
+        failed_hosts+=("$1")
+        error "$(host_label "$1") did not finish (exit $status); its current install and copies stay as they were."
+    fi
+}
+finished_route() { in_list "$1" ${finished_hosts[@]+"${finished_hosts[@]}"}; }
+failed_route() { in_list "$1" ${failed_hosts[@]+"${failed_hosts[@]}"}; }
+
+# ─── Run the routes ───────────────────────────────────────────
+# A --copy-dir inside the checkout is a usage error, so it stops the run before any route.
+if [ "$COPY_DIR_SET" = true ] && inside_own_skills "$COPY_DIR"; then
+    error "--copy-dir points into this checkout's own skills folder ($SOURCE_DIR/skills); choose another directory"
+    exit 2
+fi
+
+if listed claude; then run_route claude; fi
+# Only the Cursor and Amp routes read claude_plugin. A route's subshell cannot hand it back, so
+# it is set here: true after Claude Code's route finished, otherwise read from claude plugin list.
+claude_plugin=false
+if finished_route claude; then
+    claude_plugin=true
+elif have claude && { listed cursor-agent || listed amp; }; then
+    plugins=$(listing claude plugin list)
+    if [[ "$plugins" == *"$PLUGIN"* ]]; then claude_plugin=true; fi
+fi
+for h in codex agy grok pi cursor-agent hermes amp; do
+    if listed "$h"; then run_route "$h"; fi
+done
+if [ "$COPY_DIR_SET" = true ]; then run_route copy-dir; fi
+
+unfinished=()
+cursor_unfinished=false
+if finished_route cursor-agent && [ "$claude_plugin" = false ]; then
+    cursor_unfinished=true
+    if [ "$LOCAL" = true ]; then
+        unfinished+=("Cursor CLI (start the printed --plugin-dir session)")
+    else
+        unfinished+=("Cursor CLI (/plugin installation required)")
+    fi
+fi
+
+# Retire the 4.0 shared copy only once every installed reader has its own route in this run and
+# that route finished. 4.0 pointed Hermes at it through skills.external_dirs in ~/.hermes/config.yaml.
 hermes_reads_shared=false
 if grep -qs '\.agents/skills' "$HOME/.hermes/config.yaml"; then hermes_reads_shared=true; fi
 if [ -f "$HOME/.agents/skills/.agent-blueprint-install.json" ]; then
-    shared_readers=()
-    for h in codex grok pi cursor-agent amp; do
-        if have "$h" && ! listed "$h"; then shared_readers+=("$h"); fi
+    readers=(codex grok pi cursor-agent amp)
+    if [ "$hermes_reads_shared" = true ]; then readers+=(hermes); fi
+    outside=()
+    failed_readers=()
+    for h in "${readers[@]}"; do
+        if ! have "$h"; then continue; fi
+        if ! listed "$h"; then outside+=("$h"); elif failed_route "$h"; then failed_readers+=("$h"); fi
     done
-    if [ "$hermes_reads_shared" = true ] && have hermes && ! listed hermes; then shared_readers+=(hermes); fi
-    if [ ${#shared_readers[@]} -eq 0 ]; then
+    if [ ${#outside[@]} -eq 0 ] && [ ${#failed_readers[@]} -eq 0 ]; then
         remove_recorded_copy "$HOME/.agents/skills"
     else
-        warn "Keeping the recorded copy in $HOME/.agents/skills: tools still reading it outside this run: ${shared_readers[*]}. Run install.sh without --only (or with those tools) to retire it. Until then, a tool given its own route in this run may list each skill twice."
+        reasons=''
+        advice="Run install.sh again once their routes finish to retire it."
+        if [ ${#outside[@]} -gt 0 ]; then
+            reasons="tools still reading it outside this run: ${outside[*]}"
+            advice="Run install.sh without --only (or with those tools) to retire it."
+        fi
+        if [ ${#failed_readers[@]} -gt 0 ]; then
+            reasons="${reasons:+$reasons; }tools still reading it whose route failed in this run: ${failed_readers[*]}"
+        fi
+        warn "Keeping the recorded copy in $HOME/.agents/skills: $reasons. $advice Until then, a tool given its own route in this run may list each skill twice."
     fi
 fi
-if [ "$hermes_reads_shared" = true ] && listed hermes; then
+if [ "$hermes_reads_shared" = true ] && finished_route hermes; then
     warn "Hermes: ~/.hermes/config.yaml still lists ~/.agents/skills under skills.external_dirs. Remove that entry; Hermes now reads its own copy in ~/.hermes/skills."
 fi
 if [ ${#unfinished[@]} -gt 0 ]; then warn "Unfinished: ${unfinished[*]}"; fi
@@ -587,6 +729,17 @@ if [ -n "$PROJECT_DIR" ]; then
 fi
 
 echo ""
+done_hosts=()
+for h in ${finished_hosts[@]+"${finished_hosts[@]}"}; do
+    # Cursor without the Claude Code plugin still needs the step listed under Unfinished.
+    if [ "$h" = cursor-agent ] && [ "$cursor_unfinished" = true ]; then continue; fi
+    done_hosts+=("$h")
+done
+if [ ${#done_hosts[@]} -gt 0 ]; then success "Finished: $(labels "${done_hosts[@]}")"; fi
+if [ ${#failed_hosts[@]} -gt 0 ]; then
+    error "Failed: $(labels "${failed_hosts[@]}"). Their current installs and copies stay as they were; fix the errors above and run install.sh again."
+    exit 1
+fi
 if [ "$DRY_RUN" = true ]; then
     info "Dry run complete. No files were modified."
 else
