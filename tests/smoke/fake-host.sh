@@ -19,7 +19,11 @@
 #                                     · tdd-helper (a correct count_words; the collected test method,
 #                                     inherited from a mixin, reaches it through a helper method)
 #                                     · tdd-import-error (the pass-mode test, plus a test module that
-#                                     raises on import)
+#                                     raises on import) · tdd-src-import (a correct count_words; its
+#                                     test puts the work root on sys.path and imports it as
+#                                     src.notes.textutil) · tdd-subtest-skip (a correct count_words;
+#                                     its test has a passing count_words subtest and an unrelated
+#                                     skipped one)
 #                                     · brainstorm-approval (ask for approval despite writing a plan)
 #                                     · brainstorm-please-approve ("Please approve the design." after
 #                                     writing a plan) · brainstorm-looks-good ("Does this design look
@@ -237,6 +241,44 @@ class WordCountChecks:
 
 class CountWordsTests(WordCountChecks, unittest.TestCase):
     pass
+PY
+                ;;
+            tdd-src-import)
+                # The same file under a second module name: src.notes.textutil, not notes.textutil.
+                cat > tests/test_textutil.py <<'PY'
+import os
+import sys
+import unittest
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from src.notes.textutil import count_words
+
+
+class CountWordsTests(unittest.TestCase):
+    def test_count_words(self):
+        self.assertEqual(count_words("Harbor plan"), 2)
+        self.assertEqual(count_words(" one\t two\nthree "), 3)
+        self.assertEqual(count_words(""), 0)
+PY
+                ;;
+            tdd-subtest-skip)
+                # The count_words subtest passes; a subtest about something else skips.
+                cat > tests/test_textutil.py <<'PY'
+import os
+import sys
+import unittest
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
+from notes.textutil import count_words
+
+
+class CountWordsTests(unittest.TestCase):
+    def test_count_words(self):
+        with self.subTest("whitespace"):
+            self.assertEqual(count_words(" one\t two\nthree "), 3)
+            self.assertEqual(count_words(""), 0)
+        with self.subTest("locale"):
+            self.skipTest("locale-aware splitting is out of scope")
 PY
                 ;;
             *)

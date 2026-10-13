@@ -3,9 +3,13 @@
 # rewrites fail while behavior-preserving refactors pass. Call count_words with recorded inputs too,
 # so a missing or wrong implementation fails. Then replace notes.textutil.count_words with a probe
 # that records the running test, load tests/ the way `unittest discover -s tests` does (src on
-# sys.path) and run that suite in this process: at least one test must call count_words, directly
-# or through a helper, and pass. A skipped or expected-failure test, or a module-level test_
-# function unittest never collects, does not count, and a test module that fails to import is named.
+# sys.path), probe every other loaded copy of src/notes/textutil.py too (such as src.notes.textutil),
+# rebind the names test modules bound to an unprobed count_words, and run that suite in this process:
+# at least one test must call count_words, directly or through a helper, and pass. A skipped or
+# expected-failure test, or a module-level test_ function unittest never collects, does not count; a
+# skipped subtest does not stop its test from passing; a test module that fails to import is named.
+# Limits: a call made only in setUpClass runs outside any test and is not seen, nor is one through a
+# copy of the module first imported while the suite runs.
 # The suite must also pass when `python3 -m unittest discover -s tests` runs it on its own.
 # Arguments: WORK BASE FINAL LOG REMOTE. Prints one reason; exit 0 = pass, 1 = fail.
 set -euo pipefail
@@ -69,40 +73,47 @@ for argument, expected in count_cases:
 
 
 class Recorder(unittest.TestResult):
-    """Tracks the running test, so the probe knows which tests call count_words."""
+    """Tracks the running test, so a probe knows which tests call count_words."""
 
     def __init__(self):
         super().__init__()
         self.current = None
         self.callers = []
-        self.passed = []
+        self.started = []
 
     def startTest(self, test):
         super().startTest(test)
         self.current = test
+        self.started.append(test)
 
     def stopTest(self, test):
         super().stopTest(test)
         self.current = None
 
-    def addSuccess(self, test):
-        super().addSuccess(test)
-        self.passed.append(test)
-
 
 result = Recorder()
+probes = []   # (a copy's original count_words, its probe)
 
 
-@functools.wraps(count_words)
-def count_words_probe(*args, **kwargs):
-    if result.current is not None and result.current not in result.callers:
-        result.callers.append(result.current)
-    return count_words(*args, **kwargs)
+def probe_of(function):
+    """FUNCTION's probe, made on first use: it records the running test, then calls FUNCTION."""
+    for original, probe in probes:
+        if function is original or function is probe:
+            return probe
+
+    @functools.wraps(function)
+    def probe(*args, **kwargs):
+        if result.current is not None and result.current not in result.callers:
+            result.callers.append(result.current)
+        return function(*args, **kwargs)
+
+    probes.append((function, probe))
+    return probe
 
 
 # Patched before discovery imports a test module, so `from notes.textutil import count_words` binds
 # the probe, and so does a call through the module.
-module.count_words = count_words_probe
+module.count_words = probe_of(count_words)
 
 
 def quietly(call):
@@ -141,6 +152,19 @@ def names_count_words(test):
         return False
 
 
+def expects_failure(test):
+    """True when TEST or its method is marked expectedFailure."""
+    method = getattr(test, getattr(test, "_testMethodName", "") or "", None)
+    return bool(getattr(test, "__unittest_expecting_failure__", False)
+                or getattr(method, "__unittest_expecting_failure__", False))
+
+
+def file_of(loaded):
+    """The resolved file a loaded module came from, or None."""
+    name = getattr(loaded, "__file__", None)
+    return Path(name).resolve() if isinstance(name, str) else None
+
+
 # Discovered the way `python3 -m unittest discover -s tests` does: module (relative to tests/),
 # class, method.
 try:
@@ -151,27 +175,57 @@ tests = list(tests_in(suite))
 broken = [load_failure(test) for test in tests if type(test).__name__ == "_FailedTest"]
 if broken:
     fail("; ".join(broken) + ", so a count_words test there cannot run")
+
+# A test can load the same file under another name (the work root on sys.path, then
+# `from src.notes.textutil import count_words`): probe every loaded copy, then rebind each name a
+# test module bound to a copy's original count_words.
+seeded, tests_root = path.resolve(), Path("tests").resolve()
+loaded = list(sys.modules.values())
+for copy in loaded:
+    if file_of(copy) == seeded and callable(getattr(copy, "count_words", None)):
+        copy.count_words = probe_of(copy.count_words)
+for test_module in loaded:
+    where = file_of(test_module)
+    if where is None or tests_root not in where.parents:
+        continue
+    for name, value in list(vars(test_module).items()):
+        for original, probe in probes:
+            if value is original:
+                setattr(test_module, name, probe)
 quietly(lambda: suite.run(result))
 
+# A subtest's failure or error counts against its test; a skipped subtest does not. unittest never
+# reports success for a test with a skipped subtest, so a test passed when it ran and nothing else
+# was recorded against it; an expected failure with a skipped subtest records nothing either.
 outcomes = {}
 for label, entries in (("fails", result.failures), ("raises an error", result.errors),
                        ("is marked expectedFailure", result.expectedFailures),
                        ("is marked expectedFailure", [(test, "") for test in result.unexpectedSuccesses]),
                        ("was skipped", result.skipped)):
     for test, _ in entries:
+        if label == "was skipped" and case_of(test) is not test:
+            continue
         outcomes.setdefault(case_of(test), label)
-if any(test in result.passed and test not in outcomes for test in result.callers):
+for test in result.started:
+    if test not in outcomes and expects_failure(test):
+        outcomes[test] = "is marked expectedFailure"
+passed = [test for test in result.started if test not in outcomes]
+if any(test in passed for test in result.callers):
     sys.exit(0)
 # No caller passed. Name the count_words tests that did not pass: those that called it, and those
-# that never got to (skipped, or stopped before the call) but whose source names it.
+# that never got to (skipped, or stopped before the call) but whose source names it. Name, too, a
+# passing test whose source names count_words though no probe saw it call.
 named = result.callers + [test for test in tests
                           if test in outcomes and test not in result.callers and names_count_words(test)]
-if not named:
-    fail("no test calls count_words under tests/")
+unseen = [test.id() for test in passed if test not in result.callers and names_count_words(test)]
 groups = {}
 for test in named:
     groups.setdefault(outcomes.get(test, "did not pass"), []).append(test.id())
-fail("; ".join(f"the count_words test {label}: {', '.join(ids)}" for label, ids in groups.items()))
+reasons = [f"the count_words test {label}: {', '.join(ids)}" for label, ids in groups.items()]
+if unseen:
+    reasons.append("the count_words test passes without a call the check saw (it may import the module"
+                   " under another name, or call count_words only in setUpClass): " + ", ".join(unseen))
+fail("; ".join(reasons) or "no test calls count_words under tests/")
 PY
 if ! PYTHONPATH="$WORK/src${PYTHONPATH:+:$PYTHONPATH}" python3 -m unittest discover -s tests >/dev/null 2>&1; then
     echo "the test suite fails"; exit 1

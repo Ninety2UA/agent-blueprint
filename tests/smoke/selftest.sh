@@ -144,7 +144,7 @@ for mode in tdd-uncollected tdd-no-count; do
     fi
 done
 override_suite_fails() { ! override_suite "$1" > /dev/null 2>&1; }
-for mode in tdd-skipped tdd-wrong-count tdd-helper tdd-import-error; do
+for mode in tdd-skipped tdd-wrong-count tdd-helper tdd-import-error tdd-src-import tdd-subtest-skip; do
     AGENT_BLUEPRINT_SMOKE_FAKE_MODE="$mode" \
         bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --keep \
         --cell tdd-override > "$WORK/$mode.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/$mode.log"; exit 1; }
@@ -167,6 +167,12 @@ for mode in tdd-skipped tdd-wrong-count tdd-helper tdd-import-error; do
             check "tdd-import-error has a failing suite" override_suite_fails "$override_work"
             check "a test module that fails to import fails the TDD cell" [ "$state" = fail ]
             check "the module that fails to import is named" grep -q "test module test_startup failed to import" <<<"$reason" ;;
+        tdd-src-import)
+            check "tdd-src-import has a passing suite" override_suite "$override_work"
+            check "a test that imports count_words as src.notes.textutil passes" [ "$state" = pass ] ;;
+        tdd-subtest-skip)
+            check "tdd-subtest-skip has a passing suite" override_suite "$override_work"
+            check "a count_words test with an unrelated skipped subtest passes" [ "$state" = pass ] ;;
     esac
 done
 for mode in brainstorm-approval brainstorm-please-approve brainstorm-looks-good brainstorm-no-plan; do
