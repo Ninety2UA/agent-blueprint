@@ -122,7 +122,7 @@ bash agent-blueprint/install.sh
 
 It adds `--trust` to Grok Build's install so Grok does not stop to ask. For Cursor CLI without Claude Code, it adds the marketplace and lists `/plugin` as the step left for you, because a script cannot run it. It writes no shared `~/.agents/skills` copy, removes the copies an earlier version recorded, and ends by pointing you to the setup skill.
 
-The installer needs `python3`, which it uses to read each tool's install records. If one tool's install fails, it still installs the others, then lists which tools finished and which failed and exits with an error; the failed tool keeps its current install. Before it replaces a marketplace that points somewhere else, it checks that GitHub answers, because removing a marketplace uninstalls its plugin.
+The installer needs `python3`, which it uses to read each tool's install records. If one tool's install fails, it still installs the others, then lists which tools finished and which failed and exits with an error. For each failed tool it says whether its current install stayed or had already been removed, so you know to run the installer again. Before it removes an install to replace it from GitHub, it checks that GitHub answers, so a dropped connection leaves the old install in place. Stopping it with Ctrl-C stops the whole run.
 
 In the clone, `install.sh` takes these options:
 
