@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://agent-blueprint.dbenger.com/">Website</a> ·
-  <a href="#whats-new-in-v410">What's new</a> ·
+  <a href="#whats-new-in-v411">What's new</a> ·
   <a href="#install">Install</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#unattended-runs">Unattended runs</a> ·
@@ -29,6 +29,10 @@
 A coding agent starts every session from nothing. It doesn't know how your project works, what was decided last week, or which problems were already solved, and when you switch to another tool, whatever the last one learned stays behind.
 
 Agent Blueprint gives the agent one way of working that is the same in every tool. Skills take a feature from design through review to a pull request. Helper prompts handle the analysis that needs a fresh context, such as a security review or a plan check. Project documents under `docs/` carry conventions, decisions and solved problems from one session to the next, so they are there whichever of the eight tools opens the repository next.
+
+## What's new in v4.1.1
+
+This release fixes one installer problem. On a computer with Claude Code's plugin, `install.sh` removed Cursor CLI's `agent-blueprint` marketplace. Cursor keeps marketplaces on your account, so that also removed it from your other computers. The installer now leaves it in place and tells you to uninstall Cursor's own copy in `/plugin` instead. The [release notes](docs/releases/v4.1.1-release-notes.md) say how to add it back on a computer that lost it.
 
 ## What's new in v4.1.0
 
@@ -802,10 +806,11 @@ An evaluation then ran the same fixture tasks on v3.8.0 and v4.0.0 in Claude Cod
 ## Release history
 
 <details>
-<summary>v2.3 to v4.1.0</summary>
+<summary>v2.3 to v4.1.1</summary>
 
 | Version | Date | What changed |
 |---|---|---|
+| v4.1.1 | 2026-10-13 | `install.sh` no longer removes Cursor CLI's marketplace, which Cursor shares with every computer on your account. When Claude Code's plugin covers Cursor, it tells you to uninstall Cursor's own copy in `/plugin` instead. |
 | v4.1.0 | 2026-10-12 | Each tool installs Agent Blueprint with its own command, and `install.sh` runs those commands for every tool at once. TDD keeps code that existed before the task, brainstorming accepts a design you already approved, `ab-project-start` refuses the home folder and nested repositories, and Codex gets display names, icons and a setup step. |
 | v4.0.2 | 2026-10-12 | The injection scanners match whole words, so "Blueprint" no longer reads as an injection attempt. New projects get `docs/context/DECISIONS.md`, and `ab-brainstorming` writes each design section out before asking for approval. |
 | v4.0.1 | 2026-10-07 | Cursor CLI and Amp no longer list every skill twice next to Claude Code. On a machine with Claude Code and either of them, `install.sh` writes no shared copy: Codex gets its own plugin, Grok Build, Pi and Hermes each get a copy in their own skills folder, and the copy an earlier install left in `~/.agents/skills` is removed. |
