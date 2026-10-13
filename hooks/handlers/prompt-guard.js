@@ -47,6 +47,10 @@ const CONTEXT_PATHS = [
   '.agents/skills/',
   '.claude/skills/',
 ];
+const isContextPath = p => CONTEXT_PATHS.some(c => p.includes(c));
+
+// Keep the synchronous read well inside the hook's time budget.
+const MAX_MOVE_SOURCE_BYTES = 1024 * 1024;
 
 // Codex sends apply_patch as tool_input.command. Scan added lines, plus retained
 // source text for moves into context. Track removals for those moves; context
@@ -80,6 +84,30 @@ function patchWrites(command) {
   }));
 }
 
+function retainedSourceText(moveSource, removedLines, cwd) {
+  try {
+    const sourcePath = path.resolve(cwd, moveSource);
+    const stat = fs.statSync(sourcePath);
+    if (!stat.isFile() || stat.size > MAX_MOVE_SOURCE_BYTES) return '';
+
+    const sourceLines = fs.readFileSync(sourcePath, 'utf8').split(/\r?\n/);
+    const removedCounts = new Map();
+    for (const removed of removedLines) {
+      removedCounts.set(removed, (removedCounts.get(removed) || 0) + 1);
+    }
+    const retainedLines = sourceLines.filter(line => {
+      const count = removedCounts.get(line) || 0;
+      if (count > 0) {
+        removedCounts.set(line, count - 1);
+        return false;
+      }
+      return true;
+    });
+    return retainedLines.join('\n') + '\n';
+  } catch { /* Keep scanning added lines when the source cannot be read. */ }
+  return '';
+}
+
 let input = '';
 // Exit before the hook timeout (3 s in the hook files) to avoid timeout errors
 const stdinTimeout = setTimeout(() => process.exit(0), 2500);
@@ -110,24 +138,10 @@ process.stdin.on('end', () => {
     for (const write of writes) {
       const { filePath, moveSource, removedLines } = write;
       // Only scan files that become agent context
-      const isContextFile = CONTEXT_PATHS.some(p => filePath.includes(p));
-      if (!isContextFile) continue;
+      if (!isContextPath(filePath)) continue;
 
       let content = write.content;
-      if (moveSource && !CONTEXT_PATHS.some(p => moveSource.includes(p))) {
-        try {
-          const sourcePath = path.resolve(data.cwd || process.cwd(), moveSource);
-          const stat = fs.statSync(sourcePath);
-          if (stat.isFile() && stat.size <= 1024 * 1024) {
-            const retainedLines = fs.readFileSync(sourcePath, 'utf8').split(/\r?\n/);
-            for (const removed of removedLines) {
-              const index = retainedLines.indexOf(removed);
-              if (index !== -1) retainedLines.splice(index, 1);
-            }
-            content = retainedLines.join('\n') + '\n' + content;
-          }
-        } catch { /* Keep scanning added lines when the source cannot be read. */ }
-      }
+      if (moveSource && !isContextPath(moveSource)) content = retainedSourceText(moveSource, removedLines, data.cwd || process.cwd()) + content;
       if (!content) continue;
 
       const findings = [];
