@@ -21,6 +21,11 @@ GITHUB = "Ninety2UA/agent-blueprint"
 URL = "https://github.com/" + GITHUB
 PI_SOURCE = "git:github.com/" + GITHUB
 PLUGIN = "agent-blueprint@agent-blueprint"
+# The check install.sh runs before it removes a marketplace from another source.
+GITHUB_CHECK = "git ls-remote --exit-code " + URL + " HEAD"
+# The Pi git forms hosts.sh _native_package_skill_dirs reads; install.sh must read the same ones.
+PI_GIT_FORMS = ("git:https://github.com/{}", "git:http://github.com/{}", "git:ssh://git@github.com/{}",
+                "git:git@github.com:{}", "git:github.com/{}.git", "git:https://github.com/{}.git")
 
 
 class Installer(unittest.TestCase):
@@ -73,6 +78,20 @@ class Installer(unittest.TestCase):
     def fake_claude_with_plugin(self):
         self.fake_tool("claude", {"plugin list": PLUGIN + " (enabled)",
                                 "plugin marketplace list": "❯ agent-blueprint\n  Source: GitHub (" + GITHUB + ")"})
+
+    def fake_local_marketplaces(self, old="/old/checkout"):
+        """Claude Code, Codex and Cursor CLI each registered from an old local checkout."""
+        self.fake_tool("claude", {"plugin marketplace list": "❯ agent-blueprint\n  Source: Local (" + old + ")"})
+        self.fake_tool("codex", {"plugin list --json": json.dumps({"installed": [{"pluginId": PLUGIN,
+            "marketplaceSource": {"sourceType": "local", "source": old}}]})})
+        self.fake_tool("cursor-agent", {"plugin marketplace list": "agent-blueprint user " + old})
+
+    def catalog_dirs(self, host):
+        """host_catalog_dirs HOST from hosts.sh, run in this test's home."""
+        return subprocess.run(["bash", "-c", '. "$1"; host_catalog_dirs "$2"', "catalog",
+            os.path.join(REPO, "skills/ab-ship-pipeline/scripts/hosts.sh"), host],
+            env={"HOME": self.home, "PATH": self.bin + ":/usr/bin:/bin"}, cwd=self.root,
+            text=True, capture_output=True)
 
     def calls(self):
         return [" ".join(json.loads(line)) for line in Path(self.log).read_text().splitlines()] if Path(self.log).exists() else []
@@ -621,19 +640,14 @@ class Installer(unittest.TestCase):
         self.assertEqual(self.ab_skills(".config", "amp", "skills"), SKILLS)
 
     def test_unreachable_github_keeps_the_old_marketplace(self):
-        old = "/old/checkout"
-        check = "git ls-remote --exit-code " + URL + " HEAD"
-        self.fake_tool("git", {check.split(" ", 1)[1]: {"code": 128}})
-        self.fake_tool("claude", {"plugin marketplace list": "❯ agent-blueprint\n  Source: Local (" + old + ")"})
-        self.fake_tool("codex", {"plugin list --json": json.dumps({"installed": [{"pluginId": PLUGIN,
-            "marketplaceSource": {"sourceType": "local", "source": old}}]})})
-        self.fake_tool("cursor-agent", {"plugin marketplace list": "agent-blueprint user " + old})
+        self.fake_tool("git", {GITHUB_CHECK.split(" ", 1)[1]: {"code": 128}})
+        self.fake_local_marketplaces()
         self.fake_tool("grok")
         code, out = self.run_install()
         self.assertEqual(code, 1, out)
         # Removing a marketplace uninstalls its plugin, so nothing is removed while GitHub is down.
         self.assertFalse(any("marketplace remove" in c for c in self.calls()))
-        self.assertEqual([c for c in self.calls() if c.startswith("git ")], [check] * 3)
+        self.assertEqual([c for c in self.calls() if c.startswith("git ")], [GITHUB_CHECK] * 3)
         self.assertIn("grok plugin install " + GITHUB + " --trust", self.calls())
         self.assertNotIn("claude plugin install " + PLUGIN, self.calls())
         self.assertNotIn("codex plugin add " + PLUGIN, self.calls())
@@ -661,26 +675,21 @@ class Installer(unittest.TestCase):
         self.assertEqual(self.mutations(), [])
 
     def test_marketplace_swap_checks_github_answers_before_removing(self):
-        old = "/old/checkout"
-        check = "git ls-remote --exit-code " + URL + " HEAD"
-        self.fake_tool("claude", {"plugin marketplace list": "❯ agent-blueprint\n  Source: Local (" + old + ")"})
-        self.fake_tool("codex", {"plugin list --json": json.dumps({"installed": [{"pluginId": PLUGIN,
-            "marketplaceSource": {"sourceType": "local", "source": old}}]})})
-        self.fake_tool("cursor-agent", {"plugin marketplace list": "agent-blueprint user " + old})
+        self.fake_local_marketplaces()
         # Cursor swaps only without the Claude Code plugin, so it runs on its own.
         for only in ("claude,codex", "cursor-agent"):
             with self.subTest(only=only):
                 Path(self.log).write_text("")
                 code, out = self.run_install("--dry-run", "--only", only)
                 self.assertEqual(code, 0, out)
-                self.assertEqual(out.count("would run: " + check), len(only.split(",")))
+                self.assertEqual(out.count("would run: " + GITHUB_CHECK), len(only.split(",")))
                 self.assertFalse(any(c.startswith("git ") for c in self.calls()))
                 code, out = self.run_install("--only", only)
                 self.assertEqual(code, 0, out)
                 calls = self.calls()
                 for tool in only.split(","):
                     remove = calls.index(tool + " plugin marketplace remove agent-blueprint")
-                    self.assertEqual(calls[remove - 1], check)
+                    self.assertEqual(calls[remove - 1], GITHUB_CHECK)
                     self.assertIn(tool + " plugin marketplace add " + (URL if tool == "cursor-agent" else GITHUB),
                                   calls[remove + 1:])
 
@@ -703,9 +712,7 @@ class Installer(unittest.TestCase):
         base = Path(self.home, ".pi/agent")
         base.mkdir(parents=True)
         self.fake_tool("pi")
-        for form in ("git:https://github.com/" + GITHUB, "git:http://github.com/" + GITHUB,
-                     "git:ssh://git@github.com/" + GITHUB, "git:git@github.com:" + GITHUB,
-                     "git:github.com/" + GITHUB + ".git", "git:https://github.com/" + GITHUB + ".git"):
+        for form in (template.format(GITHUB) for template in PI_GIT_FORMS):
             with self.subTest(form=form):
                 (base / "settings.json").write_text(json.dumps({"packages": [form]}))
                 Path(self.log).write_text("")
@@ -750,10 +757,7 @@ class Installer(unittest.TestCase):
             PI_SOURCE, {"source": os.path.relpath(pi_local.parent, pi_base)}, "npm:unrelated"]}))
         for host, expected in (("grok", {str(grok)}), ("pi", {str(pi_git), str(pi_local)}),
                                ("cursor-agent", {str(newest), str(other_plugin)}), ("amp", {str(amp)})):
-            result = subprocess.run(["bash", "-c", '. "$1"; host_catalog_dirs "$2"', "catalog",
-                os.path.join(REPO, "skills/ab-ship-pipeline/scripts/hosts.sh"), host],
-                env={"HOME": self.home, "PATH": self.bin + ":/usr/bin:/bin"}, cwd=self.root,
-                text=True, capture_output=True)
+            result = self.catalog_dirs(host)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual({os.path.realpath(p) for p in result.stdout.splitlines()},
                              {os.path.realpath(p) for p in expected}, host)
@@ -762,15 +766,11 @@ class Installer(unittest.TestCase):
         pi_base = Path(self.home, ".pi/agent")
         skills = pi_base / "git/github.com/x/y/skills"
         skills.mkdir(parents=True)
-        for form in ("git:github.com/x/y", "git:https://github.com/x/y", "git:http://github.com/x/y",
-                     "git:ssh://git@github.com/x/y", "git:git@github.com:x/y", "git:github.com/x/y.git",
-                     "git:https://github.com/x/y.git", "git:github.com/x/y#v1.0"):
+        forms = ["git:github.com/x/y", *(template.format("x/y") for template in PI_GIT_FORMS), "git:github.com/x/y#v1.0"]
+        for form in forms:
             with self.subTest(form=form):
                 (pi_base / "settings.json").write_text(json.dumps({"packages": [form]}))
-                result = subprocess.run(["bash", "-c", '. "$1"; host_catalog_dirs pi', "catalog",
-                    os.path.join(REPO, "skills/ab-ship-pipeline/scripts/hosts.sh")],
-                    env={"HOME": self.home, "PATH": self.bin + ":/usr/bin:/bin"}, cwd=self.root,
-                    text=True, capture_output=True)
+                result = self.catalog_dirs("pi")
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual([os.path.realpath(p) for p in result.stdout.splitlines()],
                                  [os.path.realpath(skills)])

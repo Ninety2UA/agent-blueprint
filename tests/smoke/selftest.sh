@@ -107,14 +107,14 @@ for c in tdd-override brainstorm-override; do
 done
 check "the compliant answer mentions the approved design" grep -q "the approved design" "$WORK"/logs/*/fake/brainstorm-override.final
 override_suite() { ( cd "$1" && python3 -m unittest discover -s tests ); }
+# The report replaces the temporary root with the literal $TMPDIR; the folder name survives.
+override_work_of() { local root="${1##* · work: }"; printf '%s\n' "$TMPDIR/${root##*/}/work"; }
 for mode in tdd-delete tdd-rewrite tdd-refactor; do
     AGENT_BLUEPRINT_SMOKE_FAKE_MODE="$mode" \
         bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --keep \
         --cell tdd-override > "$WORK/$mode.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/$mode.log"; exit 1; }
     reason=$(reason_of "$J" fake tdd-override)
-    # The report replaces the temporary root with the literal $TMPDIR; the folder name survives.
-    override_root="${reason##* · work: }"
-    override_work="$TMPDIR/${override_root##*/}/work"
+    override_work=$(override_work_of "$reason")
     check "$mode keeps the new function's test" test -f "$override_work/tests/test_textutil.py"
     check "$mode has a passing suite despite the seed edit" override_suite "$override_work"
     if [ "$mode" = tdd-refactor ]; then
@@ -129,18 +129,12 @@ for mode in tdd-delete tdd-rewrite tdd-refactor; do
         fi
     fi
 done
-AGENT_BLUEPRINT_SMOKE_FAKE_MODE=brainstorm-approval \
-    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 \
-    --cell brainstorm-override > "$WORK/approval.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/approval.log"; exit 1; }
-check "an approval request fails the brainstorming cell" [ "$(state_of "$J" fake brainstorm-override)" = fail ]
-check "the approval request is named" grep -q "design approval request" <<<"$(reason_of "$J" fake brainstorm-override)"
 for mode in tdd-uncollected tdd-no-count; do
     AGENT_BLUEPRINT_SMOKE_FAKE_MODE="$mode" \
         bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --keep \
         --cell tdd-override > "$WORK/$mode.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/$mode.log"; exit 1; }
     reason=$(reason_of "$J" fake tdd-override)
-    override_root="${reason##* · work: }"
-    override_work="$TMPDIR/${override_root##*/}/work"
+    override_work=$(override_work_of "$reason")
     check "$mode has a passing suite (its count_words test is never collected)" override_suite "$override_work"
     check "$mode fails the TDD cell" [ "$(state_of "$J" fake tdd-override)" = fail ]
     if [ "$mode" = tdd-uncollected ]; then
@@ -149,7 +143,7 @@ for mode in tdd-uncollected tdd-no-count; do
         check "a missing count_words is reported" grep -q "count_words missing" <<<"$reason"
     fi
 done
-for mode in brainstorm-please-approve brainstorm-looks-good brainstorm-no-plan; do
+for mode in brainstorm-approval brainstorm-please-approve brainstorm-looks-good brainstorm-no-plan; do
     AGENT_BLUEPRINT_SMOKE_FAKE_MODE="$mode" \
         bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 \
         --cell brainstorm-override > "$WORK/$mode.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/$mode.log"; exit 1; }

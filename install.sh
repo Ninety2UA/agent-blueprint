@@ -171,15 +171,14 @@ listing() {
 
 # Sources belonging to agent-blueprint, one per line. @unknown never authorizes removal.
 # Normalize the GitHub shorthand/URL to one identity; local paths are physical paths.
-# Each unreadable listing is warned about once: by listing() when the command fails, or here
-# when an entry cannot be attributed, so the routes act on @unknown without warning again.
+# Each unreadable marketplace listing is warned about once: by listing() when the command fails,
+# or here when an entry cannot be attributed, so reconcile_marketplace acts on @unknown silently.
 sources() {
-    python3 - "$@" <<'PY'
+    AB_HOST_LABEL="$(host_label "$1")" python3 - "$@" <<'PY'
 import json, os, re, sys
 from pathlib import Path
 host, raw = sys.argv[1:3]
 github = "Ninety2UA/agent-blueprint"
-names = {"claude": "Claude Code", "codex": "Codex"}
 def identity(value):
     value = value.strip().rstrip("/")
     if value.startswith(("/", "~", ".")):
@@ -201,7 +200,7 @@ def identity(value):
             return github
     return value
 def unknown(why):
-    print("  ! Could not read " + names[host] + "'s marketplace source (" + why + "); adding without removing it.",
+    print("  ! Could not read " + os.environ["AB_HOST_LABEL"] + "'s marketplace source (" + why + "); adding without removing it.",
           file=sys.stderr)
     print("@unknown")
 try:
@@ -470,13 +469,13 @@ github_answers() {
     fi
 }
 
-# reconcile_marketplace TOOL LABEL PRIOR SAME ADD [REFRESH...]: points TOOL's agent-blueprint
+# reconcile_marketplace TOOL PRIOR SAME ADD [REFRESH...]: points TOOL's agent-blueprint
 # marketplace at ADD. PRIOR is what sources() read: SAME runs the refresh command, if any;
 # nothing, or an unreadable listing (@unknown, already warned about), adds without removing;
 # any other source is removed and replaced, once the GitHub source answers.
 reconcile_marketplace() {
-    local tool="$1" label="$2" prior="$3" same="$4" add="$5"
-    shift 5
+    local tool="$1" prior="$2" same="$3" add="$4"
+    shift 4
     case "$prior" in
         "$same")
             if [ $# -gt 0 ]; then run "$tool" "$@"; fi ;;
@@ -484,7 +483,7 @@ reconcile_marketplace() {
             run "$tool" plugin marketplace add "$add" ;;
         *)
             # Under --local the new source is this checkout, so there is nothing remote to check.
-            if [ "$LOCAL" = false ]; then github_answers "$label"; fi
+            if [ "$LOCAL" = false ]; then github_answers "$(host_label "$tool")"; fi
             run "$tool" plugin marketplace remove agent-blueprint
             run "$tool" plugin marketplace add "$add" ;;
     esac
@@ -498,7 +497,7 @@ route_claude() {
     prior_sources=$(sources claude "$markets")
     plugins=$(listing claude plugin list)
     if [ "$prior_sources" = "$SOURCE" ] && [[ "$plugins" == *"$PLUGIN"* ]]; then action=update; fi
-    reconcile_marketplace claude "Claude Code" "$prior_sources" "$SOURCE" "$SOURCE" \
+    reconcile_marketplace claude "$prior_sources" "$SOURCE" "$SOURCE" \
         plugin marketplace update agent-blueprint
     run claude plugin "$action" "$PLUGIN"
     if [[ "$plugins" == *'claude-code-blueprint@'* ]]; then
@@ -514,9 +513,9 @@ route_codex() {
     prior_sources=$(sources codex "$plugins" "$markets")
     if [ "$LOCAL" = true ]; then
         # The marketplace is this checkout, so there is nothing to upgrade.
-        reconcile_marketplace codex Codex "$prior_sources" "$SOURCE" "$SOURCE"
+        reconcile_marketplace codex "$prior_sources" "$SOURCE" "$SOURCE"
     else
-        reconcile_marketplace codex Codex "$prior_sources" "$SOURCE" "$SOURCE" \
+        reconcile_marketplace codex "$prior_sources" "$SOURCE" "$SOURCE" \
             plugin marketplace upgrade agent-blueprint
     fi
     run codex plugin add "$PLUGIN"
@@ -601,7 +600,7 @@ route_cursor_agent() {
         printf '    cursor-agent --plugin-dir %q\n' "$SOURCE_DIR"
     else
         prior_sources=$(sources cursor-agent "$(listing cursor-agent plugin marketplace list)")
-        reconcile_marketplace cursor-agent "Cursor CLI" "$prior_sources" "$GITHUB" "$GITHUB_URL" \
+        reconcile_marketplace cursor-agent "$prior_sources" "$GITHUB" "$GITHUB_URL" \
             plugin marketplace update agent-blueprint
         if [ "$DRY_RUN" = false ]; then cursor_record add; fi
         info "Cursor CLI: REQUIRED next step: open a session, run /plugin and install agent-blueprint."
@@ -678,9 +677,7 @@ done
 if [ "$COPY_DIR_SET" = true ]; then run_route copy-dir; fi
 
 unfinished=()
-cursor_unfinished=false
 if finished_route cursor-agent && [ "$claude_plugin" = false ]; then
-    cursor_unfinished=true
     if [ "$LOCAL" = true ]; then
         unfinished+=("Cursor CLI (start the printed --plugin-dir session)")
     else
@@ -732,7 +729,7 @@ echo ""
 done_hosts=()
 for h in ${finished_hosts[@]+"${finished_hosts[@]}"}; do
     # Cursor without the Claude Code plugin still needs the step listed under Unfinished.
-    if [ "$h" = cursor-agent ] && [ "$cursor_unfinished" = true ]; then continue; fi
+    if [ "$h" = cursor-agent ] && [ "$claude_plugin" = false ]; then continue; fi
     done_hosts+=("$h")
 done
 if [ ${#done_hosts[@]} -gt 0 ]; then success "Finished: $(labels "${done_hosts[@]}")"; fi
