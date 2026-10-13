@@ -241,33 +241,32 @@ host_catalog_dirs() {
     esac
     return 0
 }
-# Native package routes that do not use the Claude/Codex enablement registries.
+# Native package routes that do not use the Claude/Codex enablement registries. Pi's git sources
+# are parsed by pi_source.py beside this file, which install.sh reads them with too.
 _native_package_skill_dirs() {
     command -v python3 >/dev/null 2>&1 || return 0
-    python3 - "$1" <<'PY'
-import json, os, sys
+    python3 - "$1" "$AB_HOSTS_DIR/pi_source.py" <<'PY'
+import importlib.util, json, os, sys
 from pathlib import Path
 home = Path(os.environ["HOME"])
 dirs = []
 try:
     if sys.argv[1] == "pi":
+        sys.dont_write_bytecode = True   # no __pycache__ inside the skill's folder
+        spec = importlib.util.spec_from_file_location("pi_source", sys.argv[2])
+        pi_source = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pi_source)
         base = home / ".pi/agent"
         settings = json.loads((base / "settings.json").read_text())
         for package in settings.get("packages", []):
             source = package.get("source") if isinstance(package, dict) else package
             if not isinstance(source, str):
                 continue
-            if source.startswith("git:"):
-                repo = source[4:].split("#", 1)[0]
-                for prefix in ("https://", "http://", "ssh://git@"):
-                    if repo.startswith(prefix):
-                        repo = repo[len(prefix):]
-                if repo.startswith("git@"):
-                    repo = repo[4:].replace(":", "/", 1)
-                if repo.endswith(".git"):
-                    repo = repo[:-4]
-                path = base / "git" / repo
-            elif source.startswith(("npm:", "https://", "http://")):
+            git = pi_source.parse(source)
+            if git:
+                # Where Pi clones it: <agent dir>/git/<host>/<path>, whatever the ref.
+                path = base / "git" / git.host / git.path
+            elif source.startswith(("npm:", "git:", "https://", "http://", "ssh://")):
                 continue
             else:
                 path = Path(os.path.expanduser(source))

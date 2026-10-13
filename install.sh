@@ -10,6 +10,7 @@
 #   Hermes / Amp         recorded copies in ~/.hermes/skills / ~/.config/amp/skills
 # Cursor and Amp use Claude Code's plugin when present. Recorded standalone routes are retired.
 # A tool whose route fails is reported at the end (exit 1); the other tools still install.
+# An interrupted tool (exit 130 or 143) stops the whole run with that status.
 # Cursor registrations made here are recorded in
 # ${XDG_CONFIG_HOME:-$HOME/.config}/agent-blueprint/install-routes.json.
 # Copies keep .agent-blueprint-install.json; only recorded skills are replaced or removed.
@@ -170,12 +171,15 @@ listing() {
 }
 
 # Sources belonging to agent-blueprint, one per line. @unknown never authorizes removal.
-# Normalize the GitHub shorthand/URL to one identity; local paths are physical paths.
-# Each unreadable marketplace listing is warned about once: by listing() when the command fails,
-# or here when an entry cannot be attributed, so reconcile_marketplace acts on @unknown silently.
+# Normalize the GitHub shorthand/URL to one identity; local paths are physical paths. Pi's
+# package sources are parsed by pi_source.py, the parser hosts.sh's host catalog uses too.
+# Each unreadable listing, of marketplaces or of installed sources, is warned about once: by
+# listing() when the command fails, or here (unknown()) when an entry cannot be attributed or the
+# listing cannot be parsed, so the routes act on @unknown silently.
 sources() {
-    AB_HOST_LABEL="$(host_label "$1")" python3 - "$@" <<'PY'
-import json, os, re, sys
+    AB_HOST_LABEL="$(host_label "$1")" AB_PI_SOURCE="$SOURCE_DIR/skills/ab-ship-pipeline/scripts/pi_source.py" \
+        python3 - "$@" <<'PY'
+import importlib.util, json, os, re, sys
 from pathlib import Path
 host, raw = sys.argv[1:3]
 github = "Ninety2UA/agent-blueprint"
@@ -187,21 +191,10 @@ def identity(value):
         value = value[:-4]
     if value in (github, "https://github.com/" + github):
         return github
-    if value.startswith("git:"):
-        # Pi's git sources, in every form hosts.sh's _native_package_skill_dirs reads.
-        repo = value[4:]
-        for prefix in ("https://", "http://", "ssh://git@"):
-            if repo.startswith(prefix):
-                repo = repo[len(prefix):]
-                break
-        if repo.startswith("git@"):
-            repo = repo[4:].replace(":", "/", 1)
-        if repo == "github.com/" + github:
-            return github
     return value
 def unknown(why):
-    print("  ! Could not read " + os.environ["AB_HOST_LABEL"] + "'s marketplace source (" + why + "); adding without removing it.",
-          file=sys.stderr)
+    print("  ! Could not read " + os.environ["AB_HOST_LABEL"] + "'s source for agent-blueprint (" + why +
+          "); installing without removing the current one.", file=sys.stderr)
     print("@unknown")
 try:
     if raw == "@unknown":
@@ -250,13 +243,17 @@ try:
             if m:
                 print(identity(m[1]))
             elif re.search(r":\s*agent-blueprint(?:\s|$)", line):
-                print("@unknown")
+                unknown("agent-blueprint is listed without a git or local source")
     elif host == "cursor-agent":
         for line in raw.splitlines():
             m = re.fullmatch(r"\s*agent-blueprint\s+\S+\s+(.+?)\s*", line)
             if m:
                 print(identity(m[1]))
     elif host == "pi":
+        sys.dont_write_bytecode = True   # no __pycache__ inside the skill's folder
+        spec = importlib.util.spec_from_file_location("pi_source", os.environ["AB_PI_SOURCE"])
+        pi_source = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pi_source)
         base = Path(os.environ["HOME"]) / ".pi/agent"
         settings = base / "settings.json"
         data = json.loads(settings.read_text()) if settings.exists() else {"packages": []}
@@ -264,12 +261,12 @@ try:
             source = item.get("source") if isinstance(item, dict) else item
             if not isinstance(source, str):
                 continue
-            if identity(source.split("#", 1)[0]) == github:
-                # A pinned ref (#...) is not the plain source, so the installer replaces it and says so.
-                if "#" in source:
-                    print(source + "\t" + source + "\tpinned")
-                else:
-                    print(github + "\t" + source)
+            git = pi_source.parse(source)
+            if git:
+                # GitHub names are case-insensitive. A pinned ref (@ref or #ref) is not the plain
+                # source, so the installer replaces it and says so.
+                if git.host == "github.com" and git.path.lower() == github.lower():
+                    print(source + "\t" + source + "\tpinned" if git.pinned else github + "\t" + source)
             elif not source.startswith(("git:", "npm:", "https://", "git@")):
                 path = Path(os.path.expanduser(source))
                 if not path.is_absolute():
@@ -285,8 +282,7 @@ try:
                 if named:
                     print(os.path.realpath(path) + "\t" + str(path))
 except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
-    print("  ! Could not read " + host + " install listing: " + str(exc), file=sys.stderr)
-    print("@unknown")
+    unknown("the listing could not be parsed: " + str(exc))
 PY
 }
 
@@ -354,13 +350,16 @@ in_list() {   # in_list WORD ITEM...: true when WORD is one of the items
     return 1
 }
 
+# real_path PATH: PATH with every symlink resolved, whether or not it exists yet.
+real_path() { python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"; }
+
 # inside_own_skills DIR: true when DIR is this checkout's own skills folder, or resolves into it.
 # The copy replaces each skill folder, so such a destination would delete the checkout's skills
 # before copying them.
 inside_own_skills() {
     local src_real copy_real
     src_real=$(cd "$SOURCE_DIR/skills" && pwd -P)
-    copy_real=$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1")
+    copy_real=$(real_path "$1")
     case "$copy_real/" in "$src_real"/*) return 0 ;; esac
     return 1
 }
@@ -449,25 +448,32 @@ remove_recorded_copy() {
     if [ "$DRY_RUN" = true ]; then info "Would remove the recorded copy in $dir"; else info "Removed the recorded copy in $dir"; fi
 }
 
-# github_answers LABEL: succeeds when the GitHub source answers. It runs before a marketplace is
-# removed, because removing one uninstalls its plugin (Claude Code 2.1.296 also deletes the
-# plugin's data), so a swap while GitHub is unreachable would leave the tool without the plugin.
+# github_answers LABEL: succeeds when the GitHub source answers. It runs before a route removes an
+# install it will replace from GitHub: removing a marketplace uninstalls its plugin (Claude Code
+# 2.1.296 also deletes the plugin's data), and Grok and Pi remove the old install before
+# installing, so a swap while GitHub is unreachable would leave the tool without the plugin.
 github_answers() {
     if ! have git; then
-        error "$1: git is needed to check that $GITHUB_URL answers before the old marketplace is replaced; left it and its plugin as they were."
+        error "$1: git is needed to check that $GITHUB_URL answers before the current install is replaced; left it as it was."
         return 1
     fi
     if [ "$DRY_RUN" = true ]; then
         plan "git ls-remote --exit-code $GITHUB_URL HEAD"
         return 0
     fi
-    # No credential prompt, and a stalled transfer gives up rather than hanging the run.
-    if ! GIT_TERMINAL_PROMPT=0 GIT_HTTP_LOW_SPEED_LIMIT=1000 GIT_HTTP_LOW_SPEED_TIME=30 \
+    # No credential or passphrase prompt (also when url.insteadOf rewrites the URL to ssh), and a
+    # stalled transfer or connection gives up rather than hanging the run.
+    if ! GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -o BatchMode=yes -o ConnectTimeout=20' \
+            GIT_HTTP_LOW_SPEED_LIMIT=1000 GIT_HTTP_LOW_SPEED_TIME=30 \
             git ls-remote --exit-code "$GITHUB_URL" HEAD >/dev/null 2>&1; then
-        error "$1: could not reach $GITHUB_URL, so the old marketplace and its plugin were left as they were. Check the connection and run install.sh again."
+        error "$1: could not reach $GITHUB_URL, so its current install was left as it was. Check the connection and run install.sh again."
         return 1
     fi
 }
+
+# mark_removed HOST: records, just before a route's first destructive step, that HOST's old
+# install is being removed, so run_route's failure line can say so. A dry run removes nothing.
+mark_removed() { if [ "$DRY_RUN" = false ]; then : > "$RUN_STATE/$1.removed"; fi; }
 
 # reconcile_marketplace TOOL PRIOR SAME ADD [REFRESH...]: points TOOL's agent-blueprint
 # marketplace at ADD. PRIOR is what sources() read: SAME runs the refresh command, if any;
@@ -484,6 +490,7 @@ reconcile_marketplace() {
         *)
             # Under --local the new source is this checkout, so there is nothing remote to check.
             if [ "$LOCAL" = false ]; then github_answers "$(host_label "$tool")"; fi
+            mark_removed "$tool"
             run "$tool" plugin marketplace remove agent-blueprint
             run "$tool" plugin marketplace add "$add" ;;
     esac
@@ -528,15 +535,16 @@ route_agy() {
 }
 
 route_grok() {
-    local prior_sources remaining before_count after_count
+    local prior_sources remaining before_count after_count removed=false
     prior_sources=$(sources grok "$(listing grok plugin list)")
     # A local install is a copy that grok plugin update reports as live without refreshing it.
     if [ "$prior_sources" = "$SOURCE" ] && [ "$LOCAL" = false ]; then
         run grok plugin update agent-blueprint
     else
-        if [[ "$prior_sources" == *'@unknown'* ]]; then
-            warn "Could not read Grok's install source; trying install without removing it."
-        else
+        # An unreadable listing (@unknown, already warned about) installs without removing.
+        if [ -n "$prior_sources" ] && [[ "$prior_sources" != *'@unknown'* ]]; then
+            if [ "$LOCAL" = false ]; then github_answers "$(host_label grok)"; fi
+            mark_removed grok
             # Grok removes only the most recent install for this name. Check progress so a
             # failed/changed listing can never cause an unbounded loop of uninstall commands.
             while [ -n "$prior_sources" ]; do
@@ -548,9 +556,14 @@ route_grok() {
                     before_count=$(printf '%s\n' "$prior_sources" | awk 'NF {n++} END {print n+0}')
                     after_count=$(printf '%s\n' "$remaining" | awk 'NF {n++} END {print n+0}')
                     if [[ "$remaining" == *'@unknown'* ]] || [ "$after_count" -ge "$before_count" ]; then
+                        # Grok still lists every install it had, so none of them was removed.
+                        if [ "$removed" = false ] && [[ "$remaining" != *'@unknown'* ]]; then
+                            rm -f "$RUN_STATE/grok.removed"
+                        fi
                         error "Could not confirm Grok removed the recorded plugin; stopped before installing a duplicate."
                         exit 1   # ends this route only
                     fi
+                    removed=true
                     prior_sources="$remaining"
                 fi
             done
@@ -565,11 +578,8 @@ route_pi() {
     local prior_sources resolved package pin same='' removals=() pinned=()
     prior_sources=$(sources pi '' "$SOURCE_DIR")
     while IFS=$'\t' read -r resolved package pin; do
-        [ -n "$resolved" ] || continue
-        if [ "$resolved" = '@unknown' ]; then
-            warn "Could not read Pi's packages; trying install without removing them."
-            continue
-        fi
+        # An unreadable settings file (@unknown, already warned about) installs without removing.
+        if [ -z "$resolved" ] || [ "$resolved" = '@unknown' ]; then continue; fi
         if [ "$resolved" = "$SOURCE" ] && [ -z "$same" ]; then
             same="$package"
         else
@@ -577,19 +587,30 @@ route_pi() {
             if [ "$pin" = pinned ]; then pinned+=("$package"); fi
         fi
     done <<< "$prior_sources"
+    # Without a kept package, the removals are followed by an install from GitHub: check it first.
+    if [ ${#removals[@]} -gt 0 ] && [ -z "$same" ] && [ "$LOCAL" = false ]; then github_answers "$(host_label pi)"; fi
     for package in ${pinned[@]+"${pinned[@]}"}; do
         warn "Pi: replacing the pinned source $package with ${same:-$PI_SOURCE}; pin it again in Pi if you need that version."
     done
+    if [ ${#removals[@]} -gt 0 ]; then mark_removed pi; fi
     for package in ${removals[@]+"${removals[@]}"}; do run pi remove "$package"; done
     if [ -n "$same" ]; then run pi update --extension "$same"; else run pi install "$PI_SOURCE"; fi
     remove_recorded_copy "$HOME/.pi/agent/skills"
     success "Pi: agent-blueprint"
 }
 
+# Cursor and Amp lean on the Claude Code plugin when claude_plugin is true. When Claude Code's
+# route failed in this run, that plugin may be one the run could not refresh, so each keeps the
+# install it has of its own.
 route_cursor_agent() {
     local prior_sources
     if [ "$claude_plugin" = true ]; then
         if cursor_record has; then
+            if failed_route claude; then
+                warn "Cursor CLI: kept its own marketplace because Claude Code's route failed; run install.sh again once Claude Code installs."
+                return 0
+            fi
+            mark_removed cursor-agent
             run cursor-agent plugin marketplace remove agent-blueprint
             if [ "$DRY_RUN" = false ]; then cursor_record remove; fi
             warn "Cursor CLI: if /plugin still lists agent-blueprint from Cursor's own marketplace, uninstall it there, so Cursor reads only the Claude Code plugin."
@@ -610,11 +631,16 @@ route_cursor_agent() {
 route_hermes() { copy_skills "$HOME/.hermes/skills" hermes; }
 
 route_amp() {
+    local copy="$HOME/.config/amp/skills"
     if [ "$claude_plugin" = true ]; then
-        remove_recorded_copy "$HOME/.config/amp/skills"
+        if failed_route claude && [ -f "$copy/.agent-blueprint-install.json" ]; then
+            warn "Amp: kept its own copy in $copy because Claude Code's route failed; run install.sh again once Claude Code installs."
+            return 0
+        fi
+        remove_recorded_copy "$copy"
         success "Amp: covered by the Claude Code plugin"
     else
-        copy_skills "$HOME/.config/amp/skills" amp
+        copy_skills "$copy" amp
     fi
 }
 
@@ -624,7 +650,8 @@ host_label() {
     case "$1" in
         claude) echo "Claude Code" ;;  codex) echo "Codex" ;;  agy) echo "Antigravity" ;;
         grok) echo "Grok Build" ;;  pi) echo "Pi" ;;  cursor-agent) echo "Cursor CLI" ;;
-        hermes) echo "Hermes" ;;  amp) echo "Amp" ;;  *) echo "the copy in $COPY_DIR" ;;
+        hermes) echo "Hermes" ;;  amp) echo "Amp" ;;  copy-dir) echo "the copy in $COPY_DIR" ;;
+        *) echo "$1" ;;
     esac
 }
 labels() {   # labels HOST...: their display names, comma-separated
@@ -635,11 +662,14 @@ labels() {   # labels HOST...: their display names, comma-separated
 
 # run_route HOST: runs route_HOST and records whether it finished. Never call it, or a route, as
 # a condition (if, ||, &&): bash ignores set -e inside a function or subshell run that way, so a
-# failing command would not stop the route.
+# failing command would not stop the route. A route that removed its old install before failing
+# left a marker in RUN_STATE (mark_removed), so the failure line says what is left. A tool that
+# caught Ctrl-C (130) or was terminated (143) stops the whole run, as an interrupt did before
+# routes ran in subshells.
 finished_hosts=()
 failed_hosts=()
 run_route() {
-    local status
+    local status label
     set +e
     ( set -e; "route_${1//-/_}" )
     status=$?
@@ -648,7 +678,13 @@ run_route() {
         finished_hosts+=("$1")
     else
         failed_hosts+=("$1")
-        error "$(host_label "$1") did not finish (exit $status); its current install and copies stay as they were."
+        label="$(host_label "$1")"
+        if [ -e "$RUN_STATE/$1.removed" ]; then
+            error "$label did not finish (exit $status) after its old install was removed; run install.sh again to install it."
+        else
+            error "$label did not finish (exit $status); its current install and recorded copies stay as they were."
+        fi
+        if [ "$status" -eq 130 ] || [ "$status" -eq 143 ]; then exit "$status"; fi
     fi
 }
 finished_route() { in_list "$1" ${finished_hosts[@]+"${finished_hosts[@]}"}; }
@@ -661,6 +697,10 @@ if [ "$COPY_DIR_SET" = true ] && inside_own_skills "$COPY_DIR"; then
     exit 2
 fi
 
+# Private per-run state the routes' subshells write to (mark_removed); gone when the run ends.
+RUN_STATE=$(mktemp -d "${TMPDIR:-/tmp}/agent-blueprint-install.XXXXXX")
+trap 'rm -rf "$RUN_STATE"' EXIT
+
 if listed claude; then run_route claude; fi
 # Only the Cursor and Amp routes read claude_plugin. A route's subshell cannot hand it back, so
 # it is set here: true after Claude Code's route finished, otherwise read from claude plugin list.
@@ -671,25 +711,32 @@ elif have claude && { listed cursor-agent || listed amp; }; then
     plugins=$(listing claude plugin list)
     if [[ "$plugins" == *"$PLUGIN"* ]]; then claude_plugin=true; fi
 fi
-for h in codex agy grok pi cursor-agent hermes amp; do
-    if listed "$h"; then run_route "$h"; fi
+# Every other host in AB_HOSTS order; one without a route_ function fails in run_route.
+for h in "${ALL_HOSTS[@]}"; do
+    if [ "$h" != claude ] && listed "$h"; then run_route "$h"; fi
 done
 if [ "$COPY_DIR_SET" = true ]; then run_route copy-dir; fi
 
-unfinished=()
+# Cursor without the Claude Code plugin still needs a step of the user's: it is listed under
+# Unfinished rather than Finished.
+cursor_note=''
 if finished_route cursor-agent && [ "$claude_plugin" = false ]; then
     if [ "$LOCAL" = true ]; then
-        unfinished+=("Cursor CLI (start the printed --plugin-dir session)")
+        cursor_note="Cursor CLI (start the printed --plugin-dir session)"
     else
-        unfinished+=("Cursor CLI (/plugin installation required)")
+        cursor_note="Cursor CLI (/plugin installation required)"
     fi
 fi
 
 # Retire the 4.0 shared copy only once every installed reader has its own route in this run and
 # that route finished. 4.0 pointed Hermes at it through skills.external_dirs in ~/.hermes/config.yaml.
+# A --copy-dir there is this run's own copy, which the retirement would delete.
 hermes_reads_shared=false
 if grep -qs '\.agents/skills' "$HOME/.hermes/config.yaml"; then hermes_reads_shared=true; fi
-if [ -f "$HOME/.agents/skills/.agent-blueprint-install.json" ]; then
+if [ -f "$HOME/.agents/skills/.agent-blueprint-install.json" ] && [ "$COPY_DIR_SET" = true ] &&
+        [ "$(real_path "$COPY_DIR")" = "$(real_path "$HOME/.agents/skills")" ]; then
+    info "Skipped retiring the shared copy in $HOME/.agents/skills: it is this run's --copy-dir."
+elif [ -f "$HOME/.agents/skills/.agent-blueprint-install.json" ]; then
     readers=(codex grok pi cursor-agent amp)
     if [ "$hermes_reads_shared" = true ]; then readers+=(hermes); fi
     outside=()
@@ -716,7 +763,7 @@ fi
 if [ "$hermes_reads_shared" = true ] && finished_route hermes; then
     warn "Hermes: ~/.hermes/config.yaml still lists ~/.agents/skills under skills.external_dirs. Remove that entry; Hermes now reads its own copy in ~/.hermes/skills."
 fi
-if [ ${#unfinished[@]} -gt 0 ]; then warn "Unfinished: ${unfinished[*]}"; fi
+if [ -n "$cursor_note" ]; then warn "Unfinished: $cursor_note"; fi
 
 # ─── Optional project scaffold ────────────────────────────────
 if [ -n "$PROJECT_DIR" ]; then
@@ -728,13 +775,13 @@ fi
 echo ""
 done_hosts=()
 for h in ${finished_hosts[@]+"${finished_hosts[@]}"}; do
-    # Cursor without the Claude Code plugin still needs the step listed under Unfinished.
-    if [ "$h" = cursor-agent ] && [ "$claude_plugin" = false ]; then continue; fi
+    if [ "$h" = cursor-agent ] && [ -n "$cursor_note" ]; then continue; fi
     done_hosts+=("$h")
 done
 if [ ${#done_hosts[@]} -gt 0 ]; then success "Finished: $(labels "${done_hosts[@]}")"; fi
 if [ ${#failed_hosts[@]} -gt 0 ]; then
-    error "Failed: $(labels "${failed_hosts[@]}"). Their current installs and copies stay as they were; fix the errors above and run install.sh again."
+    # Each failed tool's own line above says whether its old install is still there.
+    error "Failed: $(labels "${failed_hosts[@]}"). Fix the errors above and run install.sh again."
     exit 1
 fi
 if [ "$DRY_RUN" = true ]; then

@@ -1,4 +1,5 @@
 """U15: direct routes, source swaps and recorded-copy migrations in isolated homes."""
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -23,9 +24,16 @@ PI_SOURCE = "git:github.com/" + GITHUB
 PLUGIN = "agent-blueprint@agent-blueprint"
 # The check install.sh runs before it removes a marketplace from another source.
 GITHUB_CHECK = "git ls-remote --exit-code " + URL + " HEAD"
-# The Pi git forms hosts.sh _native_package_skill_dirs reads; install.sh must read the same ones.
-PI_GIT_FORMS = ("git:https://github.com/{}", "git:http://github.com/{}", "git:ssh://git@github.com/{}",
-                "git:git@github.com:{}", "git:github.com/{}.git", "git:https://github.com/{}.git")
+# Pi git sources in the forms Pi 0.73.1 reads (dist/utils/git.js). pi_source.py parses them for both
+# install.sh and hosts.sh; a ref, written @ref or #ref, pins the package.
+PI_PLAIN_FORMS = ("git:https://github.com/{}", "git:http://github.com/{}", "git:ssh://git@github.com/{}",
+                  "git:git@github.com:{}", "git:github.com/{}.git", "git:https://github.com/{}.git",
+                  "git:git://github.com/{}", "https://github.com/{}", "ssh://git@github.com/{}",
+                  "git://github.com/{}")
+PI_PINNED_FORMS = ("git:github.com/{}@v4.0.2", "git:github.com/{}#v4.0.2", "git:git@github.com:{}@v4.0.2",
+                   "git:ssh://git@github.com/{}@v4.0.2", "https://github.com/{}@v4.0.2")
+PI_GIT_FORMS = PI_PLAIN_FORMS + PI_PINNED_FORMS
+PI_PARSER = os.path.join(REPO, "skills/ab-ship-pipeline/scripts/pi_source.py")
 
 
 class Installer(unittest.TestCase):
@@ -114,6 +122,23 @@ class Installer(unittest.TestCase):
 
     def routes(self):
         return Path(self.home, ".config", "agent-blueprint", "install-routes.json")
+
+    def record_cursor_route(self):
+        self.routes().parent.mkdir(parents=True, exist_ok=True)
+        self.routes().write_text(json.dumps({"plugin": "agent-blueprint",
+                                             "cursor-agent": {"marketplace": "agent-blueprint", "source": URL}}))
+
+    def pi_packages(self, *packages):
+        settings = Path(self.home, ".pi/agent/settings.json")
+        settings.parent.mkdir(parents=True, exist_ok=True)
+        settings.write_text(json.dumps({"packages": list(packages)}))
+        return settings
+
+    def unreachable_github(self):
+        self.fake_tool("git", {GITHUB_CHECK.split(" ", 1)[1]: {"code": 128}})
+
+    def warnings(self, out, text="Could not read"):
+        return [line for line in out.splitlines() if line.startswith("  ! ") and text in line]
 
     def test_github_sources_are_the_default(self):
         for tool in ("claude", "codex", "agy", "grok", "pi", "hermes", "cursor-agent", "amp"):
@@ -314,10 +339,11 @@ class Installer(unittest.TestCase):
     def test_failed_route_does_not_stop_later_routes(self):
         copies = [self.earlier_copy(folder, "ab-quick-fix") for folder in
                   (".grok/skills", ".pi/agent/skills")]
+        project = Path(self.root, "project")
         self.fake_tool("codex", {"plugin add " + PLUGIN: {"code": 1}})
         for tool in ("grok", "pi"):
             self.fake_tool(tool)
-        code, out = self.run_install()
+        code, out = self.run_install(str(project))
         self.assertEqual(code, 1, out)
         self.assertIn("grok plugin install " + GITHUB + " --trust", self.calls())
         self.assertIn("pi install " + PI_SOURCE, self.calls())
@@ -325,8 +351,13 @@ class Installer(unittest.TestCase):
         for copy in copies:
             with self.subTest(copy=copy):
                 self.assertEqual(list(copy.iterdir()), [])
+        # The project scaffold still runs after a failed route.
+        self.assertTrue((project / "AGENTS.md").is_file())
         self.assertRegex(out, r"(?m)^  ✓ Finished: Grok Build, Pi$")
-        self.assertRegex(out, r"(?m)^  ✗ Failed: Codex\. [^\n]*current installs and copies stay as they were")
+        # Codex removed nothing before plugin add failed, so its install is as it was.
+        self.assertRegex(out, r"(?m)^  ✗ Codex did not finish \(exit 1\); its current install and recorded "
+                              r"copies stay as they were\.$")
+        self.assertRegex(out, r"(?m)^  ✗ Failed: Codex\. Fix the errors above and run install\.sh again\.$")
         self.assertNotIn("Done.", out)
 
     def test_dry_run_preserves_legacy_copies_and_prints_scoped_cleanup(self):
@@ -404,8 +435,15 @@ class Installer(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertIn("cursor-agent plugin marketplace add " + URL, self.calls())
         self.assertIn("/plugin", out)
-        self.assertRegex(out, r"(?i)unfinished[^\n]*Cursor")
+        self.assertRegex(out, r"(?m)^  ! Unfinished: Cursor CLI \(/plugin installation required\)$")
+        self.assertNotRegex(out, r"Finished:[^\n]*Cursor")
         self.assertIn("agent-blueprint", self.routes().read_text())
+        # With Amp beside it, Amp is Finished and Cursor stays Unfinished.
+        self.fake_tool("amp")
+        code, out = self.run_install()
+        self.assertEqual(code, 0, out)
+        self.assertRegex(out, r"(?m)^  ✓ Finished: Amp$")
+        self.assertRegex(out, r"(?m)^  ! Unfinished: Cursor CLI")
 
     def test_cursor_and_amp_use_existing_claude_plugin_even_with_only(self):
         self.fake_claude_with_plugin()
@@ -640,7 +678,7 @@ class Installer(unittest.TestCase):
         self.assertEqual(self.ab_skills(".config", "amp", "skills"), SKILLS)
 
     def test_unreachable_github_keeps_the_old_marketplace(self):
-        self.fake_tool("git", {GITHUB_CHECK.split(" ", 1)[1]: {"code": 128}})
+        self.unreachable_github()
         self.fake_local_marketplaces()
         self.fake_tool("grok")
         code, out = self.run_install()
@@ -652,7 +690,12 @@ class Installer(unittest.TestCase):
         self.assertNotIn("claude plugin install " + PLUGIN, self.calls())
         self.assertNotIn("codex plugin add " + PLUGIN, self.calls())
         for label in ("Claude Code", "Codex", "Cursor CLI"):
-            self.assertRegex(out, r"(?m)^  ✗ " + re.escape(label) + r": [^\n]*" + re.escape(URL))
+            self.assertRegex(out, r"(?m)^  ✗ " + re.escape(label) + r": could not reach " + re.escape(URL) +
+                             r", so its current install was left as it was\. ")
+            # Nothing was removed, so the route's failure line says the install is as it was.
+            self.assertRegex(out, r"(?m)^  ✗ " + re.escape(label) + r" did not finish \(exit 1\); its current "
+                                  r"install and recorded copies stay as they were\.$")
+        self.assertNotIn("old install was removed", out)
         failed = next(line for line in out.splitlines() if "Failed:" in line)
         for label in ("Claude Code", "Codex", "Cursor CLI"):
             self.assertIn(label, failed)
@@ -663,7 +706,7 @@ class Installer(unittest.TestCase):
         # A PATH with the installer's utilities but no git at all.
         tools = Path(self.root, "no-git")
         tools.mkdir()
-        for name in ("bash", "sed", "head", "find", "wc", "tr", "grep", "awk", "dirname", "cat"):
+        for name in ("bash", "sed", "head", "find", "wc", "tr", "grep", "awk", "dirname", "cat", "mktemp", "rm"):
             found = shutil.which(name, path="/usr/bin:/bin")
             if found:
                 os.symlink(found, tools / name)
@@ -671,7 +714,8 @@ class Installer(unittest.TestCase):
         self.fake_tool("claude", {"plugin marketplace list": "❯ agent-blueprint\n  Source: Local (/old/checkout)"})
         code, out = self.run_install("--only", "claude", env_extra={"PATH": self.bin + ":" + str(tools)})
         self.assertEqual(code, 1, out)
-        self.assertRegex(out, r"(?m)^  ✗ Claude Code: git is needed[^\n]*" + re.escape(URL))
+        self.assertRegex(out, r"(?m)^  ✗ Claude Code: git is needed[^\n]*" + re.escape(URL) +
+                         r"[^\n]*current install")
         self.assertEqual(self.mutations(), [])
 
     def test_marketplace_swap_checks_github_answers_before_removing(self):
@@ -693,6 +737,159 @@ class Installer(unittest.TestCase):
                     self.assertIn(tool + " plugin marketplace add " + (URL if tool == "cursor-agent" else GITHUB),
                                   calls[remove + 1:])
 
+    def test_unreachable_github_keeps_pi_and_grok_installs(self):
+        # Pi and Grok remove the old install before installing from GitHub, so they check it first.
+        self.unreachable_github()
+        pinned = PI_SOURCE + "#v4.0.2"
+        self.pi_packages(pinned)
+        self.fake_tool("pi")
+        self.fake_tool("grok", {"plugin list": "  repo-hash: agent-blueprint [local: /old/checkout]"})
+        self.fake_tool("hermes")
+        code, out = self.run_install()
+        self.assertEqual(code, 1, out)
+        self.assertEqual(self.mutations(), [])
+        self.assertEqual([c for c in self.calls() if c.startswith("git ")], [GITHUB_CHECK] * 2)
+        self.assertEqual(self.ab_skills(".hermes", "skills"), SKILLS)
+        for label in ("Grok Build", "Pi"):
+            self.assertRegex(out, r"(?m)^  ✗ " + re.escape(label) + r": could not reach " + re.escape(URL) +
+                             r", so its current install was left as it was\. Check the connection and run "
+                             r"install\.sh again\.$")
+            self.assertRegex(out, r"(?m)^  ✗ " + re.escape(label) + r" did not finish \(exit 1\); its current "
+                                  r"install and recorded copies stay as they were\.$")
+        self.assertRegex(out, r"(?m)^  ✗ Failed: Grok Build, Pi\. ")
+        self.assertRegex(out, r"(?m)^  ✓ Finished: Hermes$")
+
+    def test_failure_after_a_removal_says_the_old_install_is_gone(self):
+        self.fake_tool("claude", {"plugin marketplace list": "❯ agent-blueprint\n  Source: Local (/old/checkout)",
+                                  "plugin marketplace add " + GITHUB: {"code": 1}})
+        self.fake_tool("grok", {"plugin list": ["  repo-hash: agent-blueprint [local: /old/checkout]",
+                                               "No plugins installed"],
+                                "plugin install " + GITHUB + " --trust": {"code": 1}})
+        code, out = self.run_install()
+        self.assertEqual(code, 1, out)
+        self.assertIn("claude plugin marketplace remove agent-blueprint", self.calls())
+        self.assertIn("grok plugin uninstall agent-blueprint", self.calls())
+        for label in ("Claude Code", "Grok Build"):
+            self.assertRegex(out, r"(?m)^  ✗ " + re.escape(label) + r" did not finish \(exit 1\) after its old "
+                                  r"install was removed; run install\.sh again to install it\.$")
+        self.assertNotIn("stay as they were", out)
+        self.assertRegex(out, r"(?m)^  ✗ Failed: Claude Code, Grok Build\. Fix the errors above and run "
+                              r"install\.sh again\.$")
+
+    def test_local_swap_skips_the_github_check(self):
+        # Under --local the new source is this checkout, so nothing remote is checked before a removal.
+        self.unreachable_github()
+        self.fake_tool("claude", {"plugin marketplace list": "❯ agent-blueprint\n  Source: GitHub (" + GITHUB + ")"})
+        self.fake_tool("grok", {"plugin list": ["  a: agent-blueprint [git: " + URL + "]", "No plugins installed"]})
+        self.pi_packages(PI_SOURCE + "#v4.0.2")
+        self.fake_tool("pi")
+        code, out = self.run_install("--local")
+        self.assertEqual(code, 0, out)
+        self.assertFalse(any(c.startswith("git ") for c in self.calls()))
+        self.assertEqual(self.mutations(), [
+            "claude plugin marketplace remove agent-blueprint", "claude plugin marketplace add " + REPO,
+            "claude plugin install " + PLUGIN,
+            "grok plugin uninstall agent-blueprint", "grok plugin install " + REPO + " --trust",
+            "pi remove " + PI_SOURCE + "#v4.0.2", "pi install " + REPO])
+
+    def test_reachability_check_cannot_prompt_or_hang(self):
+        env_log = Path(self.root, "git-env.json")
+        git = Path(self.bin, "git")
+        git.write_text("#!/usr/bin/env python3\nimport json, os\n"
+                       "json.dump({k: os.environ.get(k) for k in ('GIT_TERMINAL_PROMPT', 'GIT_SSH_COMMAND')}, "
+                       "open(%r, 'w'))\n" % str(env_log))
+        self.fake_tool("claude", {"plugin marketplace list": "❯ agent-blueprint\n  Source: Local (/old/checkout)"})
+        code, out = self.run_install("--only", "claude")
+        self.assertEqual(code, 0, out)
+        env = json.loads(env_log.read_text())
+        self.assertEqual(env["GIT_TERMINAL_PROMPT"], "0")
+        # A url.insteadOf rewrite to ssh can neither ask for a passphrase nor wait forever.
+        self.assertEqual(env["GIT_SSH_COMMAND"], "ssh -o BatchMode=yes -o ConnectTimeout=20")
+
+    def test_interrupted_route_stops_the_run(self):
+        # A tool that catches Ctrl-C and exits 130 (or is stopped with 143) ends the whole run.
+        for status in (130, 143):
+            with self.subTest(status=status):
+                self.fake_tool("codex", {"plugin add " + PLUGIN: {"code": status}})
+                self.fake_tool("grok")
+                Path(self.log).write_text("")
+                code, out = self.run_install()
+                self.assertEqual(code, status, out)
+                self.assertRegex(out, r"(?m)^  ✗ Codex did not finish \(exit %d\)" % status)
+                self.assertFalse(any(c.startswith("grok plugin install") for c in self.calls()))
+                self.assertNotIn("Failed:", out)
+
+    def test_host_without_a_route_fails_loudly(self):
+        checkout = os.path.join(self.root, "checkout")
+        shutil.copytree(REPO, checkout, symlinks=True, ignore=shutil.ignore_patterns(".git", "node_modules", "dist", ".astro"))
+        hosts = Path(checkout, "skills/ab-ship-pipeline/scripts/hosts.sh")
+        hosts.write_text(hosts.read_text().replace('AB_HOSTS="claude codex agy grok pi cursor-agent hermes amp"',
+                                                   'AB_HOSTS="claude codex agy grok pi cursor-agent hermes amp newtool"'))
+        for tool in ("grok", "newtool"):
+            self.fake_tool(tool)
+        code, out = self.run_install(source=os.path.join(checkout, "install.sh"))
+        self.assertEqual(code, 1, out)
+        self.assertRegex(out, r"(?m)^  ✗ newtool did not finish \(exit 127\)")
+        self.assertRegex(out, r"(?m)^  ✗ Failed: newtool\. ")
+        self.assertIn("grok plugin install " + GITHUB + " --trust", self.calls())
+
+    def test_copy_dir_on_the_shared_folder_keeps_this_runs_copy(self):
+        shared = Path(self.home, ".agents/skills")
+        self.earlier_copy(".agents/skills", "ab-quick-fix")
+        code, out = self.run_install("--copy-dir", str(shared))
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.ab_skills(".agents", "skills"), SKILLS)
+        self.assertEqual(sorted(json.loads((shared / ".agent-blueprint-install.json").read_text())["skills"]), SKILLS)
+        self.assertIn("Skipped retiring the shared copy in " + str(shared) + ": it is this run's --copy-dir.", out)
+        # A failed copy, named through a symlink, keeps its predecessor.
+        shutil.rmtree(shared)
+        self.earlier_copy(".agents/skills", "ab-quick-fix")
+        alias = Path(self.root, "alias")
+        alias.symlink_to(shared)
+        cp = Path(self.bin, "cp")
+        cp.write_text("#!/bin/sh\nexit 1\n")
+        cp.chmod(0o755)
+        code, out = self.run_install("--copy-dir", str(alias))
+        self.assertEqual(code, 1, out)
+        self.assertEqual(self.ab_skills(".agents", "skills"), ["ab-quick-fix"])
+        self.assertTrue((shared / ".agent-blueprint-install.json").is_file())
+        self.assertIn("Skipped retiring the shared copy", out)
+
+    def test_failed_claude_route_keeps_cursor_and_amp_installs(self):
+        # Claude Code's refresh fails while its plugin is still listed: Cursor and Amp keep their own.
+        self.fake_tool("claude", {"plugin list": PLUGIN + " (enabled)",
+                                  "plugin marketplace list": "❯ agent-blueprint\n  Source: GitHub (" + GITHUB + ")",
+                                  "plugin marketplace update agent-blueprint": {"code": 1}})
+        self.record_cursor_route()
+        amp = self.earlier_copy(".config/amp/skills", "ab-quick-fix")
+        for tool in ("cursor-agent", "amp"):
+            self.fake_tool(tool)
+        code, out = self.run_install()
+        self.assertEqual(code, 1, out)
+        self.assertFalse(any(c.startswith("cursor-agent ") for c in self.calls()))
+        self.assertIn("cursor-agent", json.loads(self.routes().read_text()))
+        self.assertEqual(self.ab_skills(".config", "amp", "skills"), ["ab-quick-fix"])
+        self.assertTrue((amp / ".agent-blueprint-install.json").is_file())
+        self.assertRegex(out, r"(?m)^  ! Cursor CLI: kept its own marketplace because Claude Code's route failed")
+        self.assertRegex(out, r"(?m)^  ! Amp: kept its own copy in " + re.escape(str(amp)) +
+                         r" because Claude Code's route failed")
+        self.assertRegex(out, r"(?m)^  ✗ Failed: Claude Code\. ")
+
+    def test_failed_claude_route_without_its_plugin_gives_cursor_and_amp_their_own(self):
+        # The swap removed Claude Code's plugin before its add failed, so Cursor and Amp install their own.
+        self.fake_tool("claude", {"plugin list": [PLUGIN, ""],
+                                  "plugin marketplace list": "❯ agent-blueprint\n  Source: Local (/old/checkout)",
+                                  "plugin marketplace add " + GITHUB: {"code": 1}})
+        for tool in ("cursor-agent", "amp"):
+            self.fake_tool(tool)
+        code, out = self.run_install()
+        self.assertEqual(code, 1, out)
+        self.assertIn("cursor-agent plugin marketplace add " + URL, self.calls())
+        self.assertEqual(self.ab_skills(".config", "amp", "skills"), SKILLS)
+        self.assertRegex(out, r"(?m)^  ! Unfinished: Cursor CLI \(/plugin installation required\)$")
+        self.assertRegex(out, r"(?m)^  ✓ Finished: Amp$")
+        self.assertNotIn("kept its own", out)
+
     def test_unreadable_marketplace_listing_warns_once(self):
         for tool, listing in (("claude", "plugin marketplace list"), ("codex", "plugin list --json"),
                               ("cursor-agent", "plugin marketplace list")):
@@ -708,36 +905,132 @@ class Installer(unittest.TestCase):
                               self.calls())
                 self.assertFalse(any(" remove " in c for c in self.calls()))
 
+    def test_unattributable_source_warns_once_and_adds_without_removing(self):
+        # A listed agent-blueprint whose source cannot be read: sources() warns through unknown().
+        for tool, listings, label in (
+            ("claude", {"plugin marketplace list": "❯ agent-blueprint\n  Scope: user"}, "Claude Code"),
+            ("codex", {"plugin list --json": json.dumps({"installed": [{"pluginId": PLUGIN,
+                "marketplaceSource": {"sourceType": "git"}}]})}, "Codex"),
+        ):
+            with self.subTest(tool=tool):
+                self.fake_tool(tool, listings)
+                Path(self.log).write_text("")
+                code, out = self.run_install("--only", tool)
+                self.assertEqual(code, 0, out)
+                warnings = self.warnings(out)
+                self.assertEqual(len(warnings), 1, out)
+                self.assertIn("Could not read " + label + "'s", warnings[0])
+                self.assertIn(tool + " plugin marketplace add " + GITHUB, self.calls())
+                self.assertFalse(any(" remove " in c for c in self.calls()))
+
+    def test_unreadable_grok_and_pi_sources_warn_once(self):
+        settings = Path(self.home, ".pi/agent/settings.json")
+        settings.parent.mkdir(parents=True)
+        for tool, prepare, install in (
+            ("grok", lambda: self.fake_tool("grok", {"plugin list": {"code": 1, "output": "unavailable"}}),
+             "grok plugin install " + GITHUB + " --trust"),
+            ("grok", lambda: self.fake_tool("grok", {"plugin list": "  x: agent-blueprint (origin unknown)"}),
+             "grok plugin install " + GITHUB + " --trust"),
+            ("pi", lambda: settings.write_text("{not json"), "pi install " + PI_SOURCE),
+        ):
+            with self.subTest(tool=tool, install=install):
+                self.fake_tool(tool)
+                prepare()
+                Path(self.log).write_text("")
+                code, out = self.run_install("--only", tool)
+                self.assertEqual(code, 0, out)
+                self.assertEqual(len(self.warnings(out)), 1, out)
+                self.assertEqual(self.mutations(), [install])
+
     def test_pi_git_source_forms_are_one_source(self):
-        base = Path(self.home, ".pi/agent")
-        base.mkdir(parents=True)
         self.fake_tool("pi")
-        for form in (template.format(GITHUB) for template in PI_GIT_FORMS):
+        pinned_forms = {template.format(GITHUB) for template in PI_PINNED_FORMS}
+        # GitHub names are case-insensitive, so a differently cased spelling is the same source.
+        for form in [template.format(GITHUB) for template in PI_GIT_FORMS] + ["git:GitHub.com/" + GITHUB.lower()]:
             with self.subTest(form=form):
-                (base / "settings.json").write_text(json.dumps({"packages": [form]}))
+                self.pi_packages(form)
                 Path(self.log).write_text("")
                 code, out = self.run_install("--only", "pi")
                 self.assertEqual(code, 0, out)
-                self.assertEqual(self.mutations(), ["pi update --extension " + form])
+                if form in pinned_forms:
+                    self.assertEqual(self.mutations(), ["pi remove " + form, "pi install " + PI_SOURCE])
+                    self.assertIn("Pi: replacing the pinned source " + form, out)
+                else:
+                    self.assertEqual(self.mutations(), ["pi update --extension " + form])
+                    self.assertNotIn("pinned", out)
 
     def test_pinned_pi_source_is_replaced_with_a_warning(self):
-        base = Path(self.home, ".pi/agent")
-        base.mkdir(parents=True)
         self.fake_tool("pi")
-        pinned = PI_SOURCE + "#v4.0.2"
         https = "git:https://github.com/" + GITHUB
-        for packages, expected, replacement in (
-            ([pinned], ["pi remove " + pinned, "pi install " + PI_SOURCE], PI_SOURCE),
-            ([pinned, https], ["pi remove " + pinned, "pi update --extension " + https], https),
+        for pinned in (PI_SOURCE + "#v4.0.2", PI_SOURCE + "@v4.0.2"):
+            for packages, expected, replacement in (
+                ([pinned], ["pi remove " + pinned, "pi install " + PI_SOURCE], PI_SOURCE),
+                ([pinned, https], ["pi remove " + pinned, "pi update --extension " + https], https),
+            ):
+                with self.subTest(packages=packages):
+                    self.pi_packages(*packages)
+                    Path(self.log).write_text("")
+                    code, out = self.run_install("--only", "pi")
+                    self.assertEqual(code, 0, out)
+                    self.assertEqual(self.mutations(), expected)
+                    warning = next(line for line in out.splitlines() if line.startswith("  ! ") and pinned in line)
+                    self.assertEqual(warning, "  ! Pi: replacing the pinned source " + pinned + " with " +
+                                     replacement + "; pin it again in Pi if you need that version.")
+
+    def test_pi_source_parses_like_pi(self):
+        spec = importlib.util.spec_from_file_location("pi_source", PI_PARSER)
+        module = importlib.util.module_from_spec(spec)
+        writes_bytecode = sys.dont_write_bytecode
+        sys.dont_write_bytecode = True   # the gates read every file under skills/ as text
+        try:
+            spec.loader.exec_module(module)
+        finally:
+            sys.dont_write_bytecode = writes_bytecode
+        github = ("github.com", GITHUB)
+        # (source, (host, path, ref)) as Pi 0.73.1's parseGitUrl returned them; None = not a git source.
+        for source, expected in (
+            (PI_SOURCE, (*github, None)),
+            (PI_SOURCE + "@v4.0.2", (*github, "v4.0.2")),
+            (PI_SOURCE + "#v4.0.2", (*github, "v4.0.2")),
+            ("git:https://github.com/" + GITHUB + "@v4.0.2", (*github, "v4.0.2")),
+            ("git:https://github.com/" + GITHUB + ".git", (*github, None)),
+            ("git:http://github.com/" + GITHUB, (*github, None)),
+            ("git:ssh://git@github.com/" + GITHUB + "@v1", (*github, "v1")),
+            ("git:git@github.com:" + GITHUB, (*github, None)),
+            ("git:git@github.com:" + GITHUB + "@v1", (*github, "v1")),
+            ("git:git@github.com:" + GITHUB + ".git", (*github, None)),
+            ("git:git://github.com/" + GITHUB, (*github, None)),
+            ("git://github.com/" + GITHUB, (*github, None)),
+            ("https://github.com/" + GITHUB, (*github, None)),
+            ("https://github.com/" + GITHUB + "@v4.0.2", (*github, "v4.0.2")),
+            ("https://github.com/" + GITHUB + ".git#v1", (*github, "v1")),
+            ("ssh://git@github.com/" + GITHUB, (*github, None)),
+            ("http://GitLab.Example.com/a/b", ("gitlab.example.com", "a/b", None)),
+            ("git:GitHub.com/ninety2ua/Agent-Blueprint", ("github.com", "ninety2ua/Agent-Blueprint", None)),
+            ("git:gitlab.example.com/a/b/c@v2", ("gitlab.example.com", "a/b/c", "v2")),
+            ("git:gitlab.example.com/a/b/c.git", ("gitlab.example.com", "a/b/c", None)),
+            ("git:https://user@gitlab.example.com:8443/a/b.git@v3", ("gitlab.example.com", "a/b", "v3")),
+            ("ssh://git@gitlab.example.com:2222/a/b", ("gitlab.example.com", "a/b", None)),
+            ("git:git@gitlab.example.com:a/b@v2", ("gitlab.example.com", "a/b", "v2")),
+            ("git:localhost/a/b", ("localhost", "a/b", None)),
+            ("git:github.com/x/y.git@v1", ("github.com", "x/y", "v1")),
+            ("git:github.com/x/y@", ("github.com", "x/y@", None)),
+            ("git:https://github.com/x/y/", ("github.com", "x/y", None)),
+            ("git: github.com/x/y ", ("github.com", "x/y", None)),
+            ("  git:github.com/x/y", ("github.com", "x/y", None)),
+            ("git:git@github.com:/x/y", ("github.com", "x/y", None)),
+            ("git:example/x/y", None),
+            ("git@github.com:" + GITHUB, None),
+            ("npm:agent-blueprint", None),
+            ("./local", None),
+            ("/abs/agent-blueprint", None),
+            ("../agent-blueprint", None),
         ):
-            with self.subTest(packages=packages):
-                (base / "settings.json").write_text(json.dumps({"packages": packages}))
-                Path(self.log).write_text("")
-                code, out = self.run_install("--only", "pi")
-                self.assertEqual(code, 0, out)
-                self.assertEqual(self.mutations(), expected)
-                warning = next(line for line in out.splitlines() if line.startswith("  ! ") and pinned in line)
-                self.assertIn(replacement, warning.replace(pinned, ""))
+            with self.subTest(source=source):
+                parsed = module.parse(source)
+                self.assertEqual(None if parsed is None else (parsed.host, parsed.path, parsed.ref), expected)
+                if parsed is not None:
+                    self.assertEqual(parsed.pinned, expected[2] is not None)
 
     def test_host_catalog_finds_native_grok_pi_and_cursor_copies(self):
         grok = Path(self.home, ".grok/installed-plugins/agent-blueprint-hash/skills")
@@ -774,6 +1067,11 @@ class Installer(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual([os.path.realpath(p) for p in result.stdout.splitlines()],
                                  [os.path.realpath(skills)])
+        # Loading pi_source.py, here and in install.sh, leaves no bytecode cache in the skill's folder.
+        self.fake_tool("pi")
+        code, out = self.run_install("--only", "pi")
+        self.assertEqual(code, 0, out)
+        self.assertFalse(os.path.exists(os.path.join(os.path.dirname(PI_PARSER), "__pycache__")))
 
     def test_no_tool_says_so_and_stops(self):
         code, out = self.run_install("--dry-run")
