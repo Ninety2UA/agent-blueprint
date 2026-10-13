@@ -8,7 +8,7 @@ _Kept current by the ab-session-wrap and ab-context-checkpoint skills. Full hist
 
 **Last session:** 2026-10-13
 
-**What was done:** v4.1.0 is merged into `main` (pull request #26, merge commit `6e27430`) but not yet tagged or released; the last tagged release is v4.0.2. In 4.1.0:
+**What was done:** v4.1.0 is released: pull request #26 merged as `6e27430`, which carries the tag `v4.1.0` and the GitHub release. In 4.1.0:
 
 - Each of the eight tools installs the blueprint from GitHub with its own command and updates through its own updater. `install.sh` runs those same routes for every tool on the machine at once.
 - Skill instructions were reworded so a literal model keeps existing code and does not ask again for a design the user already approved.
@@ -21,8 +21,8 @@ The checklist items that can run on the build machine passed (`docs/releases/v4.
 
 - In the Codex app (`ChatGPT.app` on this Mac): the setup check, which the checklist marks must-pass and the maintainer chose to run right after the merge; trusting the hooks in `/hooks`; and the display names in the `$` picker.
 - In Cursor CLI: the `/plugin` install, then the changeover check with `install.sh`.
-- Tag `v4.1.0` on `6e27430` and publish the GitHub release with `docs/releases/v4.1.0-release-notes.md`, then work through the checklist's after-merge section.
-- Open question: on a machine that has the Claude Code plugin, `install.sh` removes Cursor's `agent-blueprint` marketplace. Cursor keeps marketplaces on the account, so the removal also reaches the maintainer's other machines.
+- The checklist's after-merge section.
+- Open question: on a machine that has the Claude Code plugin, `install.sh` removes Cursor's `agent-blueprint` marketplace. Cursor keeps marketplaces on the account, so the removal also reaches the maintainer's other machines. Compound Engineering never adds or removes a Cursor marketplace; users install it from Cursor's own plugin store.
 - Next release: 4.2.0 adds nine more tools. Its plan is not written yet.
 
 **Start here:** `docs/releases/v4.1.0-checklist.md`, then the description of pull request #26.
