@@ -40,7 +40,7 @@
 .ghr-bar svg { width: 16px; height: 16px; }
 .ghr-body { padding: clamp(12px, 2vw, 24px); }
 .ghr-body img.kit-neg { width: 100%; height: auto; background: var(--bg-sunk); }
-.ghr-vid .vf-media { border: 0; }
+.ghr-vid .vf-media::after { content: none; }
 .readme-use .h-sub { font-size: var(--t-lg); }
 .readme-use .cmd { margin-top: var(--s-4); }
 .cmd.wrap-cmd pre { font-size: 0.75rem; }

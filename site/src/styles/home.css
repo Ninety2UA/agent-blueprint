@@ -249,7 +249,11 @@
 .host { height: 30px; padding: 0 10px; border: 1px solid var(--hair-strong); border-radius: var(--r); background: transparent; font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-2); cursor: pointer; transition: border-color 160ms, background-color 160ms, color 160ms; }
 .host:hover { border-color: var(--ink); color: var(--ink); }
 .host[aria-checked="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
-.host-note { margin-top: var(--s-3); font-size: 0.875rem; color: var(--ink-2); min-height: 3em; max-width: 60ch; }
+.host-note { display: grid; margin-top: var(--s-3); font-size: 0.875rem; color: var(--ink-2); max-width: 60ch; }
+/* every note sits in the same cell and the hidden ones keep their space, so the tallest note sets the
+   height and picking a host never moves the figure beside it */
+.host-note > span { grid-area: 1 / 1; }
+.host-note > [hidden] { display: block; visibility: hidden; }
 .runner-hint { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px dashed var(--hair); font-size: 0.8125rem; line-height: 1.5; color: var(--muted); max-width: 60ch; }
 .runner-hint code { font-size: 0.84em; color: var(--ink-2); }
 .flow { list-style: none; position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: var(--s-8); counter-reset: f; }

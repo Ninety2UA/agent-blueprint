@@ -119,6 +119,17 @@ test('no page has a pause toggle on its videos', { skip }, () => {
   assert.deepEqual(problems, []);
 });
 
+// The runner picks Claude Code first, and the figure's own command line names the picked host, so
+// the drawing never shows a different tool from the command above it.
+test('the runner starts on claude, in the command and in the figure', { skip }, () => {
+  const runner = read('index.html').match(/<section class="sec runner"[\s\S]*?<\/section>/)?.[0] ?? '';
+  const checked = [...runner.matchAll(/<button class="host"[^>]*aria-checked="true"[^>]*data-host="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(checked, ['claude']);
+  assert.match(runner, /data-host-arg[^>]*>claude</);
+  const figure = runner.match(/<figure class="vfig[^"]*in-runner[\s\S]*?<\/figure>/)?.[0] ?? '';
+  assert.match(decode(figure), /run\.sh --host <tspan data-fig-host>claude<\/tspan> "Add CSV export"/, 'the figure does not draw the run.sh line for claude');
+});
+
 test('404.html and llms.txt are built; llms.txt names every skill page', { skip }, () => {
   assert.ok(existsSync(join(dist, '404.html')), 'no 404.html');
   const llms = read('llms.txt');

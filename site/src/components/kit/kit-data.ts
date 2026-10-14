@@ -87,7 +87,7 @@ export const LOOPS = [
     caption: 'The ship runner, a fresh session per iteration',
     label: 'the runner loop',
     alt:
-      'Looping animation, no sound: the ship runner with --host codex. Each iteration is a fresh session on a new ' +
+      'Looping animation, no sound: the ship runner with the --host the command names. Each iteration is a fresh session on a new ' +
       'sheet while .agent-blueprint/run/state.json carries over and its status, stage and iteration change. When the ' +
       'status is done, the runner scans for secrets, pushes, and the pull request opens.',
   },
