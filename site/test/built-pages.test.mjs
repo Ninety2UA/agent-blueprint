@@ -11,6 +11,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 import { leadRoute } from '../src/components/docs/route.mjs';
+import { getWorkflow } from '../src/components/workflow/workflow-data.mjs';
 import { callSkill, SETUP_SKILL } from '../src/lib/naming.mjs';
 import { findRepoRoot, getSiteData } from '../src/lib/site.mjs';
 
@@ -128,6 +129,25 @@ test('the runner starts on claude, in the command and in the figure', { skip }, 
   assert.match(runner, /data-host-arg[^>]*>claude</);
   const figure = runner.match(/<figure class="vfig[^"]*in-runner[\s\S]*?<\/figure>/)?.[0] ?? '';
   assert.match(decode(figure), /run\.sh --host <tspan data-fig-host>claude<\/tspan> "Add CSV export"/, 'the figure does not draw the run.sh line for claude');
+});
+
+// Workflow Fig. 1 is the development loop as a looping animation on its drawing sheet, with the
+// README's six steps under it as the legend, each skill it names linked to its page.
+test("the Workflow page's Fig. 1 plays the loop animation above the README's steps", { skip }, () => {
+  const html = read('workflow/index.html');
+  const fig = html.match(/<section class="wf-sec" id="loop"[\s\S]*?<\/section>/)?.[0] ?? '';
+  assert.match(fig, /<figure[^>]*data-vfig/, 'Fig. 1 is not a video figure');
+  assert.match(fig, /<video[^>]*\bloop\b[^>]*preload="none"[^>]*aria-label="Looping animation, no sound: [^"]+"/);
+  assert.match(fig, /<source src="\/media\/loop-workflow\.mp4" type="video\/mp4"/);
+  assert.ok(existsSync(join(dist, 'media', 'loop-workflow.mp4')) && existsSync(join(dist, 'media', 'loop-workflow.jpg')), 'the loop or its poster is not in the build');
+  const legend = fig.slice(fig.indexOf('</video>'));
+  let at = 0;
+  for (const step of getWorkflow().loop) {
+    const next = legend.indexOf(`>${step.name}<`, at);
+    assert.ok(next > at, `step ${step.n} ${step.name} is missing from the legend, or out of order`);
+    at = next;
+    for (const [, href] of step.html.matchAll(/href="([^"]+)"/g)) assert.ok(legend.includes(`href="${href}"`), `${step.name}: no link to ${href}`);
+  }
 });
 
 test('404.html and llms.txt are built; llms.txt names every skill page', { skip }, () => {

@@ -10,7 +10,7 @@ MOTION = pathlib.Path(__file__).resolve().parent
 SITE = MOTION.parent
 FONTS = SITE / "src" / "assets" / "fonts"
 WORK = MOTION / ".work"
-NAMES = ["film", "readme-hero", "loop-review", "loop-waves", "loop-runner", "loop-handoff", "loop-install", "loop-setup"]
+NAMES = ["film", "readme-hero", "loop-review", "loop-waves", "loop-runner", "loop-handoff", "loop-install", "loop-setup", "loop-workflow"]
 HYPERFRAMES = "0.8.140"
 
 css = (MOTION / "shared" / "ds.css").read_text()

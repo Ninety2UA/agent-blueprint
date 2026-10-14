@@ -1,4 +1,4 @@
-/* Workflow page (pages/workflow.astro): the page head with its sheet index, Fig. 1 the loop,
+/* Workflow page (pages/workflow.astro): the page head with its sheet index, Fig. 1 the loop animation,
    Fig. 2 the hand-off chain, Fig. 3 the pipelines, Fig. 4 the quality gates, and the phase map.
    2A tokens only; the sheet, registration marks, title block and dimension line are global.css. */
 
@@ -28,35 +28,22 @@
 .wf-index a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 0.25em; }
 .wf-index-n { flex: none; width: 1.5ch; font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
 
-/* ---------- Fig. 1: the loop, a datum with a return line ---------- */
+/* ---------- Fig. 1: the loop, an animation drawn on the sheet, with the README's steps under it ---------- */
 .loop-sheet { padding: clamp(28px, 3.6vw, 52px) clamp(18px, 3vw, 44px); }
-/* --ret is the gutter that holds the return line and its label; --rx is where the return line runs, from the steps' left edge */
-.loop-wrap { position: relative; --mk: 28px; --ret: 150px; --rx: -30px; }
-.loop { list-style: none; padding-left: var(--ret); }
-.loop-step { position: relative; display: grid; grid-template-columns: var(--mk) minmax(0, 12.5rem) minmax(0, 1fr); column-gap: var(--s-5); padding-bottom: var(--s-6); }
-.loop-step:last-child { padding-bottom: 0; }
-/* the datum from this station down to the next, with an arrowhead at the next ring */
-.loop-step:not(:last-child)::before { content: ""; position: absolute; left: calc(var(--mk) / 2 - 0.75px); top: calc(var(--mk) / 2); bottom: calc(var(--mk) / -2); width: 1.5px; background: var(--ink); transform-origin: top; }
-.loop-step:not(:last-child)::after { content: ""; position: absolute; left: calc(var(--mk) / 2 - 4.5px); bottom: -6px; width: 9px; height: 8px; background: var(--ink); clip-path: polygon(0 0, 100% 0, 50% 100%); }
-.loop-mark { position: relative; z-index: 1; grid-row: 1 / span 2; width: var(--mk); height: var(--mk); }
-.loop-mark::before { content: ""; position: absolute; inset: 7px; z-index: 1; border: 1.25px solid var(--ink); border-radius: 50%; background: var(--bg); }
-.loop-mark::after { content: ""; position: absolute; inset: 0; background: linear-gradient(var(--ink), var(--ink)) center / 1px 100% no-repeat, linear-gradient(var(--ink), var(--ink)) center / 100% 1px no-repeat; }
-.loop-step.is-opt .loop-mark::before { border-style: dashed; }
-.loop-step:first-child .loop-mark::before { background: var(--accent); border-color: var(--accent); }
-.loop-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding-top: 1px; font-size: 1.1875rem; font-stretch: 112%; font-weight: 640; line-height: 1.3; }
+/* the animation is a drawing on the sheet itself, as the film is: no frame of its own */
+.loop-fig .vf-media { background: var(--bg); }
+.loop-fig .vf-media::after { content: none; }
+/* in the dark theme the negative is a little stronger than the loops' 0.93, so the video's off-white
+   lands on the sheet's own dark (oklch 0.15) and the drawing shows no panel behind it */
+:root[data-theme="dark"] .loop-fig .vf-media video, :root[data-theme="dark"] .loop-fig .vf-poster { filter: invert(0.976) hue-rotate(180deg); }
+.loop-legend { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-6) clamp(24px, 3vw, 48px); margin-top: clamp(24px, 3vw, 40px); padding-top: var(--s-5); border-top: 1px solid var(--hair); }
+.loop-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 1.125rem; font-stretch: 112%; font-weight: 640; line-height: 1.3; }
 .loop-n { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; color: var(--muted); }
 .loop-opt { padding: 0 6px; border: 1px dashed var(--hair-strong); border-radius: var(--r); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; color: var(--muted); }
-.loop-text { max-width: 64ch; padding-top: 3px; color: var(--ink-2); }
+.loop-text { margin-top: 6px; font-size: 0.9375rem; color: var(--ink-2); }
 .loop-text code { font-size: 0.84em; }
 /* a skill name stays on one line where the column is wide enough for the longest */
 @media (min-width: 1024px) { .loop-text a { white-space: nowrap; } }
-/* the return line: up the gutter from the last station to the first, entering it with an arrow */
-.loop-ret { position: absolute; left: var(--rx); top: 0; bottom: 0; border-left: 1px solid var(--ink-2); }
-.loop-step:first-child .loop-ret { top: calc(var(--mk) / 2); width: calc(-1 * var(--rx) + 6px); border-top: 1px solid var(--ink-2); }
-.loop-step:first-child .loop-ret::after { content: ""; position: absolute; right: -1px; top: -5px; width: 8px; height: 9px; background: var(--ink-2); clip-path: polygon(0 0, 100% 50%, 0 100%); }
-.loop-step:last-child .loop-ret { bottom: auto; height: calc(var(--mk) / 2); width: calc(-1 * var(--rx) + 7px); border-bottom: 1px solid var(--ink-2); }
-.loop-back { position: absolute; top: 50%; left: 0; width: calc(var(--ret) + var(--rx) - 12px); transform: translateY(-50%); text-align: right; font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.45; color: var(--muted); }
-.loop-back code { font-size: inherit; color: var(--ink-2); }
 
 /* ---------- Fig. 2: the chain, skill to file to skill ---------- */
 .chain { margin-top: var(--s-6); }
@@ -125,30 +112,22 @@
 
 /* ---------- Lines draw once as a figure scrolls in (draw.ts adds .is-drawing) ---------- */
 @media (prefers-reduced-motion: no-preference) {
-  .is-drawing .loop-step::before, .is-drawing .pl-stage::before { animation: wf-down 560ms var(--ease-out) calc(var(--i, 0) * 90ms + 120ms) backwards; }
-  .is-drawing .loop-ret, .is-drawing .loop-back { animation: wf-fade 700ms var(--ease-out) 640ms backwards; }
+  .is-drawing .pl-stage::before { animation: wf-down 560ms var(--ease-out) calc(var(--i, 0) * 90ms + 120ms) backwards; }
   .is-drawing .ch-arrow { animation: wf-right 520ms var(--ease-out) calc(var(--i, 0) * 80ms + 160ms) backwards; }
   @keyframes wf-down { from { transform: scaleY(0); } }
   @keyframes wf-right { from { transform: scaleX(0); opacity: 0; } }
-  @keyframes wf-fade { from { opacity: 0; } }
 }
 
 /* ---------- Narrow screens ---------- */
 @media (max-width: 1023px) {
   .wf-head { grid-template-columns: minmax(0, 1fr); gap: var(--s-6); }
   .wf-index { max-width: 420px; }
-  .loop-step { grid-template-columns: var(--mk) minmax(0, 1fr); }
-  .loop-name, .loop-text { grid-column: 2; }
-  .loop-text { padding-top: 6px; }
+  .loop-legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .gate { grid-template-columns: 48px minmax(0, 1fr); row-gap: 10px; }
   .gate-by { grid-column: 2; }
 }
 @media (max-width: 760px) {
-  .loop-wrap { --ret: 44px; --rx: -26px; }
-  .loop-step { column-gap: var(--s-3); }
-  /* the label turns to run up the return line */
-  .loop-back { left: 0; width: auto; writing-mode: vertical-rl; transform: translateY(-50%) rotate(180deg); text-align: center; }
-  .loop-back br { display: none; }
+  .loop-legend { grid-template-columns: minmax(0, 1fr); }
   .chain-head { display: none; }
   .chain-row { grid-template-columns: minmax(0, 1fr); row-gap: 8px; }
   .ch-arrow { position: relative; height: 30px; margin: 0; padding-left: 22px; transform-origin: top; }

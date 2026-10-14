@@ -121,6 +121,19 @@ export const LOOPS = [
       ".gitignore appear one by one, each marked created. CONVENTIONS.md gets the project's test command, the scaffold " +
       'is committed, and the summary points to ab-brainstorming.',
   },
+  {
+    name: 'loop-workflow',
+    caption: 'The development loop, closed through <code>docs/</code>',
+    label: 'the development loop',
+    alt:
+      'Looping animation, no sound: the six steps of the development loop on one line, 1 Orient, 2 Ideate (optional, ' +
+      'drawn dashed), 3 Design, 4 Plan, 5 Build and 6 Ship. A red tracer moves from step to step, and under the active ' +
+      'step a note says what happens there: ab-resume-session reads docs/context/STATUS.md; ab-ideation ranks ' +
+      'improvement ideas; ab-brainstorming saves the approved design in docs/plans/; ab-writing-plans writes tasks, ' +
+      'tests and file paths, then ab-deepen-plan; test first, verify with evidence, helper review; merge the branch, ' +
+      'and ab-session-wrap updates docs/. Then a docs/ file rides the return line back to Orient, where the next ' +
+      'session reads it and the next feature starts.',
+  },
 ];
 
 // The sheet index at the top of the page: anchor, contents, file types.

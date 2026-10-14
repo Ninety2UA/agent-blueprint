@@ -27,7 +27,7 @@ const { src, num, alt, label, poster = src.replace(/\.mp4$/, '.jpg'), width = 12
 const capId = `cap-${src.split('/').pop()!.replace(/\.\w+$/, '')}-${num}`;
 ---
 <figure class:list={['vfig', cls]} data-vfig>
-  <div class="vf-media">
+  <div class="vf-media" style={width !== 1200 || height !== 750 ? `aspect-ratio:${width} / ${height}` : undefined}>
     <RegMarks />
     <img class="vf-poster" src={poster} width={width} height={height} alt="" loading="lazy" decoding="async" />
     <video muted playsinline loop={loop} preload="none" controls width={width} height={height} aria-label={alt} aria-describedby={capId}>
