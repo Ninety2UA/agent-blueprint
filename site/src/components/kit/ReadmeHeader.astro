@@ -46,11 +46,10 @@ const gifAlt =
                   <video muted playsinline loop preload="none" controls width={video.width} height={video.height} aria-label={`${ALT}. Looping animation, no sound.`}>
                     <source src="/media/readme-hero.mp4" type="video/mp4" />
                   </video>
-                  <button class="vf-big" type="button" data-vplay aria-label={`Play ${label}`}><Fragment set:html={IC.play} /><span>Play</span></button>
+                  <button class="vf-big" type="button" aria-label={`Play ${label}`}><Fragment set:html={IC.play} /><span>Play</span></button>
                 </div>
                 <figcaption class="vf-cap">
                   <span>Same loop as MP4</span>
-                  <button class="vf-toggle" type="button" data-vplay aria-label={`Pause ${label}`} data-label={label}><Fragment set:html={IC.pause} /><Fragment set:html={IC.play} /><Fragment set:html={IC.replay} /><span class="vf-state">Pause</span></button>
                 </figcaption>
               </figure>
             </div>

@@ -107,6 +107,18 @@ test('the Kit page stays out of the build: no page, no link to it, not in llms.t
   assert.doesNotMatch(read('llms.txt'), /\/kit\//);
 });
 
+// Every animation plays on its own while it is on screen; no figure carries a pause, play or replay
+// toggle. The big Play button stays, shown only when the browser refuses to start a video by itself,
+// under reduced motion, or after the film ends.
+test('no page has a pause toggle on its videos', { skip }, () => {
+  const problems = [];
+  for (const p of pages()) {
+    if (/class="vf-toggle"/.test(p.html)) problems.push(`${p.url}: a vf-toggle`);
+    if (/aria-label="Pause /.test(p.html)) problems.push(`${p.url}: a Pause button`);
+  }
+  assert.deepEqual(problems, []);
+});
+
 test('404.html and llms.txt are built; llms.txt names every skill page', { skip }, () => {
   assert.ok(existsSync(join(dist, '404.html')), 'no 404.html');
   const llms = read('llms.txt');

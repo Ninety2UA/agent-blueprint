@@ -14,6 +14,4 @@ export const IC = {
   // contrast glyph: a square printed positive or negative
   theme: '<svg class="theme-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.75" y="4.75" width="14.5" height="14.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path class="half" d="M4.75 4.75H12V19.25H4.75Z"/></svg>',
   play: '<svg class="ic-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>',
-  pause: '<svg class="ic-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 5.5h3v13h-3zM13.5 5.5h3v13h-3z" fill="currentColor"/></svg>',
-  replay: '<svg class="ic-replay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/></svg>',
 } as const;

@@ -148,6 +148,20 @@ test('a video whose autoplay the browser refuses shows the big Play control unti
   assert.equal(page.fig.classList.contains('show-big'), false, 'pausing off screen after a start shows no control');
 });
 
+test('a figure plays on its own once half of it is on screen, and again each time it comes back', async () => {
+  let plays = 0;
+  const page = videoPage({ play: (v) => (plays++, (v.paused = false), v.fire('playing'), Promise.resolve()) });
+  page.scrollIntoView();
+  await settle();
+  assert.equal(plays, 1);
+  assert.equal(page.fig.classList.contains('is-playing'), true);
+  page.v.pause();
+  page.scrollIntoView();
+  await settle();
+  assert.equal(plays, 2, 'nothing the reader did keeps it paused');
+  assert.equal(page.fig.classList.contains('show-big'), false);
+});
+
 test('a play() interrupted by pause() is not a refusal: no big Play control', async () => {
   const page = videoPage({ play: () => Promise.reject(Object.assign(new Error('interrupted'), { name: 'AbortError' })) });
   page.scrollIntoView();

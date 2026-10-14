@@ -1,6 +1,6 @@
 ---
-// A looping figure: hairline frame, registration marks outside the corners, a mono
-// caption with its figure number and a pause control. The video is muted, inline and
+// A looping figure: hairline frame, registration marks outside the corners and a mono
+// caption with its figure number. It plays on its own while on screen. The video is muted, inline and
 // preload="none", so the page loads no video bytes until the figure is half on screen.
 // The poster is a lazy <img> behind the video rather than the video's poster attribute,
 // which Chrome fetches during parsing even for figures far below the fold or in hidden panels; video-figures.ts plays and pauses it (see there for the rules).
@@ -15,7 +15,7 @@ interface Props {
   num: number;
   /** what the video shows, with its real names and numbers: the text alternative */
   alt: string;
-  /** names the video in the controls: "Pause the review animation" */
+  /** names the video on the fallback Play button: "Play the review animation" */
   label: string;
   poster?: string;
   width?: number;
@@ -33,11 +33,10 @@ const capId = `cap-${src.split('/').pop()!.replace(/\.\w+$/, '')}-${num}`;
     <video muted playsinline loop={loop} preload="none" controls width={width} height={height} aria-label={alt} aria-describedby={capId}>
       <source src={src} type="video/mp4" />
     </video>
-    <button class="vf-big" type="button" data-vplay aria-label={`Play ${label}`}><Fragment set:html={IC.play} /><span>Play</span></button>
+    <button class="vf-big" type="button" aria-label={`Play ${label}`}><Fragment set:html={IC.play} /><span>Play</span></button>
   </div>
   <figcaption class="vf-cap">
     <span id={capId}><b>Fig. {num}</b><slot /></span>
-    <button class="vf-toggle" type="button" data-vplay aria-label={`Pause ${label}`} data-label={label}><Fragment set:html={IC.pause} /><Fragment set:html={IC.play} /><Fragment set:html={IC.replay} /><span class="vf-state">Pause</span></button>
   </figcaption>
   <slot name="after" />
 </figure>

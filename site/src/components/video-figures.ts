@@ -1,10 +1,10 @@
-// Video figures (ported from the approved f/src/video.js). Loops play while at least half
-// of them is on screen and pause when they leave it; the film plays once and does not
-// loop. A pause the reader asks for sticks until they press play. With reduced motion
-// nothing starts on its own: the poster shows with a play button, as it does when the
-// browser refuses to start a muted video by itself (data saver, low power mode). Without
-// JavaScript the native controls stay. Nothing calls play() before a figure is half
-// visible, and every video is preload="none", so no video bytes load before then.
+// Video figures (ported from the approved f/src/video.js). Every figure plays on its own while at
+// least half of it is on screen and pauses when it leaves; there is no pause control. Loops loop;
+// the film plays once and does not loop. With reduced motion nothing starts on its own: the poster
+// shows with a play button, as it does when the browser refuses to start a muted video by itself
+// (data saver, low power mode) and after the film ends. Without JavaScript the native controls
+// stay. Nothing calls play() before a figure is half visible, and every video is preload="none",
+// so no video bytes load before then.
 
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clock = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
@@ -23,26 +23,16 @@ document.querySelectorAll<HTMLElement>('[data-vfig]').forEach((fig) => {
   if (!v) return;
   v.removeAttribute('controls');
   fig.classList.add('vjs');
-  const toggle = fig.querySelector<HTMLButtonElement>('.vf-toggle');
-  const state = toggle?.querySelector('.vf-state');
-  const label = toggle?.dataset.label ?? 'the video';
   const big = fig.querySelector<HTMLButtonElement>('.vf-big');
-  let userPaused = false;
+  const label = big?.getAttribute('aria-label')?.replace(/^Play /, '') ?? 'the video';
   let inView = false;
   let refused = false;
 
   const sync = () => {
     const playing = !v.paused && !v.ended;
     if (playing) refused = false;
-    const s = v.ended ? 'ended' : playing ? 'playing' : 'paused';
     fig.classList.toggle('is-playing', playing);
-    fig.classList.toggle('show-big', !playing && (reduced || userPaused || refused || v.ended));
-    if (toggle) {
-      toggle.dataset.state = s;
-      const word = s === 'playing' ? 'Pause' : s === 'ended' ? 'Replay' : 'Play';
-      if (state) state.textContent = word;
-      toggle.setAttribute('aria-label', `${word} ${label}`);
-    }
+    fig.classList.toggle('show-big', !playing && (reduced || refused || v.ended));
     if (big) {
       const again = v.ended ? 'Replay' : 'Play';
       const text = big.querySelector('span');
@@ -61,23 +51,16 @@ document.querySelectorAll<HTMLElement>('[data-vfig]').forEach((fig) => {
     fig,
     v,
     play(rewind = true) {
-      userPaused = false;
       if (rewind && v.ended) v.currentTime = 0;
       start();
     },
     auto() {
-      if (inView && !reduced && !userPaused && !v.ended && v.paused && !document.hidden) start();
+      if (inView && !reduced && !v.ended && v.paused && !document.hidden) start();
     },
-  };
-  const pause = () => {
-    userPaused = true;
-    v.pause();
   };
 
   (['play', 'playing', 'pause', 'ended'] as const).forEach((ev) => v.addEventListener(ev, sync));
-  fig.querySelectorAll('[data-vplay]').forEach((b) =>
-    b.addEventListener('click', () => (v.paused || v.ended ? ctl.play() : pause())),
-  );
+  big?.addEventListener('click', () => ctl.play());
   new IntersectionObserver(
     (entries) => {
       const e = entries[entries.length - 1];

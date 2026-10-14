@@ -8,15 +8,9 @@
 /* the negative print: in the dark theme the light drawings are shown in negative, like the page */
 :root[data-theme="dark"] .vf-media video, :root[data-theme="dark"] .vf-poster, :root[data-theme="dark"] .kit-neg { filter: invert(0.93) hue-rotate(180deg); }
 
-.vf-cap { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); margin-top: 14px; font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.5; color: var(--muted); }
+.vf-cap { display: flex; align-items: center; gap: var(--s-4); margin-top: 14px; font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.5; color: var(--muted); }
 .vf-cap b { margin-right: 1.6ch; font-weight: 600; color: var(--ink); }
 .vf-cap code { font-size: inherit; color: var(--ink-2); }
-
-.vf-toggle { flex: none; display: none; align-items: center; gap: 7px; height: 30px; padding: 0 11px 0 9px; border: 1px solid var(--hair-strong); border-radius: var(--r); background: transparent; font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-2); cursor: pointer; transition: border-color 160ms, color 160ms; }
-.vf-toggle:hover { border-color: var(--ink); color: var(--ink); }
-.vf-toggle svg { width: 14px; height: 14px; display: none; }
-.vf-toggle[data-state="playing"] .ic-pause, .vf-toggle[data-state="paused"] .ic-play, .vf-toggle[data-state="ended"] .ic-replay { display: block; }
-.vjs .vf-toggle { display: inline-flex; }
 
 .vf-big { position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none; align-items: center; gap: 10px; height: 48px; padding: 0 18px 0 14px; border: 1px solid var(--ink); border-radius: var(--r); background: var(--bg); color: var(--ink); font-family: var(--font-mono); font-size: 0.8125rem; cursor: pointer; transition: background-color 160ms, color 160ms; }
 .vf-big svg { width: 18px; height: 18px; }
@@ -29,7 +23,6 @@
 
 .film-ctl { display: none; align-items: flex-end; gap: var(--s-5); margin-top: var(--s-5); }
 .vjs .film-ctl { display: flex; }
-.film-ctl .vf-toggle { height: 34px; }
 /* progress drawn as a dimension line, with a tick at every chapter start */
 .film-ctl .dimline { flex: 1; }
 .fd-fill { position: absolute; left: 0; right: 0; bottom: 10px; height: 3px; background: var(--accent); transform: scaleX(0); transform-origin: left; }
@@ -67,7 +60,6 @@
 }
 @media (max-width: 560px) {
   .film-ctl { gap: var(--s-3); }
-  .film-ctl .vf-state { display: none; }
   .film-ctl .dl-txt { font-size: 0.6875rem; padding: 0 6px; }
   .chap { padding-right: 2px; column-gap: 6px; }
   .chap .cn { font-size: 0.8125rem; }
