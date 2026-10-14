@@ -34,7 +34,7 @@
 .loop-fig .vf-media { background: var(--bg); }
 /* in the dark theme the negative is a little stronger than the loops' 0.93, so the video's off-white
    lands on the sheet's own dark (oklch 0.15) and the drawing shows no panel behind it */
-:root[data-theme="dark"] .loop-fig .vf-media video, :root[data-theme="dark"] .loop-fig .vf-poster { filter: invert(0.976) hue-rotate(180deg); }
+.loop-fig { --neg: 0.976; }
 .loop-legend { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-6) clamp(24px, 3vw, 48px); margin-top: clamp(24px, 3vw, 40px); padding-top: var(--s-5); border-top: 1px solid var(--hair); }
 .loop-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 1.125rem; font-stretch: 112%; font-weight: 640; line-height: 1.3; }
 .loop-n { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; color: var(--muted); }

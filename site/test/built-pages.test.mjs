@@ -7,6 +7,7 @@
 // tests are skipped and say so.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
@@ -104,6 +105,7 @@ test('the Changelog lists every README release, newest first, with its date', { 
 // The Kit is the maintainer's media kit: `npm run dev` serves it, the production build never does.
 test('the Kit page stays out of the build: no page, no link to it, not in llms.txt', { skip }, () => {
   assert.ok(!existsSync(join(dist, 'kit')), 'site/dist/kit/ was built');
+  assert.ok(!existsSync(join(dist, 'media', 'readme-hero.gif')), 'the README GIF route of the Kit was built');
   for (const p of pages()) assert.doesNotMatch(p.html, /href="\/kit\/"/, `${p.url} links to /kit/`);
   assert.doesNotMatch(read('llms.txt'), /\/kit\//);
 });
@@ -138,7 +140,7 @@ test("the Workflow page's Fig. 1 plays the loop animation above the README's ste
   const fig = html.match(/<section class="wf-sec" id="loop"[\s\S]*?<\/section>/)?.[0] ?? '';
   assert.match(fig, /<figure[^>]*data-vfig/, 'Fig. 1 is not a video figure');
   assert.match(fig, /<video[^>]*\bloop\b[^>]*preload="none"[^>]*aria-label="Looping animation, no sound: [^"]+"/);
-  assert.match(fig, /<source src="\/media\/loop-workflow\.mp4" type="video\/mp4"/);
+  assert.match(fig, /<source src="\/media\/loop-workflow\.mp4\?v=\w+" type="video\/mp4"/);
   assert.ok(existsSync(join(dist, 'media', 'loop-workflow.mp4')) && existsSync(join(dist, 'media', 'loop-workflow.jpg')), 'the loop or its poster is not in the build');
   const legend = fig.slice(fig.indexOf('</video>'));
   let at = 0;
@@ -148,6 +150,23 @@ test("the Workflow page's Fig. 1 plays the loop animation above the README's ste
     at = next;
     for (const [, href] of step.html.matchAll(/href="([^"]+)"/g)) assert.ok(legend.includes(`href="${href}"`), `${step.name}: no link to ${href}`);
   }
+});
+
+// Videos and posters are requested with ?v= and the first 8 hex digits of the file's SHA-1, so a
+// re-render gets a new URL and a browser's cached copy of the old render is never shown again.
+test('every video and poster URL carries the version of the file it points to', { skip }, () => {
+  const version = (path) => createHash('sha1').update(readFileSync(join(root, 'site', 'public', path))).digest('hex').slice(0, 8);
+  const problems = [];
+  let seen = 0;
+  for (const p of pages()) {
+    for (const [, url] of p.html.matchAll(/(?:<source src|<img class="vf-poster" src)="(\/media\/[^"]+)"/g)) {
+      seen += 1;
+      const [path, query] = url.split('?');
+      if (query !== `v=${version(path)}`) problems.push(`${p.url}: ${url}`);
+    }
+  }
+  assert.ok(seen > 0, 'no video or poster URL found');
+  assert.deepEqual(problems, []);
 });
 
 test('404.html and llms.txt are built; llms.txt names every skill page', { skip }, () => {
@@ -233,7 +252,7 @@ test("each skill page's Codex tab shows the name and line Codex's picker shows",
 
 test('the install and setup loops sit where the placement map puts them, with one caption and alt text each', { skip }, () => {
   const figures = (path) => [...read(path).matchAll(/<figure class="vfig[^"]*"[\s\S]*?<\/figure>/g)].map(([f]) => ({
-    src: f.match(/<source src="([^"]+)"/)?.[1],
+    src: f.match(/<source src="([^"?]+)/)?.[1],
     num: Number(f.match(/<b>Fig\. (\d+)<\/b>/)?.[1]),
     caption: f.match(/<b>Fig\. \d+<\/b>([\s\S]*?)<\/span>/)?.[1].trim(),
     alt: f.match(/<video[^>]*\saria-label="([^"]*)"/)?.[1],

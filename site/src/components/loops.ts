@@ -1,6 +1,6 @@
-// A loop from the Kit's LOOPS by name, for a page that embeds it with VideoFigure: its file, caption
-// (HTML), control label and text alternative, written once in kit/kit-data.ts. A page that names a
-// loop LOOPS does not have stops the build.
+// A loop from the Kit's LOOPS by name, for a page that embeds it: its file, caption (HTML), Play-button
+// label and text alternative, written once in kit/kit-data.ts. A page that names a loop LOOPS does
+// not have stops the build.
 import { LOOPS } from './kit/kit-data';
 
 export function loop(name: string) {

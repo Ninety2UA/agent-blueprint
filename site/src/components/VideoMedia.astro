@@ -2,18 +2,22 @@
 // The video box every figure shares, and what video-figures.ts plays it by: a muted, inline,
 // preload="none" video over a lazy poster <img> (the video's own poster attribute is fetched during
 // parsing, even for figures far below the fold or in hidden panels), and a Play button that shows only
-// when nothing else will start the video. The box takes the video's proportions. Without JavaScript
-// the native controls stay. The default slot sits under the video (registration marks); "over" sits
-// above it (a drawing in the video's own coordinates).
+// when nothing else will start the video. The box takes the video's proportions, read from the file
+// unless given, and both files are requested by their content version (media.ts versioned). Without
+// JavaScript the native controls stay. The default slot sits under the video (registration marks);
+// "over" sits above it (a drawing in the video's own coordinates).
+import '../styles/media.css';
 import { IC } from './icons';
+import { mp4Facts, versioned } from './media';
 
 interface Props {
   /** path under public/, e.g. "/media/loop-review.mp4" */
   src: string;
   /** the .jpg beside the video unless given */
   poster?: string;
-  width: number;
-  height: number;
+  /** the frame size; read from the file when not given */
+  width?: number;
+  height?: number;
   /** what the video shows, with its real names and numbers: the text alternative */
   alt: string;
   /** names the video on the Play button: "Play the review animation" */
@@ -23,13 +27,15 @@ interface Props {
   bare?: boolean;
   describedby?: string;
 }
-const { src, poster = src.replace(/\.mp4$/, '.jpg'), width, height, alt, label, loop = true, bare = false, describedby } = Astro.props;
+const { src, poster = src.replace(/\.mp4$/, '.jpg'), alt, label, loop = true, bare = false, describedby } = Astro.props;
+const facts = mp4Facts(src.slice(1));
+const { width = facts.width, height = facts.height } = Astro.props;
 ---
 <div class:list={['vf-media', { 'vf-bare': bare }]} style={`aspect-ratio:${width} / ${height}`}>
   <slot />
-  <img class="vf-poster" src={poster} width={width} height={height} alt="" loading="lazy" decoding="async" />
+  <img class="vf-poster" src={versioned(poster)} width={width} height={height} alt="" loading="lazy" decoding="async" />
   <video muted playsinline loop={loop} preload="none" controls width={width} height={height} aria-label={alt} aria-describedby={describedby}>
-    <source src={src} type="video/mp4" />
+    <source src={versioned(src)} type="video/mp4" />
   </video>
   <slot name="over" />
   <button class="vf-big" type="button" aria-label={`Play ${label}`} data-label={label}><Fragment set:html={IC.play} /><span>Play</span></button>

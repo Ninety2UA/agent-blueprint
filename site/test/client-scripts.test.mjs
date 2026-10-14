@@ -131,7 +131,10 @@ function videoPage({ film = false, play } = {}) {
     },
   });
   const scrollIntoView = () => observer([{ isIntersecting: true, intersectionRatio: 1 }]);
-  return { v, fig, frames, scrollIntoView };
+  // one IntersectionObserver entry: how much of the video shows, out of its height, in a viewport this tall
+  const see = ({ shown, height = 400, viewport = 900 }) =>
+    observer([{ isIntersecting: shown > 0, intersectionRatio: shown / height, intersectionRect: { height: shown }, rootBounds: { height: viewport } }]);
+  return { v, fig, frames, scrollIntoView, see };
 }
 
 const refusal = () => Promise.reject(Object.assign(new Error('play() can only be initiated by a user gesture'), { name: 'NotAllowedError' }));
@@ -148,18 +151,35 @@ test('a video whose autoplay the browser refuses shows the big Play control unti
   assert.equal(page.fig.classList.contains('show-big'), false, 'pausing off screen after a start shows no control');
 });
 
-test('a figure plays on its own once half of it is on screen, and again each time it comes back', async () => {
+test('a figure starts once half of it is on screen, pauses when it leaves, and starts again when it is back', async () => {
   let plays = 0;
   const page = videoPage({ play: (v) => (plays++, (v.paused = false), v.fire('playing'), Promise.resolve()) });
-  page.scrollIntoView();
+  page.see({ shown: 120 });
   await settle();
-  assert.equal(plays, 1);
+  assert.equal(plays, 0, 'less than half on screen: still waiting');
+  page.see({ shown: 200 });
+  await settle();
+  assert.equal(plays, 1, 'half on screen: playing');
   assert.equal(page.fig.classList.contains('is-playing'), true);
-  page.v.pause();
-  page.scrollIntoView();
+  page.see({ shown: 0 });
+  assert.equal(page.v.paused, true, 'off screen: the player paused it');
+  page.see({ shown: 240 });
   await settle();
-  assert.equal(plays, 2, 'nothing the reader did keeps it paused');
+  assert.equal(plays, 2, 'back on screen: playing again');
   assert.equal(page.fig.classList.contains('show-big'), false);
+});
+
+// A figure taller than twice the viewport (a short landscape window) can never be half on screen;
+// it starts once it fills half the viewport instead, so it still plays on its own.
+test('a figure taller than twice the viewport starts once it fills half the viewport', async () => {
+  let plays = 0;
+  const page = videoPage({ play: (v) => (plays++, (v.paused = false), v.fire('playing'), Promise.resolve()) });
+  page.see({ shown: 100, height: 560, viewport: 250 });
+  await settle();
+  assert.equal(plays, 0, 'a sliver at the bottom of the window: still waiting');
+  page.see({ shown: 250, height: 560, viewport: 250 });
+  await settle();
+  assert.equal(plays, 1, 'filling the window: playing');
 });
 
 test('a play() interrupted by pause() is not a refusal: no big Play control', async () => {
@@ -180,6 +200,40 @@ test('the film keeps its time readout moving after a seek while playing, even wi
   page.v.pause();
   page.v.fire('seeked');
   assert.equal(page.frames.size, 0, 'a seek while paused leaves the loop stopped');
+});
+
+// ---- ship runner host picker (site/src/components/home/runner.ts) ----
+
+// The home page's runner command and the run.sh line drawn over its loop: picking a host must
+// rewrite both, with --allow-unguarded for a tool that can only run unguarded.
+function runnerPage() {
+  const host = (id, unguarded = false) =>
+    fakeTarget({ dataset: { host: id }, tabIndex: 0, hasAttribute: (n) => n === 'data-unguarded' && unguarded, setAttribute() {}, focus() {} });
+  const hosts = [host('claude'), host('agy', true)];
+  const parts = {
+    '.host-pick': { querySelectorAll: () => hosts },
+    '[data-host-arg]': { textContent: 'claude' },
+    '[data-allow-unguarded]': { hidden: true, textContent: ' --allow-unguarded' },
+    '[data-fig-host]': { textContent: 'claude' },
+  };
+  const notes = [{ dataset: { noteFor: 'claude' }, hidden: false }, { dataset: { noteFor: 'agy' }, hidden: true }];
+  runClientScript('components/home/runner.ts', {
+    imports: { './reveal': { reduced: () => true } },
+    globals: { document: { querySelector: (s) => parts[s] ?? null, querySelectorAll: () => notes }, window: fakeTarget() },
+  });
+  return { hosts, fig: parts['[data-fig-host]'], arg: parts['[data-host-arg]'], flag: parts['[data-allow-unguarded]'], notes };
+}
+
+test('picking a host rewrites the run.sh line over the runner loop, with the unguarded flag where the command has it', () => {
+  const page = runnerPage();
+  page.hosts[1].fire('click');
+  assert.equal(page.arg.textContent, 'agy');
+  assert.equal(page.flag.hidden, false);
+  assert.equal(page.fig.textContent, 'agy --allow-unguarded');
+  assert.deepEqual(page.notes.map((n) => n.hidden), [true, false]);
+  page.hosts[1].fire('keydown', { key: 'ArrowLeft' });
+  assert.equal(page.fig.textContent, 'claude');
+  assert.equal(page.flag.hidden, true);
 });
 
 // ---- tabs (site/src/components/Tabs.astro) ----

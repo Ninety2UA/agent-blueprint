@@ -1,5 +1,6 @@
 // Video figures (ported from the approved f/src/video.js). Every figure plays on its own while at
-// least half of it is on screen and pauses when it leaves; there is no pause control. Loops loop;
+// least half of it is on screen (or, when it is taller than twice the viewport, while it fills half
+// the viewport) and pauses when it leaves; there is no pause control. Loops loop;
 // the film plays once and does not loop. With reduced motion nothing starts on its own: the poster
 // shows with a play button, as it does when the browser refuses to start a muted video by itself
 // (data saver, low power mode) and after the film ends. Without JavaScript the native controls
@@ -7,6 +8,8 @@
 // so no video bytes load before then.
 
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// a ratio step every 10 %, so a figure taller than the viewport still reports as it scrolls
+const THRESHOLDS = Array.from({ length: 11 }, (_, i) => i / 10);
 const clock = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
 interface Figure {
@@ -64,14 +67,15 @@ document.querySelectorAll<HTMLElement>('[data-vfig]').forEach((fig) => {
   new IntersectionObserver(
     (entries) => {
       const e = entries[entries.length - 1];
-      inView = e.isIntersecting && e.intersectionRatio >= 0.5;
+      const fillsHalfTheViewport = !!e.rootBounds && e.intersectionRect.height >= e.rootBounds.height / 2;
+      inView = e.isIntersecting && (e.intersectionRatio >= 0.5 || fillsHalfTheViewport);
       if (!e.isIntersecting) {
         if (!v.paused) v.pause();
         return;
       }
       ctl.auto();
     },
-    { threshold: [0, 0.5] },
+    { threshold: THRESHOLDS },
   ).observe(v);
   sync();
   figures.push(ctl);

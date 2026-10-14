@@ -1,6 +1,6 @@
 ---
 // The loops: every loop the site embeds as a two-column gallery (Figs. 2 onward), each with its files.
-// The number of loops comes from LOOPS, and the lengths and frame size in the text from the files, so
+// The number of loops comes from LOOPS, and the lengths in the text and each loop's frame size from the files, so
 // a new loop or a re-render needs no edit here.
 import { capitalize } from '../../lib/text.mjs';
 import { mp4Facts } from '../media';
@@ -22,7 +22,7 @@ const seconds = lengths.length === 1 ? numberWord(lengths[0]) : `${numberWord(le
     </div>
     <div class="loop-gallery">
       {LOOPS.map((l, i) => (
-        <VideoFigure src={`/media/${l.name}.mp4`} num={i + 2} alt={l.alt} label={l.label} width={facts[i].width} height={facts[i].height} class="in-kit">
+        <VideoFigure src={`/media/${l.name}.mp4`} num={i + 2} alt={l.alt} label={l.label} class="in-kit">
           <Fragment set:html={l.caption} />
           <FileTable slot="after" files={[`/media/${l.name}.mp4`, `/media/${l.name}.jpg`]} label={l.caption.replace(/<[^>]+>/g, '')} />
         </VideoFigure>

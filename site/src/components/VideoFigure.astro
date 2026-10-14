@@ -15,17 +15,13 @@ interface Props {
   alt: string;
   /** names the video on the fallback Play button: "Play the review animation" */
   label: string;
-  poster?: string;
-  width?: number;
-  height?: number;
-  loop?: boolean;
   class?: string;
 }
-const { src, num, alt, label, poster, width = 1200, height = 750, loop = true, class: cls } = Astro.props;
+const { src, num, alt, label, class: cls } = Astro.props;
 const capId = `cap-${src.split('/').pop()!.replace(/\.\w+$/, '')}-${num}`;
 ---
 <figure class:list={['vfig', cls]} data-vfig>
-  <VideoMedia src={src} poster={poster} width={width} height={height} alt={alt} label={label} loop={loop} describedby={capId}>
+  <VideoMedia src={src} alt={alt} label={label} describedby={capId}>
     <RegMarks />
     <slot name="over" slot="over" />
   </VideoMedia>

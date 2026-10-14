@@ -1,4 +1,5 @@
-import { closeSync, fstatSync, openSync, readSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { closeSync, fstatSync, openSync, readFileSync, readSync } from 'node:fs';
 import { join } from 'node:path';
 
 export interface VideoFacts {
@@ -73,6 +74,19 @@ function readMp4Facts(publicPath: string): VideoFacts {
   } finally {
     closeSync(fd);
   }
+}
+
+const versions = new Map<string, string>();
+
+/**
+ * The URL a page should request for a file under site/public, e.g. "/media/loop-runner.jpg": the path
+ * with ?v= and the first 8 hex digits of the file's SHA-1. /media/ is cached for a day and served stale
+ * for a week, so a re-rendered video or poster needs a new URL or browsers keep showing the old one.
+ */
+export function versioned(sitePath: string): string {
+  let v = versions.get(sitePath);
+  if (!v) versions.set(sitePath, (v = createHash('sha1').update(readFileSync(join(process.cwd(), 'public', sitePath))).digest('hex').slice(0, 8)));
+  return `${sitePath}?v=${v}`;
 }
 
 /** 59.5 -> "0:59" */

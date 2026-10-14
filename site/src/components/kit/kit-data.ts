@@ -16,7 +16,7 @@ export const site = {
   tools: data.tools.map((t) => t.name),
 };
 
-/** The README hero GIF: kept once in the repository, served into the build by pages/media/readme-hero.gif.ts. */
+/** The README hero GIF: kept once in the repository; src/dev/readme-hero.gif.ts serves it at `href` under `npm run dev` only. */
 export const README_GIF = { file: join(findRepoRoot(), 'docs', 'images', 'hero.gif'), href: '/media/readme-hero.gif' };
 
 /**
