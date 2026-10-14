@@ -1,6 +1,6 @@
 ---
 // The loops: every loop the site embeds as a two-column gallery (Figs. 2 onward), each with its files.
-// The number of loops comes from LOOPS, and the lengths and frame size in the text from the files, so
+// The number of loops comes from LOOPS, and the lengths in the text and each loop's frame size from the files, so
 // a new loop or a re-render needs no edit here.
 import { capitalize } from '../../lib/text.mjs';
 import { mp4Facts } from '../media';
@@ -10,8 +10,7 @@ import FileTable from './FileTable.astro';
 import { LOOPS } from './kit-data';
 
 const facts = LOOPS.map((l) => mp4Facts(`media/${l.name}.mp4`));
-// the loops share one frame size, so the first one's stands for all; their lengths can differ
-const { width, height } = facts[0];
+// lengths and frame sizes can differ from loop to loop; each file's own are in the table under it
 const lengths = [...new Set(facts.map((f) => Math.round(f.duration)))].sort((a, b) => a - b);
 const seconds = lengths.length === 1 ? numberWord(lengths[0]) : `${numberWord(lengths[0])} to ${numberWord(lengths.at(-1)!)}`;
 ---
@@ -19,11 +18,11 @@ const seconds = lengths.length === 1 ? numberWord(lengths[0]) : `${numberWord(le
   <div class="wrap">
     <div class="sec-head">
       <h2 id="loops-h" class="h-sec">{capitalize(numberWord(LOOPS.length))} loops.</h2>
-      <p class="body">{capitalize(seconds)} seconds each, made to repeat without a visible seam. Each one shows a single mechanism from the home page or the docs. They are {width} by {height} with a poster frame, drawn to be read at about 560 px wide.</p>
+      <p class="body">{capitalize(seconds)} seconds each, made to repeat without a visible seam. Each one shows a single mechanism from the home page or the docs. Each has a poster frame, and the table under it gives its frame size and length.</p>
     </div>
     <div class="loop-gallery">
       {LOOPS.map((l, i) => (
-        <VideoFigure src={`/media/${l.name}.mp4`} num={i + 2} alt={l.alt} label={l.label} width={facts[i].width} height={facts[i].height} class="in-kit">
+        <VideoFigure src={`/media/${l.name}.mp4`} num={i + 2} alt={l.alt} label={l.label} class="in-kit">
           <Fragment set:html={l.caption} />
           <FileTable slot="after" files={[`/media/${l.name}.mp4`, `/media/${l.name}.jpg`]} label={l.caption.replace(/<[^>]+>/g, '')} />
         </VideoFigure>

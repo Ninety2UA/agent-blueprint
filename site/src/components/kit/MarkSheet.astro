@@ -1,9 +1,11 @@
 ---
-// The mark: its construction at drawing scale (Fig. 6, which fills its path cell by cell when it
-// scrolls in), the mark at 16 to 128 px on light and dark (Fig. 7), the lockup with its clear space
-// (Fig. 8), and the logo files in site/public/brand.
+// The mark: its construction at drawing scale (which fills its path cell by cell when it scrolls
+// in), the mark at 16 to 128 px on light and dark, the lockup with its clear space, and the logo files
+// in site/public/brand. Its three figures are numbered on from the loops (Fig. 1 is the film).
 import FileTable from './FileTable.astro';
-import { markCells, PATH, smallMark } from './kit-data';
+import { LOOPS, markCells, PATH, smallMark } from './kit-data';
+
+const fig = LOOPS.length + 2;
 
 // Construction: 10 px per grid unit, so a cell (8 units) is 80 and the pitch (10 units) is 100.
 const S = 10;
@@ -56,7 +58,7 @@ const lockupMark = markCells({ sw: 0.5 });
             <title id="kc-t">Construction of the mark: a 3 by 3 grid of square cells. The path runs through five cells in loop order, numbered 1 to 5, from the top left to the bottom right. The fifth cell is red-orange. Each cell is x wide, the gaps are a quarter of x, the outlines are hairlines.</title>
             <Fragment set:html={construction} />
           </svg>
-          <figcaption class="vf-cap"><span><b>Fig. 6</b>Construction. The path starts top left and ends on the pull request.</span></figcaption>
+          <figcaption class="vf-cap"><span><b>Fig. {fig}</b>Construction. The path starts top left and ends on the pull request.</span></figcaption>
         </figure>
         <FileTable files={['/brand/mark.svg', '/brand/mark-negative.svg', '/brand/mark-small.svg', '/brand/favicon.svg']} label="Logo files" />
       </div>
@@ -72,7 +74,7 @@ const lockupMark = markCells({ sw: 0.5 });
               </ul>
             </div>
           ))}
-          <figcaption class="vf-cap"><span><b>Fig. 7</b>Sizes. Below 24 px use the small drawing: wider gaps and heavier outlines, so the grid still reads at 16 px.</span></figcaption>
+          <figcaption class="vf-cap"><span><b>Fig. {fig + 1}</b>Sizes. Below 24 px use the small drawing: wider gaps and heavier outlines, so the grid still reads at 16 px.</span></figcaption>
         </figure>
       </div>
       <figure class="mk-fig mk-lockup">
@@ -86,7 +88,7 @@ const lockupMark = markCells({ sw: 0.5 });
             <span class="kd kd-h kd-right"><i>x</i></span>
           </div>
         </div>
-        <figcaption class="vf-cap"><span><b>Fig. 8</b>Lockup and clear space. x is one cell of the mark. The name is set in Archivo at width 116, weight 680.</span></figcaption>
+        <figcaption class="vf-cap"><span><b>Fig. {fig + 2}</b>Lockup and clear space. x is one cell of the mark. The name is set in Archivo at width 116, weight 680.</span></figcaption>
       </figure>
     </div>
   </div>

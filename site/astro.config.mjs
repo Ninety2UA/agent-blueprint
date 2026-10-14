@@ -4,6 +4,7 @@ import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import pagefind from 'astro-pagefind';
 import tailwindcss from '@tailwindcss/vite';
+import kitDevRoute from './src/dev/kit-route.mjs';
 import interactionDirective from './src/directives/integration.mjs';
 import escapeSkillHtml from './src/lib/markdown/escape-skill-html.mjs';
 import { SITE_URL } from './src/lib/site.mjs';
@@ -17,7 +18,8 @@ export default defineConfig({
     inlineStylesheets: 'always',
   },
   // escapeSkillHtml: raw HTML in SKILL.md bodies renders as text, so <base-branch> stays visible.
-  integrations: [react(), sitemap(), pagefind(), interactionDirective(), escapeSkillHtml()],
+  // kitDevRoute: the Kit page exists under `npm run dev` only (src/dev/kit-route.mjs).
+  integrations: [react(), sitemap(), pagefind(), interactionDirective(), escapeSkillHtml(), kitDevRoute()],
   fonts: [
     {
       provider: fontProviders.local(),

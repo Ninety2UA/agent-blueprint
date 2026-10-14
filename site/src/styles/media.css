@@ -1,22 +1,26 @@
 /* Video figures and the film (ported from the approved f/src/media.css): the motion
    pieces framed as drawing sheets, never as cards. Loaded only by pages that show one. */
 .vfig { position: relative; margin: 0; min-width: 0; }
-.vf-media { position: relative; aspect-ratio: 1200 / 750; border: 1px solid var(--hair-strong); background: var(--bg-sunk); }
+.vf-media { position: relative; background: var(--bg-sunk); } /* VideoMedia sets the video's aspect-ratio inline */
+/* the hairline frame is drawn above the video: a composited video layer snaps to whole pixels on its
+   own, and at a fractional offset it painted over a border on the box itself */
+.vf-media::after { content: ""; position: absolute; inset: 0; z-index: 1; border: 1px solid var(--hair-strong); pointer-events: none; }
+/* a video drawn on a sheet (the film, the Workflow loop) or in a README frame has no frame of its own */
+.vf-media.vf-bare::after { content: none; }
 .vf-media video { position: relative; display: block; width: 100%; height: 100%; object-fit: cover; }
 /* the poster sits behind the idle video; the playing video covers it */
 .vf-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-/* the negative print: in the dark theme the light drawings are shown in negative, like the page */
-:root[data-theme="dark"] .vf-media video, :root[data-theme="dark"] .vf-poster, :root[data-theme="dark"] .kit-neg { filter: invert(0.93) hue-rotate(180deg); }
+/* a drawing laid over the video in the video's own coordinates (VideoMedia's "over" slot), such as
+   the runner's command line, set in the video's ink so the dark theme turns both negative together */
+.vf-over { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.vf-over text { font-family: var(--font-mono); font-weight: 500; font-variant-ligatures: none; white-space: pre; fill: oklch(0.17 0 0); }
+/* the negative print: in the dark theme the light drawings are shown in negative, like the page;
+   --neg is how far, and a drawing set on a sheet raises it to land on the sheet's own dark */
+:root[data-theme="dark"] .vf-media video, :root[data-theme="dark"] .vf-poster, :root[data-theme="dark"] .vf-over, :root[data-theme="dark"] .kit-neg { filter: invert(var(--neg, 0.93)) hue-rotate(180deg); }
 
-.vf-cap { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); margin-top: 14px; font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.5; color: var(--muted); }
+.vf-cap { display: flex; align-items: center; margin-top: 14px; font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.5; color: var(--muted); }
 .vf-cap b { margin-right: 1.6ch; font-weight: 600; color: var(--ink); }
 .vf-cap code { font-size: inherit; color: var(--ink-2); }
-
-.vf-toggle { flex: none; display: none; align-items: center; gap: 7px; height: 30px; padding: 0 11px 0 9px; border: 1px solid var(--hair-strong); border-radius: var(--r); background: transparent; font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-2); cursor: pointer; transition: border-color 160ms, color 160ms; }
-.vf-toggle:hover { border-color: var(--ink); color: var(--ink); }
-.vf-toggle svg { width: 14px; height: 14px; display: none; }
-.vf-toggle[data-state="playing"] .ic-pause, .vf-toggle[data-state="paused"] .ic-play, .vf-toggle[data-state="ended"] .ic-replay { display: block; }
-.vjs .vf-toggle { display: inline-flex; }
 
 .vf-big { position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none; align-items: center; gap: 10px; height: 48px; padding: 0 18px 0 14px; border: 1px solid var(--ink); border-radius: var(--r); background: var(--bg); color: var(--ink); font-family: var(--font-mono); font-size: 0.8125rem; cursor: pointer; transition: background-color 160ms, color 160ms; }
 .vf-big svg { width: 18px; height: 18px; }
@@ -25,11 +29,10 @@
 @keyframes big-in { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- The film: a full drawing sheet ---------- */
-.film .vf-media { aspect-ratio: 16 / 9; border-color: transparent; background: var(--bg); } /* the film is a drawing on the sheet itself */
+.film .vf-media { background: var(--bg); } /* the film is a drawing on the sheet itself */
 
-.film-ctl { display: none; align-items: flex-end; gap: var(--s-5); margin-top: var(--s-5); }
+.film-ctl { display: none; margin-top: var(--s-5); }
 .vjs .film-ctl { display: flex; }
-.film-ctl .vf-toggle { height: 34px; }
 /* progress drawn as a dimension line, with a tick at every chapter start */
 .film-ctl .dimline { flex: 1; }
 .fd-fill { position: absolute; left: 0; right: 0; bottom: 10px; height: 3px; background: var(--accent); transform: scaleX(0); transform-origin: left; }
@@ -66,8 +69,6 @@
   .film-tb .ftb-sound { order: 3; }
 }
 @media (max-width: 560px) {
-  .film-ctl { gap: var(--s-3); }
-  .film-ctl .vf-state { display: none; }
   .film-ctl .dl-txt { font-size: 0.6875rem; padding: 0 6px; }
   .chap { padding-right: 2px; column-gap: 6px; }
   .chap .cn { font-size: 0.8125rem; }

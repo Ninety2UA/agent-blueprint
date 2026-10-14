@@ -180,5 +180,5 @@ export const HOST_NOTES: Record<string, { note: string; unguarded?: boolean }> =
 };
 export const HOST_NOTE_DEFAULT =
   'Each tool runs with the least privilege that still finishes a run. Add <code>--dry-run</code> first to see the preflight and the command.';
-/** The host the runner command shows first, as in the README's example. */
-export const RUNNER_HOST = 'codex';
+/** The host the runner command and its figure show first: Claude Code, first in the tool list. */
+export const RUNNER_HOST = 'claude';

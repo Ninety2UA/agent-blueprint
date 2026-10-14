@@ -1,12 +1,16 @@
 ---
-// Fig. 1: the README's development loop drawn on a sheet. The steps sit on one datum line; a
-// return line on the left carries what the last step records back to the first, the way the
-// home page's drawing does. Every step's text is the README's own, with skill names linked.
+// Fig. 1: the README's development loop as a looping animation (motion/loop-workflow) drawn on the
+// sheet itself, the way the film is: a tracer runs the six steps and docs/ carries the loop back to
+// Orient. Under it, the legend gives every step's text from the README, with skill names linked.
+// The video plays on its own while on screen (video-figures.ts).
 import DrawingSheet from '../DrawingSheet.astro';
+import { loop as loopVideo } from '../loops';
 import TitleBlock from '../TitleBlock.astro';
+import VideoMedia from '../VideoMedia.astro';
 import { Num, wf } from './data';
 
 const { loop, pipelines, gates, counts } = wf;
+const video = loopVideo('loop-workflow');
 ---
 <section class="wf-sec" id="loop" aria-labelledby="loop-h">
   <div class="wrap">
@@ -15,24 +19,17 @@ const { loop, pipelines, gates, counts } = wf;
       <h2 id="loop-h" class="h-sec">Every feature takes the same loop.</h2>
       <p class="body">{Num(loop.length)} steps, from getting oriented to merging the branch, each with its own skills. The loop closes through <code>docs/</code>: what one feature records there, the next session reads first.</p>
     </div>
-    <figure class="wf-fig" aria-labelledby="loop-h">
+    <figure class="wf-fig loop-fig" data-vfig aria-labelledby="loop-h">
       <DrawingSheet class="loop-sheet">
-        <div class="loop-wrap" data-draw>
-          <p class="loop-back" aria-hidden="true">next session{' '}<br />reads <code>docs/</code></p>
-          <ol class="loop">
-            {loop.map((step, i) => (
-              <li class:list={['loop-step', { 'is-opt': step.optional }]} style={`--i:${i}`}>
-                <span class="loop-mark" aria-hidden="true"></span>
-                <span class="loop-ret" aria-hidden="true"></span>
-                <h3 class="loop-name">
-                  <span class="loop-n" aria-hidden="true">{step.n}</span>{step.name}
-                  {step.optional && <span class="loop-opt"><span class="sr-only">, </span>optional</span>}
-                </h3>
-                <p class="loop-text" set:html={step.html} />
-              </li>
-            ))}
-          </ol>
-        </div>
+        <VideoMedia src={video.src} alt={video.alt} label={video.label} bare />
+        <ol class="loop-legend">
+          {loop.map((step) => (
+            <li>
+              <h3 class="loop-name"><span class="loop-n" aria-hidden="true">{step.n}</span>{step.name}{step.optional && <span class="loop-opt"><span class="sr-only">, </span>optional</span>}</h3>
+              <p class="loop-text" set:html={step.html} />
+            </li>
+          ))}
+        </ol>
       </DrawingSheet>
       <TitleBlock
         attached

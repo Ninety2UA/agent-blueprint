@@ -52,7 +52,7 @@ test('groupResults keeps rank order inside a section and orders sections by thei
 });
 
 test('a result without a section filter is grouped under Pages', () => {
-  const groups = groupResults([{ url: '/kit/', title: 'Kit', excerpt: '', section: undefined }]);
+  const groups = groupResults([{ url: '/changelog/', title: 'Changelog', excerpt: '', section: undefined }]);
   assert.deepEqual(groups.map((g) => g.section), ['Pages']);
 });
 

@@ -26,7 +26,8 @@ html, body { width: 1200px; height: 750px; }
   function build() {
     const tl = gsap.timeline({ paused: true });
     const s = svg(document.getElementById("stage"), 1200, 750);
-    T(s, 40, 58, 'run.sh --host codex "Add CSV export"', "t-mono", 26);
+    // The run.sh line (x 40, baseline 58, mono 26) is not in the video: the site draws it over the
+    // video at these coordinates so it names the host the reader picks (home/Runner.astro).
 
     // ---- session sheets: one fresh session per iteration ----
     const SX = 40, SY = 96, SW = 540, SH = 340;

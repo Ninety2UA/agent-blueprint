@@ -16,7 +16,7 @@ export const site = {
   tools: data.tools.map((t) => t.name),
 };
 
-/** The README hero GIF: kept once in the repository, served into the build by pages/media/readme-hero.gif.ts. */
+/** The README hero GIF: kept once in the repository; src/dev/readme-hero.gif.ts serves it at `href` under `npm run dev` only. */
 export const README_GIF = { file: join(findRepoRoot(), 'docs', 'images', 'hero.gif'), href: '/media/readme-hero.gif' };
 
 /**
@@ -87,7 +87,7 @@ export const LOOPS = [
     caption: 'The ship runner, a fresh session per iteration',
     label: 'the runner loop',
     alt:
-      'Looping animation, no sound: the ship runner with --host codex. Each iteration is a fresh session on a new ' +
+      'Looping animation, no sound: the ship runner with the --host the command names. Each iteration is a fresh session on a new ' +
       'sheet while .agent-blueprint/run/state.json carries over and its status, stage and iteration change. When the ' +
       'status is done, the runner scans for secrets, pushes, and the pull request opens.',
   },
@@ -120,6 +120,19 @@ export const LOOPS = [
       'empty folder: AGENTS.md, CLAUDE.md, docs/context/ with CONVENTIONS, GOALS, STATUS and DECISIONS, BACKLOG.md and ' +
       ".gitignore appear one by one, each marked created. CONVENTIONS.md gets the project's test command, the scaffold " +
       'is committed, and the summary points to ab-brainstorming.',
+  },
+  {
+    name: 'loop-workflow',
+    caption: 'The development loop, closed through <code>docs/</code>',
+    label: 'the development loop',
+    alt:
+      'Looping animation, no sound: the six steps of the development loop on one line, 1 Orient, 2 Ideate (optional, ' +
+      'drawn dashed), 3 Design, 4 Plan, 5 Build and 6 Ship. A red tracer moves from step to step, and under the active ' +
+      'step a note says what happens there: ab-resume-session reads docs/context/STATUS.md; ab-ideation ranks ' +
+      'improvement ideas; ab-brainstorming saves the approved design in docs/plans/; ab-writing-plans writes tasks, ' +
+      'tests and file paths, then ab-deepen-plan; test first, verify with evidence, helper review; merge the branch, ' +
+      'and ab-session-wrap updates docs/. Then a docs/ file rides the return line back to Orient, where the next ' +
+      'session reads it and the next feature starts.',
   },
 ];
 

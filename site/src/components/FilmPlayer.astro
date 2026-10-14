@@ -3,16 +3,16 @@
 // playback, a progress line drawn as a dimension line, a title block under the sheet.
 // Chapters come from public/media/film-chapters.json and the length and frame size from
 // film.mp4 itself, both read at build time, so a re-render needs no edit here.
-// The film plays once, muted, never loops; video-figures.ts runs it.
+// The film plays once on its own when on screen, muted, never loops; video-figures.ts runs it.
 import '../styles/media.css';
 import chapters from '../../public/media/film-chapters.json';
 import DimensionLine from './DimensionLine.astro';
 import DrawingSheet from './DrawingSheet.astro';
-import { IC } from './icons';
 import { getSiteData } from '../lib/site.mjs';
 import { clock, mp4Facts } from './media';
 import { numberWord } from './number-word';
 import TitleBlock from './TitleBlock.astro';
+import VideoMedia from './VideoMedia.astro';
 
 interface Props {
   /** figure number, in page order */
@@ -60,15 +60,8 @@ const cells = [
 ---
 <figure class="vfig film" data-vfig data-film data-duration={duration.toFixed(2)} data-texts={texts}>
   <DrawingSheet class="film-sheet">
-    <div class="vf-media">
-      <img class="vf-poster" src="/media/film-1280.jpg" width="1280" height="720" alt="" loading="lazy" decoding="async" />
-      <video muted playsinline preload="none" controls width="1280" height="720" aria-label={alt}>
-        <source src={SRC} type="video/mp4" />
-      </video>
-      <button class="vf-big" type="button" data-vplay aria-label="Play the film"><Fragment set:html={IC.play} /><span>Play</span></button>
-    </div>
+    <VideoMedia src={SRC} poster="/media/film-1280.jpg" width={1280} height={720} alt={alt} label="the film" loop={false} bare />
     <div class="film-ctl">
-      <button class="vf-toggle" type="button" data-vplay aria-label="Pause the film" data-label="the film"><Fragment set:html={IC.pause} /><Fragment set:html={IC.play} /><Fragment set:html={IC.replay} /><span class="vf-state">Pause</span></button>
       <DimensionLine ticks={chaps.slice(1).map((c) => c.start / duration)}>
         <span class="fd-fill" aria-hidden="true"></span>
         <span class="fd-head" aria-hidden="true"></span>

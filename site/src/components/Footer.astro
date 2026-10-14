@@ -10,7 +10,7 @@
 import { getSiteData } from '../lib/site.mjs';
 import Cmd from './Cmd.astro';
 import Mark from './Mark.astro';
-import { GET_STARTED, NAV } from './nav';
+import { GET_STARTED, NAV, type NavLabel } from './nav';
 import { numberWord } from './number-word';
 
 interface Props {
@@ -20,7 +20,7 @@ interface Props {
 const { sheet } = Astro.props;
 const { version, repoUrl, counts, allToolsCommand, tools } = getSiteData();
 
-const PRODUCT = ['Skills', 'Workflow', 'Tutorials', 'Guides', 'Kit', 'Changelog'];
+const PRODUCT: NavLabel[] = ['Skills', 'Workflow', 'Tutorials', 'Guides', 'Changelog'];
 const product = PRODUCT.map((label) => NAV.find((n) => n.label === label)!);
 // the clone and the installer, one line each; the copy button copies them joined by &&
 const installLines = allToolsCommand.split(' && ');

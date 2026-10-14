@@ -3,10 +3,11 @@
 // the page with no edit under site/.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { fileFacts, humanSize } from '../src/components/kit/files.mjs';
+import kitDevRoute from '../src/dev/kit-route.mjs';
 import { findRepoRoot } from '../src/lib/site.mjs';
 
 const root = findRepoRoot();
@@ -75,4 +76,19 @@ test('JSON has no frame and no length', () => {
   const facts = fileFacts(join(media, 'film-chapters.json'));
   assert.equal(facts.frame, '');
   assert.equal(facts.length, '');
+});
+
+// The Kit and the README GIF route exist under `npm run dev` only: the integration injects both
+// routes, with entrypoints that exist, for dev, and nothing for a build.
+test('the Kit routes are injected for astro dev and never for a build', () => {
+  const injected = (command) => {
+    const routes = [];
+    kitDevRoute().hooks['astro:config:setup']({ command, injectRoute: (r) => routes.push(r) });
+    return routes;
+  };
+  const dev = injected('dev');
+  assert.deepEqual(dev.map((r) => r.pattern), ['/kit', '/media/readme-hero.gif']);
+  for (const r of dev) assert.ok(existsSync(r.entrypoint), `${r.pattern}: ${r.entrypoint} does not exist`);
+  assert.deepEqual(injected('build'), []);
+  assert.deepEqual(injected('preview'), []);
 });

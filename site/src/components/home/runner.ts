@@ -1,6 +1,7 @@
 // Unattended runs (the approved f/src/home.js): picking a host rewrites the --host
-// argument and the note under the command, and adds --allow-unguarded for the tools that
-// can only run unguarded. A dot runs along the five steps while they are on screen.
+// argument, the run.sh line drawn over the runner loop and the note under the command, and
+// adds --allow-unguarded for the tools that can only run unguarded. A dot runs along the five
+// steps while they are on screen.
 import { reduced } from './reveal';
 
 const pick = document.querySelector<HTMLElement>('.host-pick');
@@ -9,6 +10,7 @@ if (pick) {
   const hosts = [...pick.querySelectorAll<HTMLButtonElement>('.host')];
   const arg = document.querySelector<HTMLElement>('[data-host-arg]')!;
   const unguarded = document.querySelector<HTMLElement>('[data-allow-unguarded]')!;
+  const figHost = document.querySelector<SVGTSpanElement>('[data-fig-host]');
   const notes = [...document.querySelectorAll<HTMLElement>('[data-note-for]')];
 
   const choose = (b: HTMLButtonElement, focus = false) => {
@@ -19,6 +21,8 @@ if (pick) {
     });
     arg.textContent = b.dataset.host ?? '';
     unguarded.hidden = !b.hasAttribute('data-unguarded');
+    // the figure's run.sh line repeats the command's host and flag as they now read
+    if (figHost) figHost.textContent = `${arg.textContent}${unguarded.hidden ? '' : unguarded.textContent}`;
     notes.forEach((n) => {
       n.hidden = n.dataset.noteFor !== b.dataset.host;
     });
