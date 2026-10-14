@@ -21,7 +21,6 @@ const SECTION_NOTES = {
   Tutorials: 'Walkthroughs that take a feature through the skills, step by step',
   Workflow: 'How the skills fit together from idea to pull request',
   Guides: 'Guides for particular jobs, such as unattended runs',
-  Kit: 'The film, the loops, the README header, the mark and a short description to copy',
   Changelog: 'Every release, newest first',
 };
 

@@ -20,7 +20,7 @@ interface Props {
 const { sheet } = Astro.props;
 const { version, repoUrl, counts, allToolsCommand, tools } = getSiteData();
 
-const PRODUCT = ['Skills', 'Workflow', 'Tutorials', 'Guides', 'Kit', 'Changelog'];
+const PRODUCT = ['Skills', 'Workflow', 'Tutorials', 'Guides', 'Changelog'];
 const product = PRODUCT.map((label) => NAV.find((n) => n.label === label)!);
 // the clone and the installer, one line each; the copy button copies them joined by &&
 const installLines = allToolsCommand.split(' && ');

@@ -7,7 +7,6 @@ export const NAV = [
   { label: 'Tutorials', href: '/tutorials/first-feature-new-project/', section: '/tutorials/' },
   { label: 'Workflow', href: '/workflow/', section: '/workflow/' },
   { label: 'Guides', href: '/guides/unattended-runs/', section: '/guides/' },
-  { label: 'Kit', href: '/kit/', section: '/kit/' },
   { label: 'Changelog', href: '/changelog/', section: '/changelog/' },
 ] as const;
 

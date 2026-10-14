@@ -1,6 +1,6 @@
 // Checks on the built site (site/dist) for R1, R6, R7 and R8: every page has its own title and
-// description, the sitemap lists every page, the Changelog and Kit pages state what the repository
-// holds, 404.html and llms.txt exist, and robots.txt names the sitemap. One more holds the script
+// description, the sitemap lists every page, the Changelog states what the repository holds, the
+// Kit stays out of the build, 404.html and llms.txt exist, and robots.txt names the sitemap. One more holds the script
 // budget: islands hydrate on first interaction and nothing loads from another origin. The install
 // surfaces show each tool's setup call, the home hero a command for each tool, and each skill page's
 // Codex tab the name Codex's picker shows. CI runs these after `npm run build`; without a build the
@@ -10,7 +10,6 @@ import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-import { humanSize } from '../src/components/kit/files.mjs';
 import { leadRoute } from '../src/components/docs/route.mjs';
 import { callSkill, SETUP_SKILL } from '../src/lib/naming.mjs';
 import { findRepoRoot, getSiteData } from '../src/lib/site.mjs';
@@ -101,20 +100,11 @@ test('the Changelog lists every README release, newest first, with its date', { 
   assert.doesNotMatch(html, /The body for the GitHub release/);
 });
 
-test('every file the Kit page lists shows the size of the file it links to', { skip }, () => {
-  const html = read('kit/index.html');
-  const rows = [...html.matchAll(/<tr><th scope="row"><a href="([^"]+)" download>[^]*?<\/tr>/g)];
-  assert.ok(rows.length > 0, 'no file rows on the Kit page');
-  const sources = { '/media/readme-hero.gif': join(root, 'docs', 'images', 'hero.gif') };
-  for (const [row, href] of rows) {
-    const cells = [...row.matchAll(/<td>([^<]*)<\/td>/g)].map((m) => m[1]);
-    const file = sources[href] ?? join(root, 'site', 'public', href);
-    assert.equal(cells.at(-1), humanSize(statSync(file).size), href);
-    assert.ok(existsSync(join(dist, href)), `${href} is not in the build`);
-  }
-  for (const name of readdirSync(join(root, 'site', 'public', 'media'))) {
-    assert.ok(rows.some(([, href]) => href === `/media/${name}`), `the Kit page does not list /media/${name}`);
-  }
+// The Kit is the maintainer's media kit: `npm run dev` serves it, the production build never does.
+test('the Kit page stays out of the build: no page, no link to it, not in llms.txt', { skip }, () => {
+  assert.ok(!existsSync(join(dist, 'kit')), 'site/dist/kit/ was built');
+  for (const p of pages()) assert.doesNotMatch(p.html, /href="\/kit\/"/, `${p.url} links to /kit/`);
+  assert.doesNotMatch(read('llms.txt'), /\/kit\//);
 });
 
 test('404.html and llms.txt are built; llms.txt names every skill page', { skip }, () => {
@@ -198,7 +188,7 @@ test("each skill page's Codex tab shows the name and line Codex's picker shows",
   }
 });
 
-test('the install and setup loops sit where the placement map puts them, each with its Kit caption', { skip }, () => {
+test('the install and setup loops sit where the placement map puts them, with one caption and alt text each', { skip }, () => {
   const figures = (path) => [...read(path).matchAll(/<figure class="vfig[^"]*"[\s\S]*?<\/figure>/g)].map(([f]) => ({
     src: f.match(/<source src="([^"]+)"/)?.[1],
     num: Number(f.match(/<b>Fig\. (\d+)<\/b>/)?.[1]),
@@ -213,12 +203,14 @@ test('the install and setup loops sit where the placement map puts them, each wi
     ['docs/getting-started/index.html', '/media/loop-setup.mp4', 2],
     ['docs/project-files/index.html', '/media/loop-setup.mp4', 1],
   ];
+  const first = new Map();
   for (const [path, src, num] of placements) {
     const fig = where(path, src);
     assert.equal(fig?.num, num, `${path}: ${src}`);
-    // the caption and text alternative are the Kit page's, which both read from LOOPS
-    const kit = where('kit/index.html', src);
-    assert.ok(kit?.caption && fig.caption === kit.caption && fig.alt === kit.alt, `${path}: ${src} does not match the Kit's caption and alt text`);
+    // every page reads the caption and text alternative from LOOPS, so a loop reads the same everywhere
+    assert.ok(fig.caption && fig.alt?.startsWith('Looping animation, no sound: '), `${path}: ${src} has no caption or alt text`);
+    const seen = first.get(src) ?? first.set(src, { ...fig, path }).get(src);
+    assert.ok(fig.caption === seen.caption && fig.alt === seen.alt, `${path}: ${src} does not match its caption and alt text on ${seen.path}`);
   }
   const start = read('docs/getting-started/index.html');
   assert.ok(start.indexOf('id="set-up-your-project"') < start.indexOf('/media/loop-setup.mp4'), 'the setup loop comes after its heading');
