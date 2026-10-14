@@ -5,6 +5,8 @@
 /* the hairline frame is drawn above the video: a composited video layer snaps to whole pixels on its
    own, and at a fractional offset it painted over a border on the box itself */
 .vf-media::after { content: ""; position: absolute; inset: 0; z-index: 1; border: 1px solid var(--hair-strong); pointer-events: none; }
+/* a video drawn on a sheet (the film, the Workflow loop) or in a README frame has no frame of its own */
+.vf-media.vf-bare::after { content: none; }
 .vf-media video { position: relative; display: block; width: 100%; height: 100%; object-fit: cover; }
 /* the poster sits behind the idle video; the playing video covers it */
 .vf-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -26,8 +28,7 @@
 @keyframes big-in { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- The film: a full drawing sheet ---------- */
-.film .vf-media { aspect-ratio: 16 / 9; background: var(--bg); } /* the film is a drawing on the sheet itself */
-.film .vf-media::after { content: none; }
+.film .vf-media { background: var(--bg); } /* the film is a drawing on the sheet itself */
 
 .film-ctl { display: none; align-items: flex-end; gap: var(--s-5); margin-top: var(--s-5); }
 .vjs .film-ctl { display: flex; }

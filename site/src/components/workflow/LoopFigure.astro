@@ -5,10 +5,10 @@
 // The video plays on its own while on screen (video-figures.ts); its frame size comes from the file.
 import '../../styles/media.css';
 import DrawingSheet from '../DrawingSheet.astro';
-import { IC } from '../icons';
 import { loop as loopVideo } from '../loops';
 import { mp4Facts } from '../media';
 import TitleBlock from '../TitleBlock.astro';
+import VideoMedia from '../VideoMedia.astro';
 import { Num, wf } from './data';
 
 const { loop, pipelines, gates, counts } = wf;
@@ -24,13 +24,7 @@ const { width, height } = mp4Facts('media/loop-workflow.mp4');
     </div>
     <figure class="wf-fig loop-fig" data-vfig aria-labelledby="loop-h">
       <DrawingSheet class="loop-sheet">
-        <div class="vf-media" style={`aspect-ratio:${width} / ${height}`}>
-          <img class="vf-poster" src={video.src.replace(/\.mp4$/, '.jpg')} width={width} height={height} alt="" loading="lazy" decoding="async" />
-          <video muted playsinline loop preload="none" controls width={width} height={height} aria-label={video.alt}>
-            <source src={video.src} type="video/mp4" />
-          </video>
-          <button class="vf-big" type="button" aria-label={`Play ${video.label}`}><Fragment set:html={IC.play} /><span>Play</span></button>
-        </div>
+        <VideoMedia src={video.src} width={width} height={height} alt={video.alt} label={video.label} bare />
         <ol class="loop-legend">
           {loop.map((step) => (
             <li class:list={['loop-item', { 'is-opt': step.optional }]}>

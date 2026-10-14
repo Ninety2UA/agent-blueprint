@@ -1,6 +1,6 @@
-// /media/readme-hero.gif: the README hero GIF the Kit page offers, served under `npm run dev` only. The repository keeps it once, at
-// docs/images/hero.gif (the README shows it from there); the build copies that file here, so a new
-// render of the hero changes the Kit page with no second copy under site/.
+// /media/readme-hero.gif: the README hero GIF the Kit page offers, served under `npm run dev` only.
+// The repository keeps it once, at docs/images/hero.gif (the README shows it from there); the dev
+// server serves that file here, so a new render of the hero changes the Kit page with no second copy.
 import type { APIRoute } from 'astro';
 import { readFileSync } from 'node:fs';
 

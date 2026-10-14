@@ -30,9 +30,8 @@
 
 /* ---------- Fig. 1: the loop, an animation drawn on the sheet, with the README's steps under it ---------- */
 .loop-sheet { padding: clamp(28px, 3.6vw, 52px) clamp(18px, 3vw, 44px); }
-/* the animation is a drawing on the sheet itself, as the film is: no frame of its own */
+/* the animation is a drawing on the sheet itself, as the film is */
 .loop-fig .vf-media { background: var(--bg); }
-.loop-fig .vf-media::after { content: none; }
 /* in the dark theme the negative is a little stronger than the loops' 0.93, so the video's off-white
    lands on the sheet's own dark (oklch 0.15) and the drawing shows no panel behind it */
 :root[data-theme="dark"] .loop-fig .vf-media video, :root[data-theme="dark"] .loop-fig .vf-poster { filter: invert(0.976) hue-rotate(180deg); }

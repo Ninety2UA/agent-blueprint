@@ -3,10 +3,10 @@
 // (its counts marked as claims), and the files. The GIF's size and length come from the file the
 // README shows; the MP4's from its own boxes.
 import Cmd from '../Cmd.astro';
-import { IC } from '../icons';
 import { mp4Facts } from '../media';
 import { numberWord } from '../number-word';
 import Tabs from '../Tabs.astro';
+import VideoMedia from '../VideoMedia.astro';
 import FileTable from './FileTable.astro';
 import { fileFacts } from './files.mjs';
 import { ALT, README_GIF, SNIPPET, site } from './kit-data';
@@ -41,13 +41,7 @@ const gifAlt =
             <p class="ghr-bar"><Fragment set:html={bar} /><span>README.md</span></p>
             <div class="ghr-body">
               <figure class="vfig ghr-vid" data-vfig>
-                <div class="vf-media" style={`aspect-ratio:${video.width} / ${video.height}`}>
-                  <img class="vf-poster" src="/media/readme-hero.jpg" width={video.width} height={video.height} alt="" loading="lazy" decoding="async" />
-                  <video muted playsinline loop preload="none" controls width={video.width} height={video.height} aria-label={`${ALT}. Looping animation, no sound.`}>
-                    <source src="/media/readme-hero.mp4" type="video/mp4" />
-                  </video>
-                  <button class="vf-big" type="button" aria-label={`Play ${label}`}><Fragment set:html={IC.play} /><span>Play</span></button>
-                </div>
+                <VideoMedia src="/media/readme-hero.mp4" width={video.width} height={video.height} alt={`${ALT}. Looping animation, no sound.`} label={label} bare />
                 <figcaption class="vf-cap">
                   <span>Same loop as MP4</span>
                 </figcaption>

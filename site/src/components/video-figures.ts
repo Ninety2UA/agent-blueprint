@@ -24,7 +24,7 @@ document.querySelectorAll<HTMLElement>('[data-vfig]').forEach((fig) => {
   v.removeAttribute('controls');
   fig.classList.add('vjs');
   const big = fig.querySelector<HTMLButtonElement>('.vf-big');
-  const label = big?.getAttribute('aria-label')?.replace(/^Play /, '') ?? 'the video';
+  const label = big?.dataset.label ?? 'the video';
   let inView = false;
   let refused = false;
 

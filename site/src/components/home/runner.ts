@@ -21,7 +21,8 @@ if (pick) {
     });
     arg.textContent = b.dataset.host ?? '';
     unguarded.hidden = !b.hasAttribute('data-unguarded');
-    if (figHost) figHost.textContent = `${b.dataset.host ?? ''}${b.hasAttribute('data-unguarded') ? ' --allow-unguarded' : ''}`;
+    // the figure's run.sh line repeats the command's host and flag as they now read
+    if (figHost) figHost.textContent = `${arg.textContent}${unguarded.hidden ? '' : unguarded.textContent}`;
     notes.forEach((n) => {
       n.hidden = n.dataset.noteFor !== b.dataset.host;
     });
