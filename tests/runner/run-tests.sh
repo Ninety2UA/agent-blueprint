@@ -555,7 +555,7 @@ t36_every_scan_pattern_is_caught_and_masked() {
         echo "anthropic sk-ant-$(rep f 24)"
         echo "openai sk-$(rep g 40)"
         echo "jwt eyJ$(rep h 12).eyJ$(rep i 12).$(rep j 12)"
-        echo "-----BEGIN RSA PRIVATE KEY-----"
+        echo "-----BEGIN RSA PRIVATE" "KEY-----"
         echo "password = \"$(rep k 30)\""
         echo "an ordinary line with commit_sha=0123456789abcdef0123456789abcdef"
     } > "$D/keys.txt"
