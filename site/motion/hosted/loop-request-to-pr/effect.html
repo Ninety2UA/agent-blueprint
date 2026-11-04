@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Request to pull request</title>
+<style>
+@font-face {
+  font-family: "Archivo";
+  src: url("../../../src/assets/fonts/Archivo-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: block;
+}
+/* Every value from r2/MOTION.md, section 1 (colours) and section 2 (type). */
+html, body { margin: 0; height: 100%; background: #fafafa; overflow: hidden; }
+#fit { position: absolute; inset: 0; overflow: hidden; }
+#stage { width: 1200px; height: 750px; position: absolute; left: 50%; top: 50%; background: #fafafa; transform-origin: center center; transform: translate(-50%, -50%); }
+svg { display: block; }
+text { font-family: "Archivo", sans-serif; font-kerning: normal; }
+.t-kick { font-size: 26px; font-weight: 400; font-stretch: 112%; }
+.t-title { font-size: 40px; font-weight: 640; font-stretch: 112%; }
+.t-meta { font-size: 28px; font-weight: 400; font-stretch: 100%; }
+.t-badge { font-size: 26px; font-weight: 600; font-stretch: 112%; }
+.t-chip { font-size: 28px; font-weight: 600; font-stretch: 112%; }
+</style>
+</head>
+<body>
+<div id="fit"><div id="stage"><svg id="s" width="1200" height="750" viewBox="0 0 1200 750" aria-label="An example request becomes a draft pull request opened by your GitHub App"></svg></div></div>
+<script>
+(() => {
+  "use strict";
+  const LOOP = 8;
+  const RENDER = new URLSearchParams(location.search).has("render");
+  const NS = "http://www.w3.org/2000/svg";
+  const COL = { ground: "#fafafa", raised: "#ffffff", ink: "#0f0f0f", ink2: "#383838", muted: "#555555", hairS: "#b1b1b1", hair: "#d4d4d4", accent: "#ed4423" };
+
+  // ---- the words (r2/shared/EFFECTS.md, request-to-pr) ----
+  const KICK = "Example request";
+  const TITLE = ["Add a short usage section", "to the README"];
+  const META = "Opened by your GitHub App";
+  const BADGE = "Draft";
+  const STAGES = ["Plan", "Execute", "Review", "Verify", "Ship"];
+
+  // ---- easing (MOTION.md answers) ----
+  function bezier(x1, y1, x2, y2) {
+    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    const sx = (u) => ((ax * u + bx) * u + cx) * u;
+    const sy = (u) => ((ay * u + by) * u + cy) * u;
+    const dx = (u) => (3 * ax * u + 2 * bx) * u + cx;
+    return (x) => {
+      if (x <= 0) return 0;
+      if (x >= 1) return 1;
+      let u = x;
+      for (let i = 0; i < 8; i++) { const e = sx(u) - x; const d = dx(u); if (Math.abs(e) < 1e-7 || Math.abs(d) < 1e-6) break; u -= e / d; }
+      let lo = 0, hi = 1;
+      for (let i = 0; i < 30 && Math.abs(sx(u) - x) > 1e-7; i++) { if (sx(u) < x) lo = u; else hi = u; u = (lo + hi) / 2; }
+      return sy(u);
+    };
+  }
+  const EXPO = bezier(0.16, 1, 0.3, 1);
+  const INOUT = bezier(0.65, 0, 0.35, 1);
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const seg = (t, a, d) => clamp((t - a) / d);
+  function hex(c) { return [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)); }
+  function mix(a, b, t) { const A = hex(a), B = hex(b); return "#" + A.map((v, i) => Math.round(lerp(v, B[i], clamp(t))).toString(16).padStart(2, "0")).join(""); }
+
+  const svg = document.getElementById("s");
+  function S(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs || {}) if (attrs[k] != null) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; }
+  function T(parent, x, y, cls, str, fill) { const e = S("text", { x, y, class: cls, fill }, parent); e.textContent = str; return e; }
+  const f3 = (v) => v.toFixed(3);
+
+  // ---- layout (1200 x 750) ----
+  const WIN = { x: 56, y: 55, w: 1088, h: 408 };    // the pull request window
+  const WPAD = 48;
+  const CARD = { x: 104, y: 519, w: 0, h: 160 };    // the chat message card; width set from the title
+  const CPAD = 26;
+  const TAIL = 16;
+  const S_CARD = 0.75;                               // title 30 px on the card, 40 px in the window
+  // offsets from the shell's top-left, card value then window value
+  const KICK_Y = [CPAD + 19, WPAD + 19];
+  const TITLE_Y = [CPAD + 19 + 42, WPAD + 19 + 58];
+  const LINE2 = 51;
+  const META_Y = WPAD + 185;                          // middle of the badge line, from the window top
+  const SEP_Y = WPAD + 220;
+  const CHIP_Y = WPAD + 248, CHIP_H = 64;
+
+  // ghost of the closed card (dashed, strong hairline): stays at the origin
+  const ghost = S("g", {});
+  const ghostRect = S("rect", { fill: "none", stroke: COL.hairS, "stroke-width": 1.25, "stroke-dasharray": "7 6" }, ghost);
+  const ghostTail = S("path", { fill: "none", stroke: COL.hairS, "stroke-width": 1.25, "stroke-dasharray": "7 6" }, ghost);
+
+  // projection guides from the ghost's top corners to the shell's bottom corners
+  const guides = [0, 1].map(() => S("line", { stroke: COL.hairS, "stroke-width": 1, "stroke-dasharray": "6 6" }));
+
+  // the shell: the one object that changes shape
+  const tailFill = S("path", { fill: COL.raised, stroke: "none" });
+  const shell = S("rect", { fill: COL.raised, stroke: COL.ink, "stroke-width": 1.5 });
+  const tailLine = S("path", { fill: "none", stroke: COL.ink, "stroke-width": 1.5, "stroke-linejoin": "miter" });
+
+  // contents clipped to the shell, so nothing ever sits past its edge
+  const defs = S("defs", {});
+  const clip = S("clipPath", { id: "shellclip" }, defs);
+  const clipRect = S("rect", {}, clip);
+  const inner = S("g", { "clip-path": "url(#shellclip)" });
+
+  const kick = T(inner, 0, 0, "t-kick", KICK, COL.muted);
+  const titleG = S("g", {}, inner);
+  const t1 = T(titleG, 0, 0, "t-title", TITLE[0], COL.ink);
+  const t2 = T(titleG, 0, LINE2, "t-title", TITLE[1], COL.ink);
+
+  // window contents, positioned from the shell's top-left
+  const content = S("g", {}, inner);
+  const sep = S("line", { stroke: COL.hair, "stroke-width": 1 }, content);
+  const chips = STAGES.map((name) => {
+    const g = S("g", {}, content);
+    const box = S("rect", { fill: "none", stroke: COL.hairS, "stroke-width": 1 }, g);
+    const ring = S("circle", { r: 10, "stroke-width": 1.5 }, g);
+    const tick = S("path", { fill: "none", stroke: COL.ground, "stroke-width": 2.25, "stroke-linecap": "square", "stroke-linejoin": "miter", pathLength: 1, "stroke-dasharray": "1 1" }, g);
+    const label = T(g, 0, 0, "t-chip", name, COL.muted);
+    return { g, box, ring, tick, label };
+  });
+  const badgeG = S("g", {}, content);
+  const badgeBox = S("rect", { fill: "none", stroke: COL.accent, "stroke-width": 1.25 }, badgeG);
+  const badgeIcon = S("g", { fill: "none", stroke: COL.accent, "stroke-width": 1.5 }, badgeG);
+  S("circle", { cx: 4, cy: 4, r: 3.25 }, badgeIcon);
+  S("circle", { cx: 4, cy: 20, r: 3.25 }, badgeIcon);
+  S("line", { x1: 4, y1: 7.25, x2: 4, y2: 16.75 }, badgeIcon);
+  S("circle", { cx: 18, cy: 20, r: 3.25 }, badgeIcon);
+  S("path", { d: "M18 16.75 V9 Q18 4 13 4 H9" }, badgeIcon);
+  S("path", { d: "M11.5 1 L8.5 4 L11.5 7", "stroke-linejoin": "miter" }, badgeIcon);
+  const badgeText = T(badgeG, 0, 0, "t-badge", BADGE, COL.accent);
+  const meta = T(content, 0, 0, "t-meta", META, COL.ink2);
+
+  let M = {};   // measured sizes
+
+  function measure() {
+    const c = document.createElement("canvas").getContext("2d");
+    const cap = (w, size) => { c.font = `${w} ${size}px Archivo`; return c.measureText("HEN").actualBoundingBoxAscent; };
+    M.capChip = cap(600, 28); M.capBadge = cap(600, 26); M.capMeta = cap(400, 28);
+    M.t1w = t1.getComputedTextLength();
+    M.kickw = kick.getComputedTextLength();
+    CARD.w = Math.ceil(Math.max(M.t1w * S_CARD, M.kickw) + 2 * CPAD + 24);
+    M.badgeTextW = badgeText.getComputedTextLength();
+    M.badgeW = 18 + 22 + 12 + M.badgeTextW + 18;
+    M.badgeH = 46;
+    // chips: equal widths across the window's inner width
+    const innerW = WIN.w - 2 * WPAD, gap = 14;
+    M.chipW = (innerW - gap * (STAGES.length - 1)) / STAGES.length;
+    M.chipGap = gap;
+    M.chipLabelW = chips.map((ch) => ch.label.getComputedTextLength());
+    // ghost at the card's rest position
+    ghostRect.setAttribute("x", CARD.x + 0.75); ghostRect.setAttribute("y", CARD.y + 0.75);
+    ghostRect.setAttribute("width", CARD.w - 1.5); ghostRect.setAttribute("height", CARD.h - 1.5);
+    ghostTail.setAttribute("d", tailPath(CARD.x, CARD.y + CARD.h, false));
+    // static positions inside the content group (relative to the shell's top-left)
+    sep.setAttribute("x1", WPAD); sep.setAttribute("x2", WIN.w - WPAD);
+    sep.setAttribute("y1", SEP_Y); sep.setAttribute("y2", SEP_Y);
+    sep.setAttribute("pathLength", 1); sep.setAttribute("stroke-dasharray", "1 1");
+    chips.forEach((ch, i) => {
+      const x = WPAD + i * (M.chipW + gap), y = CHIP_Y;
+      ch.box.setAttribute("x", x + 0.5); ch.box.setAttribute("y", y + 0.5);
+      ch.box.setAttribute("width", M.chipW - 1); ch.box.setAttribute("height", CHIP_H - 1);
+      const rx = x + 16 + 10, ry = y + CHIP_H / 2;
+      ch.ring.setAttribute("cx", rx); ch.ring.setAttribute("cy", ry);
+      ch.tick.setAttribute("d", `M${rx - 4.5} ${ry + 0.5} L${rx - 1.25} ${ry + 3.75} L${rx + 5} ${ry - 3.75}`);
+      ch.label.setAttribute("x", x + 16 + 20 + 10); ch.label.setAttribute("y", ry + M.capChip / 2);
+      ch.x = x; ch.y = y;
+    });
+    const by = META_Y - M.badgeH / 2;
+    badgeBox.setAttribute("x", WPAD + 0.625); badgeBox.setAttribute("y", by + 0.625);
+    badgeBox.setAttribute("width", M.badgeW - 1.25); badgeBox.setAttribute("height", M.badgeH - 1.25);
+    badgeIcon.setAttribute("transform", `translate(${WPAD + 18} ${META_Y - 12})`);
+    badgeText.setAttribute("x", WPAD + 18 + 22 + 12); badgeText.setAttribute("y", META_Y + M.capBadge / 2);
+    meta.setAttribute("x", WPAD + M.badgeW + 20); meta.setAttribute("y", META_Y + M.capMeta / 2);
+  }
+
+  function tailPath(x, yb, withBase) {
+    // a small speech tail under the card's bottom-left
+    const a = x + 30, b = x + 54, y0 = yb - 0.75;
+    return withBase ? `M${a} ${y0 - 1} L${a} ${y0 + TAIL} L${b} ${y0 - 1} Z` : `M${a} ${y0} L${a} ${y0 + TAIL} L${b} ${y0}`;
+  }
+
+  // ---- timeline (seconds) ----
+  const GROW = [0.3, 1.2];       // shell grows, expo ease-out
+  const TRAVEL = [0.34, 1.2];    // shared title travels
+  const FOLD = [6.8, 0.8];       // shell folds back, ease-in-out
+  const STAGE0 = 1.5, STEP = 0.5;
+  const CONTENT_IN = 1.08;
+  const OPEN_AT = STAGE0 + STEP * STAGES.length;    // 4.0: the App opens the draft pull request
+  const OUT = [6.6, 0.36];       // contents fade back to waiting grey and out
+
+  function shellProgress(t) {
+    if (t < FOLD[0]) return EXPO(seg(t, GROW[0], GROW[1]));
+    return 1 - INOUT(seg(t, FOLD[0], FOLD[1]));
+  }
+  function titleProgress(t) {
+    if (t < FOLD[0]) return EXPO(seg(t, TRAVEL[0], TRAVEL[1]));
+    return 1 - INOUT(seg(t, FOLD[0] + 0.02, FOLD[1] - 0.02));
+  }
+  // text that fades in place from strong hairline grey to its colour
+  function fadeIn(t, start, finalColor) {
+    return { a: seg(t, start, 0.1), c: mix(COL.hairS, finalColor, seg(t, start, 0.3)) };
+  }
+
+  let shellRect = { x: 0, y: 0, w: 0, h: 0 };
+
+  function draw(t) {
+    t = ((t % LOOP) + LOOP) % LOOP;
+    const p = shellProgress(t), q = titleProgress(t);
+    const x = lerp(CARD.x, WIN.x, p), y = lerp(CARD.y, WIN.y, p);
+    const w = lerp(CARD.w, WIN.w, p), h = lerp(CARD.h, WIN.h, p);
+    shellRect = { x, y, w, h };
+    shell.setAttribute("x", f3(x + 0.75)); shell.setAttribute("y", f3(y + 0.75));
+    shell.setAttribute("width", f3(w - 1.5)); shell.setAttribute("height", f3(h - 1.5));
+    clipRect.setAttribute("x", f3(x + 1.5)); clipRect.setAttribute("y", f3(y + 1.5));
+    clipRect.setAttribute("width", f3(Math.max(0, w - 3))); clipRect.setAttribute("height", f3(Math.max(0, h - 3)));
+
+    // the tail belongs to the card: gone in the first fifth of the move, back at the end of the fold
+    const tailA = t < FOLD[0] ? 1 - seg(t, GROW[0], 0.22) : seg(t, FOLD[0] + FOLD[1] - 0.25, 0.25);
+    tailFill.setAttribute("d", tailPath(x, y + h, true));
+    tailLine.setAttribute("d", tailPath(x, y + h, false));
+    tailFill.setAttribute("opacity", f3(tailA)); tailLine.setAttribute("opacity", f3(tailA));
+
+    // guides: drawn while the shell lifts off, kept through the hold, cleared on the fold
+    const gA = t < FOLD[0] ? seg(t, GROW[0] + 0.1, 0.4) : 1 - seg(t, FOLD[0], 0.4);
+    const ends = [[CARD.x, CARD.y, x, y + h], [CARD.x + CARD.w, CARD.y, x + w, y + h]];
+    guides.forEach((g, i) => {
+      const [x1, y1, x2, y2] = ends[i];
+      g.setAttribute("x1", f3(x1)); g.setAttribute("y1", f3(y1)); g.setAttribute("x2", f3(x2)); g.setAttribute("y2", f3(y2));
+      g.setAttribute("opacity", f3(y2 < y1 - 2 ? gA : 0));
+    });
+
+    // shared elements: kicker and title, anchored to the shell's top-left
+    const pad = lerp(CPAD, WPAD, q);
+    kick.setAttribute("x", f3(x + pad)); kick.setAttribute("y", f3(y + lerp(KICK_Y[0], KICK_Y[1], q)));
+    const sc = lerp(S_CARD, 1, q);
+    titleG.setAttribute("transform", `translate(${f3(x + pad)} ${f3(y + lerp(TITLE_Y[0], TITLE_Y[1], q))}) scale(${sc.toFixed(5)})`);
+
+    // window contents
+    content.setAttribute("transform", `translate(${f3(x)} ${f3(y)})`);
+    const out = seg(t, OUT[0], OUT[1]);
+    const outA = 1 - seg(t, OUT[0] + 0.2, OUT[1] - 0.2);
+    const greyOut = (c) => mix(c, COL.hairS, out);
+    // separator draws from its left end
+    const sd = seg(t, CONTENT_IN, 0.4);
+    sep.setAttribute("stroke-dashoffset", f3(1 - EXPO(sd)));
+    sep.setAttribute("opacity", f3(t >= OUT[0] ? outA : sd > 0 ? 1 : 0));
+
+    chips.forEach((ch, i) => {
+      const fi = fadeIn(t, CONTENT_IN + 0.1 + i * 0.09, COL.muted);
+      const s0 = STAGE0 + i * STEP;
+      const live = seg(t, s0, 0.12);                // grey to accent while it runs
+      const done = seg(t, s0 + 0.3, 0.2);           // accent holds, then settles to ink as the tick draws
+      const reset = t >= OUT[0];
+      let ringFill = COL.raised, ringStroke = COL.hairS, labelC = fi.c, tickDraw = 0, boxC = COL.hairS;
+      if (!reset && t >= s0) {
+        ringFill = done > 0 ? mix(COL.accent, COL.ink, done) : mix(COL.raised, COL.accent, live);
+        ringStroke = done > 0 ? mix(COL.accent, COL.ink, done) : mix(COL.hairS, COL.accent, live);
+        labelC = mix(COL.muted, COL.ink, live);
+        tickDraw = EXPO(done);
+        boxC = mix(COL.hairS, COL.ink, done);
+      }
+      if (reset) {
+        ringFill = mix(COL.ink, COL.raised, out); ringStroke = mix(COL.ink, COL.hairS, out);
+        labelC = greyOut(COL.ink); tickDraw = 1 - out; boxC = greyOut(COL.ink);
+      }
+      ch.ring.setAttribute("fill", ringFill); ch.ring.setAttribute("stroke", ringStroke);
+      ch.tick.setAttribute("stroke-dashoffset", f3(1 - tickDraw));
+      ch.tick.setAttribute("opacity", tickDraw > 0.001 ? 1 : 0);
+      ch.label.setAttribute("fill", labelC);
+      ch.box.setAttribute("stroke", boxC);
+      const a = reset ? outA : fi.a;
+      ch.g.setAttribute("opacity", f3(a));
+    });
+
+    // the pull request opens last: the badge (the one accent in the finished frame) and its line
+    const bi = fadeIn(t, OPEN_AT, COL.accent);
+    const mi = fadeIn(t, OPEN_AT + 0.09, COL.ink2);
+    const reset = t >= OUT[0];
+    badgeG.setAttribute("opacity", f3(reset ? outA : bi.a));
+    const bc = reset ? greyOut(COL.accent) : bi.c;
+    badgeBox.setAttribute("stroke", bc); badgeIcon.setAttribute("stroke", bc); badgeText.setAttribute("fill", bc);
+    meta.setAttribute("opacity", f3(reset ? outA : mi.a));
+    meta.setAttribute("fill", reset ? greyOut(COL.ink2) : mi.c);
+  }
+
+  // ---- checks the capture script calls ----
+  window.__fit = (t) => {
+    window.seek(t);
+    const bad = [];
+    const r = shellRect;
+    const inside = (b, name, m) => {
+      if (b.x < r.x + m || b.y < r.y + m || b.x + b.width > r.x + r.w - m || b.y + b.height > r.y + r.h - m) bad.push(`${name} within ${m} px of the shell edge`);
+    };
+    const vis = (el) => +(el.getAttribute("opacity") ?? 1) > 0.001;
+    inside(kick.getBBox(), "kicker", 16);
+    const tb = titleG.getBBox(), sc = titleG.transform.baseVal.consolidate().matrix;
+    inside({ x: sc.e + tb.x * sc.a, y: sc.f + tb.y * sc.d, width: tb.width * sc.a, height: tb.height * sc.d }, "title", 16);
+    // contents only count while visible; they are measured against their own boxes
+    chips.forEach((ch, i) => {
+      if (!vis(ch.g)) return;
+      const lb = ch.label.getBBox();
+      if (lb.x + lb.width > ch.x + M.chipW - 16) bad.push(`chip ${STAGES[i]} label within 16 px of its right edge`);
+      if (lb.y < ch.y + 8 || lb.y + lb.height > ch.y + CHIP_H - 8) bad.push(`chip ${STAGES[i]} label near its top or bottom edge`);
+      const tr = content.transform.baseVal.consolidate().matrix;
+      inside({ x: tr.e + ch.x, y: tr.f + ch.y, width: M.chipW, height: CHIP_H }, `chip ${STAGES[i]} box`, 16);
+    });
+    if (vis(badgeG)) {
+      const tr = content.transform.baseVal.consolidate().matrix;
+      const mb = meta.getBBox();
+      inside({ x: tr.e + mb.x, y: tr.f + mb.y, width: mb.width, height: mb.height }, "meta line", 16);
+      const bb = badgeText.getBBox();
+      if (bb.x + bb.width > WPAD + M.badgeW - 16) bad.push("badge text near its edge");
+    }
+    // one accent element per frame: anything red-dominant counts, mid-fade tints included
+    const isAccent = (c) => { if (!c || c[0] !== "#") return false; const [rr, gg] = hex(c); return rr - gg > 60; };
+    let accents = 0;
+    chips.forEach((ch) => { if (vis(ch.g) && (isAccent(ch.ring.getAttribute("fill")) || isAccent(ch.ring.getAttribute("stroke")))) accents++; });
+    if (vis(badgeG) && isAccent(badgeText.getAttribute("fill"))) accents++;
+    if (accents > 1) bad.push(`${accents} accent elements`);
+    return bad;
+  };
+
+  window.seek = (s) => { draw(s); };
+  window.__loop = LOOP;
+  function fit() {
+    const st = document.getElementById("stage");
+    st.style.transform = `translate(-50%, -50%) scale(${RENDER ? 1 : Math.min(innerWidth / 1200, innerHeight / 750)})`;
+  }
+  addEventListener("resize", fit);
+  fit();
+  window.__ready = document.fonts.load("640 40px Archivo").then(() => document.fonts.ready).then(() => {
+    measure();
+    draw(0);
+    if (!RENDER) {
+      const t0 = performance.now();
+      const tick = (now) => { draw(((now - t0) / 1000) % LOOP); requestAnimationFrame(tick); };
+      requestAnimationFrame(tick);
+    }
+    return true;
+  });
+})();
+</script>
+</body>
+</html>

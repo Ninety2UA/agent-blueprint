@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Routes tabs portrait</title>
+<style>
+@font-face {
+  font-family: "Archivo";
+  src: url("../../../src/assets/fonts/Archivo-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: block;
+}
+/* Every value from r2/MOTION.md, section 1 (colours) and section 2 (type). Portrait cut: 720 x 900. */
+html, body { margin: 0; height: 100%; background: #fafafa; overflow: hidden; }
+#fit { position: absolute; inset: 0; overflow: hidden; }
+#stage { width: 720px; height: 900px; position: absolute; left: 50%; top: 50%; background: #fafafa; transform-origin: center center; transform: translate(-50%, -50%); }
+svg { display: block; }
+text { font-family: "Archivo", sans-serif; font-kerning: normal; }
+.t-tab { font-size: 34px; font-weight: 640; font-stretch: 112%; }
+.t-lead { font-size: 40px; font-weight: 640; font-stretch: 112%; }
+.t-row { font-size: 32px; font-weight: 420; font-stretch: 100%; }
+.t-foot { font-size: 26px; font-weight: 400; font-stretch: 112%; }
+</style>
+</head>
+<body>
+<div id="fit"><div id="stage"><svg id="s" width="720" height="900" viewBox="0 0 720 900" aria-label="Agent Blueprint runs on Vercel, Railway or your own server"></svg></div></div>
+<script>
+(() => {
+  "use strict";
+  const W = 720, H = 900, LOOP = 12;
+  const RENDER = new URLSearchParams(location.search).has("render");
+  const NS = "http://www.w3.org/2000/svg";
+  const COL = { ground: "#fafafa", raised: "#ffffff", ink: "#0f0f0f", ink2: "#383838", muted: "#555555", hairS: "#b1b1b1", hair: "#d4d4d4", accent: "#ed4423" };
+
+  // ---- the words (same as the landscape cut; "web chat" is kept on one line) ----
+  const TABS = [
+    { name: "Vercel", rows: [["", "Runs on your Vercel account"], ["Sandbox: ", "Vercel Sandbox"], ["", "Reach it from web chat, Slack, Linear, Telegram or MCP"]] },
+    { name: "Railway", rows: [["", "Runs on Railway"], ["Sandbox: ", "Daytona"], ["", "Reach it from Slack, Linear, Telegram or MCP"]] },
+    { name: "Your server", rows: [["", "Runs on a server you run"], ["Sandbox: ", "Docker or Daytona"], ["", "Reach it from Slack, Linear, Telegram or MCP"]] },
+  ];
+  const FOOT = "Models through Vercel's AI Gateway";
+
+  // ---- easing (MOTION.md answers) ----
+  function bezier(x1, y1, x2, y2) {
+    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    const sx = (u) => ((ax * u + bx) * u + cx) * u;
+    const sy = (u) => ((ay * u + by) * u + cy) * u;
+    const dx = (u) => (3 * ax * u + 2 * bx) * u + cx;
+    return (x) => {
+      if (x <= 0) return 0;
+      if (x >= 1) return 1;
+      let u = x;
+      for (let i = 0; i < 8; i++) { const e = sx(u) - x; const d = dx(u); if (Math.abs(e) < 1e-7 || Math.abs(d) < 1e-6) break; u -= e / d; }
+      let lo = 0, hi = 1;
+      for (let i = 0; i < 30 && Math.abs(sx(u) - x) > 1e-7; i++) { if (sx(u) < x) lo = u; else hi = u; u = (lo + hi) / 2; }
+      return sy(u);
+    };
+  }
+  const EXPO = bezier(0.16, 1, 0.3, 1);
+  const W_SPRING = 7.2;
+  const S_END = 1 - (1 + W_SPRING) * Math.exp(-W_SPRING);
+  const SETTLE = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : (1 - (1 + W_SPRING * x) * Math.exp(-W_SPRING * x)) / S_END);
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const seg = (t, a, d) => clamp((t - a) / d);
+  function hex(c) { return [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)); }
+  function mix(a, b, t) { const A = hex(a), B = hex(b); return "#" + A.map((v, i) => Math.round(lerp(v, B[i], clamp(t))).toString(16).padStart(2, "0")).join(""); }
+
+  const svg = document.getElementById("s");
+  function S(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs || {}) if (attrs[k] != null) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; }
+
+  // ---- layout (720 x 900); vertical positions are set in layout() once text is measured ----
+  const TX = 40, TW = 640, CELL_H = 74, INX = 6, INY = 5;
+  let TY = 40;
+  const pillT = (i) => TY + i * CELL_H + INY;
+  const pillB = (i) => TY + (i + 1) * CELL_H - INY;
+  const LABEL_X = TX + 34;
+  const PX = 40, PW = 640;
+  let PY = 0, PHT = 0;
+  const GX = PX + 36, TXT = PX + 64, WRAP = PX + PW - 32 - TXT;   // text column 544 px wide, 32 px clear of the edge
+  const PADV = 34, LH = [48, 40, 40], CLS = ["t-lead", "t-row", "t-row"];
+  let BANDS = [], FOOT_DIV = 0, FOOT_C = 0;
+  let caps = {};
+
+  const track = S("rect", { fill: COL.raised, stroke: COL.hairS, "stroke-width": 1 });
+  const panel = S("rect", { fill: COL.raised, stroke: COL.ink, "stroke-width": 1.5 });
+  const timer = S("line", { stroke: COL.accent, "stroke-width": 3 });
+  const speed = [S("line", { stroke: COL.hairS, "stroke-width": 1.25 }), S("line", { stroke: COL.hairS, "stroke-width": 1.25 })];
+  const pill = S("rect", { x: TX + INX, width: TW - 2 * INX, fill: COL.ink });
+  const defs = S("defs", {});
+  const clip = S("clipPath", { id: "pillclip" }, defs);
+  const clipRect = S("rect", { x: TX + INX, width: TW - 2 * INX }, clip);
+  const labelsBase = S("g", {});
+  const labelsOn = S("g", { "clip-path": "url(#pillclip)" });
+  const tabText = TABS.map((tab) => {
+    const a = S("text", { x: LABEL_X, class: "t-tab", fill: COL.muted }, labelsBase); a.textContent = tab.name;
+    const b = S("text", { x: LABEL_X, class: "t-tab", fill: COL.ground }, labelsOn); b.textContent = tab.name;
+    return [a, b];
+  });
+
+  // rows: glyph, divider, two text slots (outgoing, incoming), each slot holds up to two lines
+  const rowG = [0, 1, 2].map((i) => {
+    const g = S("g", {});
+    const armH = S("line", { stroke: COL.hairS, "stroke-width": 1 }, g);
+    const armV = S("line", { stroke: COL.hairS, "stroke-width": 1 }, g);
+    const ring = S("circle", { r: 8, fill: COL.raised, stroke: COL.ink, "stroke-width": 1.5 }, g);
+    const div = i < 2 ? S("line", { stroke: COL.hair, "stroke-width": 1 }, g) : null;
+    const slot = () => { const e = S("text", { class: CLS[i] }, g); return { e, lines: [] }; };
+    return { g, armH, armV, ring, div, out: slot(), inn: slot(), i };
+  });
+  const footDiv = S("line", { stroke: COL.hair, "stroke-width": 1 });
+  const foot = S("text", { class: "t-foot", fill: COL.muted }); foot.textContent = FOOT;
+
+  // ---- measuring and wrapping ----
+  const meas = S("text", { x: -5000, y: -5000 });
+  function width(cls, str) { meas.setAttribute("class", cls); meas.textContent = str; return meas.getComputedTextLength(); }
+  // balanced wrap into at most two lines: the break that keeps the longer line shortest
+  function wrap(cls, str) {
+    if (width(cls, str) <= WRAP) return [str];
+    const words = str.split(" ");
+    let best = null;
+    for (let k = 1; k < words.length; k++) {
+      const a = words.slice(0, k).join(" "), b = words.slice(k).join(" ");
+      const m = Math.max(width(cls, a), width(cls, b));
+      if (m <= WRAP && (!best || m < best.m)) best = { m, lines: [a, b] };
+    }
+    if (!best) throw new Error("text does not fit in two lines: " + str);
+    return best.lines;
+  }
+  // each tab's rows as lines of [prefix, text] pairs; the prefix only ever sits on the first line
+  let ROWS = [];
+
+  function measureCaps() {
+    const c = document.createElement("canvas").getContext("2d");
+    const m = (w, size) => { c.font = `${w} ${size}px Archivo`; return c.measureText("HEN").actualBoundingBoxAscent; };
+    caps = { tab: m(640, 34), lead: m(640, 40), row: m(420, 32), foot: m(400, 26) };
+  }
+
+  function layout() {
+    ROWS = TABS.map((tab) => tab.rows.map(([pre, txt], i) => {
+      if (pre) { if (width(CLS[i], pre + txt) > WRAP) throw new Error("prefixed row too wide"); return [[pre, txt]]; }
+      return wrap(CLS[i], txt).map((l) => ["", l]);
+    }));
+    const maxLines = [0, 1, 2].map((i) => Math.max(...ROWS.map((r) => r[i].length)));
+    const bandH = maxLines.map((n, i) => (n - 1) * LH[i] + (i === 0 ? caps.lead : caps.row) + 2 * PADV + 8);
+    const footH = caps.foot + 2 * 30;
+    PHT = 12 + bandH.reduce((a, b) => a + b, 0) + footH + 8;
+    const total = 3 * CELL_H + 32 + PHT;
+    TY = Math.round((H - total) / 2);
+    PY = TY + 3 * CELL_H + 32;
+    let y = PY + 12;
+    BANDS = bandH.map((h) => { const b = [y, y + h]; y += h; return b; });
+    FOOT_DIV = y + 8; FOOT_C = FOOT_DIV + footH / 2;
+
+    track.setAttribute("x", TX + 0.5); track.setAttribute("y", TY + 0.5);
+    track.setAttribute("width", TW - 1); track.setAttribute("height", 3 * CELL_H - 1);
+    panel.setAttribute("x", PX + 0.75); panel.setAttribute("y", PY + 0.75);
+    panel.setAttribute("width", PW - 1.5); panel.setAttribute("height", PHT - 1.5);
+    tabText.forEach(([a, b], i) => { const yb = TY + (i + 0.5) * CELL_H + caps.tab / 2; a.setAttribute("y", yb); b.setAttribute("y", yb); });
+    rowG.forEach((r, i) => {
+      const [y0, y1] = BANDS[i], cy = (y0 + y1) / 2;
+      r.cy = cy;
+      r.armH.setAttribute("x1", GX - 13); r.armH.setAttribute("x2", GX + 13); r.armH.setAttribute("y1", cy); r.armH.setAttribute("y2", cy);
+      r.armV.setAttribute("x1", GX); r.armV.setAttribute("x2", GX); r.armV.setAttribute("y1", cy - 13); r.armV.setAttribute("y2", cy + 13);
+      r.ring.setAttribute("cx", GX); r.ring.setAttribute("cy", cy);
+      if (r.div) { r.div.setAttribute("x1", GX - 20); r.div.setAttribute("x2", PX + PW - 36); r.div.setAttribute("y1", y1); r.div.setAttribute("y2", y1); }
+    });
+    footDiv.setAttribute("x1", GX - 20); footDiv.setAttribute("x2", PX + PW - 36); footDiv.setAttribute("y1", FOOT_DIV); footDiv.setAttribute("y2", FOOT_DIV);
+    foot.setAttribute("x", GX - 20); foot.setAttribute("y", FOOT_C + caps.foot / 2);
+  }
+
+  // fill one slot with a tab's row: lines centred as a block on the band's middle
+  function setSlot(slot, i, lines, color, prefixColor, alpha) {
+    const key = lines.map((l) => l.join("")).join("|");
+    if (slot.key !== key) {
+      while (slot.e.firstChild) slot.e.removeChild(slot.e.firstChild);
+      const cap = i === 0 ? caps.lead : caps.row;
+      const blockH = (lines.length - 1) * LH[i] + cap;
+      const y0 = rowG[i].cy - blockH / 2 + cap;
+      slot.spans = [];
+      lines.forEach(([pre, txt], k) => {
+        // the first span that holds characters carries the line's position
+        const pos = { x: TXT, y: y0 + k * LH[i] };
+        const a = pre ? S("tspan", pos, slot.e) : null;
+        if (a) a.textContent = pre;
+        const b = S("tspan", pre ? {} : pos, slot.e); b.textContent = txt;
+        slot.spans.push([a, b]);
+      });
+      slot.key = key;
+    }
+    slot.spans.forEach(([a, b]) => { if (a) a.setAttribute("fill", prefixColor); b.setAttribute("fill", color); });
+    slot.e.setAttribute("opacity", alpha.toFixed(4));
+  }
+
+  // ---- the clock (same as the landscape cut) ----
+  const ORDER = [0, 1, 2, 0];
+  const MOVES = [0.6, 4.6, 8.6];
+  const MOVE_LEN = 1.6;
+  function phase(t) {
+    t = ((t % LOOP) + LOOP) % LOOP;
+    let k = 2, u = t + LOOP - MOVES[2];
+    if (t >= MOVES[0]) { k = t >= MOVES[2] ? 2 : t >= MOVES[1] ? 1 : 0; u = t - MOVES[k]; }
+    const nextStart = k === 2 ? MOVES[0] + LOOP : MOVES[k + 1];
+    return { k, u, from: ORDER[k], to: ORDER[k + 1], holdLen: nextStart - MOVES[k] - MOVE_LEN };
+  }
+  function edges(from, to, u) {
+    const steps = Math.abs(to - from), dir = Math.sign(to - from);
+    const dLead = steps === 1 ? 0.78 : 0.95, lag = 0.12, dTrail = steps === 1 ? 0.92 : 1.1;
+    const eLead = EXPO(seg(u, 0, dLead));
+    const eTrail = SETTLE(seg(u, lag, dTrail));
+    const tA = pillT(from), bA = pillB(from), tB = pillT(to), bB = pillB(to);
+    if (dir > 0) return { T: lerp(tA, tB, eTrail), B: lerp(bA, bB, eLead), dir };
+    return { T: lerp(tA, tB, eLead), B: lerp(bA, bB, eTrail), dir };
+  }
+
+  function draw(t) {
+    const p = phase(t);
+    const { from, to, u } = p;
+    const e = edges(from, to, u);
+    pill.setAttribute("y", e.T.toFixed(3)); pill.setAttribute("height", Math.max(0, e.B - e.T).toFixed(3));
+    clipRect.setAttribute("y", e.T.toFixed(3)); clipRect.setAttribute("height", Math.max(0, e.B - e.T).toFixed(3));
+
+    // speed lines trail the trailing edge, at the pill's far left and far right, clear of the labels
+    const prev = edges(from, to, u - 1 / 60);
+    const trailNow = e.dir > 0 ? e.T : e.B, trailPrev = e.dir > 0 ? prev.T : prev.B;
+    const v = Math.abs(trailNow - trailPrev) * 60;
+    const len = Math.min(110, v * 0.09), op = clamp(v / 900);
+    [[TX + INX + 14, 1], [TX + TW - INX - 14, 0.62]].forEach(([x, f], i) => {
+      const y0 = trailNow - e.dir * 8, y1 = y0 - e.dir * len * f;
+      const l = speed[i];
+      l.setAttribute("x1", x); l.setAttribute("x2", x);
+      l.setAttribute("y1", y0.toFixed(2)); l.setAttribute("y2", y1.toFixed(2));
+      l.setAttribute("opacity", (len * f > 4 && u < MOVE_LEN ? op : 0).toFixed(3));
+    });
+
+    // timer: as in the landscape cut, a line under the active tab (in the gap below its pill) that fills left to right through the hold
+    const L0 = TX + INX, R0 = TX + TW - INX;
+    if (u < MOVE_LEN) {
+      const q = EXPO(seg(u, 0, 0.32));
+      const y = pillB(from) + 2.5;
+      timer.setAttribute("y1", y); timer.setAttribute("y2", y);
+      timer.setAttribute("x1", lerp(L0, R0, q).toFixed(2)); timer.setAttribute("x2", R0);
+      timer.setAttribute("opacity", q >= 1 ? 0 : 1);
+    } else {
+      const f = clamp((u - MOVE_LEN) / p.holdLen);
+      const y = pillB(to) + 2.5;
+      timer.setAttribute("y1", y); timer.setAttribute("y2", y);
+      timer.setAttribute("x1", L0); timer.setAttribute("x2", lerp(L0, R0, f).toFixed(2));
+      timer.setAttribute("opacity", f > 0 ? 1 : 0);
+    }
+
+    rowG.forEach((r, i) => {
+      const outA = 0.22 + i * 0.09, inA = 0.52 + i * 0.09;
+      const o1 = seg(u, outA, 0.2), o2 = seg(u, outA + 0.16, 0.12);
+      const n1 = seg(u, inA, 0.1), n2 = seg(u, inA, 0.3);
+      const inkC = i === 0 ? COL.ink : COL.ink2;
+      setSlot(r.out, i, ROWS[from][i], mix(inkC, COL.hairS, o1), mix(COL.muted, COL.hairS, o1), 1 - o2);
+      setSlot(r.inn, i, ROWS[to][i], mix(COL.hairS, inkC, n2), mix(COL.hairS, COL.muted, n2), n1);
+      r.ring.setAttribute("stroke", n1 > 0 ? mix(COL.hairS, COL.ink, n2) : mix(COL.ink, COL.hairS, o1));
+    });
+  }
+
+  // fit report: every text's ink box against its container, at least 16 px clear
+  window.__fit = (t) => {
+    window.seek(t);
+    const bad = [];
+    tabText.forEach(([a], i) => {
+      const b = a.getBBox();
+      if (b.x < TX + INX + 16 || b.x + b.width > TX + TW - INX - 16) bad.push(`tab ${i} label within 16 px of its pill`);
+      if (b.y < TY + i * CELL_H + INY || b.y + b.height > TY + (i + 1) * CELL_H - INY) bad.push(`tab ${i} label outside its pill height`);
+    });
+    rowG.forEach((r, i) => {
+      [r.out, r.inn].forEach((s) => {
+        if (+s.e.getAttribute("opacity") <= 0) return;
+        const b = s.e.getBBox();
+        if (b.x + b.width > PX + PW - 16) bad.push(`row ${i} text within 16 px of the panel edge`);
+        const [y0, y1] = BANDS[i];
+        if (b.y < y0 + 16 || b.y + b.height > y1 - 16) bad.push(`row ${i} text within 16 px of its divider (${Math.round(b.y)}..${Math.round(b.y + b.height)} in ${Math.round(y0)}..${Math.round(y1)})`);
+      });
+    });
+    const fb = foot.getBBox();
+    if (fb.y < FOOT_DIV + 16 || fb.y + fb.height > PY + PHT - 16 || fb.x + fb.width > PX + PW - 16) bad.push("footer near an edge");
+    if (TY < 16 || PY + PHT > H - 16) bad.push("layout outside the frame");
+    return bad;
+  };
+
+  window.seek = (s) => { draw(s); };
+  window.__loop = LOOP;
+  function fit() {
+    const st = document.getElementById("stage");
+    st.style.transform = `translate(-50%, -50%) scale(${RENDER ? 1 : Math.min(innerWidth / W, innerHeight / H)})`;
+  }
+  addEventListener("resize", fit);
+  fit();
+  window.__ready = document.fonts.load("640 34px Archivo").then(() => document.fonts.ready).then(() => {
+    measureCaps();
+    layout();
+    draw(0);
+    if (!RENDER) {
+      const t0 = performance.now();
+      const tick = (now) => { draw(((now - t0) / 1000) % LOOP); requestAnimationFrame(tick); };
+      requestAnimationFrame(tick);
+    }
+    return true;
+  });
+})();
+</script>
+</body>
+</html>

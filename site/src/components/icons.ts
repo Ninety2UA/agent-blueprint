@@ -14,4 +14,6 @@ export const IC = {
   // contrast glyph: a square printed positive or negative
   theme: '<svg class="theme-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.75" y="4.75" width="14.5" height="14.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path class="half" d="M4.75 4.75H12V19.25H4.75Z"/></svg>',
   play: '<svg class="ic-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>',
+  // Tabler's volume and volume-3 in one glyph: media.css shows the waves or the cross by aria-pressed
+  sound: '<svg class="ic-sound" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2l3.5-4.5A.8.8 0 0 1 11 5v14a.8.8 0 0 1-1.5.5z"/><path class="snd-on" d="M15 8a5 5 0 0 1 0 8M17.7 5a9 9 0 0 1 0 14"/><path class="snd-off" d="M16 10l4 4m0-4l-4 4"/></svg>',
 } as const;

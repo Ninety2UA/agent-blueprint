@@ -1,0 +1,61 @@
+{
+  "name": "agent-blueprint-eve",
+  "version": "4.2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "imports": {
+    "#*": "./agent/*",
+    "#evals/*": "./evals/*"
+  },
+  "scripts": {
+    "dev": "eve dev",
+    "dev:web": "next dev apps/web",
+    "build": "node scripts/check-skill-count.mjs && eve build",
+    "start": "eve start",
+    "build:web": "next build apps/web",
+    "eval": "eve eval",
+    "deploy": "node scripts/check-skill-count.mjs && eve deploy",
+    "typecheck": "tsc",
+    "test": "node --test tests/*.test.ts apps/web/test/*.test.ts"
+  },
+  "dependencies": {
+    "@daytona/sdk": "0.226.1",
+    "@shikijs/core": "4.3.1",
+    "@shikijs/engine-javascript": "4.3.1",
+    "@shikijs/engine-oniguruma": "4.3.1",
+    "@streamdown/cjk": "1.0.3",
+    "@streamdown/code": "1.1.1",
+    "@streamdown/math": "1.0.2",
+    "@streamdown/mermaid": "1.0.2",
+    "@tailwindcss/postcss": "4.3.3",
+    "@vercel/blob": "2.8.2",
+    "@vercel/sandbox": "3.9.0",
+    "@workflow/world": "5.0.5",
+    "@workflow/world-postgres": "5.0.5",
+    "ai": "7.0.156",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "cmdk": "1.1.1",
+    "eve": "0.86.0",
+    "lucide-react": "1.33.0",
+    "next": "16.3.8",
+    "radix-ui": "1.6.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "shiki": "4.3.1",
+    "streamdown": "2.5.0",
+    "tailwind-merge": "3.6.0",
+    "tailwindcss": "4.3.3",
+    "use-stick-to-bottom": "1.1.6",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "typescript": "7.0.2"
+  }
+}

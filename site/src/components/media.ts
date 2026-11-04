@@ -7,6 +7,8 @@ export interface VideoFacts {
   duration: number;
   width: number;
   height: number;
+  /** the moov box comes before mdat, so playback can start before the whole file arrives */
+  faststart: boolean;
 }
 
 const facts = new Map<string, VideoFacts>();
@@ -16,12 +18,13 @@ const facts = new Map<string, VideoFacts>();
 // relative to site/public, where the media live. Each file is read once per build.
 export function mp4Facts(publicPath: string): VideoFacts {
   let f = facts.get(publicPath);
-  if (!f) facts.set(publicPath, (f = readMp4Facts(publicPath)));
+  if (!f) facts.set(publicPath, (f = readMp4Facts(join(process.cwd(), 'public', publicPath))));
   return f;
 }
 
-function readMp4Facts(publicPath: string): VideoFacts {
-  const fd = openSync(join(process.cwd(), 'public', publicPath), 'r');
+/** The same facts for an MP4 at any filesystem path, read each time (the tests run from the product root). */
+export function readMp4Facts(file: string): VideoFacts {
+  const fd = openSync(file, 'r');
   try {
     const read = (pos: number, len: number) => {
       const buf = Buffer.alloc(len);
@@ -48,11 +51,13 @@ function readMp4Facts(publicPath: string): VideoFacts {
     };
     const find = (list: ReturnType<typeof boxes>, type: string) => {
       const box = list.find((b) => b.type === type);
-      if (!box) throw new Error(`${publicPath}: no ${type} box`);
+      if (!box) throw new Error(`${file}: no ${type} box`);
       return box;
     };
 
-    const moov = find(boxes(0, fstatSync(fd).size), 'moov');
+    const top = boxes(0, fstatSync(fd).size);
+    const moov = find(top, 'moov');
+    const faststart = moov.at < find(top, 'mdat').at;
     const inMoov = boxes(moov.at, moov.end);
 
     const mvhd = find(inMoov, 'mvhd');
@@ -68,9 +73,9 @@ function readMp4Facts(publicPath: string): VideoFacts {
       const wh = read(tkhd.end - 8, 8);
       const width = wh.readUInt32BE(0) >>> 16;
       const height = wh.readUInt32BE(4) >>> 16;
-      if (width && height) return { duration, width, height };
+      if (width && height) return { duration, width, height, faststart };
     }
-    throw new Error(`${publicPath}: no video track`);
+    throw new Error(`${file}: no video track`);
   } finally {
     closeSync(fd);
   }

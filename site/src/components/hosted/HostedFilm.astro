@@ -1,0 +1,61 @@
+---
+// The Hosted page's launch film (parent plan U14, BEATS.md, ruling 79), after the three steps and
+// before the demo block, whose link the film's end card points to. FilmPlayer plays it: chapters from
+// film-hosted-chapters.json and the length and frame size from film-hosted.mp4, read at build time;
+// the film is scored, so the player carries its Sound toggle and starts muted. Its poster waits for the
+// reader, as every poster below the fold does (ruling 47).
+import FilmPlayer from '../FilmPlayer.astro';
+import chapters from '../../../public/media/film-hosted-chapters.json';
+
+interface Props {
+  /** figure number, in page order */
+  num: number;
+}
+const { num } = Astro.props;
+
+// What each chapter shows, keyed by its label in film-hosted-chapters.json (BEATS.md).
+const CHAPTER_TEXT: Record<string, string> = {
+  Ask: 'You ask where you already work: the web chat, Slack, Linear, Telegram or MCP. The example run types a request into the web chat and sends it.',
+  Sandbox: 'The agent works on the request in a sandbox, with its own shell, files and git.',
+  Stages: 'The agent pushes each stage to the branch as it finishes: Plan, Execute, Review, Verify and Ship. A sandbox that stops at its limit loses no finished stage.',
+  'Pull request': 'The agent asks you first, then opens the pull request as your GitHub App. The App reaches only the repository it is installed on.',
+  Deploy: "Deploy it to your own Vercel account, Railway or server, or try the demo at try.agent-blueprint.dbenger.com. The demo opens with a code from Dominik's message.",
+};
+
+const alt = (seconds: number) =>
+  `Film, ${seconds} seconds, scored, starts muted. Agent Blueprint, hosted. You ask for a change in the web chat, Slack, Linear, Telegram or MCP. ` +
+  'In an example run, the request "Add input validation to the main function so an empty argument gives a clear error message, with a test" ' +
+  'is typed into the web chat and sent. The agent works on it in a sandbox with a shell, files and git, and pushes Plan, Execute, Review, ' +
+  'Verify and Ship to the branch as each finishes. It asks first, then opens the pull request as your GitHub App, which reaches only the ' +
+  'repository it is installed on. The film ends on Deploy and Try the demo, with the demo at try.agent-blueprint.dbenger.com.';
+
+const cells = ({ length, frame, num }: { length: string; frame: string; num: number }) => [
+  { label: 'Figure', value: String(num), class: 'ftb-fig' },
+  { label: 'Title', value: 'One request, chat to pull request', class: 'ftb-title' },
+  { label: 'Example', value: 'Add input validation to the main function (a demo request)', class: 'ftb-ex' },
+  { label: 'Length', value: length, class: 'ftb-len' },
+  { label: 'Frame', value: frame, class: 'ftb-frame' },
+  { label: 'Sound', value: 'Scored', class: 'ftb-sound' },
+];
+---
+<section class="hs-film" aria-labelledby="hs-film-h">
+  <div class="wrap">
+    <div class="hs-film-head">
+      <h2 id="hs-film-h" class="h-sec">Watch one request reach its pull request.</h2>
+      <p class="body">An example run, from the request in the web chat to the pull request your GitHub App opens. The film starts muted, and Sound turns the score on. Pick a chapter to jump to it.</p>
+    </div>
+    <FilmPlayer
+      num={num}
+      id="hosted-film"
+      src="/media/film-hosted.mp4"
+      poster="/media/film-hosted-1280.jpg"
+      chapters={chapters}
+      chapterText={CHAPTER_TEXT}
+      alt={alt}
+      cells={cells}
+      sound
+      deferPoster
+      label="the hosted film"
+    />
+  </div>
+</section>

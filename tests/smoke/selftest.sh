@@ -239,6 +239,19 @@ check "fake · hooks fails when the reused canary did not complete" [ "$(state_o
 check "the unfinished canary is named" grep -q "did not complete" <<<"$(reason_of "$J" fake hooks)"
 check "the installed copy that won over --plugin-dir is named" grep -q "wins over --plugin-dir" "$WORK/hang.log"
 
+echo "== a checkout as a catalog location: eve's ignored build folders are not counted, the rest of eve/ is"
+eve_root="$WORK/eve-checkout"
+for d in eve/.eve/compile/workspace-resources/__root__/skills/ab-ship-pipeline eve/.output/skills/ab-ship-pipeline eve/node_modules/eve/skills/ab-quick-fix; do
+    mkdir -p "$eve_root/$d"; : > "$eve_root/$d/SKILL.md"
+done
+AGENT_BLUEPRINT_FAKE_CATALOG="$eve_root" AGENT_BLUEPRINT_SMOKE_FAKE_MODE=pass \
+    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --cell discovery > "$WORK/eve-build.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/eve-build.log"; exit 1; }
+check "fake · discovery passes with skill copies under eve/.eve, eve/.output and eve/node_modules" [ "$(state_of "$J" fake discovery)" = pass ]
+mkdir -p "$eve_root/eve/agent/skills/ab-ship-pipeline"; : > "$eve_root/eve/agent/skills/ab-ship-pipeline/SKILL.md"
+AGENT_BLUEPRINT_FAKE_CATALOG="$eve_root" AGENT_BLUEPRINT_SMOKE_FAKE_MODE=pass \
+    bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --cell discovery > "$WORK/eve-agent.log" 2>&1 || { echo "run-smoke.sh failed:"; tail -20 "$WORK/eve-agent.log"; exit 1; }
+check "fake · discovery counts a copy elsewhere in eve/ twice" grep -q "counted twice: ab-ship-pipeline" <<<"$(reason_of "$J" fake discovery)"
+
 echo "== foreign hooks: a handler that acts fails the cell; one that stands down passes it"
 AGENT_BLUEPRINT_SMOKE_FAKE_MODE=fail AGENT_BLUEPRINT_FAKE_HOOKS=foreign \
     bash "$HERE/run-smoke.sh" --host fake --plugin-dir "$REPO" --out "$WORK/out" --timeout 30 --cell hooks > "$WORK/hooks.log" 2>&1 || true

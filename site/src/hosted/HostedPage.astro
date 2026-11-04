@@ -1,0 +1,29 @@
+---
+// Hosted (/hosted/): what a hosted copy needs and how to deploy it, in the approved mock's blocks and
+// words (r2/d2, ruling 17): the hero with Fig. 1, the three steps (the GitHub App, the configurator,
+// the chat run), the launch film as Fig. 5 (parent plan U14, ruling 79) and the demo, whose link the
+// film's end card points to. The page is built only when the release switch allows it
+// (src/lib/hosted-release.mjs); src/hosted/route.mjs injects it. Every name, link and command the
+// configurator shows comes from eve/README.md (components/hosted/hosted-data.mjs); the footer's counts
+// carry data-claim. No page script: the figures run on the header's video player, and the chat run and
+// the configurator bring their own.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/hosted/Hero.astro';
+import Steps from '../components/hosted/Steps.astro';
+import TryDemo from '../components/hosted/TryDemo.astro';
+import HostedFilm from '../components/hosted/HostedFilm.astro';
+import '../styles/hosted.css';
+
+const description =
+  'What a hosted copy of Agent Blueprint needs, and how to deploy it to your Vercel account, Railway or your own server.';
+// Dominik's demo (RUNBOOK.md, "Demo instance"; FACTS section 8)
+const demo = 'https://try.agent-blueprint.dbenger.com';
+---
+<BaseLayout title="Hosted · Agent Blueprint" description={description} sheet="Hosted">
+  <div class="hs" data-pagefind-body data-pagefind-filter="section:Pages">
+    <Hero demo={demo} />
+    <Steps />
+    <HostedFilm num={5} />
+    <TryDemo demo={demo} />
+  </div>
+</BaseLayout>

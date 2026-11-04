@@ -6,7 +6,7 @@ import { join } from 'node:path';
 
 import { findRepoRoot, getSiteData } from '../../lib/site.mjs';
 import { capitalize, escapeHtml, listJoin } from '../../lib/text.mjs';
-import { numberWord } from '../number-word';
+import { numberWord } from '../number-word.ts';
 
 const data = getSiteData();
 export const site = {
@@ -62,8 +62,18 @@ export const LONG = claimed([
   site.repoUrl.replace(/^https:\/\//, ''),
 ]);
 
+export interface Loop {
+  /** the file name in site/public/media, without .mp4 */
+  name: string;
+  caption: string;
+  label: string;
+  alt: string;
+  /** the portrait cut's file name (720 x 900, for phones), for a loop that has one */
+  portrait?: string;
+}
+
 // The loops, in the order the gallery shows them, with the text alternatives every page that embeds them uses.
-export const LOOPS = [
+export const LOOPS: Loop[] = [
   {
     name: 'loop-review',
     caption: 'Two review passes, until no P1 is left',
@@ -133,6 +143,31 @@ export const LOOPS = [
       'tests and file paths, then ab-deepen-plan; test first, verify with evidence, helper review; merge the branch, ' +
       'and ab-session-wrap updates docs/. Then a docs/ file rides the return line back to Orient, where the next ' +
       'session reads it and the next feature starts.',
+  },
+  {
+    name: 'loop-request-to-pr',
+    caption: 'An example run, from one request to its pull request',
+    label: 'the example run animation',
+    alt:
+      'Looping animation, no sound: an example request, Add a short usage section to the README, becomes a draft ' +
+      'pull request from your GitHub App as Plan, Execute, Review, Verify and Ship are checked in turn.',
+    portrait: 'loop-request-to-pr-portrait',
+  },
+  {
+    name: 'loop-prereqs',
+    caption: 'What a copy needs, one group at a time',
+    label: 'the prerequisites animation',
+    alt: 'Looping animation, no sound: the prerequisites fill in group by group, then a lens frames each in turn.',
+    portrait: 'loop-prereqs-portrait',
+  },
+  {
+    name: 'loop-routes',
+    caption: 'The same agent on Vercel, Railway or your own server',
+    label: 'the hosts animation',
+    alt:
+      'Looping animation, no sound: tabs for Vercel, Railway and Your server, each with its sandbox and its ' +
+      "channels; on all three the models run through Vercel's AI Gateway.",
+    portrait: 'loop-routes-portrait',
   },
 ];
 

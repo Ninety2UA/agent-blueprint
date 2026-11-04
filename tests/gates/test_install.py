@@ -729,6 +729,30 @@ class Installer(InstallerHarness):
         self.assertEqual(code, 2)
         self.assertIn("Unknown host in --only: emacs", out)
 
+    def test_only_eve_is_refused_with_the_hosted_pointer(self):
+        # Eve is the hosted option, deployed rather than installed (R20, AE7): no route, no tool call.
+        self.fake_tool("claude")
+        for only in ("eve", "claude,eve"):
+            for extra in ((), ("--dry-run",)):
+                code, out = self.run_install(*extra, "--only", only)
+                self.assertEqual(code, 2, out)
+                self.assertIn("https://agent-blueprint.dbenger.com/hosted", out)
+                self.assertIn("eve/README.md", out)
+                self.assertNotIn("Unknown host", out)
+        self.assertEqual(self.calls(), [])
+
+    def test_dry_run_lists_the_eight_tools_and_not_eve(self):
+        tools = ("claude", "codex", "agy", "grok", "pi", "cursor-agent", "hermes", "amp")
+        for tool in tools:
+            self.fake_tool(tool)
+        code, out = self.run_install("--dry-run")
+        self.assertEqual(code, 0, out)
+        finished = [line for line in out.splitlines() if "Finished:" in line]
+        self.assertEqual(len(finished), 1, out)
+        listed = finished[0].split("Finished:", 1)[1].strip().split(", ")
+        self.assertEqual(listed, ["Claude Code", "Codex", "Antigravity", "Grok Build", "Pi", "Cursor CLI", "Hermes",
+                                  "Amp"])
+
     def test_copy_dir_inside_the_checkout_skills_is_refused(self):
         checkout = os.path.join(self.root, "checkout")
         shutil.copytree(REPO, checkout, symlinks=True, ignore=shutil.ignore_patterns(".git", "node_modules", "dist", ".astro"))

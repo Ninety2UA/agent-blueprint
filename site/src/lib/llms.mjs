@@ -4,7 +4,8 @@
 //
 // Exports
 //   llmsTxt(site, nav)   the file's text. `site` is getSiteData(); `nav` is the header's sections
-//                        ([{ label, href }], components/nav.ts). Home comes first, then each section,
+//                        ([{ label, href }], components/nav.ts, through enabledNav so Hosted is listed
+//                        only when the build carries it). Home comes first, then each section,
 //                        then the pages of Docs, Tutorials and Guides in reading order, then one list
 //                        of skills per README phase, in phase order.
 
@@ -22,6 +23,7 @@ const SECTION_NOTES = {
   Workflow: 'How the skills fit together from idea to pull request',
   Guides: 'Guides for particular jobs, such as unattended runs',
   Changelog: 'Every release, newest first',
+  Hosted: 'Deploy your own copy as an agent on Vercel, Railway or a server, and reach it from a web chat, Slack, Linear, Telegram or MCP',
 };
 
 export function llmsTxt(site, nav) {

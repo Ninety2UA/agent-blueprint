@@ -25,6 +25,7 @@ syncBuiltinESMExports();
 // Imported only after the patch, so the modules bind the recording functions.
 const { findRepoRoot, getReadmePages, getSiteData } = await import('../src/lib/site.mjs');
 const { getWorkflow } = await import('../src/components/workflow/workflow-data.mjs');
+const { getHosted } = await import('../src/components/hosted/hosted-data.mjs');
 
 const root = findRepoRoot();
 const toRepo = (path) => relative(root, path).split(sep).join('/');
@@ -65,12 +66,14 @@ test('every repository path the build reads outside site/ is an input of the ign
   getSiteData();
   getReadmePages();
   getWorkflow();
+  getHosted();
   const inputs = scriptInputs();
   const read = [...reads].map(toRepo).filter((p) => !p.startsWith('..') && p !== '' && !p.startsWith('site/'));
   const literal = sourcePaths().filter((p) => !p.startsWith('site/'));
   assert.ok(literal.includes('docs/images/hero.gif'), 'the source scan missed the README GIF');
   const paths = [...new Set([...read, ...literal])].sort();
   assert.ok(paths.includes('README.md') && paths.some((p) => p.startsWith('skills/')), 'the trace recorded no reads');
+  assert.ok(read.includes('eve/README.md'), 'the trace missed the Hosted page reading eve/README.md');
   const covered = (p) => inputs.some((input) => p === input || p.startsWith(`${input}/`));
   assert.deepEqual(paths.filter((p) => !covered(p)), [], `inputs: ${inputs.join(', ')}`);
 });
@@ -83,9 +86,9 @@ test('an input that is commented out of the script is not counted as an input', 
   assert.ok(!scriptInputs(commented).includes('docs/images'));
 });
 
-test('the script lists the site itself and the two files the built-site gate reads', () => {
+test('the script lists the site itself, the files the built-site gate reads and the Hosted page\'s README', () => {
   const inputs = scriptInputs();
-  for (const input of ['site', 'scripts/check-site.py', 'scripts/adoption-denylist.json']) {
+  for (const input of ['site', 'scripts/check-site.py', 'scripts/adoption-denylist.json', 'eve/README.md']) {
     assert.ok(inputs.includes(input), input);
   }
 });

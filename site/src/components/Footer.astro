@@ -7,10 +7,11 @@
 // "Install by tool" links to /docs/getting-started/#<tool id>: the Getting started page
 // renders its install tabs with <Tabs hashTarget>, so each panel's id is the tool id
 // (claude, codex, agy, grok, pi, cursor-agent, hermes, amp) and the link opens that tab.
+import { enabledNav } from '../lib/hosted-release.mjs';
 import { getSiteData } from '../lib/site.mjs';
 import Cmd from './Cmd.astro';
 import Mark from './Mark.astro';
-import { GET_STARTED, NAV, type NavLabel } from './nav';
+import { GET_STARTED, NAV, productGroup } from './nav';
 import { numberWord } from './number-word';
 
 interface Props {
@@ -20,8 +21,8 @@ interface Props {
 const { sheet } = Astro.props;
 const { version, repoUrl, counts, allToolsCommand, tools } = getSiteData();
 
-const PRODUCT: NavLabel[] = ['Skills', 'Workflow', 'Tutorials', 'Guides', 'Changelog'];
-const product = PRODUCT.map((label) => NAV.find((n) => n.label === label)!);
+// the Product group ends with Hosted only when this build carries the page
+const product = productGroup(enabledNav(NAV));
 // the clone and the installer, one line each; the copy button copies them joined by &&
 const installLines = allToolsCommand.split(' && ');
 const resources = [

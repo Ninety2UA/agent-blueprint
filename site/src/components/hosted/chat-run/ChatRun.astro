@@ -1,0 +1,47 @@
+---
+// The chat run figure (KTD9): the demo's web chat doing one example run, drawn live by
+// chat-run.js. The stylesheet is imported here, so the page inlines it and the place-holding
+// sentence holds the mounted figure's exact size from the first paint; the run itself loads only
+// as the figure approaches. Without JavaScript the light end frame replaces the sentence, picked
+// by the same container query as the stage.
+import '../../../styles/media.css';
+import './chat-run.css';
+import { versioned } from '../../media';
+
+interface Props {
+  /** figure number, in page order */
+  num: number;
+}
+const { num } = Astro.props;
+// the figure's text: the sentence until the run mounts, and the stills' text alternative
+const alt =
+  "An example run in the demo's web chat. A visitor picks a suggested request, the agent pushes the branch as each stage finishes, and then it opens the pull request as the GitHub App.";
+---
+<noscript><style is:inline>.crun-alt{display:none!important}</style></noscript>
+<figure class="crun" id={`fig-${num}`} data-chat-run>
+  <p class="crun-alt">{alt}</p>
+  <noscript><img class="crun-still crun-still-wide" src={versioned('/media/chat-run-end.webp')} width="760" height="543" alt={alt} loading="lazy" decoding="async" /><img class="crun-still crun-still-narrow" src={versioned('/media/chat-run-end-narrow.webp')} width="390" height="657" alt={alt} loading="lazy" decoding="async" /></noscript>
+  <figcaption class="vf-cap"><span><b>Fig. {num}</b>The demo's web chat, from a request to its pull request</span></figcaption>
+</figure>
+
+<script>
+  // The run's chunk loads once its figure comes within a screen of the viewport and mounts when the
+  // browser is idle. Until then the sentence holds the place, and it stays if the chunk fails.
+  const figures = document.querySelectorAll<HTMLElement>('[data-chat-run]');
+  const near = new IntersectionObserver(
+    (entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      near.disconnect();
+      import('./chat-run.js').then(
+        ({ mount }) => {
+          const run = () => figures.forEach((figure) => mount(figure));
+          if ('requestIdleCallback' in window) requestIdleCallback(run);
+          else setTimeout(run);
+        },
+        () => {},
+      );
+    },
+    { rootMargin: '100% 0px' },
+  );
+  figures.forEach((figure) => near.observe(figure));
+</script>

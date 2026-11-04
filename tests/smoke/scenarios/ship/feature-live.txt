@@ -1,0 +1,1 @@
+Add a `tally chars FILE` command that prints the number of characters in FILE, the same way `tally words FILE` and `tally lines FILE` print theirs, cover it with a test, and mention it in the README.

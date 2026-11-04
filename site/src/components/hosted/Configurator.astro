@@ -1,0 +1,169 @@
+---
+// The Hosted page's configurator (KTD4): host, sandbox, channel and models over every deploy route, all
+// rendered here at build time from hosted-data.mjs. The default route (Vercel, Vercel Sandbox, web chat,
+// the quality preset) is complete static HTML with a working Vercel link; every other choice is rendered
+// disabled and every other result hidden, so without JavaScript the page offers only what works.
+// configurator.ts enables the choices and shows one route at a time. The channel radios are the channels
+// eve/README.md's Variables table names (ruling 37), so a channel shows up once its rows land. The names
+// list holds each name once per value it takes, with the routes it belongs to in data-states; a
+// non-sensitive name reads NAME=value (ruling 21). The model variables (the preset, and a role's model
+// when the reader changes one) sit in that list on Vercel, whose link pre-fills them; on Railway they
+// move to "Set after deploying", since its template cannot be pre-filled; on your own server the export
+// line before the build sets them. The Models row (rulings 30, 33 and 34, the approved mock v3.2) shows
+// the chosen preset's model for each role; Per role turns the same rows into native selects filled from
+// the one shared list in the <template>, the AI Gateway's models that can run a role (gateway-models.mjs).
+// model-choice.ts, loaded on the first interaction with that row, does the rest. The Railway button
+// links the template once eve/README.md carries its address, and until then the README's Railway section
+// with the caption under it (ruling 23). Tested in site/test/client-scripts.test.mjs.
+import Cmd from '../Cmd.astro';
+import { IC } from '../icons';
+import { getGatewayModels, groupModels } from '../../lib/gateway-models.mjs';
+import { capitalize } from '../../lib/text.mjs';
+import { WEB_CHAT_REASON, getHosted } from './hosted-data.mjs';
+import { modelVars } from './model-vars.mjs';
+
+interface Props {
+  /** the routes to render; the repository's own by default (a test passes a README variant) */
+  hosted?: ReturnType<typeof getHosted>;
+  /** the models the selects offer; by default the AI Gateway's list, read once per build */
+  models?: { id: string; name: string }[];
+}
+const { hosted = getHosted() } = Astro.props;
+const { roster } = hosted;
+const presetIds = [...new Set(Object.values(roster.presets).flatMap((p) => Object.values(p)))];
+const models = Astro.props.models ?? (await getGatewayModels(presetIds)).models;
+const modelName = new Map(models.map((m) => [m.id, m.name]));
+const label = (id: string) => {
+  const name = modelName.get(id);
+  if (!name) throw new Error(`Configurator.astro: the preset model ${id} is not in the model list`);
+  return name;
+};
+
+const def = hosted.states.find((s) => s.id === hosted.defaultState);
+if (!def) throw new Error(`hosted-data.mjs: no route has the default id ${hosted.defaultState}`);
+const host = <T extends string>(id: T) => {
+  const found = hosted.hosts.find((h) => h.id === id);
+  if (!found) throw new Error(`hosted-data.mjs: no ${id} host`);
+  return found as Extract<(typeof hosted.hosts)[number], { id: T }>;
+};
+const vercel = host('vercel');
+const railway = host('railway');
+const server = host('server');
+const serverSandboxes = [...new Set(hosted.states.filter((s) => s.host === 'server').map((s) => s.sandbox))];
+const SANDBOX_LABEL: Record<string, string> = { docker: 'Docker', daytona: 'Daytona' };
+const preset = roster.presets[roster.preset];
+
+// one list item per name and value, carrying the routes where the name takes that value; the preset
+// variable is listed on Vercel only (see the header)
+const onVercel = new Set(hosted.states.filter((s) => s.host === 'vercel').map((s) => s.id));
+const items = hosted.names.flatMap((n) => {
+  const byValue = new Map<string | null, string[]>();
+  for (const [id, value] of Object.entries(n.states)) {
+    if (n.name === roster.variable && !onVercel.has(id)) continue;
+    byValue.set(value, [...(byValue.get(value) ?? []), id]);
+  }
+  return [...byValue].map(([value, ids]) => ({ name: n.name, text: value === null ? n.name : `${n.name}=${value}`, sensitive: n.sensitive, states: ids }));
+});
+const json = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c');
+// what the script needs to find a route: its choices, its count of names and, on Vercel, its link
+const routes = json(hosted.states.map(({ id, host, channel, sandbox, link, names }) => ({ id, host, channel, sandbox, link, n: names.length })));
+// what model-choice.ts needs: the roster, the preset models' names and the own-server model line's index
+const modelData = json({
+  variable: roster.variable,
+  model: roster.model,
+  preset: roster.preset,
+  roles: roster.roles,
+  presets: roster.presets,
+  labels: Object.fromEntries(presetIds.map((id) => [id, label(id)])),
+  exportAt: server.exportAt,
+});
+const arrow = IC.arrow.replace('<svg ', '<svg class="arr" ');
+const off = (name: string, value: string) => !(name === 'host' ? value === def.host : value === def.channel);
+---
+<form class="cfg" id="cfg" aria-label="Deploy choices">
+  <script type="application/json" is:inline data-cfg-routes set:html={routes} />
+  <script type="application/json" is:inline data-cfg-models set:html={modelData} />
+  <fieldset class="cfg-row">
+    <legend>Host</legend>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="host" value="vercel" autocomplete="off" checked={!off('host', 'vercel')} disabled={off('host', 'vercel')} /><span class="o-name">Vercel</span>
+        <span class="o-note">Sandbox: Vercel Sandbox.</span>
+        <span class="o-note">On the Hobby plan a sandbox session lasts up to {hosted.tierMinutes} minutes, so a full run over {hosted.tierMinutes} minutes needs Pro.</span></label>
+      <label class="opt"><input type="radio" name="host" value="railway" autocomplete="off" checked={!off('host', 'railway')} disabled={off('host', 'railway')} /><span class="o-name">Railway</span>
+        <span class="o-note">Sandbox: Daytona.</span></label>
+      <label class="opt"><input type="radio" name="host" value="server" autocomplete="off" checked={!off('host', 'server')} disabled={off('host', 'server')} /><span class="o-name">Your own server</span>
+        <span class="o-note">Sandbox: Docker or Daytona.</span></label>
+      <fieldset class="sbx" hidden>
+        <legend>Sandbox</legend>
+        <div class="opts-inline">
+          {serverSandboxes.map((s, i) => (
+            <label class="opt"><input type="radio" name="sandbox" value={s} autocomplete="off" checked={i === 0} disabled /><span class="o-name">{SANDBOX_LABEL[s] ?? s}</span></label>
+          ))}
+        </div>
+      </fieldset>
+    </div>
+  </fieldset>
+  <fieldset class="cfg-row">
+    <legend>Channel</legend>
+    <div class="opts">
+      <div class="opts-inline">
+        {hosted.channels.map((c) => (
+          <label class="opt"><input type="radio" name="channel" value={c.id} autocomplete="off" checked={!off('channel', c.id)} disabled={off('channel', c.id)} /><span class="o-name">{c.label}</span></label>
+        ))}
+      </div>
+      <span class="why" id="cfg-web-why" hidden>{WEB_CHAT_REASON}</span>
+    </div>
+  </fieldset>
+  <fieldset class="cfg-row cfg-models">
+    <legend>Models</legend>
+    <div class="opts">
+      <div class="opts-inline">
+        {Object.keys(roster.presets).map((p) => (
+          <label class="opt"><input type="radio" name="models" value={p} autocomplete="off" checked={p === roster.preset} disabled={p !== roster.preset} /><span class="o-name">{capitalize(p)}</span></label>
+        ))}
+        <label class="opt"><input type="radio" name="models" value="role" autocomplete="off" disabled aria-controls="cfg-roles" /><span class="o-name">Per role</span></label>
+      </div>
+      <p class="roles-line">A preset sets the model for every role, and Per role lets you change any of them.</p>
+      <ul class="roles" id="cfg-roles" data-mode="preset">
+        {roster.roles.map((r) => (
+          <li class="role"><label for={`cfg-m-${r}`}>{capitalize(r)}</label><span class="role-model">{label(preset[r])}</span><span class="sel"><select id={`cfg-m-${r}`} name={`model-${r}`} data-role={r} autocomplete="off"><option value={preset[r]} selected>{label(preset[r])}</option></select></span></li>
+        ))}
+      </ul>
+    </div>
+  </fieldset>
+  <template id="gw-models">{groupModels(models).map((g) => (
+    <optgroup label={g.provider}>{g.models.map((m) => <option value={m.id}>{m.name}</option>)}</optgroup>
+  ))}</template>
+  <div class="result" data-host={def.host}>
+    <div class="res" data-res="vercel" data-name="Deploy to Vercel" hidden={def.host !== 'vercel'} data-pagefind-ignore={def.host !== 'vercel' ? '' : undefined}>
+      <a class="btn btn-primary" href={def.host === 'vercel' ? def.link : vercel.links.web}>Deploy to Vercel<Fragment set:html={arrow} /></a>
+    </div>
+    <div class="res" data-res="railway" data-name="Deploy on Railway" hidden={def.host !== 'railway'} data-pagefind-ignore={def.host !== 'railway' ? '' : undefined}>
+      <a class="btn btn-primary" href={railway.href}>Deploy on Railway<Fragment set:html={arrow} /></a>
+      {railway.address === null && <p class="res-cap">The template is published with the release.</p>}
+    </div>
+    <div class="res" data-res="server" data-name="The commands for your own server" hidden={def.host !== 'server'} data-pagefind-ignore={def.host !== 'server' ? '' : undefined}>
+      <Cmd lines={server.commands} copy={server.copy} prompt label="Commands for your own server" copyLabel="Copy the commands for your own server" />
+    </div>
+    <div class="asks">
+      <span class="asks-l" data-hosts="vercel railway" hidden={def.host === 'server'}>It asks for</span><span class="asks-l" data-hosts="server" hidden={def.host !== 'server'}>Set these first</span>
+      <ul class="names" id="cfg-names">
+        {items.map((item) => (
+          <li data-name={item.name} data-states={item.states.join(' ')} hidden={!item.states.includes(def.id)}><code>{item.text}</code>{item.sensitive && <span class="sec">sensitive</span>}</li>
+        ))}
+      </ul>
+      <p class="cfg-slack" data-channels="slack" hidden={def.channel !== 'slack'}>Before you deploy, create the Slack app and copy its bot token and signing secret, as <a href={hosted.links.afterDeploy}>After the deploy</a> shows.</p>
+      <p class="cfg-pre" data-channels="linear telegram" hidden={def.channel !== 'linear' && def.channel !== 'telegram'}>For Linear or Telegram, make the app or bot first, as <a href={hosted.links.preflight}>Pre-flight</a> shows.</p>
+    </div>
+    <div class="asks asks-after" data-hosts="railway" hidden={def.host !== 'railway'}>
+      <span class="asks-l">Set after deploying</span>
+      <ul class="names" id="cfg-later">
+        {modelVars(roster, roster.preset).map(([name, value]) => <li><code>{`${name}=${value}`}</code></li>)}
+      </ul>
+    </div>
+  </div>
+</form>
+
+<script>
+  import './configurator';
+</script>

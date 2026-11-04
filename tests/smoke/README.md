@@ -39,7 +39,7 @@ Every cell runs on a fresh copy of `tests/smoke/fixture/` (a small stdlib-only P
 
 | Cell | Seed | Prompt | Passes when |
 |------|------|--------|-------------|
-| `discovery` | none | "Which skill runs the autonomous ship pipeline?" | Every `ab-` skill folder appears exactly once across the host's catalog locations (`host_catalog_dirs` in `hosts.sh`, from the U11 fact sheet; Claude Code counts the plugins enabled in `settings.json` plus `--plugin-dir`), and the answer names `ab-ship-pipeline` (KTD18) |
+| `discovery` | none | "Which skill runs the autonomous ship pipeline?" | Every `ab-` skill folder appears exactly once across the host's catalog locations, a checkout's git-ignored `eve/.eve/`, `eve/.output/` and `eve/node_modules/` left out (`host_catalog_dirs` in `hosts.sh`, from the U11 fact sheet; Claude Code counts the plugins enabled in `settings.json` plus `--plugin-dir`), and the answer names `ab-ship-pipeline` (KTD18) |
 | `canary` | none | "What is the project codename?" | The final message contains `HARBOR-19`, the line in `AGENTS.md` (the instructions file loads) |
 | `hooks` | Codex: `.agent-blueprint/config.json` enables `hooks.validateCommit` | Codex: use `apply_patch` to write `docs/hook-smoke.md` with the literal marker `[SYSTEM]`, attempt `git commit -m 'smoke check'` even if the sandbox cannot write `.git`, then stop; other hosts: the canary prompt | Codex runs its own session with `--dangerously-bypass-hook-trust` for this invocation only and `AGENT_BLUEPRINT_HOOK_TRACE` inside the work copy, at the ignored `.agent-blueprint/run/hooks.log`. It passes only after the session completes, all five handlers (`session-start.js`, `prompt-guard.js`, `validate-commit.js`, `context-monitor.js`, `ship-loop.sh`) record a `codex` entry line, and the guard's `prompt-guard.js:warned` record and validator's `validate-commit.js:flagged` record both name `codex`. The reason names missing handlers or action records. The trace is copied beside the cell log before cleanup. On Claude Code a handler wrote the trace; on Grok, Cursor and Antigravity it is empty or every line names `other` (stood down), and a line naming `claude` or `codex` fails (KTD11). Those hosts reuse a completed canary run when available; an empty trace from an unfinished run proves nothing. `n/a` on hosts with no hook path |
 | `manual-only` | none | "From your skill catalog only: which skills can you invoke whose names start with ab-p?" | The answer names `ab-pr-workflow` or `ab-project-start` (the catalog is visible) and not `ab-plugin-update`, the manual-only one, and no provenance record for it exists (KTD12, AE4). Asking the host to update the plugin instead would be asking for the skill's own job, and an agent then finds and follows the file whatever the catalog says. `n/a` on Amp and Hermes, which cannot enforce it |
@@ -65,10 +65,12 @@ After changing installed files, refresh Codex from this checkout's marketplace w
 | `pass` | The outcome check held (and the provenance record exists for pipeline cells) |
 | `degraded-pass (inline)` | The check held, but every helper step ran inline |
 | `degraded (vendor bug)` | The check failed and `scenarios/known-vendor-bugs.tsv` has a row for the host and cell (or `*`); the table links the upstream issue (AE6). Add a row only for a confirmed vendor bug |
+| `degraded` | The cell's skill is marked degraded on this host in its support note; the reason says why (Eve only, see below) |
 | `fail` | The check failed, the provenance record is missing, the host exited early, or the host's preflight failed |
 | `timeout` | The host did not finish within the cell's timeout; its process group was killed |
 | `not-installed` | The host CLI is not on PATH; nothing ran |
 | `n/a` | The cell does not apply to the host, or its `check.sh` exited 3 because the host cannot show what the cell judges (a capped skill catalog, for one); the reason says why |
+| `pending` | The cell is written but has not run for this release; the reason names what it waits for and the command that runs it (Eve only, see below) |
 
 ## A clean profile for a capped catalog
 
@@ -106,7 +108,21 @@ A cell is a folder under `scenarios/<cell>/`: `apply.sh WORK` seeds the fresh co
 
 ## The support notes
 
-`python3 tests/smoke/host-notes.py` rewrites the `## Smoke status` section at the end of every note under `docs/hosts/` from the JSON, one row per recorded cell; a host with no cells keeps the pending line. Run it after the table changes.
+`python3 tests/smoke/host-notes.py` rewrites the `## Smoke status` section at the end of every note under `docs/hosts/` from the JSON, one row per recorded cell; a host with no cells keeps the pending line. Eve's note, `docs/hosts/eve.md`, is skipped with a message while it does not exist. Run it after the table changes.
+
+## Eve, the hosted option
+
+Eve is not a row in `hosts.sh`. Its cells run through `eve eval` in `eve/`, in two tiers (KTD15). The `mock`-tagged evals (discovery, hooks and manual-only, beside Eve's own roster, sandbox, clone, gate and variable-table checks) run on a scripted model that spends no tokens, on local Docker, and are what CI runs. The `live`-tagged cells spend real tokens once per release: canary, build and review on local Docker, where each eval seeds this folder's fixture and the cell's seed into the session's sandbox as `run-smoke.sh` seeds a work copy, answers every checkpoint (approve, or a question's first option), copies the work back out and judges it with the cell's own `check.sh`; ship runs with `--url` against the demo's production deployment, on the repository `AB_SMOKE_SHIP_REPOSITORY` names, and passes when the run publishes a pull request. Under `AB_EVAL_MOCK=1` the live cells skip themselves. Colima mounts only `$HOME`, so on a Mac with Colima run these from a checkout under it.
+
+```bash
+(cd eve && AB_EVAL_MOCK=1 npx eve eval --tag mock --json > "$HOME/eve-mock.json")
+(cd eve && npx eve eval canary build review --json > "$HOME/eve-live.json")      # AI_GATEWAY_API_KEY set, AB_EVAL_MOCK unset
+(cd eve && AB_SMOKE_SHIP_REPOSITORY=https://github.com/<owner>/<repo> npx eve eval ship --url https://<demo> --json > "$HOME/eve-ship.json")
+python3 eve/scripts/smoke-to-json.py --version <version> --input "$HOME/eve-mock.json" --input "$HOME/eve-live.json" --input "$HOME/eve-ship.json"
+python3 tests/smoke/host-notes.py
+```
+
+`eve/scripts/smoke-to-json.py` writes host `eve` rows for all fourteen cells into `docs/releases/v<version>-smoke.json` through `report.py`, which also renders the table. A cell whose eval is not in the inputs keeps its earlier row, or is `pending` with its command; the seven cells Eve does not run (helpers-off, effort, debug, tdd-override, brainstorm-override, team, upgrade) are `n/a` with the reason; a cell whose skill is degraded on Eve is `degraded`. A mock pass says so in its reason and carries `"provenance": "mock"`. Beside `report.py`'s fields, each row that ran carries `tokens_by_model` (input, cache read, cache write and output per model, input without the cache), `model_calls`, `subagent_calls` (eve's subagent calls plus helper calls), `compactions` (the history tokens and outcome of each), `provider` (the sandbox provider) and `sandbox_seconds` (the summed time of the tool calls that run in the sandbox).
 
 ## Checking the harness without a host
 
@@ -116,7 +132,7 @@ SMOKE_SELFTEST_V3_DIR=../main-checkout bash tests/smoke/selftest.sh   # also the
 SMOKE_SELFTEST_NO_LINT=1 bash tests/smoke/selftest.sh                 # without markdownlint, as CI runs it
 ```
 
-`selftest.sh` runs the harness against `tests/smoke/fake-host.sh` (`hosts.sh`'s `fake` row, selected with `AGENT_BLUEPRINT_FAKE_HOST`), which answers the prompts a cooperating host would, and asserts every state from the JSON: pass mode, fail mode with a vendor-bug row, a not-installed host, `--jobs 2`, a timeout, a duplicated catalog, a foreign hook that fires, an installed copy of another version, one of this version whose skills differ and an installed plugin whose hooks or manifest differ, and markdownlint on the rendered table. It also checks that the installed-copy check sees the shared copy Codex reads, and that the skill-folder comparison names a folder the copy lacks and one the checkout lacks. It runs the review check against clean verdicts, denials, scope lines beside a clean verdict and reviewer artifacts the validator set aside (each must fail), and against real findings, a rated one that also hedges among them (each must pass). And it checks that the upgrade scenario deletes only the folder it made inside `--work`. CI runs it on ubuntu-latest with `SMOKE_SELFTEST_NO_LINT=1` and without the eval mechanics.
+`selftest.sh` runs the harness against `tests/smoke/fake-host.sh` (`hosts.sh`'s `fake` row, selected with `AGENT_BLUEPRINT_FAKE_HOST`), which answers the prompts a cooperating host would, and asserts every state from the JSON: pass mode, fail mode with a vendor-bug row, a not-installed host, `--jobs 2`, a timeout, a duplicated catalog, a checkout whose eve build folders hold skill copies, a foreign hook that fires, an installed copy of another version, one of this version whose skills differ and an installed plugin whose hooks or manifest differ, and markdownlint on the rendered table. It also checks that the installed-copy check sees the shared copy Codex reads, and that the skill-folder comparison names a folder the copy lacks and one the checkout lacks. It runs the review check against clean verdicts, denials, scope lines beside a clean verdict and reviewer artifacts the validator set aside (each must fail), and against real findings, a rated one that also hedges among them (each must pass). And it checks that the upgrade scenario deletes only the folder it made inside `--work`. CI runs it on ubuntu-latest with `SMOKE_SELFTEST_NO_LINT=1` and without the eval mechanics.
 
 The Codex hooks assertions use a fake Codex executable in an isolated profile through `--jobs 2`: five `codex` handler entries plus both action records pass, four entries fail with the missing handler named, and a line naming another host cannot fill the gap. All entries without the action records fail with both missing actions named; omitting either action alone also fails. They also check the smoke prompt's write marker and invalid commit command, the commit-check opt-in, the ignored trace inside the work folder, closed stdin, and that only the hooks invocation bypasses hook trust between ordinary canary and manual-only runs.
 

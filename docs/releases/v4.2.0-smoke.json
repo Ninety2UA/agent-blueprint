@@ -1,0 +1,357 @@
+{
+  "hosts": {
+    "eve": {
+      "cells": {
+        "brainstorm-override": {
+          "cost_usd": null,
+          "date": "2026-11-04T21:42:18Z",
+          "link": "",
+          "log": "",
+          "plugin_dir": "skills/",
+          "reason": "not one of Eve's smoke cells (KTD15: the live tier is canary, build, review and ship); ab-brainstorming loads from the same committed skills/ tree the discovery cell checks",
+          "seconds": null,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "build": {
+          "compactions": [],
+          "cost_usd": 6.266797899999999,
+          "date": "2026-11-04T20:46:28Z",
+          "eval": "build",
+          "link": "",
+          "log": "~/eve-live-build.json#build",
+          "model_calls": 47,
+          "plugin_dir": "skills/",
+          "provenance": "live",
+          "provider": "docker",
+          "reason": "6 of 6 gates passed",
+          "sandbox_seconds": 13.0,
+          "seconds": 591,
+          "session": "wrun_01M6M4E9ZC9CY60F1NH74NERMK",
+          "state": "pass",
+          "subagent_calls": 12,
+          "tokens": 5074620,
+          "tokens_by_model": {
+            "anthropic/claude-opus-5.5": {
+              "cache_read": 3028172,
+              "cache_write": 81840,
+              "input": 96,
+              "output": 31212
+            },
+            "unattributed": {
+              "cache_read": 1615009,
+              "cache_write": 286393,
+              "input": 226,
+              "output": 31672
+            }
+          }
+        },
+        "canary": {
+          "compactions": [],
+          "cost_usd": 0.1290424,
+          "date": "2026-11-04T20:32:04Z",
+          "eval": "canary",
+          "link": "",
+          "log": "~/eve-live-canary.json#canary",
+          "model_calls": 4,
+          "plugin_dir": "skills/",
+          "provenance": "live",
+          "provider": "docker",
+          "reason": "5 of 5 gates passed",
+          "sandbox_seconds": 0.2,
+          "seconds": 11,
+          "session": "wrun_01M6M45MCTZF10HZ0RAE1PVBSB",
+          "state": "pass",
+          "subagent_calls": 0,
+          "tokens": 84769,
+          "tokens_by_model": {
+            "anthropic/claude-opus-5.5": {
+              "cache_read": 62462,
+              "cache_write": 21962,
+              "input": 10,
+              "output": 335
+            }
+          }
+        },
+        "debug": {
+          "cost_usd": null,
+          "date": "2026-11-04T21:42:18Z",
+          "link": "",
+          "log": "",
+          "plugin_dir": "skills/",
+          "reason": "not one of Eve's smoke cells (KTD15: the live tier is canary, build, review and ship); ab-systematic-debugging loads from the same committed skills/ tree the discovery cell checks",
+          "seconds": null,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "discovery": {
+          "compactions": [],
+          "cost_usd": null,
+          "date": "2026-11-04T21:42:02Z",
+          "eval": "discovery",
+          "link": "",
+          "log": "~/eve-mock-discovery.json#discovery",
+          "model_calls": 6,
+          "plugin_dir": "skills/",
+          "provenance": "mock",
+          "provider": "docker",
+          "reason": "mock run (scripted model, no tokens spent, docker sandbox): 5 of 5 gates passed",
+          "sandbox_seconds": 0.7,
+          "seconds": 1,
+          "session": "wrun_01M6M861BN1AJWC4W9RZG3AXM6",
+          "state": "pass",
+          "subagent_calls": 0,
+          "tokens": 75105,
+          "tokens_by_model": {
+            "eve-mock/scripted": {
+              "cache_read": 0,
+              "cache_write": 0,
+              "input": 70119,
+              "output": 4986
+            }
+          }
+        },
+        "effort": {
+          "cost_usd": null,
+          "date": "2026-11-04T21:42:18Z",
+          "link": "",
+          "log": "",
+          "plugin_dir": "skills/",
+          "reason": "Claude Code only: the cell reads the effort field of Claude Code's helper transcripts",
+          "seconds": null,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "helpers-off": {
+          "cost_usd": null,
+          "date": "2026-11-04T21:42:18Z",
+          "link": "",
+          "log": "",
+          "plugin_dir": "skills/",
+          "reason": "no switch turns helpers off on Eve, so the inline path cannot be forced; the cell is n/a on hosts without one",
+          "seconds": null,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "hooks": {
+          "compactions": [],
+          "cost_usd": null,
+          "date": "2026-11-04T21:40:35Z",
+          "eval": "hooks",
+          "link": "",
+          "log": "~/eve-mock-hooks.json#hooks",
+          "model_calls": 26,
+          "plugin_dir": "skills/",
+          "provenance": "mock",
+          "provider": "docker",
+          "reason": "mock run (scripted model, no tokens spent, docker sandbox): 32 of 32 gates passed",
+          "sandbox_seconds": 1.8,
+          "seconds": 5,
+          "session": "wrun_01M6M839E3N4Z1F8G1SMBZFJWE",
+          "state": "pass",
+          "subagent_calls": 0,
+          "tokens": 662000,
+          "tokens_by_model": {
+            "eve-mock/scripted": {
+              "cache_read": 0,
+              "cache_write": 0,
+              "input": 634624,
+              "output": 27376
+            }
+          }
+        },
+        "manual-only": {
+          "compactions": [
+            {
+              "history_tokens": 16146,
+              "outcome": "completed"
+            }
+          ],
+          "cost_usd": null,
+          "date": "2026-11-04T21:41:00Z",
+          "eval": "manual-only",
+          "link": "",
+          "log": "~/eve-mock-manual-only.json#manual-only",
+          "model_calls": 22,
+          "plugin_dir": "skills/",
+          "provenance": "mock",
+          "provider": "docker",
+          "reason": "mock run (scripted model, no tokens spent, docker sandbox): 18 of 18 gates passed",
+          "sandbox_seconds": 0.2,
+          "seconds": 4,
+          "session": "wrun_01M6M841W4FW1G3BWV93PX5N54",
+          "state": "pass",
+          "subagent_calls": 0,
+          "tokens": 279971,
+          "tokens_by_model": {
+            "eve-mock/scripted": {
+              "cache_read": 0,
+              "cache_write": 0,
+              "input": 271246,
+              "output": 8725
+            }
+          }
+        },
+        "review": {
+          "compactions": [],
+          "cost_usd": 0.860123,
+          "date": "2026-11-04T20:34:49Z",
+          "eval": "review",
+          "link": "",
+          "log": "~/eve-live-review.json#review",
+          "model_calls": 10,
+          "plugin_dir": "skills/",
+          "provenance": "live",
+          "provider": "docker",
+          "reason": "4 of 4 gates passed",
+          "sandbox_seconds": 0.8,
+          "seconds": 145,
+          "session": "wrun_01M6M46JSKAV0WQ1P0HMCMWNW9",
+          "state": "pass",
+          "subagent_calls": 1,
+          "tokens": 405736,
+          "tokens_by_model": {
+            "anthropic/claude-opus-5.5": {
+              "cache_read": 253920,
+              "cache_write": 12578,
+              "input": 22,
+              "output": 5669
+            },
+            "unattributed": {
+              "cache_read": 102371,
+              "cache_write": 27396,
+              "input": 21,
+              "output": 3759
+            }
+          }
+        },
+        "ship": {
+          "compactions": [],
+          "cost_usd": 3.6546465999999995,
+          "date": "2026-11-04T21:18:39Z",
+          "eval": "ship",
+          "link": "https://github.com/Ninety2UA/agent-blueprint-sample/pull/15",
+          "log": "~/eve-live-ship-rescored.json#ship",
+          "model_calls": 16,
+          "plugin_dir": "skills/",
+          "provenance": "live",
+          "provider": "vercel",
+          "reason": "4 of 4 gates passed, the skill-load gate rescored as calledTool(ship_pipeline) from this run's record (ruling 97: Eve runs the pipeline through its ship_pipeline tool); draft pull request #15",
+          "sandbox_seconds": 30.6,
+          "seconds": 529,
+          "session": "wrun_41M6M6B4CQ0GJ7TA2YT4QCS6KC",
+          "state": "pass",
+          "subagent_calls": 4,
+          "tokens": 3192476,
+          "tokens_by_model": {
+            "anthropic/claude-opus-5.5": {
+              "cache_read": 414478,
+              "cache_write": 35251,
+              "input": 34,
+              "output": 4259
+            },
+            "unattributed": {
+              "cache_read": 2469111,
+              "cache_write": 239958,
+              "input": 138,
+              "output": 29247
+            }
+          }
+        },
+        "tdd-override": {
+          "cost_usd": null,
+          "date": "2026-11-04T21:42:18Z",
+          "link": "",
+          "log": "",
+          "plugin_dir": "skills/",
+          "reason": "not one of Eve's smoke cells (KTD15: the live tier is canary, build, review and ship); ab-test-driven-development loads from the same committed skills/ tree the discovery cell checks",
+          "seconds": null,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "team": {
+          "cost_usd": null,
+          "date": "2026-11-04T21:42:18Z",
+          "link": "",
+          "log": "",
+          "plugin_dir": "skills/",
+          "reason": "Claude Code only: Agent Teams exist only there; helpers on Eve are root copies through the helper tool",
+          "seconds": null,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        },
+        "upgrade": {
+          "cost_usd": null,
+          "date": "2026-11-04T21:42:18Z",
+          "link": "",
+          "log": "",
+          "plugin_dir": "skills/",
+          "reason": "Claude Code only: the cell upgrades a v3.8.0 Claude Code plugin install; an Eve copy is upgraded by redeploying it",
+          "seconds": null,
+          "session": "",
+          "state": "n/a",
+          "tokens": null
+        }
+      },
+      "version": "eve 0.86.0"
+    }
+  },
+  "release": "4.2.0",
+  "runs": [
+    {
+      "cells": [
+        "brainstorm-override",
+        "build",
+        "canary",
+        "debug",
+        "discovery",
+        "effort",
+        "helpers-off",
+        "hooks",
+        "manual-only",
+        "review",
+        "ship",
+        "tdd-override",
+        "team",
+        "upgrade"
+      ],
+      "command": "python3 eve/scripts/smoke-to-json.py --version 4.2.0 --input $TMPDIR/.../eve-mock.json --input $TMPDIR/.../eve-live-under-mock.json --md $TMPDIR/.../v4.2.0-smoke.md",
+      "date": "2026-10-29 03:17 UTC",
+      "hosts": [
+        "eve"
+      ],
+      "plugin_dir": "skills/"
+    },
+    {
+      "cells": [
+        "brainstorm-override",
+        "build",
+        "canary",
+        "debug",
+        "discovery",
+        "effort",
+        "helpers-off",
+        "hooks",
+        "manual-only",
+        "review",
+        "ship",
+        "tdd-override",
+        "team",
+        "upgrade"
+      ],
+      "command": "python3 eve/scripts/smoke-to-json.py --version 4.2.0 --input ~/eve-mock-discovery.json --input ~/eve-mock-hooks.json --input ~/eve-mock-manual-only.json --input ~/eve-live-canary.json --input ~/eve-live-build.json --input ~/eve-live-review.json --input ~/eve-live-ship-rescored.json",
+      "date": "2026-11-04 21:42 UTC",
+      "hosts": [
+        "eve"
+      ],
+      "plugin_dir": "skills/"
+    }
+  ],
+  "updated": "2026-11-04 21:42 UTC"
+}

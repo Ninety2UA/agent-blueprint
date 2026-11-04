@@ -124,6 +124,10 @@ wanted() {   # host named in --only, or every host when --only is unset
 if [ -n "$ONLY" ]; then
     IFS=',' read -r -a requested <<< "$ONLY"
     for h in "${requested[@]}"; do
+        if [ "$h" = "eve" ]; then   # the hosted option is deployed, not installed (R20)
+            error "Eve is the hosted option: you deploy it to your own Vercel account, Railway or server instead of installing it here. See https://agent-blueprint.dbenger.com/hosted and eve/README.md."
+            exit 2
+        fi
         case " ${ALL_HOSTS[*]} " in *" $h "*) ;; *) error "Unknown host in --only: $h (choose from ${ALL_HOSTS[*]})"; exit 2 ;; esac
     done
 fi

@@ -133,6 +133,16 @@ test('the runner starts on claude, in the command and in the figure', { skip }, 
   assert.match(decode(figure), /run\.sh --host <tspan data-fig-host>claude<\/tspan> "Add CSV export"/, 'the figure does not draw the run.sh line for claude');
 });
 
+// The runner's host radios are the README install table's rows, in its order: the hosted option
+// has no row there (KTD14), so it never becomes a host the runner drives.
+test("the runner's host radios equal the README install table's rows", { skip }, () => {
+  const runner = read('index.html').match(/<section class="sec runner"[\s\S]*?<\/section>/)?.[0] ?? '';
+  const radios = [...runner.matchAll(/<button class="host"[^>]*role="radio"[^>]*data-host="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(radios, site.tools.map((t) => t.id));
+  assert.equal(radios.length, site.counts.tools);
+  assert.ok(!radios.includes('eve'), 'the hosted option is not a runner host');
+});
+
 // Workflow Fig. 1 is the development loop as a looping animation on its drawing sheet, with the
 // README's six steps under it as the legend, each skill it names linked to its page.
 test("the Workflow page's Fig. 1 plays the loop animation above the README's steps", { skip }, () => {
@@ -153,13 +163,24 @@ test("the Workflow page's Fig. 1 plays the loop animation above the README's ste
 });
 
 // Videos and posters are requested with ?v= and the first 8 hex digits of the file's SHA-1, so a
-// re-render gets a new URL and a browser's cached copy of the old render is never shown again.
+// re-render gets a new URL and a browser's cached copy of the old render is never shown again. A
+// poster is any <img> whose class list has vf-poster, and every srcset candidate of a <source>
+// (Fig. 1's AVIF posters) counts as well; a poster that waits for the reader (ruling 47) is checked by
+// its data-src and data-srcset too.
 test('every video and poster URL carries the version of the file it points to', { skip }, () => {
   const version = (path) => createHash('sha1').update(readFileSync(join(root, 'site', 'public', path))).digest('hex').slice(0, 8);
   const problems = [];
   let seen = 0;
   for (const p of pages()) {
-    for (const [, url] of p.html.matchAll(/(?:<source src|<img class="vf-poster" src)="(\/media\/[^"]+)"/g)) {
+    // a tag's attributes, stepping over quoted values (a media query such as "(width >= 1200px)" holds a >)
+    const tags = (name) => [...p.html.matchAll(new RegExp(`<${name}\\b(?:"[^"]*"|[^>"])*>`, 'g'))].map(([tag]) => tag);
+    const attr = (tag, name) => tag.match(new RegExp(`\\s${name}="([^"]*)"`))?.[1];
+    const urls = [
+      ...tags('source').map((tag) => attr(tag, 'src')),
+      ...tags('img').filter((tag) => (attr(tag, 'class') ?? '').split(/\s+/).includes('vf-poster')).flatMap((tag) => [attr(tag, 'src'), attr(tag, 'data-src')]),
+      ...tags('source').flatMap((tag) => [attr(tag, 'srcset'), attr(tag, 'data-srcset')].flatMap((set) => (set ?? '').split(',').map((c) => c.trim().split(/\s+/)[0]))),
+    ].filter((url) => url?.startsWith('/media/'));
+    for (const url of urls) {
       seen += 1;
       const [path, query] = url.split('?');
       if (query !== `v=${version(path)}`) problems.push(`${p.url}: ${url}`);
@@ -167,6 +188,65 @@ test('every video and poster URL carries the version of the file it points to', 
   }
   assert.ok(seen > 0, 'no video or poster URL found');
   assert.deepEqual(problems, []);
+});
+
+// Ruling 47: a poster that cannot be the page's largest paint is fetched only as the reader nears its
+// figure. In each video box its <img> carries data-src and no src, and its AVIF <source> data-srcset and
+// no srcset, so no lazy-load distance (Chrome's reaches far down the page on a slow phone connection)
+// fetches it while the page loads; video-figures.ts sets them once the box is within a screen of the
+// viewport. A <noscript> copy in the same box holds the real URLs, so the poster shows without
+// JavaScript (KTD6), at the same size. The posters that can be a page's largest paint keep their plain
+// lazy src: the film's, and Fig. 1 of /workflow/ and of /docs/project-files/ (the Hosted page's Fig. 1
+// lays its eager poster outside the boxes).
+const PLAIN_POSTERS = { '/': ['/media/film-1280.jpg'], '/workflow/': ['/media/loop-workflow.jpg'], '/docs/project-files/': ['/media/loop-setup.jpg'] };
+
+test('a poster below the fold carries no URL a browser fetches until approached, and a no-JS copy beside it', { skip }, () => {
+  const tags = (text, name) => [...text.matchAll(new RegExp(`<${name}\\b(?:"[^"]*"|[^>"])*>`, 'g'))].map(([tag]) => tag);
+  const attr = (tag, name) => tag.match(new RegExp(`\\s${name}="([^"]*)"`))?.[1];
+  const isPoster = (tag) => (attr(tag, 'class') ?? '').split(/\s+/).includes('vf-poster');
+  const problems = [];
+  const deferred = {};
+  const plain = {};
+  for (const p of pages()) {
+    // each video box, from its opening tag to its video: the poster sits before the video
+    for (const [box] of p.html.matchAll(/<div class="vf-media\b[^]*?<video\b/g)) {
+      const fallbacks = box.match(/<noscript>[^]*?<\/noscript>/g) ?? [];
+      const live = box.replace(/<noscript>[^]*?<\/noscript>/g, '');
+      const posters = tags(live, 'img').filter(isPoster);
+      if (!posters.length) continue;
+      const [img] = posters;
+      const where = `${p.url} ${attr(img, 'src') ?? attr(img, 'data-src')}`;
+      if (posters.length > 1) problems.push(`${where}: ${posters.length} posters in one box`);
+      if (attr(img, 'src')) {
+        (plain[p.url] ??= []).push(attr(img, 'src').split('?')[0]);
+        if (fallbacks.length) problems.push(`${where}: a plain poster needs no noscript copy`);
+        continue;
+      }
+      (deferred[p.url] ??= []).push(attr(img, 'data-src')?.split('?')[0]);
+      if (!attr(img, 'data-src')) problems.push(`${where}: neither src nor data-src`);
+      if (!(Number(attr(img, 'width')) > 0 && Number(attr(img, 'height')) > 0)) problems.push(`${where}: no width and height`);
+      const sources = tags(live, 'source').filter((t) => !attr(t, 'src'));
+      for (const s of sources) if (attr(s, 'srcset') || !attr(s, 'data-srcset')) problems.push(`${where}: an AVIF source with a srcset, or without data-srcset`);
+      if (fallbacks.length !== 1) {
+        problems.push(`${where}: ${fallbacks.length} noscript copies`);
+        continue;
+      }
+      const [copy] = tags(fallbacks[0], 'img').filter(isPoster);
+      if (!copy) {
+        problems.push(`${where}: the noscript copy has no poster`);
+        continue;
+      }
+      if (attr(copy, 'src') !== attr(img, 'data-src')) problems.push(`${where}: the noscript copy shows ${attr(copy, 'src')}`);
+      if (attr(copy, 'loading') !== 'lazy') problems.push(`${where}: the noscript copy is not lazy`);
+      if (attr(copy, 'width') !== attr(img, 'width') || attr(copy, 'height') !== attr(img, 'height')) problems.push(`${where}: the noscript copy's size differs`);
+      const copySets = tags(fallbacks[0], 'source').map((t) => attr(t, 'srcset'));
+      if (copySets.join(' | ') !== sources.map((t) => attr(t, 'data-srcset')).join(' | ')) problems.push(`${where}: the noscript copy's AVIF differs`);
+    }
+  }
+  assert.deepEqual(problems, []);
+  assert.deepEqual(plain, PLAIN_POSTERS, 'only the posters that can be the largest paint keep a plain src');
+  assert.ok((deferred['/'] ?? []).includes('/media/loop-review.jpg'), "the home page's review loop waits for the reader");
+  assert.ok((deferred['/docs/getting-started/'] ?? []).length > 0, 'the getting-started figures wait for the reader');
 });
 
 test('404.html and llms.txt are built; llms.txt names every skill page', { skip }, () => {

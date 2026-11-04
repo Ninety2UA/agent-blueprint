@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://agent-blueprint.dbenger.com/">Website</a> ·
-  <a href="#whats-new-in-v411">What's new</a> ·
+  <a href="#whats-new-in-v420">What's new</a> ·
   <a href="#install">Install</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#unattended-runs">Unattended runs</a> ·
@@ -29,6 +29,10 @@
 A coding agent starts every session from nothing. It doesn't know how your project works, what was decided last week, or which problems were already solved, and when you switch to another tool, whatever the last one learned stays behind.
 
 Agent Blueprint gives the agent one way of working that is the same in every tool. Skills take a feature from design through review to a pull request. Helper prompts handle the analysis that needs a fresh context, such as a security review or a plan check. Project documents under `docs/` carry conventions, decisions and solved problems from one session to the next, so they are there whichever of the eight tools opens the repository next.
+
+## What's new in v4.2.0
+
+Agent Blueprint now also runs as a hosted agent, beside the eight coding CLIs. You deploy it to your own Vercel account, Railway or a server you run, then reach it from a web chat, Slack, Linear, Telegram, an MCP client such as Claude Code, or HTTP. Name a GitHub repository and a feature, and it works through the same skills to a reviewed pull request, which it pushes as a GitHub App you create for that one repository. Nothing changes for the eight CLIs: the skills, helper prompts and hooks they install are the same as in 4.1.1, and `install.sh --only eve` tells you where to deploy instead. [Hosted](#hosted) has the links, and the [release notes](docs/releases/v4.2.0-release-notes.md) have the details.
 
 ## What's new in v4.1.1
 
@@ -73,6 +77,16 @@ The decision record behind the change is [`docs/learnings/2026-10-portability-de
 </p>
 
 Each tool installs Agent Blueprint from GitHub by its own route and updates it the same way. Find your tool in the table, or set up every tool on the machine at once with the installer.
+
+### Hosted
+
+Agent Blueprint also runs as a hosted agent, built on Vercel's [Eve](https://eve.dev/docs) framework, that you deploy to your own Vercel account, Railway or a server you run. It reads the same skills as the coding CLIs. You reach it from a web chat, Slack, Linear, Telegram, an MCP client such as Claude Code, or HTTP, name a GitHub repository and a feature, and it works through the same pipeline to a reviewed pull request. It pushes as a GitHub App you create for that one repository, so it can reach no other. Helpers run on the model their role is given through the Vercel AI Gateway, and the shell runs in a sandbox: Vercel Sandbox, Docker or Daytona.
+
+It is not one of the eight tools below and nothing installs on your computer, so `install.sh` does not set it up. You pay for the model use through the AI Gateway and for the sandbox time where you run it.
+
+- [The Hosted page](https://agent-blueprint.dbenger.com/hosted) builds a deploy link from your choices: where it runs, the sandbox, the channel and how it reaches the AI Gateway.
+- [`eve/README.md`](eve/README.md) lists what to have ready, the three deploy routes, the variables and how to upgrade a running copy.
+- [`docs/hosts/eve.md`](docs/hosts/eve.md) says what works differently there, including the skills that are limited.
 
 ### Install in your tool
 
@@ -806,10 +820,11 @@ An evaluation then ran the same fixture tasks on v3.8.0 and v4.0.0 in Claude Cod
 ## Release history
 
 <details>
-<summary>v2.3 to v4.1.1</summary>
+<summary>v2.3 to v4.2.0</summary>
 
 | Version | Date | What changed |
 |---|---|---|
+| v4.2.0 | 2026-10-29 | Agent Blueprint also runs as a hosted agent on Vercel's Eve framework, which you deploy to your own Vercel account, Railway or server and reach from a web chat, Slack, Linear, Telegram, an MCP client such as Claude Code, or HTTP. The eight coding CLIs install the same skills as in 4.1.1, and `install.sh --only eve` points to the Hosted page instead. |
 | v4.1.1 | 2026-10-13 | `install.sh` no longer removes or replaces Cursor CLI's marketplace, which Cursor shares with every computer on your account. It tells you what to uninstall or switch yourself instead. |
 | v4.1.0 | 2026-10-12 | Each tool installs Agent Blueprint with its own command, and `install.sh` runs those commands for every tool at once. TDD keeps code that existed before the task, brainstorming accepts a design you already approved, `ab-project-start` refuses the home folder and nested repositories, and Codex gets display names, icons and a setup step. |
 | v4.0.2 | 2026-10-12 | The injection scanners match whole words, so "Blueprint" no longer reads as an injection attempt. New projects get `docs/context/DECISIONS.md`, and `ab-brainstorming` writes each design section out before asking for approval. |

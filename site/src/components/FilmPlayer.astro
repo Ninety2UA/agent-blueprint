@@ -1,34 +1,61 @@
 ---
-// The product film on a full drawing sheet: chapter buttons that seek and follow
-// playback, a progress line drawn as a dimension line, a title block under the sheet.
-// Chapters come from public/media/film-chapters.json and the length and frame size from
-// film.mp4 itself, both read at build time, so a re-render needs no edit here.
-// The film plays once on its own when on screen, muted, never loops; video-figures.ts runs it.
+// A film on a full drawing sheet: chapter buttons that seek and follow playback, a progress line
+// drawn as a dimension line, a title block under the sheet. With no props past `num` it plays the
+// product film: chapters from public/media/film-chapters.json, length and frame size from film.mp4
+// itself, both read at build time, so a re-render needs no edit here. Another film (the Hosted page's,
+// HostedFilm.astro) passes its own source, poster, chapters, chapter texts, alt text and cells, and
+// `sound` for a scored film: a Sound toggle beside the seek line that starts off (the video stays
+// muted), flips the video's mute on press, carries aria-pressed and keeps its state across replay and
+// chapter jumps because nothing else touches `muted` (video-figures.ts).
+// The film plays once on its own when on screen, muted, never loops; video-figures.ts runs it. The
+// product film's poster stays a plain lazy image, since it can be its page's largest paint; a film far
+// down its page passes deferPoster, and its poster waits for the reader (ruling 47).
 import '../styles/media.css';
-import chapters from '../../public/media/film-chapters.json';
+import productChapters from '../../public/media/film-chapters.json';
 import DimensionLine from './DimensionLine.astro';
 import DrawingSheet from './DrawingSheet.astro';
 import { getSiteData } from '../lib/site.mjs';
+import { IC } from './icons';
 import { clock, mp4Facts } from './media';
 import { numberWord } from './number-word';
 import TitleBlock from './TitleBlock.astro';
 import VideoMedia from './VideoMedia.astro';
 
+interface Cell {
+  label: string;
+  value: string;
+  class?: string;
+}
 interface Props {
   /** figure number, in page order */
   num: number;
   /** prefix for the ids inside the player (seek control, chapter line) */
   id?: string;
+  /** path under public/; the product film unless given */
+  src?: string;
+  /** the poster shown before the film plays, with its frame size */
+  poster?: string;
+  posterWidth?: number;
+  posterHeight?: number;
+  /** the chapters file's entries */
+  chapters?: { label: string; start: number }[];
+  /** what each chapter shows, keyed by its label (HTML) */
+  chapterText?: Record<string, string>;
+  /** the text alternative; given the film's length in whole seconds */
+  alt?: (seconds: number) => string;
+  /** the title block's cells; given the film's length and frame size */
+  cells?: (facts: { length: string; frame: string; num: number }) => Cell[];
+  /** a scored film: the Sound toggle beside the seek line */
+  sound?: boolean;
+  /** names the film on its Play button */
+  label?: string;
+  /** the poster waits for the reader (ruling 47): for a film that cannot be its page's largest paint */
+  deferPoster?: boolean;
 }
-const { num, id = 'film' } = Astro.props;
 
-const SRC = '/media/film.mp4';
 const tools = numberWord(getSiteData().counts.tools);
-const { duration, width, height } = mp4Facts('media/film.mp4');
-const chaps = chapters.map((c) => ({ label: String(c.label), start: Number(c.start) }));
-
-// What each chapter shows, keyed by its label in film-chapters.json (from the motion notes).
-const CHAPTER_TEXT: Record<string, string> = {
+// What each chapter of the product film shows, keyed by its label in film-chapters.json (from the motion notes).
+const PRODUCT_TEXT: Record<string, string> = {
   Idea: 'The cover sheet: the example request and the index of the sheets that follow.',
   Design: '<code>ab-brainstorming</code> checks what the repository already answers, compares three approaches and saves the approved design under <code>docs/plans/</code>.',
   Plan: '<code>ab-writing-plans</code> turns the design into four tasks, each with its file, what its test asserts and the tasks it waits for.',
@@ -38,29 +65,48 @@ const CHAPTER_TEXT: Record<string, string> = {
   Ship: 'The outgoing commits and the pull request body pass a secret scan, then the pull request opens.',
   Learn: `<code>ab-knowledge-compounding</code> writes the solution to <code>docs/solutions/</code> and <code>ab-session-wrap</code> updates <code>docs/context/STATUS.md</code>. The next session, in Codex, reads both with <code>ab-resume-session</code>. The film ends on the ${tools} coding CLIs and the mark.`,
 };
-const texts = JSON.stringify(Object.fromEntries(chaps.map((c) => [c.label, CHAPTER_TEXT[c.label] ?? ''])));
-const first = chaps[0].label;
-const length = clock(duration);
-
-const alt =
-  `Film, ${Math.floor(duration)} seconds, no sound: an example feature, Add CSV export to the reports page, drawn as a set of sheets ` +
+const productAlt = (seconds: number) =>
+  `Film, ${seconds} seconds, no sound: an example feature, Add CSV export to the reports page, drawn as a set of sheets ` +
   'along one line. Design with ab-brainstorming, Plan with ab-writing-plans, Build in two waves with ab-orchestrate, ' +
   'Review with ab-review-swarm and ab-iterative-refinement, Verify with ab-verification-before-completion, ' +
   'Ship after a secret scan, and Learn with ab-knowledge-compounding and ab-session-wrap, read back in Codex by ' +
   `ab-resume-session. It ends on the ${tools} coding CLIs and the mark.`;
-
-const cells = [
+const productCells = ({ length, frame, num }: { length: string; frame: string; num: number }): Cell[] => [
   { label: 'Figure', value: String(num), class: 'ftb-fig' },
   { label: 'Title', value: 'One feature, idea to pull request', class: 'ftb-title' },
   { label: 'Example', value: 'Add CSV export to the reports page (invented)', class: 'ftb-ex' },
   { label: 'Length', value: length, class: 'ftb-len' },
-  { label: 'Frame', value: `${width} × ${height}`, class: 'ftb-frame' },
+  { label: 'Frame', value: frame, class: 'ftb-frame' },
   { label: 'Sound', value: 'None', class: 'ftb-sound' },
 ];
+
+const {
+  num,
+  id = 'film',
+  src = '/media/film.mp4',
+  poster = '/media/film-1280.jpg',
+  posterWidth = 1280,
+  posterHeight = 720,
+  chapters = productChapters,
+  chapterText = PRODUCT_TEXT,
+  alt: altFor = productAlt,
+  cells: cellsFor = productCells,
+  sound = false,
+  label = 'the film',
+  deferPoster = false,
+} = Astro.props;
+
+const { duration, width, height } = mp4Facts(src.slice(1));
+const chaps = chapters.map((c) => ({ label: String(c.label), start: Number(c.start) }));
+const texts = JSON.stringify(Object.fromEntries(chaps.map((c) => [c.label, chapterText[c.label] ?? ''])));
+const first = chaps[0].label;
+const length = clock(duration);
+const alt = altFor(Math.floor(duration));
+const cells = cellsFor({ length, frame: `${width} × ${height}`, num });
 ---
 <figure class="vfig film" data-vfig data-film data-duration={duration.toFixed(2)} data-texts={texts}>
   <DrawingSheet class="film-sheet">
-    <VideoMedia src={SRC} poster="/media/film-1280.jpg" width={1280} height={720} alt={alt} label="the film" loop={false} bare />
+    <VideoMedia src={src} poster={poster} width={posterWidth} height={posterHeight} alt={alt} label={label} loop={false} bare deferPoster={deferPoster} />
     <div class="film-ctl">
       <DimensionLine ticks={chaps.slice(1).map((c) => c.start / duration)}>
         <span class="fd-fill" aria-hidden="true"></span>
@@ -68,8 +114,9 @@ const cells = [
         <input class="fd-seek" id={`${id}-seek`} type="range" min="0" max="1000" step="1" value="0" aria-label="Position in the film" aria-valuetext={`0:00 of ${length}`} />
         <span slot="label" aria-hidden="true"><span data-cur>0:00</span> of {length}</span>
       </DimensionLine>
+      {sound && <button class="fd-sound" type="button" aria-pressed="false"><Fragment set:html={IC.sound} /><span>Sound</span></button>}
     </div>
-    <ol class="chapters" aria-label="Chapters">
+    <ol class="chapters" aria-label="Chapters" style={chaps.length === 8 ? undefined : `--chap-n:${chaps.length}`}>
       {chaps.map((c) => (
         <li>
           <button class="chap" type="button" data-t={c.start} aria-describedby={`${id}-now`}>
@@ -78,7 +125,7 @@ const cells = [
         </li>
       ))}
     </ol>
-    <p class="film-now" id={`${id}-now`} data-now><b>{first}</b> <span set:html={CHAPTER_TEXT[first] ?? ''} /></p>
+    <p class="film-now" id={`${id}-now`} data-now><b>{first}</b> <span set:html={chapterText[first] ?? ''} /></p>
   </DrawingSheet>
   <figcaption>
     <TitleBlock class="film-tb" cells={cells} attached />

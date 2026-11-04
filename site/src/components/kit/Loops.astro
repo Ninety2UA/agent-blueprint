@@ -1,7 +1,8 @@
 ---
 // The loops: every loop the site embeds as a two-column gallery (Figs. 2 onward), each with its files.
 // The number of loops comes from LOOPS, and the lengths in the text and each loop's frame size from the files, so
-// a new loop or a re-render needs no edit here.
+// a new loop or a re-render needs no edit here. A loop with a portrait cut lists its files too; the gallery plays
+// the landscape cut.
 import { capitalize } from '../../lib/text.mjs';
 import { mp4Facts } from '../media';
 import { numberWord } from '../number-word';
@@ -18,13 +19,13 @@ const seconds = lengths.length === 1 ? numberWord(lengths[0]) : `${numberWord(le
   <div class="wrap">
     <div class="sec-head">
       <h2 id="loops-h" class="h-sec">{capitalize(numberWord(LOOPS.length))} loops.</h2>
-      <p class="body">{capitalize(seconds)} seconds each, made to repeat without a visible seam. Each one shows a single mechanism from the home page or the docs. Each has a poster frame, and the table under it gives its frame size and length.</p>
+      <p class="body">{capitalize(seconds)} seconds each, made to repeat without a visible seam. Each one shows a single mechanism from the home page, the docs or the Hosted page. Each has a poster frame, and the table under it gives its frame size and length.</p>
     </div>
     <div class="loop-gallery">
       {LOOPS.map((l, i) => (
         <VideoFigure src={`/media/${l.name}.mp4`} num={i + 2} alt={l.alt} label={l.label} class="in-kit">
           <Fragment set:html={l.caption} />
-          <FileTable slot="after" files={[`/media/${l.name}.mp4`, `/media/${l.name}.jpg`]} label={l.caption.replace(/<[^>]+>/g, '')} />
+          <FileTable slot="after" files={[l.name, l.portrait].filter(Boolean).flatMap((n) => [`/media/${n}.mp4`, `/media/${n}.jpg`])} label={l.caption.replace(/<[^>]+>/g, '')} />
         </VideoFigure>
       ))}
     </div>

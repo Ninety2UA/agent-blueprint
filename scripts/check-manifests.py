@@ -5,8 +5,9 @@ One committed manifest per tool points at the shared skills/ tree. Rule ids:
 
   missing-manifest  every KTD10 manifest exists and parses as a JSON object.
   name              each plugin manifest and marketplace names agent-blueprint.
-  version           every versioned manifest, package.json, and any skill's
-                    frontmatter metadata.version equal .claude-plugin/plugin.json.
+  version           every versioned manifest, package.json, eve/package.json (the
+                    hosted option, from 4.2.0; checked when present) and any
+                    skill's frontmatter metadata.version equal .claude-plugin/plugin.json.
   skills-key        Codex and Grok manifests declare "skills": "./skills/".
   root-manifest     the root plugin.json (Antigravity) has no "$schema" (Codex
                     then applies the 8,000-byte Agent Plugins skill limit) and no
@@ -37,6 +38,8 @@ PLUGIN_MANIFESTS = [CANONICAL, ".codex-plugin/plugin.json", "plugin.json",
 MARKETPLACES = [".claude-plugin/marketplace.json", ".agents/plugins/marketplace.json",
                 ".grok-plugin/marketplace.json"]
 PACKAGE = "package.json"
+# The hosted option's package rides the release ladder; its name is its own, so only its version is held.
+EVE_PACKAGE = "eve/package.json"
 NEEDS_SKILLS_KEY = [".codex-plugin/plugin.json", ".grok-plugin/plugin.json"]
 ALLOWLIST_SECTION = "manifests"
 # U6's sourced subset, not the full submission category catalog.
@@ -154,6 +157,16 @@ def collect(repo):
                 if isinstance(entry, dict) and "version" in entry and entry["version"] != canonical:
                     add(rel_path, "version", "plugin entry version %r differs from %s (%s)"
                         % (entry["version"], CANONICAL, canonical))
+        eve = os.path.join(repo, EVE_PACKAGE)
+        if os.path.isfile(eve):
+            try:
+                eve_doc = json.loads(read(eve))
+            except json.JSONDecodeError as exc:
+                add(EVE_PACKAGE, "version", "not valid JSON (%s)" % exc)
+            else:
+                eve_version = eve_doc.get("version") if isinstance(eve_doc, dict) else None
+                if eve_version != canonical:
+                    add(EVE_PACKAGE, "version", "version %r differs from %s (%s)" % (eve_version, CANONICAL, canonical))
         for skill, ver in skill_metadata_versions(repo).items():
             if ver != canonical:
                 add("skills/%s/SKILL.md" % skill, "version", "metadata.version %s differs from the release %s"

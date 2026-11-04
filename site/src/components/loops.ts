@@ -1,10 +1,11 @@
 // A loop from the Kit's LOOPS by name, for a page that embeds it: its file, caption (HTML), Play-button
-// label and text alternative, written once in kit/kit-data.ts. A page that names a loop LOOPS does
-// not have stops the build.
-import { LOOPS } from './kit/kit-data';
+// label and text alternative, written once in kit/kit-data.ts. A loop with a portrait cut also returns
+// that file as portraitSrc, for a figure that switches cuts by its own width. A page that names a loop
+// LOOPS does not have stops the build.
+import { LOOPS } from './kit/kit-data.ts';
 
 export function loop(name: string) {
   const found = LOOPS.find((l) => l.name === name);
   if (!found) throw new Error(`A page embeds the loop ${name}, which LOOPS in site/src/components/kit/kit-data.ts does not list`);
-  return { ...found, src: `/media/${name}.mp4` };
+  return { ...found, src: `/media/${name}.mp4`, portraitSrc: found.portrait ? `/media/${found.portrait}.mp4` : undefined };
 }

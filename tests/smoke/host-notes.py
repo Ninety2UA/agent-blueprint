@@ -5,7 +5,9 @@ Usage: python3 tests/smoke/host-notes.py [--json docs/releases/v<version>-smoke.
 
 The section is the last one in every support note; everything after its heading is replaced.
 The default JSON is the current release's (the version in .claude-plugin/plugin.json). When that
-release has an install record (docs/releases/v<version>-installs.md), each section opens with it.
+release has an install record (docs/releases/v<version>-installs.md), each CLI's section opens with it;
+Eve's does not, since Eve is deployed, not installed.
+Eve's note (eve.md) is skipped with a message while it does not exist.
 """
 import argparse
 import json
@@ -15,7 +17,8 @@ import re
 from report import fmt_secs, mask   # the same directory; report.py owns the table formatting
 
 NOTES = {"claude": "claude-code.md", "codex": "codex.md", "agy": "antigravity.md", "grok": "grok-build.md",
-         "pi": "pi.md", "cursor-agent": "cursor-cli.md", "hermes": "hermes.md", "amp": "amp.md"}
+         "pi": "pi.md", "cursor-agent": "cursor-cli.md", "hermes": "hermes.md", "amp": "amp.md",
+         "eve": "eve.md"}   # the hosted option, beside the eight CLIs (its rows come from eve/scripts/smoke-to-json.py)
 CELLS = ["discovery", "canary", "hooks", "manual-only", "build", "helpers-off", "effort", "review", "debug",
          "tdd-override", "brainstorm-override", "ship", "team", "upgrade"]
 
@@ -31,7 +34,7 @@ def section(host, doc, release):
     smoke = "docs/releases/v%s-smoke.md" % release
     installs = "docs/releases/v%s-installs.md" % release
     lines = []
-    if os.path.exists(installs):
+    if os.path.exists(installs) and host != "eve":   # Eve is deployed, not installed
         lines += ["Install: the v%s install record ([%s](%s)) shows this tool installing Agent Blueprint by its own route "
                   "and listing each skill once." % (release, installs, os.path.relpath(installs, "docs/hosts")), ""]
     if not cells:
@@ -65,6 +68,9 @@ def main():
     release = doc.get("release") or current_version()
     for host, note in NOTES.items():
         path = os.path.join(args.hosts, note)
+        if host == "eve" and not os.path.exists(path):
+            print("%-12s skipped: %s does not exist yet" % (host, path))
+            continue
         text = open(path, encoding="utf-8").read()
         head, sep, _ = text.partition("## Smoke status\n")
         if not sep:

@@ -1,0 +1,7 @@
+[
+  {"label": "Ask", "start": 0},
+  {"label": "Sandbox", "start": 18.0},
+  {"label": "Stages", "start": 24.0},
+  {"label": "Pull request", "start": 32.0},
+  {"label": "Deploy", "start": 37.0}
+]

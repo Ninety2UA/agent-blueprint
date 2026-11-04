@@ -10,6 +10,29 @@
 .vf-media video { position: relative; display: block; width: 100%; height: 100%; object-fit: cover; }
 /* the poster sits behind the idle video; the playing video covers it */
 .vf-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* a poster still waiting for the reader (ruling 47) has no image yet; without JavaScript its noscript
+   copy shows instead */
+.vf-poster[data-src] { visibility: hidden; }
+/* without JavaScript the native controls stay, and Chrome paints them over the poster; see-through,
+   they let the poster show */
+video::-webkit-media-controls { background: transparent; }
+/* a figure with a portrait cut (VideoFigure's portraitSrc) holds a box per cut and shows the portrait
+   box below 540 px of its own width, away from every width the layout gives a figure; only these
+   figures are containers, so one-cut figures keep their sizing */
+.vf-two { container-type: inline-size; }
+.vf-two .vf-port { display: none; }
+@container (width < 540px) {
+  .vf-two .vf-land { display: none; }
+  .vf-two .vf-port { display: block; }
+}
+/* the Hosted page's Fig. 1 switches its boxes by viewport bands (rules written by VideoFigure) over
+   one poster layer, so the boxes are see-through and the frame holds the poster */
+.vf-frame { position: relative; background: var(--bg-sunk); }
+.vf-bands .vf-media { background: none; }
+/* Chrome measures a playing video's largest-paint area one pixel row larger than the poster image in
+   the same box, so Fig. 1's first frame would replace its poster as the page's largest paint. The
+   loops' outer rows are plain ground in every frame, so clipping one row top and bottom shows nothing. */
+.vf-bands .vf-media video { clip-path: inset(1px 0); }
 /* a drawing laid over the video in the video's own coordinates (VideoMedia's "over" slot), such as
    the runner's command line, set in the video's ink so the dark theme turns both negative together */
 .vf-over { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -25,7 +48,7 @@
 .vf-big { position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none; align-items: center; gap: 10px; height: 48px; padding: 0 18px 0 14px; border: 1px solid var(--ink); border-radius: var(--r); background: var(--bg); color: var(--ink); font-family: var(--font-mono); font-size: 0.8125rem; cursor: pointer; transition: background-color 160ms, color 160ms; }
 .vf-big svg { width: 18px; height: 18px; }
 .vf-big:hover { background: var(--ink); color: var(--bg); }
-.vjs.show-big:not(.is-playing) .vf-big { display: inline-flex; animation: big-in 320ms var(--ease-out); }
+.vjs .vf-media.show-big:not(.is-playing) .vf-big { display: inline-flex; animation: big-in 320ms var(--ease-out); }
 @keyframes big-in { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- The film: a full drawing sheet ---------- */
@@ -41,7 +64,17 @@
 .fd-seek { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
 .dimline:has(.fd-seek:focus-visible) { outline: 2px solid var(--focus); outline-offset: 4px; }
 
-.chapters { list-style: none; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); margin-top: var(--s-5); border-top: 1px solid var(--hair); }
+/* a scored film's Sound toggle (FilmPlayer `sound`): a 44 px target beside the seek line, ink outline
+   while muted, filled while the sound is on; the glyph shows the cross or the waves */
+.fd-sound { flex: none; display: inline-flex; align-items: center; gap: 8px; min-width: 44px; min-height: 44px; margin-left: var(--s-4); padding: 0 14px 0 11px; border: 1px solid var(--ink); border-radius: var(--r); background: var(--bg); color: var(--ink); font-family: var(--font-mono); font-size: 0.8125rem; cursor: pointer; transition: background-color 160ms, color 160ms; }
+.fd-sound svg { width: 18px; height: 18px; }
+.fd-sound .snd-on, .fd-sound[aria-pressed="true"] .snd-off { display: none; }
+.fd-sound[aria-pressed="true"] .snd-on { display: inline; }
+.fd-sound[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.fd-sound:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.film-ctl:has(.fd-sound) { align-items: flex-end; }
+
+.chapters { list-style: none; display: grid; grid-template-columns: repeat(var(--chap-n, 8), minmax(0, 1fr)); margin-top: var(--s-5); border-top: 1px solid var(--hair); }
 .chap { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; width: 100%; padding: 14px 6px 4px 0; border: 0; border-radius: var(--r); background: transparent; text-align: left; cursor: pointer; }
 .chap .mark { position: relative; grid-row: span 2; width: 22px; height: 22px; }
 .chap .mark::before { content: ""; position: absolute; inset: 5px; z-index: 1; border: 1.25px solid var(--ink); border-radius: 50%; background: var(--bg); transition: background-color 300ms var(--ease-out), border-color 300ms; }
@@ -61,6 +94,8 @@
 
 @media (max-width: 900px) {
   .chapters { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  /* a film with other than eight chapters (FilmPlayer sets --chap-n) keeps one row here */
+  .chapters[style] { grid-template-columns: repeat(var(--chap-n), minmax(0, 1fr)); }
   .film-tb { --tb-cols: minmax(0, 1fr) minmax(0, 1fr); }
   .film-tb .ftb-title { order: -2; grid-column: 1 / -1; }
   .film-tb .ftb-ex { order: -1; grid-column: 1 / -1; }
@@ -70,6 +105,8 @@
 }
 @media (max-width: 560px) {
   .film-ctl .dl-txt { font-size: 0.6875rem; padding: 0 6px; }
+  .chapters[style] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fd-sound { margin-left: var(--s-3); padding: 0 11px; }
   .chap { padding-right: 2px; column-gap: 6px; }
   .chap .cn { font-size: 0.8125rem; }
   .chap .mark { width: 18px; height: 18px; }

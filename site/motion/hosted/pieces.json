@@ -1,0 +1,14 @@
+{
+  "fps": 30,
+  "crf": 17,
+  "avifCrf": 22,
+  "avifPreset": 4,
+  "pieces": [
+    { "name": "loop-request-to-pr", "width": 1200, "height": 750, "seconds": 8, "poster": 4.4, "avif": [600, 1200] },
+    { "name": "loop-request-to-pr-portrait", "width": 720, "height": 900, "seconds": 8, "poster": 4.4, "avif": [720] },
+    { "name": "loop-prereqs", "width": 1200, "height": 750, "seconds": 12, "poster": 2.2 },
+    { "name": "loop-prereqs-portrait", "width": 720, "height": 900, "seconds": 12, "poster": 2.2, "avif": [720], "avifCrf": 40, "avifPreset": 8 },
+    { "name": "loop-routes", "width": 1200, "height": 750, "seconds": 12, "poster": 0 },
+    { "name": "loop-routes-portrait", "width": 720, "height": 900, "seconds": 12, "poster": 0, "avif": [720], "avifCrf": 40, "avifPreset": 8 }
+  ]
+}

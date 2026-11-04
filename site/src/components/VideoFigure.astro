@@ -2,13 +2,38 @@
 // A looping figure: hairline frame, registration marks outside the corners and a mono caption with
 // its figure number. It plays on its own while on screen; VideoMedia holds the video box and
 // video-figures.ts the rules for playing it.
+//
+// With a portrait cut (portraitSrc, from loop()) the figure holds a landscape and a portrait box,
+// each with its own poster, preload="none" video and Play button, and one hidden text alternative
+// both reference; with portraitAvif the portrait poster offers that AVIF before its JPG. media.css
+// shows the portrait box below 540 px of figure width; the other box is display: none, so its video
+// never plays and its poster never loads. The posters wait for the reader unless deferPoster is false
+// (VideoMedia, ruling 47).
+//
+// The Hosted page's Fig. 1 (heroPosters) is the largest paint at every width, so it switches its
+// boxes by the viewport bands below instead, over one eager <picture> poster that loads one AVIF per
+// band, and its video starts only after the load event (data-after-load).
 import '../styles/media.css';
 import RegMarks from './RegMarks.astro';
 import VideoMedia from './VideoMedia.astro';
+import { mp4Facts, versioned } from './media';
 
 interface Props {
   /** path under public/, e.g. "/media/loop-review.mp4"; the poster is the .jpg beside it */
   src: string;
+  /** the portrait cut, e.g. "/media/loop-routes-portrait.mp4", shown below 540 px of figure width */
+  portraitSrc?: string;
+  /**
+   * the portrait box's AVIF poster, e.g. "/media/loop-routes-portrait-720.avif", offered before its
+   * JPG (ruling 38). Needs portraitSrc; Fig. 1 uses heroPosters instead.
+   */
+  portraitAvif?: string;
+  /**
+   * Fig. 1 of the Hosted page only: its AVIF posters by cut and pixel width, e.g.
+   * { landscape: { 600: '/media/x-600.avif', 1200: '/media/x-1200.avif' }, portrait: { 720: '/media/x-portrait-720.avif' } }.
+   * Needs portraitSrc.
+   */
+  heroPosters?: { landscape: Record<number, string>; portrait: Record<number, string> };
   /** figure number, in page order */
   num: number;
   /** what the video shows, with its real names and numbers: the text alternative */
@@ -16,17 +41,85 @@ interface Props {
   /** names the video on the fallback Play button: "Play the review animation" */
   label: string;
   class?: string;
+  /**
+   * false keeps the boxes' posters plain lazy images, for a figure whose poster can be the page's
+   * largest paint; otherwise they wait for the reader (VideoMedia, ruling 47). Fig. 1 of the Hosted
+   * page lays its own eager poster and ignores it.
+   */
+  deferPoster?: boolean;
 }
-const { src, num, alt, label, class: cls } = Astro.props;
-const capId = `cap-${src.split('/').pop()!.replace(/\.\w+$/, '')}-${num}`;
+const { src, portraitSrc, portraitAvif, heroPosters, num, alt, label, class: cls, deferPoster = true } = Astro.props;
+if (heroPosters && !portraitSrc) throw new Error(`${src}: heroPosters needs a portraitSrc`);
+if (portraitAvif && (!portraitSrc || heroPosters)) throw new Error(`${src}: portraitAvif needs a portraitSrc and no heroPosters`);
+const name = src.split('/').pop()!.replace(/\.\w+$/, '');
+const capId = `cap-${name}-${num}`;
+const altId = `alt-${name}-${num}`;
+
+// Fig. 1's viewport bands, narrowest first, each one a min-width over the one before. They reproduce,
+// at the Hosted hero's layout, the 540 px figure-width switch the other two-cut figures make by
+// container query: the figure is the full column (the viewport less two 3.4vw gutters) up to 900 px,
+// 480 px from 901 px and 600 px from 1200 px. The same list writes the boxes' display rules and the
+// poster's <source> media, so the poster always matches the shown box, and the shown box sets the
+// frame's aspect ratio.
+const PORTRAIT_BELOW = 540;
+const COLUMN = 1 - 2 * 0.034;
+const BANDS = [
+  { media: '', cut: 'portrait', size: `${(COLUMN * 100).toFixed(1)}vw` },
+  { media: `(width >= ${(PORTRAIT_BELOW / COLUMN).toFixed(1)}px)`, cut: 'landscape', size: `${(COLUMN * 100).toFixed(1)}vw` },
+  { media: '(width > 900px)', cut: 'portrait', size: '480px' },
+  { media: '(width >= 1200px)', cut: 'landscape', size: '600px' },
+] as const;
+
+const hero = heroPosters && portraitSrc
+  ? (() => {
+      const dims = { landscape: mp4Facts(src.slice(1)), portrait: mp4Facts(portraitSrc.slice(1)) };
+      const shows = (cut: string) => `.vf-bands .vf-land{display:${cut === 'landscape' ? 'block' : 'none'}}.vf-bands .vf-port{display:${cut === 'portrait' ? 'block' : 'none'}}`;
+      const css = BANDS.map((b) => (b.media ? `@media ${b.media}{${shows(b.cut)}}` : shows(b.cut))).join('');
+      // <picture> takes the first source that matches, so the widest band comes first
+      const sources = [...BANDS].reverse().map((b) => ({
+        media: b.media || undefined,
+        srcset: Object.entries(heroPosters[b.cut]).map(([w, path]) => `${versioned(path)} ${w}w`).join(', '),
+        sizes: b.size,
+        width: dims[b.cut].width,
+        height: dims[b.cut].height,
+      }));
+      return { css, sources, jpg: src.replace(/\.mp4$/, '.jpg'), ...dims.landscape };
+    })()
+  : null;
 ---
-<figure class:list={['vfig', cls]} data-vfig>
-  <VideoMedia src={src} alt={alt} label={label} describedby={capId}>
-    <RegMarks />
-    <slot name="over" slot="over" />
-  </VideoMedia>
-  <figcaption class="vf-cap">
-    <span id={capId}><b>Fig. {num}</b><slot /></span>
-  </figcaption>
-  <slot name="after" />
-</figure>
+{!portraitSrc ? (
+  <figure class:list={['vfig', cls]} data-vfig>
+    <VideoMedia src={src} alt={alt} label={label} describedby={capId} deferPoster={deferPoster}>
+      <RegMarks />
+      <slot name="over" slot="over" />
+    </VideoMedia>
+    <figcaption class="vf-cap">
+      <span id={capId}><b>Fig. {num}</b><slot /></span>
+    </figcaption>
+    <slot name="after" />
+  </figure>
+) : (
+  <figure class:list={['vfig', hero ? 'vf-bands' : 'vf-two', cls]} data-vfig data-after-load={hero ? '' : undefined}>
+    <span id={altId} hidden>{alt}</span>
+    {hero ? (
+      <div class="vf-frame">
+        <style is:inline set:html={hero.css}></style>
+        <picture>
+          {hero.sources.map((s) => <source media={s.media} type="image/avif" srcset={s.srcset} sizes={s.sizes} width={s.width} height={s.height} />)}
+          <img class="vf-poster" src={versioned(hero.jpg)} width={hero.width} height={hero.height} alt="" loading="eager" fetchpriority="high" decoding="async" />
+        </picture>
+        <VideoMedia class="vf-land" src={src} poster={false} alt={alt} label={label} labelledby={altId} describedby={capId}><RegMarks /></VideoMedia>
+        <VideoMedia class="vf-port" src={portraitSrc} poster={false} alt={alt} label={label} labelledby={altId} describedby={capId}><RegMarks /></VideoMedia>
+      </div>
+    ) : (
+      <>
+        <VideoMedia class="vf-land" src={src} alt={alt} label={label} labelledby={altId} describedby={capId} deferPoster={deferPoster}><RegMarks /></VideoMedia>
+        <VideoMedia class="vf-port" src={portraitSrc} avifPoster={portraitAvif} alt={alt} label={label} labelledby={altId} describedby={capId} deferPoster={deferPoster}><RegMarks /></VideoMedia>
+      </>
+    )}
+    <figcaption class="vf-cap">
+      <span id={capId}><b>Fig. {num}</b><slot /></span>
+    </figcaption>
+    <slot name="after" />
+  </figure>
+)}

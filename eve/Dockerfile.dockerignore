@@ -1,0 +1,31 @@
+# BuildKit reads this file beside eve/Dockerfile. The build context is the product root, so every
+# path here is relative to it, not to eve/.
+
+# eve/.gitignore, as context-root paths
+eve/node_modules/
+eve/.eve/
+eve/.vercel/
+eve/.env*
+eve/apps/web/.next/
+eve/.output/
+eve/.workflow-data/
+
+# Version control, in the published repository
+.git/
+
+# Not part of the agent: the website and the README images
+site/
+docs/images/
+
+# The ninety2 anatomy files at the product root (never published)
+AGENTS.md
+INDEX.md
+STATUS.md
+TASKS.md
+GOALS.md
+RUNBOOK.md
+migration.md
+publish.md
+.publishignore
+plans/
+learnings/

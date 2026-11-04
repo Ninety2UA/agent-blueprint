@@ -23,10 +23,12 @@ STATES = [
     ("pass", "the outcome check held (and the skill's provenance record exists for pipeline cells)"),
     ("degraded-pass (inline)", "the check held, but every helper step ran inline (no subagents on this host or in this run)"),
     ("degraded (vendor bug)", "the check failed because of a confirmed vendor bug; the link points at the upstream issue"),
+    ("degraded", "the cell's skill is marked degraded on this host in its support note; the reason says why"),
     ("fail", "the check failed, the provenance record is missing, the host exited early, or preflight failed"),
     ("timeout", "the host did not finish within the cell's timeout (hosts.sh, or --timeout)"),
     ("not-installed", "the host CLI is not on PATH; nothing ran"),
     ("n/a", "the cell does not apply to this host (the reason says why)"),
+    ("pending", "the cell is written but has not run for this release; the reason names what it waits for and the command"),
 ]
 
 

@@ -1,11 +1,18 @@
-// Video figures (ported from the approved f/src/video.js). Every figure plays on its own while at
+// Video figures (ported from the approved f/src/video.js). Every video plays on its own while at
 // least half of it is on screen (or, when it is taller than twice the viewport, while it fills half
 // the viewport) and pauses when it leaves; there is no pause control. Loops loop;
 // the film plays once and does not loop. With reduced motion nothing starts on its own: the poster
 // shows with a play button, as it does when the browser refuses to start a muted video by itself
 // (data saver, low power mode) and after the film ends. Without JavaScript the native controls
-// stay. Nothing calls play() before a figure is half visible, and every video is preload="none",
+// stay. Nothing calls play() before a video is half visible, and every video is preload="none",
 // so no video bytes load before then.
+//
+// A figure holds one video box (VideoMedia), or a landscape and a portrait box when it has a portrait
+// cut, and CSS shows one of them. Each box is played on its own: the hidden box is display: none, so
+// it never intersects and its video never starts. `vjs` marks the figure (the film's controls and the
+// Play button rules key on it); `is-playing` and `show-big` mark each box. A figure marked
+// data-after-load (the Hosted page's Fig. 1) starts only after the load event, so its video does not
+// compete with its poster and the fonts.
 
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 // a ratio step every 10 %, so a figure taller than the viewport still reports as it scrolls
@@ -20,13 +27,64 @@ interface Figure {
 }
 
 const figures: Figure[] = [];
+let loaded = document.readyState === 'complete';
+
+// Ruling 47: a poster that waits for the reader (VideoMedia) carries its URLs as data-src and
+// data-srcset; they are set once its box comes within a screen of the viewport, whatever the video
+// does next (reduced motion, a refused or failed start), and a hidden box (display: none) never comes
+// near, so its poster never loads.
+const near = new IntersectionObserver(
+  (entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      const box = e.target as HTMLElement;
+      near.unobserve(box);
+      box.querySelectorAll<HTMLSourceElement>('source[data-srcset]').forEach((s) => {
+        s.srcset = s.dataset.srcset!;
+        s.removeAttribute('data-srcset');
+      });
+      const img = box.querySelector<HTMLImageElement>('img[data-src]');
+      if (img) {
+        img.src = img.dataset.src!;
+        img.removeAttribute('data-src');
+      }
+    }
+  },
+  { rootMargin: '100% 0px' },
+);
 
 document.querySelectorAll<HTMLElement>('[data-vfig]').forEach((fig) => {
-  const v = fig.querySelector('video');
-  if (!v) return;
-  v.removeAttribute('controls');
+  const afterLoad = fig.hasAttribute('data-after-load');
+  const boxes: Figure[] = [];
+  fig.querySelectorAll<HTMLElement>('.vf-media').forEach((box) => {
+    if (box.querySelector('img[data-src]')) near.observe(box);
+    const v = box.querySelector('video');
+    if (v) boxes.push(initBox(fig, box, v, afterLoad));
+  });
+  if (!boxes.length) return;
   fig.classList.add('vjs');
-  const big = fig.querySelector<HTMLButtonElement>('.vf-big');
+  figures.push(...boxes);
+  if (fig.hasAttribute('data-film')) initFilm(boxes[0]);
+});
+
+if (!loaded && figures.some((c) => c.fig.hasAttribute('data-after-load'))) {
+  window.addEventListener(
+    'load',
+    () => {
+      loaded = true;
+      figures.forEach((c) => c.auto());
+    },
+    { once: true },
+  );
+}
+
+document.addEventListener('visibilitychange', () => {
+  figures.forEach((c) => (document.hidden ? !c.v.paused && c.v.pause() : c.auto()));
+});
+
+function initBox(fig: HTMLElement, box: HTMLElement, v: HTMLVideoElement, afterLoad: boolean): Figure {
+  v.removeAttribute('controls');
+  const big = box.querySelector<HTMLButtonElement>('.vf-big');
   const label = big?.dataset.label ?? 'the video';
   let inView = false;
   let refused = false;
@@ -34,8 +92,8 @@ document.querySelectorAll<HTMLElement>('[data-vfig]').forEach((fig) => {
   const sync = () => {
     const playing = !v.paused && !v.ended;
     if (playing) refused = false;
-    fig.classList.toggle('is-playing', playing);
-    fig.classList.toggle('show-big', !playing && (reduced || refused || v.ended));
+    box.classList.toggle('is-playing', playing);
+    box.classList.toggle('show-big', !playing && (reduced || refused || v.ended));
     if (big) {
       const again = v.ended ? 'Replay' : 'Play';
       const text = big.querySelector('span');
@@ -45,7 +103,7 @@ document.querySelectorAll<HTMLElement>('[data-vfig]').forEach((fig) => {
   };
   const start = () => {
     v.play().catch((error: unknown) => {
-      // an AbortError only means a pause() came first, as when the figure leaves the screen
+      // an AbortError only means a pause() came first, as when the box leaves the screen or is hidden
       if ((error as DOMException | null)?.name === 'NotAllowedError') refused = true;
       sync();
     });
@@ -58,7 +116,7 @@ document.querySelectorAll<HTMLElement>('[data-vfig]').forEach((fig) => {
       start();
     },
     auto() {
-      if (inView && !reduced && !v.ended && v.paused && !document.hidden) start();
+      if (inView && !reduced && !v.ended && v.paused && !document.hidden && (loaded || !afterLoad)) start();
     },
   };
 
@@ -78,13 +136,8 @@ document.querySelectorAll<HTMLElement>('[data-vfig]').forEach((fig) => {
     { threshold: THRESHOLDS },
   ).observe(v);
   sync();
-  figures.push(ctl);
-  if (fig.hasAttribute('data-film')) initFilm(ctl);
-});
-
-document.addEventListener('visibilitychange', () => {
-  figures.forEach((c) => (document.hidden ? !c.v.paused && c.v.pause() : c.auto()));
-});
+  return ctl;
+}
 
 // The film: chapter buttons seek and follow playback; the dimension line shows where it is.
 function initFilm({ fig, v, play }: Figure) {
@@ -151,6 +204,20 @@ function initFilm({ fig, v, play }: Figure) {
   );
   seek.addEventListener('input', () => jump((Number(seek.value) / 1000) * dur()));
   show(0);
+
+  // A scored film's Sound toggle (FilmPlayer `sound`): the film starts muted; a press flips the
+  // video's own mute, which replay, chapter jumps and seeking leave alone, so the choice holds. A
+  // hidden tab pauses the film above, and its sound with it.
+  const sound = fig.querySelector<HTMLButtonElement>('.fd-sound');
+  if (sound) {
+    const pressed = () => sound.setAttribute('aria-pressed', String(!v.muted));
+    sound.addEventListener('click', () => {
+      v.muted = !v.muted;
+      pressed();
+    });
+    v.addEventListener('volumechange', pressed);
+    pressed();
+  }
 }
 
 // A module, so the header can load it with a dynamic import.

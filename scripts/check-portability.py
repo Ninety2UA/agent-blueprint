@@ -36,7 +36,8 @@ Every rule below has an id; a violation prints "path: [rule-id] message".
                      drops a context file that has one (KTD8).
   instructions-length the root and template AGENTS.md stay within 200 lines (R15).
   stray-skill-md     no file named SKILL.md outside skills/<name>/ (KTD1): the whole
-                     repository installs as the plugin.
+                     repository installs as the plugin. The git-ignored build folders
+                     eve/.eve/, eve/.output/ and node_modules/ are not walked.
 
 Allowlist: scripts/portability-allowlist.json holds today's violations as
 {"skills": {path: [rule-id, ...]}, "manifests": {...}}. An allowlisted violation
@@ -415,8 +416,10 @@ def check_instruction_length(repo, add):
 
 def check_stray_skill_md(repo, add):
     skills_root = os.path.join(repo, "skills")
+    # git-ignored eve build output (eve/node_modules: the rule below)
+    eve_build = {os.path.join(repo, "eve", ".eve"), os.path.join(repo, "eve", ".output")}
     for root, dirs, files in os.walk(repo):
-        dirs[:] = [d for d in dirs if d not in (".git", "node_modules")]
+        dirs[:] = [d for d in dirs if d not in (".git", "node_modules") and os.path.join(root, d) not in eve_build]
         if "SKILL.md" in files:
             path = os.path.join(root, "SKILL.md")
             if os.path.dirname(os.path.dirname(path)) != skills_root:

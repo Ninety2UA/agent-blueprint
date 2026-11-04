@@ -16,8 +16,10 @@ jobs:
       - name: Install markdownlint-cli
         run: npm install -g markdownlint-cli
 
+      # The glob covers eve/**/*.md, the chat template's markdown under eve/apps/web/ included;
+      # eve's git-ignored build folders hold compiled skill copies and are left out.
       - name: Lint markdown files
-        run: markdownlint '**/*.md' --ignore node_modules --ignore docs/images --ignore skills/ab-writing-skills
+        run: markdownlint '**/*.md' --ignore node_modules --ignore eve/node_modules --ignore eve/.eve --ignore eve/.output --ignore docs/images --ignore skills/ab-writing-skills
 
   install-test:
     name: Install Script (${{ matrix.os }})
@@ -257,6 +259,165 @@ jobs:
       - name: Site data tests
         working-directory: .
         run: node --test 'site/test/**/*.test.mjs'
+
+      # The same build with the Hosted page previewed (site/src/lib/hosted-release.mjs). GitHub sets
+      # CI=true on every step, so the override counts only beside VERCEL_ENV=preview.
+      - name: Build the site with the Hosted page previewed
+        env:
+          AB_HOSTED_PREVIEW: "1"
+          VERCEL_ENV: preview
+        run: npm run build
+
+      # With AB_HOSTED_PREVIEW=1 the tests fail on a build that left the page out.
+      - name: Site data tests on the preview build
+        working-directory: .
+        env:
+          AB_HOSTED_PREVIEW: "1"
+          VERCEL_ENV: preview
+        run: node --test 'site/test/**/*.test.mjs'
+
+  # A workflow-level paths filter would gate every job here, so this job reads the pull request's
+  # changed paths and the Eve job runs only when one is under eve/, skills/ or the prompt registry.
+  eve-changes:
+    name: Eve Paths
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      eve: ${{ steps.paths.outputs.eve }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2   # the pull request's merge commit and the base it merges into
+
+      - name: Changed paths the Eve job watches
+        id: paths
+        run: |
+          changed=$(git diff --name-only HEAD^1 HEAD)
+          if printf '%s\n' "$changed" | grep -qE '^(eve/|skills/|scripts/prompt-owners\.json$)'; then
+            echo "eve=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "eve=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # The Eve host in eve/ (docs/learnings/2026-10-eve-host-decision.md). Every eval here is tagged
+  # mock and runs on the scripted mock model; the job holds no Gateway key, so no run spends tokens.
+  eve:
+    name: Eve Host (mocked evals)
+    needs: eve-changes
+    if: needs.eve-changes.outputs.eve == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: eve
+    # Test values for every channel, so each channel cell runs instead of skipping (KTD14 of the
+    # channels plan). None is a credential: each reads as fake, and under AB_EVAL_MOCK=1 every
+    # channel's API is a local stub (Slack 47821, Linear 47822, Telegram 47823, the OIDC issuer
+    # 47824). The Telegram secret and both MCP tokens are 32 characters or more, as KTD2 requires.
+    env:
+      SLACK_BOT_TOKEN: xoxb-test-not-real
+      SLACK_SIGNING_SECRET: test-signing-secret-not-real
+      TELEGRAM_BOT_TOKEN: "123456:test-not-real"
+      TELEGRAM_WEBHOOK_SECRET_TOKEN: test-webhook-secret-not-real-00000000000
+      AB_TELEGRAM_USERS: "1001"
+      AB_MCP_TOKEN: test-mcp-token-not-real-aaaaaaaaaaaaaaaa,test-mcp-token-not-real-bbbbbbbbbbbbbbbb
+      LINEAR_CLIENT_ID: test-client-id-not-real
+      LINEAR_CLIENT_SECRET: test-client-secret-not-real
+      LINEAR_WEBHOOK_SECRET: test-webhook-secret-not-real
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: eve/package-lock.json
+
+      # Without a Docker daemon eve's default sandbox falls back to just-bash, which is not the
+      # sandbox the evals prove.
+      - name: Docker is reachable
+        run: docker info --format 'Docker {{.ServerVersion}}'
+
+      # The pinned eve version names its sandbox base image, so the lockfile keys the cache.
+      - name: Restore the sandbox base image
+        id: sandbox-image
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/eve-sandbox-image
+          key: eve-sandbox-image-${{ runner.os }}-${{ hashFiles('eve/package-lock.json') }}
+
+      - name: Load the cached sandbox base image
+        if: steps.sandbox-image.outputs.cache-hit == 'true'
+        run: if [ -f ~/.cache/eve-sandbox-image/base.tar ]; then docker load --input ~/.cache/eve-sandbox-image/base.tar; fi
+
+      - name: Install eve dependencies
+        run: npm ci
+
+      - name: Build the agent
+        run: npx eve build
+
+      - name: Emitted skill modules match skills/
+        run: python3 scripts/emit-skill-modules.py --check
+
+      - name: Eve discovers every skill
+        run: node scripts/check-skill-count.mjs
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Type-check the agent
+        run: npm run typecheck
+
+      # The channels read their configuration when the server starts, so each configuration is its
+      # own pass, and every cell skips itself on the passes it does not belong to.
+      # The main pass: every channel configured, MCP on its token with OAuth off.
+      - name: Mocked evals
+        env:
+          AB_EVAL_MOCK: "1"
+        run: npx eve eval --tag mock --json --junit out.xml
+
+      # The MCP OAuth cells: the eval stands up the issuer on 47824 and signs its own test tokens.
+      - name: Mocked evals, MCP with OAuth on
+        env:
+          AB_EVAL_MOCK: "1"
+          AB_MCP_OAUTH_ISSUER: http://127.0.0.1:47824
+          AB_MCP_OAUTH_SUBJECTS: eval-user-listed
+        run: npx eve eval mcp --tag mock --json --junit out-oauth.xml
+
+      # A server booted in maintenance (KTD9): maintenance.eval.ts and the Linear and MCP maintenance
+      # cells. One at a time, because the Linear cells share the stub's port.
+      - name: Mocked evals, maintenance
+        env:
+          AB_EVAL_MOCK: "1"
+          AB_MAINTENANCE: "1"
+        run: npx eve eval maintenance linear mcp --tag mock --max-concurrency 1 --json --junit out-maintenance.xml
+
+      # Linear with its client secret unset: a signed event starts nothing (KTD2).
+      - name: Mocked evals, Linear unconfigured
+        env:
+          AB_EVAL_MOCK: "1"
+          LINEAR_CLIENT_SECRET: ""
+        run: npx eve eval linear --tag mock --json --junit out-linear-unconfigured.xml
+
+      # The demo's cells: caps, busy limits, the day's 402, memory per session and a bare request on
+      # the demo's repository (ruling 65), and BACKLOG.md kept out of a visitor's pull request (ruling 78).
+      - name: Mocked evals, the demo
+        env:
+          AB_EVAL_MOCK: "1"
+          AB_DEMO: "1"
+          AB_TRUST_PROXY: "1"
+          EVE_CHAT_PASSWORD: test-demo-code-not-real
+        run: npx eve eval gate demo-repository --tag mock --json --junit out-demo.xml
+
+      - name: Keep the sandbox base image for the cache
+        if: steps.sandbox-image.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.cache/eve-sandbox-image
+          images=$(docker image ls ghcr.io/vercel/eve --format '{{.Repository}}:{{.Tag}}')
+          if [ -n "$images" ]; then printf '%s\n' "$images" | xargs docker save --output ~/.cache/eve-sandbox-image/base.tar; fi
 
   plugin-validate:
     name: Plugin Validate

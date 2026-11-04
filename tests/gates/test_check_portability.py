@@ -336,6 +336,21 @@ class PortabilityGate(unittest.TestCase):
         self.repo.write("tests/smoke/fixture/SKILL.md", "---\nname: stray\ndescription: x\n---\n")
         self.assertFails("tests/smoke/fixture/SKILL.md", "stray-skill-md")
 
+    def test_skill_md_in_eve_build_folders_passes(self):
+        # A local eve build compiles every skill into eve/.eve/ and again into eve/.output/, and the
+        # eve package ships its own; the folders are git-ignored, so no install from a clean checkout carries them.
+        self.repo.write("eve/.eve/compile/workspace-resources/__root__/skills/ab-fixture/SKILL.md",
+                        "---\nname: ab-fixture\ndescription: x\n---\n")
+        self.repo.write("eve/.output/.eve/compile/workspace-resources/__root__/skills/ab-fixture/SKILL.md",
+                        "---\nname: ab-fixture\ndescription: x\n---\n")
+        self.repo.write("eve/node_modules/eve/skills/eve/SKILL.md", "---\nname: eve\ndescription: x\n---\n")
+        code, out = self.gate()
+        self.assertEqual(code, 0, out)
+
+    def test_skill_md_elsewhere_in_eve_fails(self):
+        self.repo.write("eve/agent/skills/ab-fixture/SKILL.md", "---\nname: ab-fixture\ndescription: x\n---\n")
+        self.assertFails("eve/agent/skills/ab-fixture/SKILL.md", "stray-skill-md")
+
     def test_allowlisted_violation_passes(self):
         self.repo.edit(SKILL, "1. Look at the target", "The target: $ARGUMENTS\n\n1. Look at the target")
         self.repo.allowlist(skills={SKILL: ["banned-token"]})

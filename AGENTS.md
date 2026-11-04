@@ -22,11 +22,14 @@ docs/images/                             # README and site images (not installed
 site/                                    # The website's source, an Astro build only maintainers run; its dependencies live in site/package.json
 site/src/                                # Pages and components; skills, counts, install routes and releases come from the repository at build time
 site/motion/                             # HyperFrames sources of the site videos and the README hero GIF; RENDER.md says when to re-render
+eve/                                     # The hosted option: an Eve agent that reads skills/ in place; its dependencies live in eve/package.json
 AGENTS.md                                # This file; CLAUDE.md is a symlink to it
 install.sh                               # Installer and scaffold helper
 ```
 
 Helpers get their instructions from prompt files in the dispatching skill's `references/agents/`. A shared prompt file has one owner and byte-identical copies, registered in `scripts/prompt-owners.json`. Skills carry no `model` or `effort`: the session's model and effort are the user's choice, and helpers inherit them. A prompt may keep material it needs only in some runs (catalogs, long tables, worked examples) in a companion note named `<prompt>-<topic>.md` beside it, loaded at the point of use; the companion is a plain note, counted and checked as one by the gates, and a shared prompt's companion is registered with the same copies.
+
+`eve/` is the hosted option: the blueprint as an agent on Vercel's Eve framework that a user deploys to their own Vercel account, Railway or server. It sits beside the eight coding CLIs and is not counted as one of them. It reads the committed skills in place: `eve/agent/skills/` holds one module per skill, written by `python3 eve/scripts/emit-skill-modules.py`, that reads `skills/<name>/` when the agent is built, so adding, renaming or removing a skill means running the emitter; its `--check` and `node eve/scripts/check-skill-count.mjs` fail on a skill without a module or a module without a skill. Its packages live only in `eve/package.json` and its lock file. Its `mock`-tagged evals run on a scripted model with `AB_EVAL_MOCK=1` and need Docker; CI runs them, with the build and both checks, on pull requests that touch `eve/`, `skills/` or `scripts/prompt-owners.json`, and holds no model key. A local `eve build` or `eve info` leaves compiled copies of every `SKILL.md` in the ignored `eve/.eve/`, and `eve build` a second set in the ignored `eve/.output/`; the portability gate and the smoke test skip both and `eve/node_modules/`. The decisions are in `docs/learnings/2026-10-eve-host-decision.md`.
 
 ## Gates
 
@@ -57,7 +60,7 @@ The allowlist in `scripts/portability-allowlist.json` only shrinks: a fixed viol
 
 ## Releasing
 
-Bump the version in `.claude-plugin/plugin.json`, the marketplace entry and every skill's `metadata.version` together (the manifest gate holds them equal) whenever plugin content changes on the default branch, then run `python3 scripts/sync-shared.py`, which writes the new version into each pipeline skill's provenance command. Installed plugin caches only re-sync when the version changes, so an unbumped release never reaches users. Changes under `site/` and to the README's images need no bump, because no installed skill or hook changes with them (`docs/learnings/2026-10-site-rebuild-decision.md`).
+Bump the version in `.claude-plugin/plugin.json`, the marketplace entry, `eve/package.json` (the hosted option rides the same version from 4.2.0) and every skill's `metadata.version` together (the manifest gate holds them equal) whenever plugin content changes on the default branch, then run `python3 scripts/sync-shared.py`, which writes the new version into each pipeline skill's provenance command. Installed plugin caches only re-sync when the version changes, so an unbumped release never reaches users. Changes under `site/` and to the README's images need no bump, because no installed skill or hook changes with them (`docs/learnings/2026-10-site-rebuild-decision.md`).
 
 ## How to work
 

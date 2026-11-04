@@ -1,7 +1,8 @@
 ---
-// Global header: brand, the seven sections (the current one marked on every page under
-// it), search, GitHub, the theme toggle and Get started. Below 960 px the nav moves into
+// Global header: brand, the sections this build carries (Hosted only with the release switch
+// on, through enabledNav; the current one marked on every page under it), search, GitHub, the theme toggle and Get started. Below 960 px the nav moves into
 // the mobile menu island, which hydrates only when its button is first used.
+import { enabledNav } from '../lib/hosted-release.mjs';
 import { getSiteData } from '../lib/site.mjs';
 import { IC } from './icons';
 import Mark from './Mark.astro';
@@ -10,7 +11,7 @@ import ThemeToggle from './ThemeToggle.astro';
 import { GET_STARTED, navItems } from './nav';
 
 const { repoUrl } = getSiteData();
-const items = navItems(Astro.url.pathname);
+const items = enabledNav(navItems(Astro.url.pathname));
 ---
 <header class="site-head">
   <div class="wrap head-row">

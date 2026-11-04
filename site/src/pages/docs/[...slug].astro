@@ -73,8 +73,9 @@ const { prev, next } = docsNeighbors(slug);
       <DocRefs hostDocs={intro.data.hostDocs} repoDoc={intro.data.repoDoc} />
       {installTabs && <StartSteps />}
     </header>
+    {/* the page's largest paint on a desktop screen: a plain lazy poster (ruling 47) */}
     {projectFiles && (
-      <VideoFigure src={setupLoop.src} num={1} alt={setupLoop.alt} label={setupLoop.label} class="in-docs"><Fragment set:html={setupLoop.caption} /></VideoFigure>
+      <VideoFigure src={setupLoop.src} num={1} alt={setupLoop.alt} label={setupLoop.label} class="in-docs" deferPoster={false}><Fragment set:html={setupLoop.caption} /></VideoFigure>
     )}
     {installTabs && <InstallTabs />}
     {installTabs && (

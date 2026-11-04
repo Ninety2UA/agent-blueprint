@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-10-14
+Last updated: 2026-10-29
 
 ## Session Continuity
 
@@ -21,9 +21,10 @@ v4.1.1 (pull request #28, tagged `v4.1.1` with its GitHub release) stops `instal
 
 **What's remaining:**
 
-- Next release: 4.2.0 adds nine more tools. Its plan is not written yet.
+- 4.2.0 carries the hosted option: `eve/`, the blueprint as an agent on Vercel's Eve framework that a user deploys to their own Vercel account, Railway or server (`docs/plans/2026-10-28-2249-feat-agent-blueprint-eve-host-plan.md`). Every manifest, `eve/package.json` and every skill's `metadata.version` read 4.2.0, and the release notes, install record and checklist are in `docs/releases/`. The live Eve smoke cells, the deployments and the ship loop's design decision are still open.
+- After that: 4.3.0 adds nine more tools. Its plan is not written yet.
 
-**Start here:** write the 4.2.0 plan.
+**Start here:** work through `docs/releases/v4.2.0-checklist.md`, from the open decisions and the live Eve smoke cells to the tag.
 
 ## Current State of the Code
 

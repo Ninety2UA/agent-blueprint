@@ -1,0 +1,7 @@
+node_modules/
+.eve/
+.vercel/
+.env*
+apps/web/.next/
+.output/
+.workflow-data/

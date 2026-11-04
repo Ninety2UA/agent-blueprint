@@ -1,0 +1,36 @@
+---
+// The Hosted page's hero (the approved mock's first block): the h1, the sentence, the two ways in and
+// Fig. 1, the example run, then the one line on how it works. Fig. 1 is the largest paint at every
+// width, so VideoFigure switches its two cuts by viewport bands over one eager AVIF poster (KTD5); the
+// bands assume this hero's layout in hosted.css (the full column up to 900 px, 480 px from 901 px,
+// 600 px from 1200 px).
+import VideoFigure from '../VideoFigure.astro';
+import { loop } from '../loops';
+
+interface Props {
+  /** the demo's address, also the demo block's one link */
+  demo: string;
+}
+const { demo } = Astro.props;
+const run = loop('loop-request-to-pr');
+const heroPosters = {
+  landscape: { 600: '/media/loop-request-to-pr-600.avif', 1200: '/media/loop-request-to-pr-1200.avif' },
+  portrait: { 720: '/media/loop-request-to-pr-portrait-720.avif' },
+};
+---
+<section class="hs-hero" aria-labelledby="hs-hero-h">
+  <div class="wrap">
+    <div class="hs-hero-grid">
+      <div class="hs-hero-text">
+        <h1 id="hs-hero-h">Agent Blueprint, hosted.</h1>
+        <p class="lede">The same skills as in your terminal, running as an agent on your own Vercel account, Railway or server.</p>
+        <div class="hs-actions">
+          <a class="btn btn-primary" href="#deploy">Deploy</a>
+          <a class="btn btn-ghost" href={demo}>Try the demo</a>
+        </div>
+      </div>
+      <VideoFigure src={run.src} portraitSrc={run.portraitSrc} heroPosters={heroPosters} num={1} alt={run.alt} label={run.label}><Fragment set:html={run.caption} /></VideoFigure>
+    </div>
+    <p class="hs-how">You ask through the web chat, Slack, Linear, Telegram or MCP, and the agent works in a sandbox. It pushes a branch as each stage finishes and opens a pull request as your GitHub App.</p>
+  </div>
+</section>

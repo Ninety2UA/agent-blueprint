@@ -12,6 +12,15 @@
 //                             line index and `end` the index where the heading's section stops.
 //   getSection(markdown, heading)  the heading object above plus `lines` (the section body). Throws
 //                             'README: section "<heading>" not found'.
+//   splitRow(line)            the trimmed cells of one Markdown table row; an escaped \| stays in its cell.
+//   parseTable(lines, header, where)  the rows (arrays of cells) of the first table in `lines` whose header
+//                             row is exactly `header`. Throws naming `where` when the table is missing,
+//                             has no rows, or has a row with another number of cells.
+//   parseLink(cell, where)    { text, href } of a cell that is exactly one Markdown link; throws naming
+//                             `where` otherwise.
+//   codeSpans(text)           the contents of every `code` span in `text`, in order.
+//   firstFence(lines, where)  the body of the first fenced code block in `lines`, trimmed; throws naming
+//                             `where` when there is none.
 //   parsePhases(markdown)     [{ slug, title, skills: [{ name, path, summary, when }] }] from the
 //                             "Skills reference" tables; title is the heading without " phase",
 //                             slug its anchor ("Session management" -> "session-management").
@@ -106,7 +115,7 @@ function subsections(markdown, section) {
     .map((h) => sectionOf(lines, h));
 }
 
-function splitRow(line) {
+export function splitRow(line) {
   return line
     .trim()
     .replace(/^\|/, '')
@@ -116,7 +125,7 @@ function splitRow(line) {
 }
 
 // The rows of the first table in `lines` whose header row is exactly `header`.
-function parseTable(lines, header, where) {
+export function parseTable(lines, header, where) {
   const name = header.join(' | ');
   const start = lines.findIndex(
     (line, i) =>
@@ -138,17 +147,17 @@ function parseTable(lines, header, where) {
   return rows;
 }
 
-function parseLink(cell, where) {
+export function parseLink(cell, where) {
   const m = cell.match(/^\[([^\]]+)\]\(([^)\s]+)\)$/);
   if (!m) throw new Error(`README "${where}": expected a single link, found "${cell}"`);
   return { text: m[1], href: m[2] };
 }
 
-function codeSpans(text) {
+export function codeSpans(text) {
   return [...text.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
 }
 
-function firstFence(lines, where) {
+export function firstFence(lines, where) {
   const start = lines.findIndex((line) => FENCE.test(line));
   const end = start === -1 ? -1 : lines.findIndex((line, i) => i > start && FENCE.test(line));
   if (end === -1) throw new Error(`README "${where}": no fenced code block`);

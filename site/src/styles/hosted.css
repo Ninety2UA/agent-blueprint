@@ -1,0 +1,147 @@
+/* Hosted (/hosted/), ported from the approved mock (r2/d2/src/page.css) onto the site's tokens and
+   components: the hero with Fig. 1, the three steps with the configurator and the chat run, and the
+   demo block. The header, the footer, the figures (media.css), the command block and the buttons are
+   the site's own. Breakpoints: Fig. 1's poster bands (VideoFigure.astro) assume the figure is the full
+   column up to 900 px, 480 px from 901 px and 600 px from 1200 px, so the hero changes layout at those
+   same edges and nowhere else. */
+.hs { --fig-w: 600px; } /* at 600 px a figure shows its landscape cut, at 480 px its portrait cut */
+@media (width < 1200px) { .hs { --fig-w: 480px; } }
+
+/* ---------- Hero: text left, Fig. 1 right ---------- */
+.hs-hero { padding-top: clamp(48px, 7vw, 112px); }
+.hs-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, var(--fig-w)); gap: clamp(40px, 6vw, 96px); align-items: center; }
+.hs-hero-text { container-type: inline-size; min-width: 0; }
+/* the h1 scales with its column so it stays on two lines beside the figure */
+.hs-hero h1 { font-size: clamp(2.125rem, 10.5cqi, 4rem); font-stretch: var(--w-display); font-weight: 680; line-height: 1.02; letter-spacing: -0.03em; max-width: 9.5em; }
+.hs-hero .lede { margin-top: var(--s-5); max-width: 44ch; }
+.hs-actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-6); }
+/* how it works: one line under the hero; Fig. 1's caption carries the rest */
+.hs-how { margin-top: clamp(40px, 4vw, 64px); max-width: 64ch; font-size: var(--t-lg); line-height: 1.5; color: var(--ink); }
+
+/* ---------- The three steps: a real <ol>; the bubble is the list item's own counter ---------- */
+.hs-steps { padding-top: var(--section); }
+.hs-steps-head { margin-bottom: clamp(48px, 5vw, 80px); }
+.hs-list { list-style: none; display: grid; gap: clamp(80px, 8vw, 128px); }
+.hs-step { display: grid; grid-template-columns: minmax(0, var(--fig-w)) minmax(0, 1fr); gap: clamp(40px, 6vw, 96px); align-items: start; }
+.hs-step.hs-flip { grid-template-columns: minmax(0, 1fr) minmax(0, var(--fig-w)); }
+.hs-step.hs-flip > .vfig { order: 2; }
+.hs-step > .vfig, .hs-step > .crun { margin-top: 6px; }
+/* Fig. 3 stays in view beside the configurator while its result changes */
+.hs-step-deploy > .vfig { position: sticky; top: calc(var(--head-h) + 40px); }
+.hs-step-text { min-width: 0; max-width: 600px; }
+.hs-step-text h3 { display: flex; align-items: center; gap: 14px; }
+.hs-step-text h3::before { content: counter(list-item); display: inline-grid; place-items: center; flex: none; width: 32px; height: 32px; border: 1px solid var(--ink); border-radius: 50%; font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 600; font-stretch: 100%; letter-spacing: 0; line-height: 1; }
+.hs-step-text > .body { margin-top: var(--s-4); max-width: 60ch; }
+
+/* step 1, have these ready: three groups of hairline rows, each under a black rule as the configurator lays
+   out its own rows, the service in the left column; every row at the same weight, so no one item reads as
+   the step (rulings 39 to 41) */
+.hs-pq { margin-top: var(--s-5); }
+.hs-pq-h { margin-top: var(--s-5); padding-bottom: 8px; border-bottom: 1px solid var(--ink); font-size: 0.9375rem; font-weight: 640; font-stretch: 108%; }
+.hs-pq-h:first-child { margin-top: 0; }
+.hs-pq-row { display: grid; grid-template-columns: 120px minmax(0, 1fr); column-gap: var(--s-4); padding: 9px 0; border-bottom: 1px solid var(--hair); line-height: 1.45; }
+.hs-pq-list dt { font-size: 0.9375rem; font-weight: 600; font-stretch: 104%; color: var(--ink); }
+.hs-pq-list dd { margin: 0; color: var(--ink); }
+@media (max-width: 560px) {
+  .hs-pq-row { grid-template-columns: 96px minmax(0, 1fr); column-gap: 12px; }
+}
+.hs-inline { text-decoration-color: var(--hair-strong); transition: text-decoration-color 200ms; }
+.hs-inline:hover { text-decoration-color: currentColor; }
+
+/* ---------- The configurator (Configurator.astro, configurator.ts) ---------- */
+.cfg { margin-top: var(--s-6); border-top: 1px solid var(--ink); }
+fieldset.cfg-row { display: block; margin: 0; padding: 18px 0; min-width: 0; border: 0; border-bottom: 1px solid var(--hair); }
+fieldset.cfg-row::after { content: ""; display: table; clear: both; }
+.cfg-row > legend { float: left; width: 92px; padding: 3px 0 0; font-size: 0.9375rem; font-weight: 640; font-stretch: 108%; }
+fieldset.cfg-row > .opts { margin-left: calc(92px + var(--s-4)); }
+.opts { display: grid; gap: 4px; min-width: 0; }
+.opts-inline { display: flex; flex-wrap: wrap; gap: 4px 28px; }
+.opt { position: relative; display: grid; grid-template-columns: 20px minmax(0, 1fr); column-gap: 12px; align-items: start; padding: 4px 0; cursor: pointer; }
+.opt input { appearance: none; -webkit-appearance: none; margin: 4px 0 0; width: 18px; height: 18px; border: 1.25px solid var(--ink); border-radius: 50%; background: var(--bg); cursor: pointer; transition: border-width 200ms var(--ease-out), border-color 200ms; }
+.opt input:checked { border: 5px solid var(--accent); }
+.opt input:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.opt input:disabled { border-color: var(--hair-strong); background: var(--bg-sunk); cursor: not-allowed; }
+.opt .o-name { font-weight: 600; font-stretch: 106%; line-height: 1.5; }
+.opt .o-note { grid-column: 2; font-size: 0.9375rem; line-height: 1.45; color: var(--ink-2); }
+.opt .o-note + .o-note { margin-top: 2px; }
+.opt.is-off { cursor: not-allowed; }
+.opt.is-off .o-name { color: var(--muted); font-weight: 520; }
+.why { display: block; margin-top: 6px; font-size: 0.9375rem; color: var(--muted); }
+.why[hidden] { display: none; }
+.sbx { margin: 6px 0 4px 32px; padding: 10px 0 0; min-width: 0; border: 0; border-top: 1px dashed var(--hair); }
+.sbx[hidden] { display: none; }
+.sbx legend { float: left; margin-right: 20px; padding: 4px 0 0; font-size: 0.9375rem; color: var(--ink-2); }
+.sbx .opts-inline { gap: 4px 24px; }
+/* the model choice: the chosen preset's model for each role as text under a dashed rule (the sandbox
+   choice's), and on Per role the same rows as one native select each (model-choice.ts sets data-mode) */
+.roles-line { margin: 8px 0 0; padding: 12px 0 0; border-top: 1px dashed var(--hair); font-size: 0.9375rem; line-height: 1.45; color: var(--ink-2); }
+.roles { list-style: none; display: grid; gap: 2px; margin: 10px 0 2px; }
+.role { display: grid; grid-template-columns: 104px minmax(0, 280px); column-gap: 12px; align-items: center; font-size: 0.9375rem; line-height: 1.6; }
+.role label { color: var(--ink-2); }
+.role-model { color: var(--ink); }
+.roles[data-mode="preset"] .sel, .roles[data-mode="role"] .role-model { display: none; }
+.roles[data-mode="role"] { gap: 8px; margin-top: 12px; }
+.roles[data-mode="role"] label { cursor: pointer; }
+.sel { position: relative; display: block; min-width: 0; }
+.sel select { appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 36px; margin: 0; padding: 0 34px 0 11px; border: 1px solid var(--faint); border-radius: var(--r); background: var(--bg-raise); color: var(--ink); font: inherit; font-size: 0.9375rem; font-stretch: 100%; line-height: 1.2; text-overflow: ellipsis; cursor: pointer; transition: border-color 200ms var(--ease-out); }
+.sel select:hover { border-color: var(--ink); }
+.sel select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sel::after { content: ""; position: absolute; top: 50%; right: 14px; width: 6px; height: 6px; border-right: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+@media (max-width: 560px) {
+  .role { grid-template-columns: 96px minmax(0, 1fr); }
+  .sel select { height: 44px; }
+}
+.result { display: flex; flex-direction: column; padding-top: var(--s-5); transition: opacity 160ms var(--ease-out); }
+/* on your own server the variables come before the commands that read them */
+.result[data-host="server"] .asks { order: -1; margin: 0 0 var(--s-4); }
+.result.is-swapping { opacity: 0; }
+.res[hidden] { display: none; }
+.res-cap { margin-top: var(--s-3); font-size: 0.9375rem; color: var(--muted); }
+/* the command block wraps at the slashes Cmd marks, with a hanging indent under its prompt */
+.cfg .cmd .ln { white-space: pre-wrap; overflow-wrap: break-word; padding-left: 2.1ch; text-indent: -2.1ch; }
+.asks { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-top: var(--s-5); }
+.asks-l { font-size: 0.9375rem; font-weight: 600; color: var(--ink); }
+.asks-l[hidden] { display: none; }
+.names { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 16px; min-width: 0; }
+.names li { display: inline-flex; align-items: baseline; gap: 6px; min-width: 0; }
+.names li[hidden] { display: none; }
+.names code { font-size: 0.8125rem; color: var(--ink); overflow-wrap: anywhere; }
+.names .sec { font-size: 0.8125rem; color: var(--muted); }
+/* the Slack sentence takes its own line under the names */
+.cfg-slack, .cfg-pre { flex-basis: 100%; margin-top: var(--s-2); font-size: 0.9375rem; color: var(--ink-2); }
+.cfg-slack[hidden], .cfg-pre[hidden] { display: none; }
+.cfg-slack a, .cfg-pre a { text-decoration-color: var(--hair-strong); }
+.cfg-slack a:hover, .cfg-pre a:hover { text-decoration-color: currentColor; }
+/* Railway: the model variables, set on the service once it is up (its template cannot be pre-filled) */
+.asks-after { margin-top: var(--s-3); }
+.asks-after[hidden] { display: none; }
+
+/* ---------- The film (Fig. 5) ---------- */
+.hs-film { margin-top: var(--section); }
+.hs-film-head { max-width: 760px; }
+.hs-film-head .body { margin-top: var(--s-4); }
+.hs-film .film { margin-top: var(--s-7); }
+
+/* ---------- Try the demo ---------- */
+.hs-demo { margin-top: var(--section); }
+.hs-demo-row { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s-5) clamp(40px, 6vw, 96px); align-items: baseline; padding-top: var(--s-6); border-top: 1px solid var(--ink); }
+.hs-demo-row .body { max-width: 58ch; color: var(--ink); }
+.hs-demo-row .link { margin-top: var(--s-4); }
+
+/* ---------- Narrow screens ---------- */
+@media (width <= 900px) {
+  /* every row stacks: Fig. 1 under the hero text; in the steps the figure sits above its text */
+  .hs-hero-grid, .hs-step, .hs-step.hs-flip, .hs-demo-row { grid-template-columns: minmax(0, 1fr); }
+  .hs-hero-grid { gap: var(--s-7); }
+  .hs-step { gap: var(--s-6); }
+  .hs-step.hs-flip > .vfig { order: 0; }
+  .hs-step-deploy > .vfig { position: relative; top: auto; }
+  .hs-step-text { max-width: none; }
+}
+@media (max-width: 560px) {
+  .hs-hero .lede, .hs-how { font-size: 1.125rem; }
+  .cfg-row > legend { float: none; width: auto; padding: 0 0 8px; }
+  fieldset.cfg-row > .opts { margin-left: 0; }
+  .opt { padding: 10px 0; }
+  .opt input { margin-top: 3px; }
+}

@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Routes tabs</title>
+<style>
+@font-face {
+  font-family: "Archivo";
+  src: url("../../../src/assets/fonts/Archivo-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: block;
+}
+/* Every value from r2/MOTION.md, section 1 (colours) and section 2 (type). */
+:root {
+  --ground: #fafafa;
+  --raised: #ffffff;
+  --ink: #0f0f0f;
+  --ink-2: #383838;
+  --muted: #555555;
+  --hair-s: #b1b1b1;
+  --hair: #d4d4d4;
+  --accent: #ed4423;
+}
+html, body { margin: 0; height: 100%; background: var(--ground); overflow: hidden; }
+#fit { position: absolute; inset: 0; overflow: hidden; }
+#stage { width: 1200px; height: 750px; position: absolute; left: 50%; top: 50%; background: var(--ground); transform-origin: center center; transform: translate(-50%, -50%); }
+svg { display: block; }
+text { font-family: "Archivo", sans-serif; font-kerning: normal; font-variant-ligatures: common-ligatures; }
+.t-tab { font-size: 36px; font-weight: 640; font-stretch: 112%; }
+.t-lead { font-size: 44px; font-weight: 640; font-stretch: 112%; }
+.t-row { font-size: 34px; font-weight: 420; font-stretch: 100%; }
+.t-foot { font-size: 28px; font-weight: 400; font-stretch: 112%; }
+</style>
+</head>
+<body>
+<div id="fit"><div id="stage"><svg id="s" width="1200" height="750" viewBox="0 0 1200 750" aria-label="Agent Blueprint runs on Vercel, Railway or your own server"></svg></div></div>
+<script>
+(() => {
+  "use strict";
+  const LOOP = 12;
+  const RENDER = new URLSearchParams(location.search).has("render");
+  const NS = "http://www.w3.org/2000/svg";
+  const COL = { ground: "#fafafa", raised: "#ffffff", ink: "#0f0f0f", ink2: "#383838", muted: "#555555", hairS: "#b1b1b1", hair: "#d4d4d4", accent: "#ed4423" };
+
+  // ---- the words (r2/shared/EFFECTS.md, routes-tabs; FACTS section 14) ----
+  const TABS = [
+    { name: "Vercel", rows: [["", "Runs on your Vercel account"], ["Sandbox: ", "Vercel Sandbox"], ["", "Reach it from web chat, Slack, Linear, Telegram or MCP"]] },
+    { name: "Railway", rows: [["", "Runs on Railway"], ["Sandbox: ", "Daytona"], ["", "Reach it from Slack, Linear, Telegram or MCP"]] },
+    { name: "Your server", rows: [["", "Runs on a server you run"], ["Sandbox: ", "Docker or Daytona"], ["", "Reach it from Slack, Linear, Telegram or MCP"]] },
+  ];
+  const FOOT = "Models through Vercel's AI Gateway";
+
+  // ---- easing (MOTION.md answers: expo ease-out for moves, critically damped settle, ease-in-out return) ----
+  function bezier(x1, y1, x2, y2) {
+    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    const sx = (u) => ((ax * u + bx) * u + cx) * u;
+    const sy = (u) => ((ay * u + by) * u + cy) * u;
+    const dx = (u) => (3 * ax * u + 2 * bx) * u + cx;
+    return (x) => {
+      if (x <= 0) return 0;
+      if (x >= 1) return 1;
+      let u = x;
+      for (let i = 0; i < 8; i++) { const e = sx(u) - x; const d = dx(u); if (Math.abs(e) < 1e-7 || Math.abs(d) < 1e-6) break; u -= e / d; }
+      let lo = 0, hi = 1;
+      for (let i = 0; i < 30 && Math.abs(sx(u) - x) > 1e-7; i++) { if (sx(u) < x) lo = u; else hi = u; u = (lo + hi) / 2; }
+      return sy(u);
+    };
+  }
+  const EXPO = bezier(0.16, 1, 0.3, 1);
+  const INOUT = bezier(0.65, 0, 0.35, 1);
+  const W_SPRING = 7.2;
+  const S_END = 1 - (1 + W_SPRING) * Math.exp(-W_SPRING);
+  const SETTLE = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : (1 - (1 + W_SPRING * x) * Math.exp(-W_SPRING * x)) / S_END);
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const seg = (t, a, d) => clamp((t - a) / d);
+  function hex(c) { return [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)); }
+  function mix(a, b, t) { const A = hex(a), B = hex(b); return "#" + A.map((v, i) => Math.round(lerp(v, B[i], clamp(t))).toString(16).padStart(2, "0")).join(""); }
+
+  // ---- drawing helpers ----
+  const svg = document.getElementById("s");
+  function S(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs || {}) if (attrs[k] != null) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; }
+  function T(parent, x, y, cls, parts) {
+    const e = S("text", { x, y, class: cls }, parent);
+    const spans = parts.map((p) => { const s = S("tspan", {}, e); s.textContent = p; return s; });
+    return { e, spans };
+  }
+
+  // ---- layout (1200 x 750) ----
+  const TX = 80, TY = 72, TW = 1040, TH = 84;          // the tab track
+  const CELL = TW / 3, INSET = 6;
+  const PY0 = TY + INSET, PH = TH - 2 * INSET;           // pill vertical span
+  const tabL = (i) => TX + i * CELL + INSET;
+  const tabR = (i) => TX + (i + 1) * CELL - INSET;
+  const PX = 80, PY = 192, PW = 1040, PHT = 486;         // the panel
+  const GX = PX + 60, TXT = PX + 96;                     // row glyph x, row text x
+  const BANDS = [[PY + 16, PY + 144], [PY + 144, PY + 256], [PY + 256, PY + 368]];
+  const FOOT_DIV = PY + 388, FOOT_C = (FOOT_DIV + PY + PHT) / 2;
+
+  let capTab = 22, capLead = 24, capRow = 21, capFoot = 18; // replaced by measured cap heights
+
+  // track and panel
+  const track = S("rect", { x: TX + 0.5, y: TY + 0.5, width: TW - 1, height: TH - 1, fill: COL.raised, stroke: COL.hairS, "stroke-width": 1 });
+  const panel = S("rect", { x: PX + 0.75, y: PY + 0.75, width: PW - 1.5, height: PHT - 1.5, fill: COL.raised, stroke: COL.ink, "stroke-width": 1.5 });
+
+  // the timer line under the selected tab (the one accent element)
+  const timer = S("line", { x1: 0, y1: TY + TH, x2: 0, y2: TY + TH, stroke: COL.accent, "stroke-width": 3, "stroke-linecap": "butt" });
+
+  // speed lines behind the pill
+  const speed = [S("line", { stroke: COL.hairS, "stroke-width": 1.25 }), S("line", { stroke: COL.hairS, "stroke-width": 1.25 })];
+
+  // pill and two-tone labels
+  const pill = S("rect", { x: 0, y: PY0, width: 0, height: PH, fill: COL.ink });
+  const defs = S("defs", {});
+  const clip = S("clipPath", { id: "pillclip" }, defs);
+  const clipRect = S("rect", { x: 0, y: PY0, width: 0, height: PH }, clip);
+  const labelsBase = S("g", {});
+  const labelsOn = S("g", { "clip-path": "url(#pillclip)" });
+  const tabText = TABS.map((tab, i) => {
+    const cx = TX + (i + 0.5) * CELL;
+    const a = T(labelsBase, cx, 0, "t-tab", [tab.name]); a.e.setAttribute("text-anchor", "middle"); a.e.setAttribute("fill", COL.muted);
+    const b = T(labelsOn, cx, 0, "t-tab", [tab.name]); b.e.setAttribute("text-anchor", "middle"); b.e.setAttribute("fill", COL.ground);
+    return [a, b];
+  });
+
+  // rows: a station glyph (ring with a tick through it), a divider, two text slots (outgoing, incoming)
+  const rowG = BANDS.map(([y0, y1], i) => {
+    const cy = (y0 + y1) / 2;
+    const g = S("g", {});
+    S("line", { x1: GX - 13, y1: cy, x2: GX + 13, y2: cy, stroke: COL.hairS, "stroke-width": 1 }, g);
+    S("line", { x1: GX, y1: cy - 13, x2: GX, y2: cy + 13, stroke: COL.hairS, "stroke-width": 1 }, g);
+    const ring = S("circle", { cx: GX, cy, r: 8, fill: COL.raised, stroke: COL.ink, "stroke-width": 1.5 }, g);
+    if (i < 2) S("line", { x1: GX - 20, y1: y1, x2: PX + PW - 60, y2: y1, stroke: COL.hair, "stroke-width": 1 }, g);
+    const cls = i === 0 ? "t-lead" : "t-row";
+    const out = T(g, TXT, 0, cls, ["", ""]);
+    const inn = T(g, TXT, 0, cls, ["", ""]);
+    return { cy, out, inn, ring, lead: i === 0 };
+  });
+  S("line", { x1: GX - 20, y1: FOOT_DIV, x2: PX + PW - 60, y2: FOOT_DIV, stroke: COL.hair, "stroke-width": 1 });
+  const foot = T(svg, GX - 20, 0, "t-foot", [FOOT]);
+  foot.e.setAttribute("fill", COL.muted);
+
+  function setRow(slot, row, words, color, prefixColor, alpha) {
+    slot.spans[0].textContent = words[0];
+    slot.spans[1].textContent = words[1];
+    slot.spans[0].setAttribute("fill", prefixColor);
+    slot.spans[1].setAttribute("fill", color);
+    slot.e.setAttribute("opacity", alpha.toFixed(4));
+  }
+
+  // ---- the clock: three moves, each followed by a hold ----
+  // Vercel to Railway at 0.6, Railway to Your server at 4.6, Your server back to Vercel at 8.6.
+  const ORDER = [0, 1, 2, 0];
+  const MOVES = [0.6, 4.6, 8.6];
+  const MOVE_LEN = 1.6;                 // the pill lands and the rows finish by here
+  function phase(t) {
+    t = ((t % LOOP) + LOOP) % LOOP;
+    let k = 2, u = t + LOOP - MOVES[2];
+    if (t >= MOVES[0]) { k = t >= MOVES[2] ? 2 : t >= MOVES[1] ? 1 : 0; u = t - MOVES[k]; }
+    const nextStart = k === 2 ? MOVES[0] + LOOP : MOVES[k + 1];
+    return { k, u, from: ORDER[k], to: ORDER[k + 1], holdLen: nextStart - MOVES[k] - MOVE_LEN };
+  }
+  function edges(from, to, u) {
+    const steps = Math.abs(to - from), dir = Math.sign(to - from);
+    const dLead = steps === 1 ? 0.78 : 0.95, lag = 0.12, dTrail = steps === 1 ? 0.92 : 1.1;
+    const eLead = EXPO(seg(u, 0, dLead));
+    const eTrail = SETTLE(seg(u, lag, dTrail));
+    const lA = tabL(from), rA = tabR(from), lB = tabL(to), rB = tabR(to);
+    if (dir > 0) return { L: lerp(lA, lB, eTrail), R: lerp(rA, rB, eLead), dir };
+    return { L: lerp(lA, lB, eLead), R: lerp(rA, rB, eTrail), dir };
+  }
+
+  function draw(t) {
+    const p = phase(t);
+    const { from, to, u } = p;
+    const e = edges(from, to, u);
+    pill.setAttribute("x", e.L.toFixed(3));
+    pill.setAttribute("width", Math.max(0, e.R - e.L).toFixed(3));
+    clipRect.setAttribute("x", e.L.toFixed(3));
+    clipRect.setAttribute("width", Math.max(0, e.R - e.L).toFixed(3));
+
+    // speed lines: length follows the trailing edge's speed
+    const prev = edges(from, to, u - 1 / 60);
+    const trailNow = e.dir > 0 ? e.L : e.R, trailPrev = e.dir > 0 ? prev.L : prev.R;
+    const v = Math.abs(trailNow - trailPrev) * 60;
+    const len = Math.min(150, v * 0.09);
+    const op = clamp(v / 900);
+    [[PY0 + 10, 1], [PY0 + PH - 10, 0.62]].forEach(([y, f], i) => {
+      const x0 = trailNow - e.dir * 10, x1 = x0 - e.dir * len * f;
+      const l = speed[i];
+      l.setAttribute("x1", x0.toFixed(2)); l.setAttribute("x2", x1.toFixed(2));
+      l.setAttribute("y1", y); l.setAttribute("y2", y);
+      l.setAttribute("opacity", (len * f > 4 && u < MOVE_LEN ? op : 0).toFixed(3));
+    });
+
+    // timer: hands off in the direction of travel, then fills under the new tab through the hold
+    if (u < MOVE_LEN) {
+      const q = EXPO(seg(u, 0, 0.32));
+      const lA = tabL(from), rA = tabR(from);
+      const x1 = e.dir > 0 ? lerp(lA, rA, q) : lA;
+      const x2 = e.dir > 0 ? rA : lerp(rA, lA, q);
+      timer.setAttribute("x1", x1.toFixed(2)); timer.setAttribute("x2", x2.toFixed(2));
+      timer.setAttribute("opacity", q >= 1 ? 0 : 1);
+    } else {
+      const f = clamp((u - MOVE_LEN) / p.holdLen);
+      timer.setAttribute("x1", tabL(to).toFixed(2));
+      timer.setAttribute("x2", lerp(tabL(to), tabR(to), f).toFixed(2));
+      timer.setAttribute("opacity", f > 0 ? 1 : 0);
+    }
+
+    // rows: the old words fade back to waiting grey and out, then the new words fade in place, grey to ink, top to bottom
+    rowG.forEach((r, i) => {
+      const outA = 0.22 + i * 0.09, inA = 0.52 + i * 0.09;
+      const o1 = seg(u, outA, 0.2), o2 = seg(u, outA + 0.16, 0.12);
+      const n1 = seg(u, inA, 0.1), n2 = seg(u, inA, 0.3);
+      const inkC = r.lead ? COL.ink : COL.ink2;
+      const oldW = TABS[from].rows[i], newW = TABS[to].rows[i];
+      setRow(r.out, i, oldW, mix(inkC, COL.hairS, o1), mix(COL.muted, COL.hairS, o1), 1 - o2);
+      setRow(r.inn, i, newW, mix(COL.hairS, inkC, n2), mix(COL.hairS, COL.muted, n2), n1);
+      r.ring.setAttribute("stroke", n1 > 0 ? mix(COL.hairS, COL.ink, n2) : mix(COL.ink, COL.hairS, o1));
+    });
+  }
+
+  function layout() {
+    tabText.forEach(([a, b]) => { const y = TY + TH / 2 + capTab / 2; a.e.setAttribute("y", y); b.e.setAttribute("y", y); });
+    rowG.forEach((r) => { const c = r.lead ? capLead : capRow; r.out.e.setAttribute("y", r.cy + c / 2); r.inn.e.setAttribute("y", r.cy + c / 2); });
+    foot.e.setAttribute("y", FOOT_C + capFoot / 2);
+  }
+
+  // cap heights from the font's own metrics, measured on a canvas with the loaded face
+  function measureCaps() {
+    const c = document.createElement("canvas").getContext("2d");
+    const m = (w, size, stretch) => {
+      c.font = `${w} ${size}px Archivo`;
+      try { c.fontStretch = stretch; } catch (err) {}
+      const r = c.measureText("HEN");
+      return r.actualBoundingBoxAscent;
+    };
+    capTab = m(640, 36, "semi-expanded");
+    capLead = m(640, 44, "semi-expanded");
+    capRow = m(420, 34, "normal");
+    capFoot = m(400, 28, "semi-expanded");
+  }
+
+  // fit report: every text's ink box against its container, at least 16 px clear
+  window.__fit = (t) => {
+    window.seek(t);
+    const bad = [];
+    const box = (el) => el.getBBox();
+    const p = phase(t);
+    const e = edges(p.from, p.to, p.u);
+    tabText.forEach(([a], i) => {
+      const b = box(a.e);
+      const cellL = TX + i * CELL, cellR = TX + (i + 1) * CELL;
+      if (b.x < cellL + INSET + 16 || b.x + b.width > cellR - INSET - 16) bad.push(`tab ${i} label within 16 px of its cell`);
+      if (b.y < PY0 || b.y + b.height > PY0 + PH) bad.push(`tab ${i} label outside the pill height`);
+    });
+    rowG.forEach((r, i) => {
+      [r.out, r.inn].forEach((s) => {
+        if (+s.e.getAttribute("opacity") <= 0) return;
+        const b = box(s.e);
+        if (b.x + b.width > PX + PW - 16 - 40) bad.push(`row ${i} text near the panel edge (${Math.round(b.x + b.width)})`);
+        const [y0, y1] = BANDS[i];
+        if (b.y < y0 + 8 || b.y + b.height > y1 - 8) bad.push(`row ${i} text crosses its band (${Math.round(b.y)}..${Math.round(b.y + b.height)})`);
+      });
+    });
+    const fb = box(foot.e);
+    if (fb.y < FOOT_DIV + 16 || fb.y + fb.height > PY + PHT - 16) bad.push("footer near an edge");
+    if (e.R - e.L <= 0) bad.push("pill collapsed");
+    return bad;
+  };
+
+  // ---- the clock ----
+  window.seek = (s) => { draw(s); };
+  window.__loop = LOOP;
+  function fit() {
+    const st = document.getElementById("stage");
+    const k = RENDER ? 1 : Math.min(innerWidth / 1200, innerHeight / 750);
+    st.style.transform = `translate(-50%, -50%) scale(${k})`;
+  }
+  addEventListener("resize", fit);
+  fit();
+  window.__ready = document.fonts.load("640 32px Archivo").then(() => document.fonts.ready).then(() => {
+    measureCaps();
+    layout();
+    draw(0);
+    if (!RENDER) {
+      const t0 = performance.now();
+      const tick = (now) => { draw(((now - t0) / 1000) % LOOP); requestAnimationFrame(tick); };
+      requestAnimationFrame(tick);
+    }
+    return true;
+  });
+})();
+</script>
+</body>
+</html>

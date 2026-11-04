@@ -1,0 +1,20 @@
+---
+// The Hosted page's last block (R4): the demo is Dominik's copy on a public sample repository, opened
+// with the code from his message, and one link to it.
+interface Props {
+  /** the demo's address */
+  demo: string;
+}
+const { demo } = Astro.props;
+---
+<section class="hs-demo" aria-labelledby="hs-demo-h">
+  <div class="wrap">
+    <div class="hs-demo-row">
+      <h2 class="h-sec" id="hs-demo-h">Try it before you deploy.</h2>
+      <div>
+        <p class="body">The demo is Dominik's own copy of this agent, working on a public sample repository. It opens with a code that comes in his message to you.</p>
+        <a class="link" href={demo}><span class="link-rule" aria-hidden="true"></span><span>Try the demo</span></a>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,16 +1,18 @@
 """Assemble each composition into a HyperFrames project under motion/.work/<name>/:
 inline shared/ds.css and shared/ds.js into <name>/composition.html, copy the two
-font files from src/assets/fonts/ into assets/fonts/, and write the project files."""
+font files from src/assets/fonts/ into assets/fonts/, and write the project files.
+A piece with a score.py (film-hosted) gets its score written to assets/score.wav."""
 import json
 import pathlib
 import shutil
+import subprocess
 import sys
 
 MOTION = pathlib.Path(__file__).resolve().parent
 SITE = MOTION.parent
 FONTS = SITE / "src" / "assets" / "fonts"
 WORK = MOTION / ".work"
-NAMES = ["film", "readme-hero", "loop-review", "loop-waves", "loop-runner", "loop-handoff", "loop-install", "loop-setup", "loop-workflow"]
+NAMES = ["film", "film-hosted", "readme-hero", "loop-review", "loop-waves", "loop-runner", "loop-handoff", "loop-install", "loop-setup", "loop-workflow"]
 HYPERFRAMES = "0.8.140"
 
 css = (MOTION / "shared" / "ds.css").read_text()
@@ -38,6 +40,9 @@ for name in sys.argv[1:] or NAMES:
             "render": f"npx --yes hyperframes@{HYPERFRAMES} render",
         },
     }, indent=2) + "\n")
+    score = MOTION / name / "score.py"
+    if score.exists():
+        subprocess.run([sys.executable, str(score), str(out_dir / "assets" / "score.wav")], check=True)
     ledger = MOTION / name / "ledger.json"
     if ledger.exists():
         shutil.copy2(ledger, out_dir / "ledger.json")

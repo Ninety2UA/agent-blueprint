@@ -5,6 +5,7 @@ import sitemap from '@astrojs/sitemap';
 import pagefind from 'astro-pagefind';
 import tailwindcss from '@tailwindcss/vite';
 import kitDevRoute from './src/dev/kit-route.mjs';
+import hostedRoute from './src/hosted/route.mjs';
 import interactionDirective from './src/directives/integration.mjs';
 import escapeSkillHtml from './src/lib/markdown/escape-skill-html.mjs';
 import { SITE_URL } from './src/lib/site.mjs';
@@ -19,7 +20,9 @@ export default defineConfig({
   },
   // escapeSkillHtml: raw HTML in SKILL.md bodies renders as text, so <base-branch> stays visible.
   // kitDevRoute: the Kit page exists under `npm run dev` only (src/dev/kit-route.mjs).
-  integrations: [react(), sitemap(), pagefind(), interactionDirective(), escapeSkillHtml(), kitDevRoute()],
+  // hostedRoute: /hosted/ exists when the release switch allows it, and every build checks the page's
+  // data in eve/README.md (src/hosted/route.mjs, src/lib/hosted-release.mjs).
+  integrations: [react(), sitemap(), pagefind(), interactionDirective(), escapeSkillHtml(), kitDevRoute(), hostedRoute()],
   fonts: [
     {
       provider: fontProviders.local(),

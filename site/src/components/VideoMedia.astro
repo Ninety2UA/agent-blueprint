@@ -1,11 +1,20 @@
 ---
 // The video box every figure shares, and what video-figures.ts plays it by: a muted, inline,
 // preload="none" video over a lazy poster <img> (the video's own poster attribute is fetched during
-// parsing, even for figures far below the fold or in hidden panels), and a Play button that shows only
+// parsing, even for figures far below the fold or in hidden panels; given avifPoster, a <picture> offers
+// that AVIF first), and a Play button that shows only
 // when nothing else will start the video. The box takes the video's proportions, read from the file
 // unless given, and both files are requested by their content version (media.ts versioned). Without
-// JavaScript the native controls stay. The default slot sits under the video (registration marks);
-// "over" sits above it (a drawing in the video's own coordinates).
+// JavaScript the native controls stay, and media.css keeps them see-through so the poster shows. The
+// default slot sits under the video (registration marks); "over" sits above it (a drawing in the
+// video's own coordinates). A figure with a portrait cut renders one box per cut (VideoFigure).
+//
+// Ruling 47: a poster that cannot be the page's largest paint waits for the reader. Its <img> holds its
+// URL as data-src and its AVIF <source> as data-srcset, so no lazy-load distance (Chrome's reaches far
+// down the page on a slow phone connection) fetches it while the page loads; video-figures.ts sets
+// them once the box is within a screen of the viewport. A <noscript> copy with the real URLs shows the
+// poster without JavaScript (KTD6). deferPoster={false} keeps a plain lazy poster, for one that can be
+// the page's largest paint (the film, Fig. 1 of /workflow/ and of /docs/project-files/).
 import '../styles/media.css';
 import { IC } from './icons';
 import { mp4Facts, versioned } from './media';
@@ -13,8 +22,10 @@ import { mp4Facts, versioned } from './media';
 interface Props {
   /** path under public/, e.g. "/media/loop-review.mp4" */
   src: string;
-  /** the .jpg beside the video unless given */
-  poster?: string;
+  /** the .jpg beside the video unless given; false when the figure lays one poster under its boxes */
+  poster?: string | false;
+  /** an AVIF still of the poster, offered first through a <picture>; the JPG stays the fallback */
+  avifPoster?: string;
   /** the frame size; read from the file when not given */
   width?: number;
   height?: number;
@@ -26,15 +37,44 @@ interface Props {
   /** a video drawn on a sheet has no hairline frame of its own */
   bare?: boolean;
   describedby?: string;
+  /** the id of a hidden text alternative, in place of alt, when two boxes share one */
+  labelledby?: string;
+  /** the cut this box holds in a two-cut figure: vf-land or vf-port */
+  class?: string;
+  /** false: a plain lazy poster the browser fetches by its own rule, for one that can be the largest paint */
+  deferPoster?: boolean;
 }
-const { src, poster = src.replace(/\.mp4$/, '.jpg'), alt, label, loop = true, bare = false, describedby } = Astro.props;
+const { src, poster = src.replace(/\.mp4$/, '.jpg'), avifPoster, alt, label, loop = true, bare = false, describedby, labelledby, class: cls, deferPoster = true } = Astro.props;
 const facts = mp4Facts(src.slice(1));
 const { width = facts.width, height = facts.height } = Astro.props;
 ---
-<div class:list={['vf-media', { 'vf-bare': bare }]} style={`aspect-ratio:${width} / ${height}`}>
+<div class:list={['vf-media', cls, { 'vf-bare': bare }]} style={`aspect-ratio:${width} / ${height}`}>
   <slot />
-  <img class="vf-poster" src={versioned(poster)} width={width} height={height} alt="" loading="lazy" decoding="async" />
-  <video muted playsinline loop={loop} preload="none" controls width={width} height={height} aria-label={alt} aria-describedby={describedby}>
+  {poster && deferPoster && (avifPoster ? (
+    <picture>
+      <source type="image/avif" data-srcset={versioned(avifPoster)} />
+      <img class="vf-poster" data-src={versioned(poster)} width={width} height={height} alt="" decoding="async" />
+    </picture>
+  ) : (
+    <img class="vf-poster" data-src={versioned(poster)} width={width} height={height} alt="" decoding="async" />
+  ))}
+  {poster && deferPoster && (avifPoster ? (
+    <noscript><picture>
+      <source type="image/avif" srcset={versioned(avifPoster)} />
+      <img class="vf-poster" src={versioned(poster)} width={width} height={height} alt="" loading="lazy" decoding="async" />
+    </picture></noscript>
+  ) : (
+    <noscript><img class="vf-poster" src={versioned(poster)} width={width} height={height} alt="" loading="lazy" decoding="async" /></noscript>
+  ))}
+  {poster && !deferPoster && (avifPoster ? (
+    <picture>
+      <source type="image/avif" srcset={versioned(avifPoster)} />
+      <img class="vf-poster" src={versioned(poster)} width={width} height={height} alt="" loading="lazy" decoding="async" />
+    </picture>
+  ) : (
+    <img class="vf-poster" src={versioned(poster)} width={width} height={height} alt="" loading="lazy" decoding="async" />
+  ))}
+  <video muted playsinline loop={loop} preload="none" controls width={width} height={height} aria-label={labelledby ? undefined : alt} aria-labelledby={labelledby} aria-describedby={describedby}>
     <source src={versioned(src)} type="video/mp4" />
   </video>
   <slot name="over" />

@@ -27,6 +27,7 @@ inputs=(
   ':/hooks/claude-code.json'
   ':/scripts/check-site.py'
   ':/scripts/adoption-denylist.json'
+  ':/eve/README.md'
 )
 if git diff --quiet "$prev" HEAD -- "${inputs[@]}"; then
   echo "No site input changed since ${prev}: skipping the build."

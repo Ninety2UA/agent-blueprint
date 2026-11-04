@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1200">
+<title>Prerequisites</title>
+<style>
+/* Archivo variable, embedded (MOTION.md section 2) */
+@font-face{font-family:"Archivo";src:url("../../../src/assets/fonts/Archivo-var.woff2") format("woff2");font-weight:100 900;font-stretch:62% 125%;font-display:block}
+html,body{margin:0;padding:0;background:#fafafa}
+body{width:1200px;height:750px;overflow:hidden}
+#stage{position:relative;width:1200px;height:750px;overflow:hidden;background:#fafafa;font-family:"Archivo",sans-serif;color:#0f0f0f;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.abs{position:absolute;left:0;top:0;white-space:nowrap}
+.item{position:absolute;left:0;top:0;white-space:nowrap}
+.item > span{position:absolute;left:0;top:0;display:inline-block;white-space:nowrap}
+#lens{position:absolute;left:0;top:0;overflow:visible}
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg id="lens" width="1200" height="750" viewBox="0 0 1200 750">
+    <rect id="lens-fill" fill="#ffffff"/>
+    <rect id="lens-inner" fill="none" stroke="#d4d4d4" stroke-width="1.5"/>
+    <rect id="lens-rule" fill="none" stroke="#0f0f0f" stroke-width="2.5"/>
+    <g id="regs"></g>
+  </svg>
+  <div id="content"></div>
+</div>
+<script>
+(function(){
+  var CUT = 'landscape', W = 1200, H = 750, LOOP = 12;
+
+  // ---------- colours (MOTION.md section 1 and its answers) ----------
+  function hex(h){ return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)]; }
+  var C = { ink:hex('#0f0f0f'), ink2:hex('#383838'), muted:hex('#555555'), wait:hex('#b1b1b1'), hair:hex('#d4d4d4'), accent:hex('#ed4423') };
+  function mixA(a,b,k){ return [a[0]+(b[0]-a[0])*k, a[1]+(b[1]-a[1])*k, a[2]+(b[2]-a[2])*k]; }
+  function css(c){ return 'rgb(' + Math.round(c[0]) + ',' + Math.round(c[1]) + ',' + Math.round(c[2]) + ')'; }
+
+  // ---------- easing (MOTION.md answers) ----------
+  function bez(x1,y1,x2,y2){
+    return function(x){
+      if (x<=0) return 0; if (x>=1) return 1;
+      var lo=0, hi=1, t=x;
+      for (var i=0;i<40;i++){ var cx=3*x1*t*(1-t)*(1-t)+3*x2*t*t*(1-t)+t*t*t; if (Math.abs(cx-x)<1e-7) break; if (cx<x) lo=t; else hi=t; t=(lo+hi)/2; }
+      return 3*y1*t*(1-t)*(1-t)+3*y2*t*t*(1-t)+t*t*t;
+    };
+  }
+  var EASE_OUT = bez(0.16,1,0.3,1), EASE_RETURN = bez(0.65,0,0.35,1);
+  function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+  function seg(t,t0,t1,ease){ return ease(clamp((t-t0)/(t1-t0),0,1)); }
+  function lerp(a,b,k){ return a+(b-a)*k; }
+
+  // ---------- words (the page's wording, ruling 40; FACTS.md section 14; no numbers on screen) ----------
+  var GROUPS = [
+    { id:'A', title:'Every route needs',    items:[ ['GitHub App','On the one repository'], ['Vercel account','With AI Gateway credits'] ] },
+    { id:'B', title:'Where the agent runs', items:[ ['Vercel','Agent, web chat and sandbox'], ['Railway','Railway and Daytona accounts'], ['Your server','Node, and Docker or Daytona'] ] },
+    { id:'C', title:'How you reach it',     items:[ ['Web chat','A password'], ['Slack','A Slack app'], ['Linear','A Linear app'], ['Telegram','A bot token'], ['MCP','A token or your identity provider'] ] }
+  ];
+
+  // ---------- layout per cut (every item the same size: equal weight) ----------
+  var L = { pos:{} };
+  if (CUT === 'landscape'){
+    L.head = {size:32, lh:40, weight:700, stretch:'112%'}; L.name = {size:30, lh:36, weight:600, stretch:'112%'}; L.need = {size:28, lh:34, weight:400, stretch:'100%'};
+    L.inline = false; L.ruleW = 410; L.ruleGap = 7; L.padX = 28;
+    var COLW = 410, GUT = 96, X1 = Math.round((W - (COLW*2 + GUT))/2), X2 = X1 + COLW + GUT, IH = 70, y = 0;
+    L.pos.A = { hx:X1, hy:y, items:[] }; y += 40 + 16;
+    for (var i=0;i<2;i++){ L.pos.A.items.push({x:X1, y:y, h:IH}); y += IH + (i<1?12:0); }
+    y += 48;
+    L.pos.B = { hx:X1, hy:y, items:[] }; y += 40 + 16;
+    for (var j=0;j<3;j++){ L.pos.B.items.push({x:X1, y:y, h:IH}); y += IH + (j<2?12:0); }
+    var leftH = y; y = 0;
+    L.pos.C = { hx:X2, hy:y, items:[] }; y += 40 + 16;
+    for (var k=0;k<5;k++){ L.pos.C.items.push({x:X2, y:y, h:IH}); y += IH + (k<4?12:0); }
+    var T = Math.round((H - leftH)/2);
+    ['A','B','C'].forEach(function(g){ L.pos[g].hy += T; L.pos[g].items.forEach(function(it){ it.y += T; }); });
+  } else {
+    L.head = {size:32, lh:38, weight:700, stretch:'112%'}; L.name = {size:28, lh:36, weight:600, stretch:'112%'}; L.need = {size:26, lh:36, weight:400, stretch:'100%'};
+    L.inline = true; L.needX = { A:238, B:186, C:186 }; L.ruleW = 548; L.ruleGap = 6; L.padX = 22;
+    var XL = 92, RH = 36, yy = 0;
+    ['A','B','C'].forEach(function(g, gi){
+      L.pos[g] = { hx:XL, hy:yy, items:[] }; yy += 38 + 14;
+      var n = GROUPS[gi].items.length;
+      for (var a=0;a<n;a++){ L.pos[g].items.push({x:XL, y:yy, h:RH}); yy += RH + (a<n-1?8:0); }
+      if (gi < 2) yy += 48;
+    });
+    var TT = Math.round((H - yy)/2);
+    ['A','B','C'].forEach(function(g){ L.pos[g].hy += TT; L.pos[g].items.forEach(function(it){ it.y += TT; }); });
+  }
+  var MAG = 1.04, PAD = 20;
+
+  // ---------- DOM ----------
+  var content = document.getElementById('content');
+  function font(el, f){ el.style.fontSize = f.size + 'px'; el.style.lineHeight = f.lh + 'px'; el.style.fontWeight = f.weight; el.style.fontStretch = f.stretch; }
+  var els = [], heads = {};
+  GROUPS.forEach(function(g){
+    var p = L.pos[g.id];
+    var rl = document.createElement('div'); rl.className = 'abs'; rl.style.width = L.ruleW + 'px'; rl.style.transformOrigin = '0 0';
+    content.appendChild(rl);
+    var h = document.createElement('div'); h.className = 'abs'; h.textContent = g.title; font(h, L.head);
+    h.style.transform = 'translate(' + p.hx + 'px,' + p.hy + 'px)';
+    content.appendChild(h);
+    var hRec = { kind:'head', el:h, rule:rl, group:g.id, x:p.hx, y:p.hy, h:L.head.lh, ruleY:p.hy + L.head.lh + L.ruleGap };
+    els.push(hRec); heads[g.id] = hRec;
+    g.items.forEach(function(pair, k){
+      var q = p.items[k];
+      var it = document.createElement('div'); it.className = 'item';
+      var nm = document.createElement('span'), nd = document.createElement('span');
+      nm.textContent = pair[0]; nd.textContent = pair[1];
+      font(nm, L.name); font(nd, L.need);
+      if (L.inline) nd.style.left = L.needX[g.id] + 'px'; else nd.style.top = L.name.lh + 'px';
+      it.appendChild(nm); it.appendChild(nd);
+      it.style.transformOrigin = '0 ' + (q.h/2) + 'px';
+      content.appendChild(it);
+      els.push({ kind:'item', el:it, name:nm, need:nd, group:g.id, x:q.x, y:q.y, h:q.h });
+    });
+  });
+  var NS = 'http://www.w3.org/2000/svg', regsG = document.getElementById('regs'), regs = [];
+  for (var r=0;r<4;r++){
+    var gEl = document.createElementNS(NS,'g');
+    gEl.innerHTML = '<circle r="5" fill="none" stroke="#0f0f0f" stroke-width="1.5"/><path d="M-12 0H12M0 -12V12" stroke="#0f0f0f" stroke-width="1.5"/>';
+    regsG.appendChild(gEl); regs.push(gEl);
+  }
+  var lensFill = document.getElementById('lens-fill'), lensInner = document.getElementById('lens-inner'), lensRule = document.getElementById('lens-rule');
+
+  // ---------- lens boxes: one per group (heading, its rule and its items) ----------
+  function boxes(){
+    var B = {};
+    function add(key, x0, y0, x1, y1){
+      if (!B[key]) B[key] = { x0:x0, y0:y0, x1:x1, y1:y1 };
+      else { B[key].x0 = Math.min(B[key].x0, x0); B[key].y0 = Math.min(B[key].y0, y0); B[key].x1 = Math.max(B[key].x1, x1); B[key].y1 = Math.max(B[key].y1, y1); }
+    }
+    els.forEach(function(e){
+      if (e.kind === 'head'){ add(e.group, e.x, e.y, Math.max(e.x + e.el.offsetWidth, e.x + L.ruleW), e.ruleY + 2.5); return; }
+      var dw = e.need.offsetWidth + (parseFloat(e.need.style.left) || 0);
+      var w = Math.max(e.name.offsetWidth, dw) * MAG, hh = e.h * MAG;
+      add(e.group, e.x, e.y + e.h/2 - hh/2, e.x + w, e.y + e.h/2 + hh/2);
+    });
+    Object.keys(B).forEach(function(k){ var b = B[k]; b.x0 -= L.padX; b.y0 -= PAD; b.x1 += L.padX; b.y1 += PAD; });
+    return B;
+  }
+  var BOX = null;
+
+  // ---------- timeline (seconds, 12-second loop) ----------
+  // 0.2 to 1.6 the list comes together; 1.6 to 2.8 the whole list at equal weight (poster at 2.2);
+  // then each group gets the lens and a 2.2-second still: A 3.3 to 5.5, B 6.0 to 8.2, C 8.7 to 10.9; 10.9 to 11.3 back to rest.
+  function buildIn(t, i){ return seg(t, 0.20 + 0.08*i, 0.20 + 0.08*i + 0.30, EASE_OUT); }
+  function ruleIn(t, i){ return seg(t, 0.20 + 0.08*i, 0.20 + 0.08*i + 0.45, EASE_OUT); }
+  function back(t){ return seg(t, 10.90, 11.30, EASE_RETURN); }
+  function lensDraw(t){ return seg(t, 2.80, 3.25, EASE_OUT); }
+  function lensFillIn(t){ return seg(t, 2.80, 3.10, EASE_OUT) * (1 - back(t)); }
+  function regsIn(t){ return seg(t, 3.05, 3.30, EASE_OUT) * (1 - back(t)); }
+  function tour(t){ return seg(t, 2.80, 3.10, EASE_OUT) * (1 - back(t)); }     // the other groups step back while one has the lens
+  var PATH = [ [5.50, 6.00, 'A', 'B'], [8.20, 8.70, 'B', 'C'] ];
+  function lensAt(t){
+    var from = 'A', to = 'A', p = 0;
+    for (var i=0;i<PATH.length;i++){
+      var s = PATH[i]; if (t < s[0]) break;
+      from = s[2]; to = s[3]; p = seg(t, s[0], s[1], EASE_OUT);
+      if (p >= 1){ from = to; p = 0; }
+    }
+    return { from:from, to:to, p:p };
+  }
+  function focusOf(g, la){
+    if (la.from === la.to) return g === la.from ? 1 : 0;
+    if (g === la.from) return 1 - la.p;
+    if (g === la.to) return la.p;
+    return 0;
+  }
+
+  function seek(time){
+    var t = ((time % LOOP) + LOOP) % LOOP;
+    if (!BOX) BOX = boxes();
+    var la = lensAt(t), A = BOX[la.from], Bx = BOX[la.to];
+    var x0 = lerp(A.x0, Bx.x0, la.p), y0 = lerp(A.y0, Bx.y0, la.p), x1 = lerp(A.x1, Bx.x1, la.p), y1 = lerp(A.y1, Bx.y1, la.p);
+    var lw = x1 - x0, lh = y1 - y0, per = 2*(lw + lh), draw = lensDraw(t), bk = back(t), tv = tour(t);
+    [lensFill, lensInner, lensRule].forEach(function(rc, n){
+      var ins = n === 1 ? 5 : 0;
+      rc.setAttribute('x', (x0 + ins).toFixed(2)); rc.setAttribute('y', (y0 + ins).toFixed(2));
+      rc.setAttribute('width', Math.max(0, lw - ins*2).toFixed(2)); rc.setAttribute('height', Math.max(0, lh - ins*2).toFixed(2));
+    });
+    lensFill.setAttribute('opacity', lensFillIn(t).toFixed(3));
+    lensInner.setAttribute('opacity', regsIn(t).toFixed(3));
+    lensRule.setAttribute('stroke-dasharray', per.toFixed(2));
+    lensRule.setAttribute('stroke-dashoffset', ((1 - draw) * per).toFixed(2));
+    lensRule.setAttribute('opacity', (draw > 0 ? 1 - bk : 0).toFixed(3));
+    var corners = [[x0,y0],[x1,y0],[x0,y1],[x1,y1]], rv = regsIn(t);
+    for (var q=0;q<4;q++){ regs[q].setAttribute('transform', 'translate(' + corners[q][0].toFixed(2) + ' ' + corners[q][1].toFixed(2) + ')'); regs[q].setAttribute('opacity', rv.toFixed(3)); }
+    for (var i=0;i<els.length;i++){
+      var e = els[i], b = buildIn(t, i) * (1 - bk), f = focusOf(e.group, la) * tv;
+      var dim = tv * (1 - focusOf(e.group, la));                    // groups without the lens read muted
+      if (e.kind === 'head'){
+        e.el.style.color = css(mixA(C.wait, C.ink, b));
+        var rd = ruleIn(t, i);
+        e.rule.style.height = lerp(1.5, 2.5, f).toFixed(2) + 'px';
+        e.rule.style.background = css(mixA(C.hair, C.accent, f));     // the one accent: the rule under the group that has the lens
+        e.rule.style.transform = 'translate(' + e.x + 'px,' + (e.ruleY - lerp(0, 0.5, f)).toFixed(2) + 'px) scaleX(' + rd.toFixed(4) + ')';
+        e.rule.style.opacity = (1 - bk).toFixed(3);
+        continue;
+      }
+      var s = 1 + (MAG - 1) * f;
+      e.el.style.transform = 'translate(' + e.x + 'px,' + e.y + 'px) scale(' + s.toFixed(4) + ')';
+      e.name.style.color = css(mixA(mixA(C.wait, C.ink, b), C.muted, dim));
+      e.need.style.color = css(mixA(mixA(C.wait, C.ink2, b), C.muted, dim));
+    }
+  }
+  window.seek = seek;
+  window.DURATION = LOOP;
+
+  var render = /[?&]render\b/.test(location.search);
+  Promise.all(['700 32px "Archivo"','600 30px "Archivo"','400 28px "Archivo"','600 28px "Archivo"','400 26px "Archivo"'].map(function(f){ return document.fonts.load(f); }))
+    .then(function(){ return document.fonts.ready; })
+    .then(function(){
+      BOX = boxes(); seek(0); window.__ready = true;
+      if (!render){ var start = performance.now(); (function tick(now){ seek(((now - start)/1000) % LOOP); requestAnimationFrame(tick); })(start); }
+    });
+  seek(0); BOX = null;
+})();
+</script>
+</body>
+</html>

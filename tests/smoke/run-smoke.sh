@@ -380,9 +380,12 @@ import os, sys
 dirs = [d for d in sys.stdin.read().splitlines() if d]
 seen = {}
 for d in dirs:
+    # A checkout as a catalog location: its git-ignored eve build folders hold compiled copies.
+    ignored = {os.path.join(d, "eve", ".eve"), os.path.join(d, "eve", ".output"), os.path.join(d, "eve", "node_modules")}
     for root, subdirs, files in os.walk(d, followlinks=True):
         if root[len(d):].count(os.sep) > 6:
             subdirs[:] = []
+        subdirs[:] = [s for s in subdirs if os.path.join(root, s) not in ignored]
         if "SKILL.md" in files and os.path.basename(root).startswith("ab-"):
             seen.setdefault(os.path.basename(root), []).append(root)
 dups = {k: v for k, v in seen.items() if len(v) > 1}

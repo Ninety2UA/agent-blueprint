@@ -2,7 +2,8 @@
 // Fig. 1: the README's development loop as a looping animation (motion/loop-workflow) drawn on the
 // sheet itself, the way the film is: a tracer runs the six steps and docs/ carries the loop back to
 // Orient. Under it, the legend gives every step's text from the README, with skill names linked.
-// The video plays on its own while on screen (video-figures.ts).
+// The video plays on its own while on screen (video-figures.ts). Its poster is the page's largest paint
+// on a desktop screen, so it stays a plain lazy image (deferPoster, ruling 47).
 import DrawingSheet from '../DrawingSheet.astro';
 import { loop as loopVideo } from '../loops';
 import TitleBlock from '../TitleBlock.astro';
@@ -21,7 +22,7 @@ const video = loopVideo('loop-workflow');
     </div>
     <figure class="wf-fig loop-fig" data-vfig aria-labelledby="loop-h">
       <DrawingSheet class="loop-sheet">
-        <VideoMedia src={video.src} alt={video.alt} label={video.label} bare />
+        <VideoMedia src={video.src} alt={video.alt} label={video.label} bare deferPoster={false} />
         <ol class="loop-legend">
           {loop.map((step) => (
             <li>

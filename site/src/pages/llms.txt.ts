@@ -1,10 +1,11 @@
 // /llms.txt: the site's sections and every skill page with its one-line summary, generated from the
-// repository at build time (lib/llms.mjs).
+// repository at build time (lib/llms.mjs). The sections are the ones this build carries (enabledNav).
 import type { APIRoute } from 'astro';
 
 import { NAV } from '../components/nav';
+import { enabledNav } from '../lib/hosted-release.mjs';
 import { llmsTxt } from '../lib/llms.mjs';
 import { getSiteData } from '../lib/site.mjs';
 
 export const GET: APIRoute = () =>
-  new Response(llmsTxt(getSiteData(), NAV), { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+  new Response(llmsTxt(getSiteData(), enabledNav(NAV)), { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });

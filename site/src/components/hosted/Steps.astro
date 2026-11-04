@@ -1,0 +1,89 @@
+---
+// The Hosted page's three steps (the approved mock v3.2's second block, the hero's Deploy target): a real
+// <ol> whose number bubbles are the list's own counter. Step 1, "Have these ready", lists every
+// prerequisite at the same weight in three groups of rows, service on the left and need on the right,
+// beside Fig. 2, the prerequisites loop (rulings 39 to 41); step 2 is the configurator beside Fig. 3,
+// which stays in view at desktop while the result changes; step 3 is the chat run, Fig. 4. The GitHub
+// App link, the Node version and the Hobby minutes follow eve/README.md (the Pre-flight heading, "Your own
+// server" and the tier table, checked in site/test/hosted-page.test.mjs). A channel shows in step 1 and
+// in step 3 only once a route serves it (FACTS section 14), so both follow hosted-data's route states.
+// The phone posters of Figs. 2 and 3 are AVIF stills with the JPG as the fallback (ruling 38).
+import VideoFigure from '../VideoFigure.astro';
+import { loop } from '../loops';
+import { githubSlug } from '../../lib/readme.mjs';
+import ChatRun from './chat-run/ChatRun.astro';
+import Configurator from './Configurator.astro';
+import { getHosted } from './hosted-data.mjs';
+
+const hosted = getHosted();
+const app = loop('loop-prereqs');
+const routes = loop('loop-routes');
+const preflight = hosted.links.variables.replace(/#.*$/, `#${githubSlug('Pre-flight')}`);
+
+// each channel's row in step 1 and its way to ask in step 3, in the mock's order (ruling 43)
+const CHANNELS: Record<string, { name: string; need: string; ask: string }> = {
+  web: { name: 'Web chat', need: 'A password you choose', ask: 'open the web chat' },
+  slack: { name: 'Slack', need: "A Slack app's bot token and signing secret", ask: 'mention the agent in Slack' },
+  linear: { name: 'Linear', need: "A Linear app's client ID and secret, and a webhook secret", ask: 'assign it a Linear issue' },
+  telegram: { name: 'Telegram', need: 'A bot token and a webhook secret', ask: 'message its Telegram bot' },
+  mcp: { name: 'MCP', need: 'A token you choose; Claude.ai and ChatGPT need an identity provider', ask: 'call it over MCP' },
+};
+const served = new Set<string>(hosted.states.map((s) => s.channel));
+for (const id of served) {
+  if (!CHANNELS[id]) throw new Error(`A route serves the channel ${id}, which Steps.astro has no row for`);
+}
+const channels = Object.entries(CHANNELS).filter(([id]) => served.has(id)).map(([, c]) => c);
+const asks = channels.map((c) => c.ask);
+const askLine = `${[asks.slice(0, -1).join(', '), asks.at(-1)].filter(Boolean).join(' or ')}.`.replace(/^./, (c) => c.toUpperCase());
+---
+<section class="hs-steps" id="deploy" aria-labelledby="hs-steps-h">
+  <div class="wrap">
+    <h2 class="h-sec hs-steps-head" id="hs-steps-h">Set up your own copy.</h2>
+    <ol class="hs-list">
+      <li id="github-app">
+        <div class="hs-step">
+          <VideoFigure src={app.src} portraitSrc={app.portraitSrc} portraitAvif="/media/loop-prereqs-portrait-720.avif" num={2} alt={app.alt} label={app.label}><Fragment set:html={app.caption} /></VideoFigure>
+          <div class="hs-step-text">
+            <h3 class="h-sub">Have these ready</h3>
+            <div class="hs-pq">
+              <h4 class="hs-pq-h">Every route needs</h4>
+              <dl class="hs-pq-list">
+                <div class="hs-pq-row"><dt>GitHub</dt><dd>An account, and a <a class="hs-inline" href={preflight}>GitHub App</a> on the one repository the agent works on: Contents and Pull requests read and write, Metadata read-only</dd></div>
+                <div class="hs-pq-row"><dt>Vercel</dt><dd>An account with AI Gateway credits, because the models run through the Gateway on every route</dd></div>
+              </dl>
+              <h4 class="hs-pq-h">Where the agent runs (pick one)</h4>
+              <dl class="hs-pq-list">
+                <div class="hs-pq-row"><dt>Vercel</dt><dd>The same Vercel account runs the agent, the web chat and the sandbox. Runs over {hosted.tierMinutes} minutes need the Pro plan.</dd></div>
+                <div class="hs-pq-row"><dt>Railway</dt><dd>A Railway account to run the agent, and a Daytona account for the sandbox</dd></div>
+                <div class="hs-pq-row"><dt>Your own server</dt><dd>A server with Node 24 or later that stays up, and Docker or a Daytona account for the sandbox</dd></div>
+              </dl>
+              <h4 class="hs-pq-h">How you reach it (pick one)</h4>
+              <dl class="hs-pq-list">
+                {channels.map((c) => <div class="hs-pq-row"><dt>{c.name}</dt><dd>{c.need}</dd></div>)}
+              </dl>
+            </div>
+          </div>
+        </div>
+      </li>
+      <li id="deploy-step">
+        <div class="hs-step hs-flip hs-step-deploy">
+          <VideoFigure src={routes.src} portraitSrc={routes.portraitSrc} portraitAvif="/media/loop-routes-portrait-720.avif" num={3} alt={routes.alt} label={routes.label}><Fragment set:html={routes.caption} /></VideoFigure>
+          <div class="hs-step-text">
+            <h3 class="h-sub">Deploy</h3>
+            <p class="body">Pick a host, a channel and the models to get the deploy button or the commands. The deploy link holds none of the sensitive values.</p>
+            <Configurator />
+          </div>
+        </div>
+      </li>
+      <li id="ask">
+        <div class="hs-step hs-step-chat">
+          <ChatRun num={4} />
+          <div class="hs-step-text">
+            <h3 class="h-sub">Ask for a change</h3>
+            <p class="body">{askLine} Name the repository and a feature. The agent asks you at its checkpoints and before it opens the pull request.</p>
+          </div>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>

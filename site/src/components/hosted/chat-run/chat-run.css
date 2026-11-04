@@ -1,0 +1,364 @@
+/* Chat run: the demo's web chat doing one example run, drawn live in HTML on html-demo's fixed
+   1200 x 750 stage (Fig. 4 on the Hosted page). Derived from the engine's stylesheet (html-demo
+   scripts/step-window.css, Meng To, MIT; see THIRD_PARTY_NOTICES.md), restyled per the
+   plan's KTD18: no traffic lights, no tab bar, no dark bar and no black shadows; the frame is
+   the site's video figure (a strong hairline with registration marks outside the corners) in
+   the page's theme tokens, so it follows light and dark. Everything is prefixed crun-.
+   The page supplies the site's tokens (--bg, --ink, --hair...) and the Archivo and Azeret Mono
+   fonts. ChatRun.astro imports this file, so the page inlines it and the place-holding sentence
+   reserves the figure's exact size from the first paint. */
+.crun {
+  --crun-line: oklch(0.62 0 0);
+  container-type: inline-size;
+  display: grid;
+  margin: 0;
+  min-width: 0;
+}
+:root[data-theme="dark"] .crun {
+  --crun-line: oklch(0.58 0 0);
+}
+.crun-alt {
+  box-sizing: border-box;
+  aspect-ratio: 16 / 10;
+  margin: 0 0 48px;
+  padding: 16px;
+  border: 1px solid var(--hair-strong);
+  color: var(--ink-2);
+}
+
+/* The frame: a strong hairline over the view and registration marks just outside its corners */
+.crun-frame {
+  position: relative;
+}
+.crun-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: 1px solid var(--hair-strong);
+  pointer-events: none;
+}
+.crun-reg {
+  position: absolute;
+  z-index: 1;
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: var(--ink);
+  pointer-events: none;
+}
+.crun-reg.crun-tl { left: -15px; top: -15px; }
+.crun-reg.crun-tr { right: -15px; top: -15px; }
+.crun-reg.crun-bl { left: -15px; bottom: -15px; }
+.crun-reg.crun-br { right: -15px; bottom: -15px; }
+
+/* The view keeps 16:10; one number, --k, scales the whole stage to it */
+.crun-view {
+  --k: 0.5;
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--bg);
+}
+.crun-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1200px;
+  height: 750px;
+  overflow: hidden;
+  transform: scale(var(--k));
+  transform-origin: 0 0;
+  user-select: none;
+  pointer-events: none;
+  animation: crun-in 0.4s cubic-bezier(0.65, 0, 0.35, 1) both;
+  /* the stage's size is fixed, so what changes inside it never lays out or paints anything else */
+  contain: strict;
+}
+@keyframes crun-in {
+  from { opacity: 0; }
+}
+
+/* The pointer, in ink with a ground-coloured edge; no shadow */
+.crun-cursor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 30;
+  width: 32px;
+  height: 32px;
+  transition-property: transform, opacity;
+  transition-timing-function: linear, ease;
+}
+.crun-cursor svg {
+  display: block;
+  overflow: visible;
+  transform-origin: 5px 5px;
+  transform: scale(1.8);
+  transition: transform 0.1s;
+}
+.crun-cursor path { fill: var(--ink); stroke: var(--bg); stroke-width: 1.6; stroke-linejoin: round; paint-order: stroke; }
+.crun-cursor.crun-away { opacity: 0; }
+.crun-cursor.crun-press svg { transform: scale(1.54); }
+
+/* The steps under the frame: a quiet label, then each step's name over a hairline that fills */
+.crun-bar {
+  display: flex;
+  min-height: 34px;
+  align-items: stretch;
+  gap: 4px;
+  margin-top: 14px;
+  font-family: var(--font-sans);
+}
+.crun-note {
+  flex: none;
+  align-self: center;
+  margin-right: 14px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-stretch: 112%;
+  line-height: 1.3;
+  color: var(--ink);
+}
+.crun-steps {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.crun-steps li {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+}
+.crun-steps button {
+  position: relative;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 2px 11px;
+  border: 0;
+  border-radius: var(--r, 2px);
+  background: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  color: var(--muted);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color 0.18s;
+}
+.crun-steps button:hover,
+.crun-steps button.crun-on {
+  color: var(--ink);
+}
+.crun-steps button.crun-on {
+  font-weight: 600;
+}
+.crun-steps button:focus-visible {
+  outline: 2px solid var(--focus, var(--ink));
+  outline-offset: 2px;
+}
+.crun-steps i {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 3px;
+  height: 1px;
+  background: var(--hair);
+}
+.crun-steps i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  transform: scaleX(var(--p, 0));
+  transform-origin: left;
+}
+
+
+/* ---------- The web chat at 200 percent: a 600 x 375 window scaled twice onto the stage ----------
+   Sizes are the app's own (eve/apps/web, Tailwind classes noted where they come from). */
+.crun-app {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  width: 600px;
+  height: 375px;
+  overflow: hidden;
+  transform: scale(2);
+  transform-origin: 0 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans, "Archivo", ui-sans-serif, system-ui, sans-serif);
+  font-size: 17px;
+  line-height: 1.6;
+  font-stretch: 100%;
+  font-kerning: normal;
+  font-variant-ligatures: none;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+}
+:root[data-theme="dark"] .crun-app { letter-spacing: 0.006em; }
+.crun-app svg { display: block; }
+
+/* top bar: h-14, px-4 below the sheet breakpoint, border-b */
+.crun-top {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 56px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--hair);
+  background: var(--bg);
+}
+.crun-lock { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 12px; }
+.crun-mark { width: 26px; height: 26px; }
+.crun-name { display: block; font-size: 17px; line-height: 1.2; font-weight: 640; letter-spacing: -0.01em; white-space: nowrap; font-stretch: 112%; }
+.crun-host { display: flex; align-items: center; gap: 5px; margin-top: 3px; font-size: 13px; line-height: 1.2; color: var(--ink-2); }
+.crun-eve { width: 13px; height: auto; fill: currentColor; }
+.crun-acts { display: flex; gap: 8px; }
+.crun-qb {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--crun-line);
+  border-radius: var(--r, 2px);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 560;
+}
+.crun-qb.crun-ico { padding: 0 9px; }
+.crun-qb svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+.crun-main { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+
+/* the new session's title block (components/chat/title-block.tsx), narrow layout */
+.crun-scroll { position: absolute; left: 0; right: 0; top: 0; padding: 20px 16px 48px; }
+.crun-tb { position: relative; border: 1px solid var(--ink); background: var(--bg-raise); }
+.crun-cross { position: absolute; top: -13px; left: -13px; width: 26px; height: 26px; fill: none; stroke: var(--ink); }
+.crun-tbh { border-bottom: 1px solid var(--ink); }
+.crun-cell { padding: 14px 16px; }
+.crun-cell + .crun-cell { border-top: 1px solid var(--hair); }
+.crun-lab { display: block; margin-bottom: 3px; font-size: 13px; line-height: 1.3; color: var(--muted); }
+.crun-h1 { display: block; font-size: 24px; line-height: 1.1; font-weight: 640; letter-spacing: -0.012em; font-stretch: 112%; }
+.crun-repo {
+  display: block;
+  font-family: var(--font-mono, "Azeret Mono", ui-monospace, monospace);
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-color: var(--hair-strong);
+  text-underline-offset: 0.2em;
+}
+.crun-bot { display: block; font-size: 15px; line-height: 1.35; font-weight: 560; overflow-wrap: anywhere; }
+.crun-lede { display: block; max-width: 62ch; padding: 22px 16px 20px; font-size: 16px; line-height: 1.55; }
+.crun-sug { border-top: 1px solid var(--hair); }
+.crun-sugh { display: block; padding: 14px 16px 0; font-size: 13px; line-height: 1.15; font-weight: 560; color: var(--muted); }
+.crun-reqs { padding-top: 8px; }
+.crun-req { position: relative; z-index: 0; display: grid; grid-template-columns: 24px minmax(0, 1fr); column-gap: 12px; padding: 13px 16px 14px; font-size: 15px; line-height: 1.45; }
+.crun-hov { position: absolute; inset: 0; z-index: -1; background: var(--bg-sunk); opacity: 0; }
+.crun-req + .crun-req { border-top: 1px solid var(--hair); }
+.crun-req > span:first-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+.crun-comp { display: grid; gap: 12px; padding: 16px; border-top: 1px solid var(--ink); }
+.crun-clab { font-size: 14px; line-height: 20px; font-weight: 560; }
+.crun-ta { display: block; height: 72px; border: 1px solid var(--crun-line); border-radius: var(--r, 2px); background: var(--bg); }
+.crun-send { display: flex; height: 40px; align-items: center; justify-content: center; border-radius: var(--r, 2px); background: var(--accent-strong); color: var(--on-accent); font-weight: 560; }
+
+/* the session (agent-chat.tsx, conversation.tsx, message.tsx, the compact composer) */
+.crun-convo { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.crun-cc { position: absolute; left: 0; right: 0; top: 0; display: flex; flex-direction: column; padding: 24px 16px; }
+.crun-user {
+  align-self: flex-end;
+  max-width: 85%;
+  padding: 8px 14px;
+  border: 1px solid var(--hair);
+  border-radius: var(--r, 2px);
+  background: var(--bg-raise);
+  font-size: 15px;
+  line-height: 24px;
+}
+.crun-msg { position: relative; margin-top: 16px; }
+.crun-think {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  padding: 0 12px;
+  font-family: var(--font-mono, "Azeret Mono", ui-monospace, monospace);
+  font-size: 13px;
+  line-height: 24px;
+  color: var(--muted);
+}
+.crun-p { padding: 0 12px; font-size: 15px; line-height: 24px; opacity: 0; }
+.crun-p + .crun-p { margin-top: 16px; }
+.crun-rest, .crun-rest .crun-link { color: transparent; text-decoration-color: transparent; }
+.crun-link {
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: var(--hair);
+  text-underline-offset: 4px;
+}
+.crun-caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 1.05em;
+  margin-right: -0.5em;
+  vertical-align: -0.16em;
+  background: var(--ink);
+}
+.crun-cmpw { flex: none; padding: 0 16px 16px; }
+.crun-form { border: 1px solid var(--hair-strong); border-radius: var(--r, 2px); background: var(--bg-raise); }
+.crun-ph { display: block; height: 64px; padding: 12px 12px 4px; font-size: 16px; line-height: 24px; color: var(--muted); }
+.crun-foot { display: flex; min-height: 36px; align-items: center; justify-content: flex-end; padding: 4px 12px 8px; }
+.crun-btn { display: flex; width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: var(--r, 2px); background: var(--bg-sunk); color: var(--muted); }
+.crun-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.crun-btn.crun-busy svg { width: 10px; height: 10px; fill: currentColor; }
+.crun-btn.crun-idle { color: var(--faint); }
+
+/* Without JavaScript the figure shows the run's light end frame in place of the sentence, which
+   a <noscript> style hides: the wide stage's, or the portrait stage's below 540 px. */
+.crun-still { display: block; width: 100%; height: auto; }
+.crun-still-narrow { display: none; }
+
+/* Below 540 px of width the figure turns portrait, where the site's loops do (KTD5): a 720 x 1080
+   stage with the chat as a 360 x 540 window at 200 percent, the app's own narrow layout, so its
+   smallest text is 26 px on the stage. The bar wraps to a fixed 80 px, which the sentence reserves
+   before the script runs. */
+@container (max-width: 539.98px) {
+  .crun-alt { aspect-ratio: 2 / 3; margin-bottom: 80px; }
+  .crun-view { aspect-ratio: 2 / 3; }
+  .crun-stage { width: 720px; height: 1080px; }
+  .crun-app { width: 360px; height: 540px; }
+  .crun-bar { flex-wrap: wrap; row-gap: 0; }
+  .crun-note { flex-basis: 100%; margin: 0; line-height: 18px; }
+  .crun-steps button { height: 48px; font-size: 0.75rem; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
+  .crun-still-wide { display: none; }
+  .crun-still-narrow { display: block; }
+}
+/* Less motion: each step's end frame stands still, and nothing animates on top */
+@media (prefers-reduced-motion: reduce) {
+  .crun-stage,
+  .crun-stage *,
+  .crun-cursor,
+  .crun-cursor svg,
+  .crun-steps button {
+    animation: none !important;
+    transition: none !important;
+  }
+}
