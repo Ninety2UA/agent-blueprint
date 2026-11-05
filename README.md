@@ -824,7 +824,7 @@ An evaluation then ran the same fixture tasks on v3.8.0 and v4.0.0 in Claude Cod
 
 | Version | Date | What changed |
 |---|---|---|
-| v4.2.0 | 2026-10-29 | Agent Blueprint also runs as a hosted agent on Vercel's Eve framework, which you deploy to your own Vercel account, Railway or server and reach from a web chat, Slack, Linear, Telegram, an MCP client such as Claude Code, or HTTP. The eight coding CLIs install the same skills as in 4.1.1, and `install.sh --only eve` points to the Hosted page instead. |
+| v4.2.0 | 2026-11-05 | Agent Blueprint also runs as a hosted agent on Vercel's Eve framework, which you deploy to your own Vercel account, Railway or server and reach from a web chat, Slack, Linear, Telegram, an MCP client such as Claude Code, or HTTP. The eight coding CLIs install the same skills as in 4.1.1, and `install.sh --only eve` points to the Hosted page instead. |
 | v4.1.1 | 2026-10-13 | `install.sh` no longer removes or replaces Cursor CLI's marketplace, which Cursor shares with every computer on your account. It tells you what to uninstall or switch yourself instead. |
 | v4.1.0 | 2026-10-12 | Each tool installs Agent Blueprint with its own command, and `install.sh` runs those commands for every tool at once. TDD keeps code that existed before the task, brainstorming accepts a design you already approved, `ab-project-start` refuses the home folder and nested repositories, and Codex gets display names, icons and a setup step. |
 | v4.0.2 | 2026-10-12 | The injection scanners match whole words, so "Blueprint" no longer reads as an injection attempt. New projects get `docs/context/DECISIONS.md`, and `ab-brainstorming` writes each design section out before asking for approval. |

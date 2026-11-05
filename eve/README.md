@@ -207,7 +207,7 @@ proxy_set_header X-Forwarded-Host $http_host;
 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 ```
 
-With `AB_TRUST_PROXY` set, the agent takes these headers from any caller, so let only the proxy reach its port, for example `-p 127.0.0.1:3000:3000` with the proxy on the same machine. The web chat in `apps/web` is a separate Next.js service that Vercel deploys beside the agent; the Railway and own-server routes serve the agent's own routes only, so reach those copies through Slack, Linear, Telegram or MCP. MCP on Railway has not been checked on a live deployment yet.
+With `AB_TRUST_PROXY` set, the agent takes these headers from any caller, so let only the proxy reach its port, for example `-p 127.0.0.1:3000:3000` with the proxy on the same machine. The web chat in `apps/web` is a separate Next.js service that Vercel deploys beside the agent; the Railway and own-server routes serve the agent's own routes only, so reach those copies through Slack, Linear, Telegram or MCP.
 
 ### After the deploy
 

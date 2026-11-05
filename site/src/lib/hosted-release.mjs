@@ -17,7 +17,7 @@
 //                              the header, the footer and llms.txt call it, so components/nav.ts, which
 //                              the client-side mobile menu imports, never reads the environment.
 
-export const HOSTED_RELEASED = false;
+export const HOSTED_RELEASED = true;
 export const HOSTED_PATH = '/hosted/';
 
 const isSet = (value) => value !== undefined && value !== '';

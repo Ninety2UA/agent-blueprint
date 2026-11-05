@@ -9,13 +9,7 @@
   "redirects": [
     { "source": "/docs{/}?", "destination": "/docs/getting-started/", "permanent": false },
     { "source": "/tutorials{/}?", "destination": "/tutorials/first-feature-new-project/", "permanent": false },
-    { "source": "/guides{/}?", "destination": "/guides/unattended-runs/", "permanent": false },
-    {
-      "source": "/hosted{/}?",
-      "destination": "/docs/getting-started/#hosted",
-      "permanent": false,
-      "has": [{ "type": "host", "value": "agent-blueprint.dbenger.com" }]
-    }
+    { "source": "/guides{/}?", "destination": "/guides/unattended-runs/", "permanent": false }
   ],
   "headers": [
     {
