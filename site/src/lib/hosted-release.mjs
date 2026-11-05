@@ -42,3 +42,4 @@ export function hostedEnabled(released = HOSTED_RELEASED, env = process.env) {
 export function enabledNav(nav, enabled = hostedEnabled()) {
   return enabled ? [...nav] : nav.filter((item) => item.href !== HOSTED_PATH);
 }
+// CI path check: this pull request is closed unmerged.
