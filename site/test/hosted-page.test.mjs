@@ -109,7 +109,7 @@ const BLOCKS = [
     'Ask for a change',
     `${askLine} Name the repository and a feature. The agent asks you at its checkpoints and before it opens the pull request.`,
   ],
-  // the launch film, Fig. 5 (parent plan U14, ruling 79), before the demo block its end card points to
+  // the launch film (parent plan U14, ruling 79), before the demo block its end card points to
   [
     'Watch one request reach its pull request.',
     'An example run, from the request in the web chat to the pull request your GitHub App opens.',
@@ -119,7 +119,6 @@ const BLOCKS = [
     'Stages',
     'Pull request',
     'Deploy',
-    'Scored',
   ],
   [
     'Try it before you deploy.',
@@ -386,7 +385,8 @@ test('Fig. 5 plays film-hosted.mp4 with its chapters, a Sound toggle that starts
   const video = tags(fig, 'video')[0];
   assert.ok(has(video, 'muted'), 'the film starts muted');
   assert.match(attr(video, 'aria-label'), /^Film, \d+ seconds, scored, starts muted\./);
-  assert.match(words(fig), /Sound Scored/);
+  assert.ok(!classes(fig.match(/<dl\b[^>]*>/)?.[0] ?? '').includes('film-tb'), 'the film has no title block (ruling 112)');
+  assert.match(fig, /class="vf-media[^"]*"[^>]*style="aspect-ratio:1920 \/ 908"/);
 });
 
 test('the demo block offers one link, to the demo', { skip }, () => {

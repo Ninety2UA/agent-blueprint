@@ -3,15 +3,11 @@
 // before the demo block, whose link the film's end card points to. FilmPlayer plays it: chapters from
 // film-hosted-chapters.json and the length and frame size from film-hosted.mp4, read at build time;
 // the film is scored, so the player carries its Sound toggle and starts muted. Its poster waits for the
-// reader, as every poster below the fold does (ruling 47).
+// reader, as every poster below the fold does (ruling 47). It has no title block (ruling 112), and its
+// frame is cut to 1920 × 908: across the whole film the top 72 and bottom 100 of its 1080 rows are empty, so
+// the figure fills the page's width at about the height it had at 1040 px (hosted.css sets the offset).
 import FilmPlayer from '../FilmPlayer.astro';
 import chapters from '../../../public/media/film-hosted-chapters.json';
-
-interface Props {
-  /** figure number, in page order */
-  num: number;
-}
-const { num } = Astro.props;
 
 // What each chapter shows, keyed by its label in film-hosted-chapters.json (BEATS.md).
 const CHAPTER_TEXT: Record<string, string> = {
@@ -29,14 +25,6 @@ const alt = (seconds: number) =>
   'Verify and Ship to the branch as each finishes. It asks first, then opens the pull request as your GitHub App, which reaches only the ' +
   'repository it is installed on. The film ends on Deploy and Try the demo, with the demo at try.agent-blueprint.dbenger.com.';
 
-const cells = ({ length, frame, num }: { length: string; frame: string; num: number }) => [
-  { label: 'Figure', value: String(num), class: 'ftb-fig' },
-  { label: 'Title', value: 'One request, chat to pull request', class: 'ftb-title' },
-  { label: 'Example', value: 'Add input validation to the main function (a demo request)', class: 'ftb-ex' },
-  { label: 'Length', value: length, class: 'ftb-len' },
-  { label: 'Frame', value: frame, class: 'ftb-frame' },
-  { label: 'Sound', value: 'Scored', class: 'ftb-sound' },
-];
 ---
 <section class="hs-film" aria-labelledby="hs-film-h">
   <div class="wrap">
@@ -45,14 +33,15 @@ const cells = ({ length, frame, num }: { length: string; frame: string; num: num
       <p class="body">An example run, from the request in the web chat to the pull request your GitHub App opens. The film starts muted, and Sound turns the score on. Pick a chapter to jump to it.</p>
     </div>
     <FilmPlayer
-      num={num}
       id="hosted-film"
       src="/media/film-hosted.mp4"
       poster="/media/film-hosted-1280.jpg"
+      posterWidth={1920}
+      posterHeight={908}
       chapters={chapters}
       chapterText={CHAPTER_TEXT}
       alt={alt}
-      cells={cells}
+      cells={false}
       sound
       deferPoster
       label="the hosted film"

@@ -144,7 +144,11 @@ fieldset.cfg-row > .opts { margin-left: calc(92px + var(--s-4)); }
 .hs-film { margin-top: var(--section); }
 .hs-film-head { max-width: 760px; }
 .hs-film-head .body { margin-top: var(--s-4); }
-.hs-film .film { margin-top: var(--s-7); width: min(100%, 1040px, max(640px, calc((100svh - var(--head-h) - 180px) * 16 / 9))); } /* the film and its timeline fit one screen */
+.hs-film .film { margin: var(--s-7) auto 0; width: min(100%, max(640px, calc((100svh - var(--head-h) - 110px) * 2.11 + 77px))); } /* the film and its timeline fit one screen; a short screen centers the narrower figure */
+.hs-film .film-sheet { padding-block: clamp(18px, 2.6vw, 24px); } /* tighter than a full sheet, so the film and its controls take less height (ruling 113) */
+.hs-film .film-ctl, .hs-film .chapters { margin-top: var(--s-4); }
+@media (width <= 640px) { .hs-film .film-sheet { padding-bottom: 32px; } } /* a long chapter text clears the sheet's corner marks */
+.hs-film .film video, .hs-film .film .vf-poster { object-position: 50% 41.86%; } /* of the 172 empty rows cut from the frame, 72 are above (HostedFilm.astro) */
 .hs-film .film .vf-big { inset: auto var(--s-4) var(--s-4) auto; transform: none; } /* Replay sits in the frame's empty corner, off the end card's words */
 
 /* ---------- Try the demo ---------- */

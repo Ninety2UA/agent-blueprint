@@ -9,7 +9,9 @@
 // chapter jumps because nothing else touches `muted` (video-figures.ts).
 // The film plays once on its own when on screen, muted, never loops; video-figures.ts runs it. The
 // product film's poster stays a plain lazy image, since it can be its page's largest paint; a film far
-// down its page passes deferPoster, and its poster waits for the reader (ruling 47).
+// down its page passes deferPoster, and its poster waits for the reader (ruling 47). A film that passes
+// `cells={false}` has no title block (ruling 112), and one whose frames have empty bands can set a shorter
+// frame through posterHeight: the video fills it and the bands fall outside.
 import '../styles/media.css';
 import productChapters from '../../public/media/film-chapters.json';
 import DimensionLine from './DimensionLine.astro';
@@ -27,8 +29,8 @@ interface Cell {
   class?: string;
 }
 interface Props {
-  /** figure number, in page order */
-  num: number;
+  /** figure number, in page order, for the title block */
+  num?: number;
   /** prefix for the ids inside the player (seek control, chapter line) */
   id?: string;
   /** path under public/; the product film unless given */
@@ -43,8 +45,8 @@ interface Props {
   chapterText?: Record<string, string>;
   /** the text alternative; given the film's length in whole seconds */
   alt?: (seconds: number) => string;
-  /** the title block's cells; given the film's length and frame size */
-  cells?: (facts: { length: string; frame: string; num: number }) => Cell[];
+  /** the title block's cells, given the film's length and frame size; false for no title block */
+  cells?: ((facts: { length: string; frame: string; num?: number }) => Cell[]) | false;
   /** a scored film: the Sound toggle beside the seek line */
   sound?: boolean;
   /** names the film on its Play button */
@@ -71,7 +73,7 @@ const productAlt = (seconds: number) =>
   'Review with ab-review-swarm and ab-iterative-refinement, Verify with ab-verification-before-completion, ' +
   'Ship after a secret scan, and Learn with ab-knowledge-compounding and ab-session-wrap, read back in Codex by ' +
   `ab-resume-session. It ends on the ${tools} coding CLIs and the mark.`;
-const productCells = ({ length, frame, num }: { length: string; frame: string; num: number }): Cell[] => [
+const productCells = ({ length, frame, num }: { length: string; frame: string; num?: number }): Cell[] => [
   { label: 'Figure', value: String(num), class: 'ftb-fig' },
   { label: 'Title', value: 'One feature, idea to pull request', class: 'ftb-title' },
   { label: 'Example', value: 'Add CSV export to the reports page (invented)', class: 'ftb-ex' },
@@ -102,7 +104,7 @@ const texts = JSON.stringify(Object.fromEntries(chaps.map((c) => [c.label, chapt
 const first = chaps[0].label;
 const length = clock(duration);
 const alt = altFor(Math.floor(duration));
-const cells = cellsFor({ length, frame: `${width} × ${height}`, num });
+const cells = cellsFor ? cellsFor({ length, frame: `${width} × ${height}`, num }) : null;
 ---
 <figure class="vfig film" data-vfig data-film data-duration={duration.toFixed(2)} data-texts={texts}>
   <DrawingSheet class="film-sheet">
@@ -127,8 +129,10 @@ const cells = cellsFor({ length, frame: `${width} × ${height}`, num });
     </ol>
     <p class="film-now" id={`${id}-now`} data-now><b>{first}</b> <span set:html={chapterText[first] ?? ''} /></p>
   </DrawingSheet>
-  <figcaption>
-    <TitleBlock class="film-tb" cells={cells} attached />
-    <slot />
-  </figcaption>
+  {cells && (
+    <figcaption>
+      <TitleBlock class="film-tb" cells={cells} attached />
+      <slot />
+    </figcaption>
+  )}
 </figure>

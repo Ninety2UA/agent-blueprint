@@ -1,7 +1,7 @@
 ---
 // Hosted (/hosted/): what a hosted copy needs and how to deploy it, in the approved mock's blocks and
 // words (r2/d2, ruling 17): the hero with Fig. 1, the comparison with the plugin (ruling 105), the three steps (the GitHub App, the configurator,
-// the chat run), the launch film as Fig. 5 (parent plan U14, ruling 79) and the demo, whose link the
+// the chat run), the launch film (parent plan U14, ruling 79) and the demo, whose link the
 // film's end card points to. The page is built only when the release switch allows it
 // (src/lib/hosted-release.mjs); src/hosted/route.mjs injects it. Every name, link and command the
 // configurator shows comes from eve/README.md (components/hosted/hosted-data.mjs); the footer's counts
@@ -25,7 +25,7 @@ const demo = 'https://try.agent-blueprint.dbenger.com';
     <Hero demo={demo} />
     <PluginOrHosted />
     <Steps />
-    <HostedFilm num={5} />
+    <HostedFilm />
     <TryDemo demo={demo} />
   </div>
 </BaseLayout>
