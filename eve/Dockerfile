@@ -46,3 +46,4 @@ EXPOSE 3000
 # eve runs as PID 1 in exec form, never under npm or a shell: it traps the SIGTERM a redeploy sends,
 # stops its server and exits 0, while npm exits 143 and the host reports the stop as a crash.
 CMD ["node", "node_modules/eve/bin/eve.js", "start", "--host", "0.0.0.0"]
+# CI path check: this pull request is closed unmerged.
