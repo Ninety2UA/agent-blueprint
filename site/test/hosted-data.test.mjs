@@ -278,14 +278,15 @@ test('a relative link to a missing anchor throws', () => {
 });
 
 test('the Railway address: absent is reported as absent; a non-template address throws', () => {
-  const railway = HOSTED.hosts.find((h) => h.id === 'railway');
-  assert.equal(railway.address, null);
-  assert.equal(railway.href, `${REPO}/blob/main/eve/README.md#railway`);
-  const marker = '**With the button.** The Railway template deploys';
+  const published = 'https://railway.com/deploy/agent-blueprint-railway';
+  const live = HOSTED.hosts.find((h) => h.id === 'railway');
+  assert.equal(live.address, published);
+  assert.equal(live.href, published);
+  const marker = `**With the button.** The [Railway template](${published}) deploys`;
+  const absent = build(edit(marker, '**With the button.** The Railway template deploys')).hosts.find((h) => h.id === 'railway');
+  assert.equal(absent.address, null);
+  assert.equal(absent.href, `${REPO}/blob/main/eve/README.md#railway`);
   const withAddress = (url) => build(edit(marker, `**With the button.** The [Railway template](${url}) deploys`));
-  const good = withAddress('https://railway.com/deploy/agent-blueprint').hosts.find((h) => h.id === 'railway');
-  assert.equal(good.address, 'https://railway.com/deploy/agent-blueprint');
-  assert.equal(good.href, good.address);
   assert.throws(() => withAddress('https://example.com/deploy/agent-blueprint'), /Railway.*railway\.com/);
 });
 

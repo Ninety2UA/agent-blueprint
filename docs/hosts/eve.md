@@ -103,6 +103,6 @@ From the v4.2.0 smoke table ([docs/releases/v4.2.0-smoke.md](../releases/v4.2.0-
 | `debug` | n/a |  | not one of Eve's smoke cells (KTD15: the live tier is canary, build, review and ship); ab-systematic-debugging loads from the same committed skills/ tree the discovery cell checks |
 | `tdd-override` | n/a |  | not one of Eve's smoke cells (KTD15: the live tier is canary, build, review and ship); ab-test-driven-development loads from the same committed skills/ tree the discovery cell checks |
 | `brainstorm-override` | n/a |  | not one of Eve's smoke cells (KTD15: the live tier is canary, build, review and ship); ab-brainstorming loads from the same committed skills/ tree the discovery cell checks |
-| `ship` | pass | 8m49s | 4 of 4 gates passed, the skill-load gate rescored as calledTool(ship_pipeline) from this run's record (ruling 97: Eve runs the pipeline through its ship_pipeline tool); draft pull request #15 ([upstream issue](https://gi |
+| `ship` | pass | 8m49s | 4 of 4 gates passed; the skill-load gate rescored as calledTool(ship_pipeline) from this run's record (ruling 97); draft pull request #15 |
 | `team` | n/a |  | Claude Code only: Agent Teams exist only there; helpers on Eve are root copies through the helper tool |
 | `upgrade` | n/a |  | Claude Code only: the cell upgrades a v3.8.0 Claude Code plugin install; an Eve copy is upgraded by redeploying it |

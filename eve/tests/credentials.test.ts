@@ -3,7 +3,7 @@
 // that requires the token, the way github.com does. No real token or App is used.
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
-import { createVerify, generateKeyPairSync } from "node:crypto";
+import { createSign, createVerify, generateKeyPairSync } from "node:crypto";
 import { existsSync, mkdtempSync, readdirSync, writeFileSync, chmodSync, mkdirSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
@@ -108,6 +108,41 @@ describe("minting", () => {
   test("a missing App variable is named", () => {
     assert.throws(() => gitHubAppFromEnv({ AB_GITHUB_APP_PRIVATE_KEY: "x" }), /AB_GITHUB_APP_ID is not set/);
     assert.throws(() => gitHubAppFromEnv({ AB_GITHUB_APP_ID: "1", AB_GITHUB_APP_PRIVATE_KEY: " " }), /AB_GITHUB_APP_PRIVATE_KEY is not set/);
+  });
+
+  // A one-line field in a deploy form can strip a pasted key's line breaks, and signing
+  // with such a key fails only when a run first needs a token.
+  for (const [name, flatten] of [
+    ["kept", (pem: string) => pem],
+    ["stripped", (pem: string) => pem.replaceAll("\n", "")],
+    ["turned into spaces", (pem: string) => pem.replaceAll("\n", " ")],
+    ["written as a literal \\n", (pem: string) => pem.replaceAll("\n", "\\n")],
+    ["CRLF", (pem: string) => pem.replaceAll("\n", "\r\n")],
+  ] as const) {
+    test(`a key whose line breaks were ${name} signs`, () => {
+      const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+      for (const type of ["pkcs1", "pkcs8"] as const) {
+        const pem = privateKey.export({ type, format: "pem" }).toString();
+        const app = gitHubAppFromEnv({ AB_GITHUB_APP_ID: "1", AB_GITHUB_APP_PRIVATE_KEY: flatten(pem) });
+        assert.equal(app.privateKey, pem, `${type} comes back as the original file`);
+        const signature = createSign("RSA-SHA256").update("x").sign(app.privateKey);
+        assert.ok(createVerify("RSA-SHA256").update("x").verify(publicKey, signature));
+      }
+    });
+  }
+
+  test("several PEM blocks in one value pass through unchanged", () => {
+    const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+    const outer = publicKey.export({ type: "spki", format: "pem" }).toString();
+    const bundle = `${outer}${privateKey.export({ type: "pkcs1", format: "pem" })}${outer}`.trim();
+    const app = gitHubAppFromEnv({ AB_GITHUB_APP_ID: "1", AB_GITHUB_APP_PRIVATE_KEY: bundle });
+    assert.equal(app.privateKey, bundle);
+    assert.ok(createSign("RSA-SHA256").update("x").sign(app.privateKey));
+  });
+
+  test("a value that is not a PEM key passes through unchanged", () => {
+    const app = gitHubAppFromEnv({ AB_GITHUB_APP_ID: "1", AB_GITHUB_APP_PRIVATE_KEY: " not a key " });
+    assert.equal(app.privateKey, "not a key");
   });
 });
 

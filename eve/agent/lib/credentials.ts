@@ -52,13 +52,26 @@ export interface GitHubApp {
   readonly now?: () => number;
 }
 
+/**
+ * The key as the downloaded file holds it. A one-line field in a deploy form can strip its
+ * line breaks, and signing with such a key fails only when a run first needs a token.
+ * Anything that is not one PEM block passes through as it came.
+ */
+function restorePemLines(value: string): string {
+  const block = /^-----BEGIN ([A-Z0-9 ]+)-----(.+)-----END \1-----$/s.exec(value.replaceAll("\\n", "\n").trim());
+  if (!block || block[2].includes("-----")) return value;
+  const [, label, body] = block;
+  const lines = body.replace(/\s/g, "").match(/.{1,64}/g) ?? [];
+  return [`-----BEGIN ${label}-----`, ...lines, `-----END ${label}-----`, ""].join("\n");
+}
+
 /** The App's id and key from the deploy variables, each missing one named. */
 export function gitHubAppFromEnv(env: Record<string, string | undefined> = process.env): GitHubApp {
   const appId = env.AB_GITHUB_APP_ID?.trim();
   const privateKey = env.AB_GITHUB_APP_PRIVATE_KEY?.trim();
   if (!appId) throw new Error("AB_GITHUB_APP_ID is not set; a private repository needs the GitHub App.");
   if (!privateKey) throw new Error("AB_GITHUB_APP_PRIVATE_KEY is not set; a private repository needs the GitHub App.");
-  return { appId, privateKey };
+  return { appId, privateKey: restorePemLines(privateKey) };
 }
 
 function base64url(value: string | Buffer): string {

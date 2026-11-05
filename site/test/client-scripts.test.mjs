@@ -1233,20 +1233,20 @@ test('the configurator (AE3): your own server with Daytona shows the data module
   assert.equal(copy.getAttribute('aria-label'), 'Copy the commands for your own server');
 });
 
-test('the configurator: the Railway button links the README\'s Railway section with the caption until a template address exists', async () => {
-  const res = parseHtml(await renderConfigurator()).querySelector('.res[data-res="railway"]');
-  assert.equal(hostOf('railway').address, null, 'the README carries no template address yet');
-  assert.equal(res.querySelector('a').href, HOSTED.links.railway);
-  assert.equal(res.querySelector('a').textContent.trim(), 'Deploy on Railway');
-  assert.equal(res.querySelector('.res-cap').textContent.trim(), 'The template is published with the release.');
-
-  const address = 'https://railway.com/deploy/ab-test';
-  const readme = README.replace('**With the button.** The Railway template', `**With the button.** The [Railway template](${address})`);
-  assert.notEqual(readme, README, 'the test README carries the address');
-  const hosted = buildHosted(readme, { repoUrl: REPO_URL });
-  const withAddress = parseHtml(await renderConfigurator({ hosted })).querySelector('.res[data-res="railway"]');
+test('the configurator: the Railway button links the template, and the README\'s Railway section with the caption when no address exists', async () => {
+  const address = 'https://railway.com/deploy/agent-blueprint-railway';
+  const withAddress = parseHtml(await renderConfigurator()).querySelector('.res[data-res="railway"]');
+  assert.equal(hostOf('railway').address, address, 'the README carries the template address');
   assert.equal(withAddress.querySelector('a').href, address);
-  assert.equal(withAddress.querySelector('.res-cap'), null, 'the caption is gone');
+  assert.equal(withAddress.querySelector('a').textContent.trim(), 'Deploy on Railway');
+  assert.equal(withAddress.querySelector('.res-cap'), null, 'no caption');
+
+  const readme = README.replace(`**With the button.** The [Railway template](${address})`, '**With the button.** The Railway template');
+  assert.notEqual(readme, README, 'the test README drops the address');
+  const hosted = buildHosted(readme, { repoUrl: REPO_URL });
+  const res = parseHtml(await renderConfigurator({ hosted })).querySelector('.res[data-res="railway"]');
+  assert.equal(res.querySelector('a').href, hosted.links.railway);
+  assert.equal(res.querySelector('.res-cap').textContent.trim(), 'The template is published with the release.');
 });
 
 test('the configurator: with Slack on any host the Slack sentence shows under the names and links the README\'s After the deploy', async () => {

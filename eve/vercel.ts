@@ -20,11 +20,8 @@ const config = await withEve(
 const eve = config.services.eve;
 if (!eve?.buildCommand) throw new Error("withEve generated no eve service build command");
 
-// The skill count gate runs before every Vercel build of the agent service.
-export default {
-  ...config,
-  services: {
-    ...config.services,
-    eve: { ...eve, buildCommand: `node ../../../scripts/check-skill-count.mjs && ${eve.buildCommand}` },
-  },
-};
+// The skill count gate runs before every Vercel build of the agent service. The command is set on
+// the generated service in place: Vercel validates the `services` keys it can read in this file's
+// source before a Git deployment builds, and an `eve: {...}` literal here reads as a service with no root.
+eve.buildCommand = `node ../../../scripts/check-skill-count.mjs && ${eve.buildCommand}`;
+export default config;
