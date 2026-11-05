@@ -1,7 +1,10 @@
 ---
 // A copy control. It copies `text`, or the text of the element with id `from`, or,
 // inside a .cmd, the command lines without their "$ " prompts. "Copied" shows for
-// 1.8 s and the polite live region in BaseLayout announces the result.
+// 1.8 s and the polite live region in BaseLayout announces the result. A failed copy shows a hidden `from`
+// element with its text selected, so "Press ⌘C" has something to act on. With `hint`, a failed copy
+// reads "Copy failed" until the next click and the live region adds the hint, for a button with no
+// visible text to select by hand. `display` is the words on the button, "Copy" by default.
 import { IC } from './icons';
 
 interface Props {
@@ -10,12 +13,16 @@ interface Props {
   text?: string;
   /** id of an element whose text to copy */
   from?: string;
+  /** the words on the button, shown again after a copy */
+  display?: string;
+  /** what to do instead when the copy fails */
+  hint?: string;
   class?: string;
 }
-const { label, text, from, class: cls } = Astro.props;
+const { label, text, from, display = 'Copy', hint, class: cls } = Astro.props;
 ---
-<button class:list={['copy-btn', cls]} type="button" data-pagefind-ignore aria-label={label} data-copy={text} data-copy-from={from}>
-  <Fragment set:html={IC.copy} /><Fragment set:html={IC.check} /><span class="copy-label">Copy</span>
+<button class:list={['copy-btn', cls]} type="button" data-pagefind-ignore aria-label={label} data-copy={text} data-copy-from={from} data-copy-display={display === 'Copy' ? undefined : display} data-copy-hint={hint}>
+  <Fragment set:html={IC.copy} /><Fragment set:html={IC.check} /><span class="copy-label">{display}</span>
 </button>
 
 <script>
@@ -54,17 +61,24 @@ const { label, text, from, class: cls } = Astro.props;
       btn.dataset.copy ??
       (src ? (src.textContent ?? '').trim() : (pre?.innerText ?? '').replace(/^\$\s*/gm, '').trim());
     const ok = await copyText(text);
+    if (!ok && src) {
+      src.hidden = false;
+      window.getSelection()?.selectAllChildren(src);
+    }
     const label = btn.querySelector('.copy-label');
+    const hint = btn.dataset.copyHint;
     btn.classList.toggle('is-copied', ok);
-    if (label) label.textContent = ok ? 'Copied' : 'Press ⌘C';
+    btn.classList.toggle('is-failed', !ok);
+    if (label) label.textContent = ok ? 'Copied' : hint ? 'Copy failed' : 'Press ⌘C';
     const live = document.getElementById('live');
-    if (live) live.textContent = ok ? 'Copied to the clipboard' : 'Copy failed, select the text instead';
+    if (live) live.textContent = ok ? 'Copied to the clipboard' : hint ? `Copy failed. ${hint}` : 'Copy failed, select the text instead';
     clearTimeout(timers.get(btn));
+    if (!ok && hint) return;
     timers.set(
       btn,
       window.setTimeout(() => {
-        btn.classList.remove('is-copied');
-        if (label) label.textContent = 'Copy';
+        btn.classList.remove('is-copied', 'is-failed');
+        if (label) label.textContent = btn.dataset.copyDisplay ?? 'Copy';
       }, 1800),
     );
   });

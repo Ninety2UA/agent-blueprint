@@ -38,6 +38,8 @@
 //                             skill is the folder the row links into, summary the Domain cell.
 //   parseReleases(markdown)   [{ version, date, summary }] from "Release history", newest first;
 //                             version without the leading "v".
+//   rewriteLinks(text, rewrite)  `text` with each Markdown link and image target and each href and src
+//                             value replaced by rewrite(target, isImage); fenced code stays as written.
 //   extractPages(markdown, pages, { repoUrl, repoRoot, anchorFallbacks })
 //                             [{ slug, kind, url, headings, markdown, images }] for the pages of
 //                             readme-map.mjs. Each page gets the Markdown of the sections it maps:
@@ -299,7 +301,7 @@ function makeLinkRewriter({ anchors, repoUrl, repoRoot, slug, images }) {
   };
 }
 
-function rewriteLinks(text, rewrite) {
+export function rewriteLinks(text, rewrite) {
   let fence = null;
   return text
     .split('\n')

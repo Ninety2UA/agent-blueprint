@@ -7,7 +7,9 @@
 // its name, then "all tools" last. Each panel shows the short form of the tool's README route
 // (leadRoute): its first run of commands and one sentence of the README's words, with a link to the
 // tool's tab on Getting started for the rest. "all tools" shows the clone and the installer.
+import { HOSTED_PATH, hostedEnabled } from '../../lib/hosted-release.mjs';
 import Cmd from '../Cmd.astro';
+import CopyButton from '../CopyButton.astro';
 import Tabs from '../Tabs.astro';
 import { breakCodeAfterSlashes } from '../wrap-points.mjs';
 import { leadRoute } from '../docs/route.mjs';
@@ -15,8 +17,11 @@ import { START, startAnchor } from '../docs/start.mjs';
 import { GET_STARTED } from '../nav';
 import { heroDrawing, heroDrawingMobile } from './hero-drawing';
 import { install, numberWord, site } from './home-data';
+import { GUIDE_PATH } from '../../lib/agent-guide.mjs';
 
 const { counts, tools } = site;
+// what a visitor pastes to their agent (ruling 109); the guide it names is built from the README's install table
+const AGENT_PROMPT = `Read ${new URL(GUIDE_PATH, Astro.site).href} and install Agent Blueprint for me.`;
 const columns = Array.from({ length: 12 }, (_, i) => i + 1);
 
 // a command that chains with && shows one part per line; the button copies them chained again
@@ -61,7 +66,10 @@ const items = panels.map((p) => ({
       <div class="cta-row">
         <a class="btn btn-primary" href={GET_STARTED}>Get started</a>
         <a class="btn btn-ghost" href="/skills/"><span>Browse the <span data-claim="skills">{counts.skills}</span> skills</span></a>
+        <CopyButton class="btn btn-ghost" label="Copy a prompt for your coding agent" display="Copy prompt for your agent" from="agent-prompt" />
       </div>
+      <p class="hero-prompt" id="agent-prompt" hidden data-pagefind-ignore>{AGENT_PROMPT}</p>
+      {hostedEnabled() && <p class="hero-also">Or run it as a <a href={HOSTED_PATH}>hosted agent</a> on your own Vercel account, Railway or server.</p>}
     </div>
     <figure class="hero-fig" data-hero>
       <Fragment set:html={heroDrawing()} />

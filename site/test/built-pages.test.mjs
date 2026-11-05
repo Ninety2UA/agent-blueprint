@@ -54,6 +54,14 @@ function readPages() {
 
 const read = (path) => readFileSync(join(dist, path), 'utf8');
 
+test("the home hero's third button copies the prompt that names the agent guide, and the hosted line follows it", { skip }, () => {
+  const home = read('index.html');
+  assert.match(home, /data-copy-from="agent-prompt"/);
+  assert.match(home, /id="agent-prompt" hidden[^>]*>Read https:\/\/agent-blueprint\.dbenger\.com\/agent-blueprint\.md and install Agent Blueprint for me\.</);
+  assert.match(home, /data-copy-display="Copy prompt for your agent"/);
+  assert.match(home, /class="hero-also">Or run it as a <a href="\/hosted\/"/);
+});
+
 test('two pages never share a title or a description', { skip }, () => {
   const all = pages();
   for (const key of ['title', 'description']) {

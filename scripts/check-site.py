@@ -42,7 +42,7 @@ from urllib.parse import unquote
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SKIPPED_DIRS = ("_astro", "pagefind")
-TEXT_EXTENSIONS = (".html", ".txt", ".xml", ".json")
+TEXT_EXTENSIONS = (".html", ".md", ".txt", ".xml", ".json")
 CLAIM_KINDS = ("skills", "helpers", "hooks", "tools", "version")
 NUMBER_WORDS = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
                 "eleven", "twelve")

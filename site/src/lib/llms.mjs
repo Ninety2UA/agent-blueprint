@@ -5,10 +5,12 @@
 // Exports
 //   llmsTxt(site, nav)   the file's text. `site` is getSiteData(); `nav` is the header's sections
 //                        ([{ label, href }], components/nav.ts, through enabledNav so Hosted is listed
-//                        only when the build carries it). Home comes first, then each section,
+//                        only when the build carries it). The agent guide and the Markdown pages
+//                        come first, then Home, then each section,
 //                        then the pages of Docs, Tutorials and Guides in reading order, then one list
 //                        of skills per README phase, in phase order.
 
+import { GUIDE_PATH } from './agent-guide.mjs';
 import { docsOrder } from './docs-sidebar.mjs';
 import { guidesOrder } from './guides-order.mjs';
 import { listJoin } from './text.mjs';
@@ -36,6 +38,11 @@ export function llmsTxt(site, nav) {
     `> ${counts.skills} skills that take a coding agent from an idea to a reviewed pull request, in ${counts.tools} coding CLIs: ${listJoin(tools.map((t) => t.name))}.`,
     '',
     `Version ${version}. Source and install: ${repoUrl}`,
+    '',
+    '## For coding agents',
+    '',
+    link('Install guide', GUIDE_PATH, 'The commands for each coding CLI, how to check the install and how to run it hosted'),
+    `- Any page under /docs/, /tutorials/ or /guides/ is available as Markdown at its address plus .md, without the final slash, for example ${siteUrl}/docs/getting-started.md`,
     '',
     '## Site sections',
     '',

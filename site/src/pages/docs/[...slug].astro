@@ -13,6 +13,7 @@ import DocRefs from '../../components/docs/DocRefs.astro';
 import CodeWrap from '../../components/CodeWrap.astro';
 import HooksByTool from '../../components/docs/HooksByTool.astro';
 import InstallTabs from '../../components/docs/InstallTabs.astro';
+import MarkdownControls from '../../components/docs/MarkdownControls.astro';
 import ReadmeSection from '../../components/docs/ReadmeSection.astro';
 import StartSteps from '../../components/docs/StartSteps.astro';
 import { INSTALL_IMAGES, INSTALL_TABLES, INSTALL_TABS_ID } from '../../components/docs/section.mjs';
@@ -67,7 +68,10 @@ const { prev, next } = docsNeighbors(slug);
 >
   <div class="dpage" data-pagefind-body data-pagefind-filter="section:Docs">
     <header class="dp-head">
-      <p class="dp-crumb">Docs<span aria-hidden="true">/</span>{group}</p>
+      <div class="dp-bar">
+        <p class="dp-crumb">Docs<span aria-hidden="true">/</span>{group}</p>
+        <MarkdownControls kind="docs" slug={slug} href={page.href} />
+      </div>
       <h1>{label}</h1>
       <div class="dp-intro"><CodeWrap><Intro /></CodeWrap></div>
       <DocRefs hostDocs={intro.data.hostDocs} repoDoc={intro.data.repoDoc} />

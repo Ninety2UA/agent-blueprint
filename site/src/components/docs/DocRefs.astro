@@ -3,6 +3,7 @@
 // introduces them): with `hostDocs`, each tool's support note at that heading anchor, tools and
 // files from getSiteData(); with `repoDoc`, one repository file.
 import { IC } from '../icons';
+import { docRefs } from '../../lib/page-markdown.mjs';
 import { getSiteData } from '../../lib/site.mjs';
 
 interface Props {
@@ -12,12 +13,7 @@ interface Props {
   repoDoc?: string;
 }
 const { hostDocs, repoDoc } = Astro.props;
-const { tools, repoUrl } = getSiteData();
-const blob = (path: string) => `${repoUrl}/blob/main/${path}`;
-const links = [
-  ...(hostDocs ? tools.map((t) => ({ label: t.name, href: `${blob(t.hostDoc)}#${hostDocs}`, code: false })) : []),
-  ...(repoDoc ? [{ label: repoDoc, href: blob(repoDoc), code: true }] : []),
-];
+const links = docRefs({ hostDocs, repoDoc }, getSiteData());
 ---
 {links.length > 0 && (
   <ul class:list={['doc-refs', { 'doc-refs-one': links.length === 1 }]}>

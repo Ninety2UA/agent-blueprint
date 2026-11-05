@@ -6,6 +6,15 @@
 .dp-head { padding-bottom: var(--s-6); border-bottom: 1px solid var(--ink); }
 .dp-crumb { display: flex; flex-wrap: wrap; gap: 8px; font-family: var(--font-mono); font-size: 0.8125rem; color: var(--muted); }
 .dp-crumb span { color: var(--hair-strong); }
+/* Beside the crumb, the page as Markdown for an agent (MarkdownControls.astro): two quiet controls that
+   wrap under the crumb on a phone. The button keeps its width while its label changes. */
+.dp-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 var(--s-5); }
+.dp-md { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--s-5); }
+.dp-md .copy-btn { align-self: center; justify-content: flex-start; min-width: calc(19ch + 24px); min-height: 40px; padding: 0; border: 0; }
+.dp-md .copy-btn:hover { background: transparent; }
+.dp-md .copy-btn.is-failed { color: var(--ink); }
+.dp-md-view { display: inline-flex; align-items: center; min-height: 40px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-2); text-decoration-color: var(--hair-strong); }
+.dp-md-view:hover { color: var(--ink); text-decoration-color: currentColor; }
 .dp-head h1 { margin-top: var(--s-3); font-size: clamp(2.25rem, 1.55rem + 2.1vw, 3.25rem); font-stretch: var(--w-display); font-weight: 680; line-height: 1.04; letter-spacing: -0.03em; }
 .dp-intro { margin-top: var(--s-4); }
 .dp-intro p { font-size: var(--t-lg); line-height: 1.5; color: var(--ink-2); max-width: 60ch; }

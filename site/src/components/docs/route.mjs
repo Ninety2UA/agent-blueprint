@@ -10,6 +10,8 @@
 //                                 before them is dropped (", then" reads "then" under a command block),
 //                                 and the words that end the route end with a period, as a sentence
 //                                 under a command block does (README table cells leave it out).
+//   routeParts(route, commands)   the same split with the words as README Markdown, { kind: 'text', md },
+//                                 for the agent guide (lib/agent-guide.mjs).
 //   leadRoute(route, commands)    the short form the home hero shows: { commands, note }. `commands` is the
 //                                 route's first run of commands, joined only by "then" (Cursor CLI's and
 //                                 Amp's run is Claude Code's two, before "Without Claude Code:"); `note` is one
@@ -22,30 +24,39 @@ import { inlineCode } from '../../lib/text.mjs';
 /**
  * @param {string} route
  * @param {string[]} commands
- * @returns {({ kind: 'cmd', text: string } | { kind: 'text', html: string })[]}
+ * @returns {({ kind: 'cmd', text: string } | { kind: 'text', md: string })[]}
  */
-export function routeSteps(route, commands) {
-  /** @type {({ kind: 'cmd', text: string } | { kind: 'text', html: string })[]} */
-  const steps = [];
+export function routeParts(route, commands) {
+  /** @type {({ kind: 'cmd', text: string } | { kind: 'text', md: string })[]} */
+  const parts = [];
   let words = '';
   const flush = () => {
-    const html = inlineCode(words.trim().replace(/^[,.;]\s*/, ''));
-    if (html) steps.push({ kind: 'text', html });
+    const md = words.trim().replace(/^[,.;]\s*/, '');
+    if (md) parts.push({ kind: 'text', md });
     words = '';
   };
   for (const part of route.split(/(`[^`]+`)/)) {
     const code = part.match(/^`([^`]+)`$/)?.[1];
     if (code !== undefined && commands.includes(code)) {
       flush();
-      steps.push({ kind: 'cmd', text: code });
+      parts.push({ kind: 'cmd', text: code });
     } else {
       words += part;
     }
   }
   flush();
-  const last = steps.at(-1);
-  if (last?.kind === 'text' && !/[.:;!?]$/.test(last.html.replace(/<[^>]+>/g, ''))) last.html += '.';
-  return steps;
+  const last = parts.at(-1);
+  if (last?.kind === 'text' && !/[.:;!?]$/.test(last.md.replace(/`/g, ''))) last.md += '.';
+  return parts;
+}
+
+/**
+ * @param {string} route
+ * @param {string[]} commands
+ * @returns {({ kind: 'cmd', text: string } | { kind: 'text', html: string })[]}
+ */
+export function routeSteps(route, commands) {
+  return routeParts(route, commands).map((part) => (part.kind === 'cmd' ? part : { kind: 'text', html: inlineCode(part.md) }));
 }
 
 // The first sentence of a route's words, ending in a period (a colon that led into a command becomes one).

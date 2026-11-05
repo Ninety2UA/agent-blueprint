@@ -116,11 +116,36 @@ fieldset.cfg-row > .opts { margin-left: calc(92px + var(--s-4)); }
 .asks-after { margin-top: var(--s-3); }
 .asks-after[hidden] { display: none; }
 
+/* ---------- Plugin or hosted copy ---------- */
+.hs-cmp { padding-top: var(--section); }
+.hs-cmp-head { max-width: 760px; }
+.hs-cmp-head .body { margin-top: var(--s-4); max-width: 62ch; }
+.hs-cmp-t { width: 100%; margin-top: var(--s-6); border-collapse: collapse; border: 1px solid var(--ink); table-layout: fixed; }
+.hs-cmp-t th, .hs-cmp-t td { padding: 14px var(--s-4); text-align: left; vertical-align: top; border-top: 1px solid var(--hair); }
+.hs-cmp-t thead th, .hs-cmp-t thead td { border-top: 0; border-bottom: 1px solid var(--ink); font-weight: 650; font-stretch: 108%; }
+.hs-cmp-t thead td { width: 24%; }
+.hs-cmp-t tr > * + * { border-left: 1px solid var(--hair); }
+.hs-cmp-t tbody th { font-family: var(--font-mono); font-size: var(--t-xs); font-weight: 400; line-height: 1.6; color: var(--muted); padding-top: 17px; }
+.hs-cmp-t code { font-size: 0.875em; }
+.hs-cmp-pick { margin-top: var(--s-5); max-width: 66ch; font-size: var(--t-lg); line-height: 1.45; }
+@media (max-width: 640px) {
+  .hs-cmp-t, .hs-cmp-t tbody, .hs-cmp-t tr, .hs-cmp-t th, .hs-cmp-t td { display: block; width: auto; }
+  .hs-cmp-t thead { display: none; }
+  .hs-cmp-t tbody tr { padding: 12px 14px 14px; border-top: 1px solid var(--hair); }
+  .hs-cmp-t tbody tr:first-child { border-top: 0; }
+  .hs-cmp-t tbody th, .hs-cmp-t td, .hs-cmp-t tr > * + * { padding: 0; border: 0; }
+  .hs-cmp-t tbody th { margin-bottom: var(--s-2); }
+  .hs-cmp-t td { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: var(--s-2); margin-top: 6px; }
+  .hs-cmp-t td::before { content: attr(data-col); font-size: var(--t-sm); font-weight: 650; line-height: 1.75; }
+  .hs-cmp-pick { font-size: 1.125rem; }
+}
+
 /* ---------- The film (Fig. 5) ---------- */
 .hs-film { margin-top: var(--section); }
 .hs-film-head { max-width: 760px; }
 .hs-film-head .body { margin-top: var(--s-4); }
-.hs-film .film { margin-top: var(--s-7); }
+.hs-film .film { margin-top: var(--s-7); width: min(100%, 1040px, max(640px, calc((100svh - var(--head-h) - 180px) * 16 / 9))); } /* the film and its timeline fit one screen */
+.hs-film .film .vf-big { inset: auto var(--s-4) var(--s-4) auto; transform: none; } /* Replay sits in the frame's empty corner, off the end card's words */
 
 /* ---------- Try the demo ---------- */
 .hs-demo { margin-top: var(--section); }

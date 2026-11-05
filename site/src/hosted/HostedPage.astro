@@ -1,6 +1,6 @@
 ---
 // Hosted (/hosted/): what a hosted copy needs and how to deploy it, in the approved mock's blocks and
-// words (r2/d2, ruling 17): the hero with Fig. 1, the three steps (the GitHub App, the configurator,
+// words (r2/d2, ruling 17): the hero with Fig. 1, the comparison with the plugin (ruling 105), the three steps (the GitHub App, the configurator,
 // the chat run), the launch film as Fig. 5 (parent plan U14, ruling 79) and the demo, whose link the
 // film's end card points to. The page is built only when the release switch allows it
 // (src/lib/hosted-release.mjs); src/hosted/route.mjs injects it. Every name, link and command the
@@ -9,6 +9,7 @@
 // the configurator bring their own.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/hosted/Hero.astro';
+import PluginOrHosted from '../components/hosted/PluginOrHosted.astro';
 import Steps from '../components/hosted/Steps.astro';
 import TryDemo from '../components/hosted/TryDemo.astro';
 import HostedFilm from '../components/hosted/HostedFilm.astro';
@@ -22,6 +23,7 @@ const demo = 'https://try.agent-blueprint.dbenger.com';
 <BaseLayout title="Hosted · Agent Blueprint" description={description} sheet="Hosted">
   <div class="hs" data-pagefind-body data-pagefind-filter="section:Pages">
     <Hero demo={demo} />
+    <PluginOrHosted />
     <Steps />
     <HostedFilm num={5} />
     <TryDemo demo={demo} />

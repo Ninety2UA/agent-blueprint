@@ -8,6 +8,7 @@ import { getEntry, render } from 'astro:content';
 import '../../styles/docs-pages.css';
 import '../../styles/guides.css';
 import CodeWrap from '../../components/CodeWrap.astro';
+import MarkdownControls from '../../components/docs/MarkdownControls.astro';
 import ReadmeSection from '../../components/docs/ReadmeSection.astro';
 import GuideSkills from '../../components/guides/GuideSkills.astro';
 import SkillLinked from '../../components/guides/SkillLinked.astro';
@@ -65,7 +66,10 @@ const { prev, next } = guidesNeighbors(slug);
 >
   <div class="dpage gpage" data-pagefind-body data-pagefind-filter="section:Guides">
     <header class="dp-head">
-      <p class="dp-crumb">Guides</p>
+      <div class="dp-bar">
+        <p class="dp-crumb">Guides</p>
+        <MarkdownControls kind="guides" slug={slug} href={Astro.props.guide.href} />
+      </div>
       <h1 id={OVERVIEW}>{label}</h1>
       <div class="dp-intro"><CodeWrap><Intro /></CodeWrap></div>
     </header>

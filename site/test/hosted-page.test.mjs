@@ -61,8 +61,9 @@ const served = [...new Set(hosted.states.map((s) => s.channel))];
 const channels = Object.keys(CHANNELS).filter((c) => served.includes(c));
 const joinAsks = (list) => `${[list.slice(0, -1).join(', '), list.at(-1)].filter(Boolean).join(' or ')}.`.replace(/^./, (c) => c.toUpperCase());
 const askLine = joinAsks(channels.map((c) => CHANNELS[c][2]));
-// the word cap (ruling 43): hidden panels counted, the dropdowns' option labels not
-const WORD_CAP = 960;
+// the word cap (ruling 43, raised by ruling 106 for the comparison with the plugin): hidden panels counted,
+// the dropdowns' option labels not
+const WORD_CAP = 1180;
 
 // The copy deck's strings (r2/d2/src/copy.md; steps 1 to 3 from the approved mock v3.2), block by block in
 // page order.
@@ -73,6 +74,17 @@ const BLOCKS = [
     'Deploy',
     'Try the demo',
     'You ask through the web chat, Slack, Linear, Telegram or MCP, and the agent works in a sandbox. It pushes a branch as each stage finishes and opens a pull request as your GitHub App.',
+  ],
+  // how a hosted copy differs from the plugin (ruling 105), before the steps
+  [
+    'Plugin or hosted copy.',
+    'Both run the same',
+    'How you ask',
+    'Whose name is on the pull request',
+    'Your GitHub App',
+    'With your computer off',
+    'A GitHub App, a channel and a deploy',
+    'Choose the plugin if you already work in a coding CLI.',
   ],
   [
     'Set up your own copy.',
@@ -116,7 +128,7 @@ const BLOCKS = [
   ],
 ];
 
-test("the page carries the mock's three sections and the film's in order, each with its words", { skip }, () => {
+test("the page carries the mock's sections, the comparison and the film's in order, each with its words", { skip }, () => {
   const found = sections();
   assert.equal(found.length, BLOCKS.length, 'sections in <main>');
   BLOCKS.forEach((strings, i) => {
@@ -349,7 +361,7 @@ test("one h1, a heading for every section, the Deploy anchor on the steps, and n
     assert.ok(id, 'a section without aria-labelledby');
     assert.match(s, new RegExp(`<h[12]\\b[^>]*\\sid="${id}"`), `section labelled by ${id} has no heading of that id`);
   }
-  assert.equal(attr(tags(sections()[1], 'section')[0], 'id'), 'deploy');
+  assert.equal(attr(tags(sections()[2], 'section')[0], 'id'), 'deploy');
   assert.ok(tags(sections()[0], 'a').some((t) => attr(t, 'href') === '#deploy'), 'the hero Deploy links #deploy');
   const outsideHeader = html().replace(/<header\b[^>]*class="site-head[^]*?<\/header>/, '');
   assert.doesNotMatch(outsideHeader, /<astro-island\b/, 'an island outside the header');

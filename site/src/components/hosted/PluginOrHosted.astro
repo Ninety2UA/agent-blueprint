@@ -1,0 +1,45 @@
+---
+// The Hosted page's second block (ruling 105): how a hosted copy differs from the plugin, right after the
+// hero so a reader can tell they are on the right route before the setup. The counts render from the site
+// data; every cell follows eve/README.md (routes, channels, sandboxes, the roster) and FACTS.md. At phone
+// width each row stacks, with each cell labelled from its data-col.
+import { getSiteData } from '../../lib/site.mjs';
+import { numberWord } from '../number-word';
+
+const { counts } = getSiteData();
+const others = numberWord(counts.tools - 2);
+
+const ROWS: { label: string; plugin: string; hosted: string }[] = [
+  { label: 'How you ask', plugin: `You type in Claude Code, Codex or one of the other ${others} CLIs`, hosted: 'Web chat on Vercel, or Slack, Linear, Telegram or MCP on any host' },
+  { label: 'Who can use it', plugin: 'You, on your computer', hosted: 'Whoever you let into its channel' },
+  { label: 'Where the work happens', plugin: 'In the repository on your computer', hosted: 'In a sandbox: Vercel Sandbox, Daytona or Docker' },
+  { label: 'Whose name is on the pull request', plugin: 'Yours', hosted: 'Your GitHub App' },
+  { label: 'Which models run', plugin: 'Whatever your CLI uses', hosted: 'The <code>quality</code> or <code>budget</code> set, or your own choice per role' },
+  { label: 'With your computer off', plugin: 'It stops', hosted: 'The run carries on' },
+  { label: 'Who pays', plugin: "Your CLI's plan or API key", hosted: 'AI Gateway credits for the models, and the sandbox host' },
+  { label: 'Setup', plugin: "<code>install.sh</code>, or each CLI's own install command", hosted: 'A GitHub App, a channel and a deploy' },
+];
+---
+<section class="hs-cmp" aria-labelledby="hs-cmp-h">
+  <div class="wrap">
+    <div class="hs-cmp-head">
+      <h2 class="h-sec" id="hs-cmp-h">Plugin or hosted copy.</h2>
+      <p class="body">Both run the same <span data-claim="skills">{counts.skills}</span> skills and end at a reviewed pull request. The plugin runs inside your coding CLI, on your computer. A hosted copy is an agent you deploy to a server, so you and your team can start work from a chat or an issue.</p>
+    </div>
+    <div class="hs-cmp-scroll">
+      <table class="hs-cmp-t">
+        <thead><tr><td></td><th scope="col">Plugin</th><th scope="col">Hosted copy</th></tr></thead>
+        <tbody>
+          {ROWS.map((r) => (
+            <tr>
+              <th scope="row">{r.label}</th>
+              <td data-col="Plugin"><span set:html={r.plugin} /></td>
+              <td data-col="Hosted"><span set:html={r.hosted} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="hs-cmp-pick">Choose the plugin if you already work in a coding CLI. Choose a hosted copy to start work from chat or an issue, or to let your team ask.</p>
+  </div>
+</section>

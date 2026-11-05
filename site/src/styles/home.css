@@ -85,6 +85,13 @@
 }
 .hero-note { margin-top: 12px; font-size: 0.875rem; line-height: 1.5; color: var(--ink-2); max-width: 62ch; }
 .hero-note code { font-size: 0.84em; }
+.hero-prompt { margin-top: var(--s-4); font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere; }
+.hero-also { margin-top: var(--s-4); font-size: 0.8125rem; line-height: 1.5; color: var(--ink-2); max-width: 62ch; }
+.hero-also a { color: var(--ink); text-decoration-color: var(--hair-strong); }
+.hero-also a:hover { text-decoration-color: currentColor; }
+/* the third button reads as a button, over .copy-btn's look inside a command box */
+.cta-row .copy-btn { align-self: auto; min-width: 261px; padding: 0 18px; border: 1px solid var(--hair-strong); font-family: inherit; font-size: 0.9375rem; color: var(--ink); }
+.cta-row .copy-btn:hover { background: transparent; border-color: var(--ink); color: var(--ink); }
 .hero-note a { color: var(--ink); white-space: nowrap; text-decoration-color: var(--hair-strong); }
 .hero-note a:hover { text-decoration-color: currentColor; }
 .hero-copy .cta-row { margin-top: var(--s-5); }

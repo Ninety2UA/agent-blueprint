@@ -24,6 +24,7 @@ inputs=(
   ':/.codex-plugin/plugin.json'
   ':/docs/releases'
   ':/docs/images'
+  ':/docs/hosts'
   ':/hooks/claude-code.json'
   ':/scripts/check-site.py'
   ':/scripts/adoption-denylist.json'

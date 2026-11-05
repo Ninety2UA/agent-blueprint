@@ -54,6 +54,14 @@ test('every docs, tutorial and guide page is listed under its section, in readin
   }
 });
 
+test('it lists the agent guide and says any docs page is available as Markdown', () => {
+  assert.equal(linkLines(`${site.siteUrl}/agent-blueprint.md`).length, 1);
+  const line = lines.find((l) => l.includes('as Markdown at its address plus .md'));
+  assert.ok(line, 'no line about the Markdown pages');
+  assert.ok(line.includes('/docs/'), line);
+  assert.ok(line.includes(`${site.siteUrl}/docs/getting-started.md`), line);
+});
+
 test('skills are grouped under their README phase, in phase order', () => {
   const headings = lines.filter((l) => l.startsWith('## Skills: '));
   assert.deepEqual(headings, site.phases.map((p) => `## Skills: ${p.title}`));
@@ -62,7 +70,7 @@ test('skills are grouped under their README phase, in phase order', () => {
 test('every link line is a full URL on the site', () => {
   const links = lines.filter((l) => l.startsWith('- ['));
   const pages = SECTIONS.reduce((n, [, list]) => n + list.length, 0);
-  assert.equal(links.length, site.skills.length + nav.length + 1 + pages);
+  assert.equal(links.length, site.skills.length + nav.length + 2 + pages, 'the skills, the sections, Home, the install guide and the pages');
   for (const l of links) assert.match(l, new RegExp(`\\]\\(${site.siteUrl.replace(/\./g, '\\.')}/`), l);
 });
 
@@ -97,7 +105,7 @@ test('switch on: seven header items with Hosted last, the footer group ends with
     assert.equal(body.split('\n').filter((l) => l.startsWith(`- [${label}](${site.siteUrl}${href})`)).length, 1, label);
   }
   const links = body.split('\n').filter((l) => l.startsWith('- ['));
-  assert.equal(links.length, site.skills.length + on.length + 1 + pageCount);
+  assert.equal(links.length, site.skills.length + on.length + 2 + pageCount);
 });
 
 test('switch off: six items, no Hosted in the header, footer or llms.txt, and no missing footer entry', () => {
@@ -112,7 +120,7 @@ test('switch off: six items, no Hosted in the header, footer or llms.txt, and no
   assert.ok(!body.includes(HOSTED_PATH), 'llms.txt lists /hosted/');
   assert.ok(!body.includes('[Hosted]'), 'llms.txt has a Hosted line');
   const links = body.split('\n').filter((l) => l.startsWith('- ['));
-  assert.equal(links.length, site.skills.length + off.length + 1 + pageCount);
+  assert.equal(links.length, site.skills.length + off.length + 2 + pageCount);
 });
 
 test('navItems marks Hosted as the current page on /hosted/', () => {

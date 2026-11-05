@@ -7,6 +7,7 @@ import { getEntry } from 'astro:content';
 import '../../styles/docs-pages.css';
 import '../../styles/tutorials.css';
 import TitleBlock from '../../components/TitleBlock.astro';
+import MarkdownControls from '../../components/docs/MarkdownControls.astro';
 import { linkSkills } from '../../components/guides/guide-html.mjs';
 import { breakCodeAfterSlashes } from '../../components/wrap-points.mjs';
 import { siteData } from '../../components/skills/data';
@@ -57,7 +58,10 @@ const { prev, next } = tutorialsNeighbors(slug);
 >
   <div class="dpage tpage" data-pagefind-body data-pagefind-filter="section:Tutorials">
     <header class="dp-head">
-      <p class="dp-crumb">Tutorials</p>
+      <div class="dp-bar">
+        <p class="dp-crumb">Tutorials</p>
+        <MarkdownControls kind="tutorials" slug={slug} href={Astro.props.tutorial.href} />
+      </div>
       <h1 id={OVERVIEW}>{label}</h1>
       <div class="dp-intro t-intro" set:html={breakCodeAfterSlashes(linkSkills(t.intro, names))} />
       <p class="lbl t-run-cap">The recorded run</p>

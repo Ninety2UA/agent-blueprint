@@ -26,6 +26,7 @@ syncBuiltinESMExports();
 const { findRepoRoot, getReadmePages, getSiteData } = await import('../src/lib/site.mjs');
 const { getWorkflow } = await import('../src/components/workflow/workflow-data.mjs');
 const { getHosted } = await import('../src/components/hosted/hosted-data.mjs');
+const { getAgentGuide } = await import('../src/lib/agent-guide.mjs');
 
 const root = findRepoRoot();
 const toRepo = (path) => relative(root, path).split(sep).join('/');
@@ -67,6 +68,7 @@ test('every repository path the build reads outside site/ is an input of the ign
   getReadmePages();
   getWorkflow();
   getHosted();
+  getAgentGuide();
   const inputs = scriptInputs();
   const read = [...reads].map(toRepo).filter((p) => !p.startsWith('..') && p !== '' && !p.startsWith('site/'));
   const literal = sourcePaths().filter((p) => !p.startsWith('site/'));
