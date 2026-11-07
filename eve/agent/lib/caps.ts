@@ -36,17 +36,7 @@ export function capReached(tokens: number, cap: number = sessionTokenCap()): boo
   return tokens >= cap;
 }
 
-export type Failure = "daily-budget" | "rate-limited" | "sandbox" | null;
-
-/** Reads a model or tool failure: a 402 is the daily budget, a 429 is a rate limit. */
-export function classifyFailure(error: { readonly code?: string; readonly message?: string } | undefined): Failure {
-  if (!error) return null;
-  const text = `${error.code ?? ""} ${error.message ?? ""}`;
-  if (/\b402\b|payment required|insufficient[_ ]funds|budget (?:exceeded|reached)/i.test(text)) return "daily-budget";
-  if (/\b429\b|rate[_ ]limit|too many requests/i.test(text)) return "rate-limited";
-  if (/sandbox/i.test(text) && /(creat|start|provision)\w*/i.test(text) && /(fail|could not|unable|error)/i.test(text)) return "sandbox";
-  return null;
-}
+export { classifyFailure, type Failure } from "./failure";
 
 /** The UTC day of a time, YYYY-MM-DD: the daily mark resets when it changes. */
 export function utcDay(at: Date): string {

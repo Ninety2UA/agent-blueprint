@@ -11,6 +11,7 @@ import {
 import type { EveMessage } from "eve/react";
 import { useEveAgent } from "eve/react";
 import { GateNotice, useGateStatus } from "@/components/chat/gate-notice";
+import { RunStopNotice } from "@/components/chat/run-panel";
 import {
   AlertCircleIcon,
   ChevronDownIcon,
@@ -99,6 +100,7 @@ export function AgentChatSession({
   readonly pendingUserMessage?: string | null;
 }) {
   const {
+    demoRepository,
     enabledConnections,
     requestSignIn,
     setActiveChatId: setShellActiveChatId,
@@ -279,7 +281,7 @@ export function AgentChatSession({
     localPendingMessage,
   ]);
   const isEmpty = visibleMessages.length === 0 && !isTurnBlocked && !isWaitingForAuthorization;
-  const run = useMemo(() => deriveRun(visibleMessages, { busy: isBusy }), [isBusy, visibleMessages]);
+  const run = useMemo(() => deriveRun(visibleMessages, { busy: isBusy, demo: setupStatus.demo }), [isBusy, setupStatus.demo, visibleMessages]);
   const runKey = JSON.stringify(run);
   useEffect(() => {
     onRunChange?.(run);
@@ -641,7 +643,7 @@ export function AgentChatSession({
             {thinkingPresence.shouldRender ? (
               <ThinkingMessage isVisible={thinkingPresence.isVisible} />
             ) : null}
-            {gateStatus ? <GateNotice runningChatHref={gateRunningChatHref} status={gateStatus} /> : null}
+            {gateStatus ? <GateNotice runningChatHref={gateRunningChatHref} status={gateStatus} /> : <RunStopNotice repository={demoRepository} run={run} />}
           </ChatConversationContent>
           <ChatScrollButton />
         </ChatConversation>

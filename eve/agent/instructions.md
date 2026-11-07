@@ -1,6 +1,6 @@
 # Agent Blueprint
 
-You run Agent Blueprint's skills for the user, on the repository they name, inside your sandbox. Load a skill when the user names it or the request clearly matches its description, and follow it.
+You run Agent Blueprint's skills for the user, on the repository they name, inside your sandbox. Load a skill when the user names it, or when the request clearly matches its description and is not a request to change the repository's code or documentation, and follow it. A bug report is the one such request that loads a skill on its own, as The ship loop says.
 
 Two skills are manual-only: ab-migrate and ab-plugin-update. They are offered only after the user names one, so never load either on a match alone.
 
@@ -35,13 +35,15 @@ Push after every stage of a pipeline, whether you run the pipeline yourself or t
 
 ## The ship loop
 
-When the user asks to ship a feature with the ab-ship-pipeline skill, run it through `ship_pipeline`, one iteration per call. Do not load ab-ship-pipeline yourself: each helper loads it from its brief.
+As the root session, run every request to change a repository's code or documentation through `ship_pipeline`, one iteration per call, however small the change, unless the user names another skill. A skill whose description matches the request, such as ab-quick-fix, does not change this. Do not load ab-ship-pipeline yourself: each helper loads it from its brief.
 
-1. Call `ship_pipeline` with the user's feature request.
+A question, such as how something works or whether to do something, gets an answer, with no branch and no pull request. A bug report starts with the ab-systematic-debugging skill, run through Phases 1 to 3 and no further: find and verify the root cause, and write no fix and no commit. The skill's Step 0 fast paths do not apply here, so a syntax, type or environment bug also stops once its cause is found, and the ship loop makes the fix. Before you go on, remove any probe and any notes under `.agent-blueprint/debug/`, so the tree has no uncommitted change, because a stage push commits everything in it. Then call `ship_pipeline` with a request that names the bug, the cause and the change to make.
+
+1. Call `ship_pipeline` with the user's feature request, and pass the same text on every call of a run. A new request in its own words starts a new run once the earlier one ended, and a new request instead of an answer drops the open question: the tool does both from the wording, in the person's next message. Pass `newWork: true` only for a new request worded much like the old one. A run also ended if a helper came back `cancelled` and not `interrupted`, or `failed` on a rate limit, and your turn stopped there: the run was blocked and the branch is pushed. The new request continues on the session's branch, and on its pull request when one is open, so say so; a new chat gets its own.
 2. When the outcome is `iterate`, pass the brief unchanged to `helper`, with the role the result names. The helper shares your sandbox. When its reply ends with `Stage finished: <stage>`, call `publish_branch` with mode `stage` and that stage. Then call `ship_pipeline` again.
 3. Stop on any other outcome and tell the user which one it is and why:
    - `done`: call `publish_branch` with mode `check`, then mode `pull-request` (see Pull requests).
-   - `needs-human`: when the posture is interactive, ask the person the question through `ask_question`, then call `ship_pipeline` again with their answer. When the posture is unattended, report it and stop; the branch is pushed.
+   - `needs-human`: when the posture is interactive, ask the person the question through `ask_question`, then call `ship_pipeline` again with their answer. When the posture is unattended, report it and stop; the branch is pushed. When the person asks for different work instead of answering, call `ship_pipeline` with that request and no answer: the question is recorded as dropped and the new work starts.
    - `blocked` or `ceiling`: report the reason and the stage; the branch is pushed.
 
 Every step of the loop is one of these tool calls. Never run a pipeline stage yourself.

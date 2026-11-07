@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://agent-blueprint.dbenger.com/">Website</a> ·
-  <a href="#whats-new-in-v420">What's new</a> ·
+  <a href="#whats-new-in-v421">What's new</a> ·
   <a href="#install">Install</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#unattended-runs">Unattended runs</a> ·
@@ -29,6 +29,10 @@
 A coding agent starts every session from nothing. It doesn't know how your project works, what was decided last week, or which problems were already solved, and when you switch to another tool, whatever the last one learned stays behind.
 
 Agent Blueprint gives the agent one way of working that is the same in every tool. Skills take a feature from design through review to a pull request. Helper prompts handle the analysis that needs a fresh context, such as a security review or a plan check. Project documents under `docs/` carry conventions, decisions and solved problems from one session to the next, so they are there whichever of the eight tools opens the repository next.
+
+## What's new in v4.2.1
+
+The hosted agent now runs every request to change code or documentation through its five stages, however small. When a helper hits a rate limit or a cap, the run stops with its branch pushed and the chat says so. A new request in a chat continues on that chat's branch and pull request. The eight coding CLIs are unchanged except the version number. Release notes: [`docs/releases/v4.2.1-release-notes.md`](docs/releases/v4.2.1-release-notes.md).
 
 ## What's new in v4.2.0
 
@@ -820,10 +824,11 @@ An evaluation then ran the same fixture tasks on v3.8.0 and v4.0.0 in Claude Cod
 ## Release history
 
 <details>
-<summary>v2.3 to v4.2.0</summary>
+<summary>v2.3 to v4.2.1</summary>
 
 | Version | Date | What changed |
 |---|---|---|
+| v4.2.1 | 2026-11-07 | The hosted agent runs every code or docs change through its five stages, ends a run cleanly when a helper stops and pushes its branch, keeps one branch and pull request per chat, and shows a waiting or stopped stage in the web chat. The CLIs change only in the version number. |
 | v4.2.0 | 2026-11-05 | Agent Blueprint also runs as a hosted agent on Vercel's Eve framework, which you deploy to your own Vercel account, Railway or server and reach from a web chat, Slack, Linear, Telegram, an MCP client such as Claude Code, or HTTP. The eight coding CLIs install the same skills as in 4.1.1, and `install.sh --only eve` points to the Hosted page instead. |
 | v4.1.1 | 2026-10-13 | `install.sh` no longer removes or replaces Cursor CLI's marketplace, which Cursor shares with every computer on your account. It tells you what to uninstall or switch yourself instead. |
 | v4.1.0 | 2026-10-12 | Each tool installs Agent Blueprint with its own command, and `install.sh` runs those commands for every tool at once. TDD keeps code that existed before the task, brainstorming accepts a design you already approved, `ab-project-start` refuses the home folder and nested repositories, and Codex gets display names, icons and a setup step. |

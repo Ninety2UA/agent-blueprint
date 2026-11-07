@@ -5,9 +5,11 @@ import { defaultRegistry, type Registry } from "../../../../agent/lib/registry";
 // hook stores the cookie id of the visitor whose turn first reached a session. The eve channel's
 // route auth asks here on every /eve/v1/session/:id route (message, answer, stream, descendants,
 // subagent streams, cancel, clear, compact, reset): a cookie whose id differs from the stored one
-// is refused. A session with no entry yet (its first turn has not started) or with no cookie
-// behind it (an OIDC or local caller started it) has no owner to compare. Off the demo there is
-// no registry and one password is one principal by design, so nothing is checked there.
+// is refused. A helper's session answers the cookie of its root, from the child record the hook
+// writes when the helper's first turn is admitted. A session with no entry yet (its first turn has
+// not started, a helper's included) or with no cookie behind it (an OIDC or local caller started
+// it) has no owner to compare. Off the demo there is no registry and one password is one principal
+// by design, so nothing is checked there.
 
 export const NOT_OWNER_MESSAGE = "This chat belongs to another visitor, so start a new chat to run your own.";
 
@@ -32,11 +34,12 @@ let shared: Registry | undefined;
 async function storedOwner(sessionId: string, registry: Registry): Promise<string | null> {
   const known = owners.get(sessionId);
   if (known) return known;
-  const entry = (await registry.snapshot()).sessions[sessionId];
-  if (!entry) return null;
+  const document = await registry.snapshot();
+  const cookieId = document.sessions[sessionId]?.cookieId ?? document.children?.[sessionId]?.cookieId;
+  if (!cookieId) return null;
   if (owners.size >= OWNERS_KEPT) owners.delete(owners.keys().next().value as string);
-  owners.set(sessionId, entry.cookieId);
-  return entry.cookieId;
+  owners.set(sessionId, cookieId);
+  return cookieId;
 }
 
 /** Whether the request names a demo session that a different cookie started. */

@@ -1,6 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { RouteHandlerArgs } from "eve/channels";
-import { fill, gateState } from "../../apps/web/lib/gate/states";
+import { CONTINUE_ON_BRANCH, fill, gateState } from "../../apps/web/lib/gate/states";
 import { MAINTENANCE_MESSAGE } from "../channels/eve";
 
 // The checks the Linear, Telegram and MCP channels share (KTD1), as pure functions beside the
@@ -294,7 +294,7 @@ export function runEndNotice({ outcome, branch, stage }: RunEndNoticeInput): str
     failed: fill("The run stopped after the {stage} stage because of an error, and its work is saved on the branch {branch}.", { branch, stage }),
     ended: `This session has ended, and its work is saved on the branch ${branch}.`,
   }[outcome];
-  return `${what} To pick it up, send a new message asking to continue on branch ${branch}.`;
+  return `${what} ${fill(CONTINUE_ON_BRANCH, { branch })}`;
 }
 
 /** Whether a Linear Agent Session event is the person pressing Stop (KTD6): its activity carries the stop signal. */

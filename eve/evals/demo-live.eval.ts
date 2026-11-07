@@ -113,6 +113,8 @@ const run = defineEval({
     const minutes = ((Date.now() - started) / 60_000).toFixed(1);
     console.log(`[demo-live] ${REQUEST} -> ${minutes} minutes; read the session's tokens in the AI Gateway logs for RUNBOOK.md`);
 
+    t.calledTool("ship_pipeline");
+    t.calledTool("helper", { output: { status: "completed" } });
     t.calledTool("publish_branch", { input: { mode: "pull-request" } });
     const link = PULL_URL.exec(turn.reply ?? "");
     t.check(link?.[1] ?? "", equals(REPOSITORY)).label("the reply links a pull request on the sample repository");
@@ -126,6 +128,7 @@ const run = defineEval({
     t.check(pull.user?.type ?? "", equals("Bot")).label("opened under the App's identity");
     t.check(pull.body ?? "", includes("Automated demo pull request opened by Agent Blueprint's hosted demo.")).label("the body is the demo template");
     t.check(pull.body ?? "", includes(REQUEST.replaceAll("`", "'").slice(0, 300))).label("the body quotes the visitor's request");
+    t.check(pull.body ?? "", includes(/Stages run:\n- Plan\n/)).label("the request ran the pipeline's stages");
     t.check((pull.labels ?? []).map((label) => label.name), includes("automated-demo"));
     t.check(pull.head?.ref ?? "", includes(/^ab\//)).label("the branch follows the ab/ pattern");
   },

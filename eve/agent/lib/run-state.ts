@@ -42,6 +42,8 @@ export interface PullRequest {
   readonly number: number;
   readonly url: string;
   readonly draft: boolean;
+  /** The commit the last pull-request call published; absent on records written before it was kept. */
+  readonly sha?: string;
 }
 
 /** A person's approval of a pull request in this run (ruling 60): later pull-request calls of the same run and branch ask nobody. */
@@ -69,6 +71,8 @@ export interface RunRecord {
   readonly base: string;
   readonly lastPushedSha: string | null;
   readonly stage: string | null;
+  /** Every stage this run pushed, oldest first; absent on records written before it was kept. */
+  readonly stagesPushed?: readonly string[];
   readonly iteration: number;
   readonly decisions: readonly Decision[];
   /** The run files of the last final checkpoint. */
@@ -77,6 +81,16 @@ export interface RunRecord {
   readonly pullRequest: PullRequest | null;
   /** Set when a person approves a pull-request call; absent on records written before ruling 60. */
   readonly approval?: PullRequestApproval | null;
+  /** This run continues an earlier run on the session's branch, so its description joins the pull request's. */
+  readonly continued?: boolean;
+  /** The session's first base, when a later run moved `base`: the demo's BACKLOG.md rule still reads from it. */
+  readonly firstBase?: string;
+  /** The run reached its ceiling or the cap hook stopped it, which state.json does not say. */
+  readonly runEnded?: boolean;
+  /** The turn of the latest iteration: a new request arrives as a new turn. */
+  readonly lastTurn?: string;
+  /** The request this run works on, as the ship loop compares it; absent on records written before it was kept. */
+  readonly request?: string;
   readonly updatedAt: string;
 }
 
@@ -212,6 +226,7 @@ export function finaliseCheckpoint(record: RunRecord, remoteSha: string | null, 
     ...record,
     lastPushedSha: pending.sha,
     stage: pending.stage,
+    stagesPushed: [...(record.stagesPushed ?? []), pending.stage],
     files: pending.files,
     pending: null,
     updatedAt: now,
@@ -225,6 +240,49 @@ export function reconcile(record: RunRecord, remoteSha: string | null, now: stri
   if (!record.pending) return { record, outcome: "none" };
   const outcome = remoteSha === record.pending.sha ? "finalised" : "discarded";
   return { record: finaliseCheckpoint(record, remoteSha, now), outcome };
+}
+
+/** The commit the demo's BACKLOG.md rule reads from: the session's first base, whatever a later run moved. */
+export const backlogBase = (record: RunRecord) => record.firstBase ?? record.base;
+
+/**
+ * A new request after a run ended, on the session's branch and open pull request (one branch per
+ * chat, ruling 136): the base moves to HEAD, so done needs a commit after it, and everything else
+ * this run owns starts empty. The kept approval goes, so a person is asked again, and the files go,
+ * so a restore cannot bring back the finished run's status and body.
+ */
+export function restartRecord(record: RunRecord, head: string, now: string, request?: string): RunRecord {
+  return {
+    ...record,
+    request,
+    base: head,
+    firstBase: backlogBase(record),
+    stage: null,
+    stagesPushed: [],
+    iteration: 0,
+    files: {},
+    pending: null,
+    approval: null,
+    continued: true,
+    runEnded: false,
+    updatedAt: now,
+  };
+}
+
+/**
+ * The open pull request's body with a continued run's description added between its own markers.
+ * A retry of the same run replaces only its section; what a person wrote around it stays.
+ */
+export function continuedBody(existing: string, base: string, body: string): string {
+  const open = `<!-- ab-run:${base} -->`;
+  const close = `<!-- /ab-run:${base} -->`;
+  const section = `${open}\n${body.trimEnd()}\n${close}`;
+  const from = existing.indexOf(open);
+  const to = existing.indexOf(close);
+  if (from >= 0 && to > from) return `${existing.slice(0, from)}${section}${existing.slice(to + close.length)}`;
+  // A person who removed one marker made that section theirs: the other goes, so a retry never slices across it.
+  const kept = existing.replace(open, "").replace(close, "");
+  return kept.trim() ? `${kept.trimEnd()}\n\n${section}\n` : `${section}\n`;
 }
 
 /** One iteration starts: counted before the agent works, so a crashed iteration counts once. */

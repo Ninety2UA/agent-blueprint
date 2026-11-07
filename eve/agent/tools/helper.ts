@@ -2,6 +2,8 @@ import { defineWorkflowTool } from "eve/tools";
 import { z } from "zod";
 import { ROLES, resolveRole, rosterModelError, type Role, type RoleSelection } from "../lib/roster";
 
+const STOPPED_REPLY_CHARS = 4_000;
+
 // The role's model and reasoning come from the roster (KTD8), read when the helper is briefed.
 async function resolveHelperRole(role: Role): Promise<RoleSelection> {
   "use step";
@@ -33,14 +35,17 @@ export default defineWorkflowTool({
       return {
         ...named,
         status: result.status,
-        reply: result.reply ?? null,
+        // A person's steering message aborts this signal, and the helper then reports cancelled too.
+        interrupted: ctx.abortSignal.aborted,
+        // The session's view withholds a long output, and the stop rules read this one from it.
+        reply: result.status === "completed" ? (result.reply ?? null) : (result.reply?.slice(0, STOPPED_REPLY_CHARS) ?? null),
         error: result.error ? rosterModelError(selection, result.error.message).message : null,
       };
     } catch (error) {
       // Eve refuses a model its Gateway catalog does not list by throwing here, before any call (R6).
       if (ctx.abortSignal.aborted) throw error;
       const message = error instanceof Error ? error.message : String(error);
-      return { ...named, status: "failed" as const, reply: null, error: rosterModelError(selection, message).message };
+      return { ...named, status: "failed" as const, interrupted: false, reply: null, error: rosterModelError(selection, message).message };
     }
   },
 });

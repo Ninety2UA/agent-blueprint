@@ -11,7 +11,7 @@ import {
 import { decide, isLinearStop, LINEAR_STOPPED, linearRunContext, withDeliveryKey } from "../lib/channel-gate";
 import { handleLinearInstall, LINEAR_INSTALL_ROUTE } from "../lib/linear-install";
 import { linearGraphqlUrl, linearToken } from "../lib/linear-token";
-import { noticeAfterPush, sessionEndedNotice } from "../lib/run-end";
+import { helperStoppedIn, noticeAfterPush, sessionEndedNotice } from "../lib/run-end";
 import { runRecord } from "../tools/publish_branch";
 
 // Linear for deployers (R1, KTD2, KTD5, KTD6, KTD13): a member of a public team delegates an issue
@@ -76,7 +76,7 @@ const channel = linearChannel({
     async "turn.settled"(event, ctx) {
       await noticeAfterPush({
         sessionId: ctx.session.id,
-        data: event.data,
+        data: { ...event.data, helperStopped: event.data.outcome === "cancelled" && helperStoppedIn(ctx.view, event.data.turnId) },
         record: () => runRecord.get(),
         post: (body) => ctx.channel.linear.createActivity({ type: "error", body }),
       });

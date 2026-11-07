@@ -38,6 +38,35 @@ export interface SessionEntry {
   readonly status: SessionStatus;
   readonly outcome: SessionOutcome | null;
   readonly endedAt: string | null;
+  /** A stop asked for a branch push that has not landed yet; absent on entries written before it was kept. */
+  readonly owesPush?: boolean;
+}
+
+/** The outcomes whose stop pushes the branch. */
+const PUSHED_OUTCOMES: readonly SessionOutcome[] = ["token-cap", "blocked", "resting"];
+
+/** Whether an ended session still owes its branch a push; an entry from before the field keeps the rule it was written under. */
+export function owesPush(entry: SessionEntry): boolean {
+  if (entry.status !== "ended" || !entry.outcome) return false;
+  return entry.owesPush ?? (PUSHED_OUTCOMES.includes(entry.outcome) && !entry.pushedSha);
+}
+
+/**
+ * What a root's returned helper call means for the root: the stop to make, or null when the run
+ * goes on. A helper's stop cancels only the helper and the tool hands that back as an ordinary
+ * result. The registry says why on the demo, where a helper cancelled from its own route with the
+ * root's entry still running is the visitor's doing. A helper the person interrupted with a new
+ * message stops nothing: the root reads the message. A failed helper is read as a failure elsewhere.
+ */
+export function helperStop(
+  result: { readonly status?: unknown; readonly interrupted?: unknown },
+  entry: SessionEntry | undefined,
+  restingSince: string | null,
+): { readonly outcome: SessionOutcome; readonly push: boolean } | null {
+  if (entry?.status === "ended" && entry.outcome) return { outcome: entry.outcome, push: owesPush(entry) };
+  if (result.status !== "cancelled" || result.interrupted) return null;
+  if (!entry) return { outcome: "blocked", push: true };
+  return restingSince ? { outcome: "resting", push: true } : null;
 }
 
 export interface RegistryDocument {
@@ -47,6 +76,8 @@ export interface RegistryDocument {
   /** When the AI Gateway key first answered 402 on that day; null while the demo is open. */
   readonly restingSince: string | null;
   readonly sessions: Readonly<Record<string, SessionEntry>>;
+  /** Helper sessions and whose they are, for the gate's owner check; a helper is not counted as a session. */
+  readonly children?: Readonly<Record<string, { readonly rootSessionId: string; readonly cookieId: string }>>;
 }
 
 export class RegistryConflictError extends Error {
@@ -76,7 +107,8 @@ export function settle(document: RegistryDocument, now: Date): RegistryDocument 
     const idle = entry.status === "running" && now.getTime() - Date.parse(entry.lastActivity) >= IDLE_TIMEOUT_MS;
     sessions[id] = idle ? { ...entry, status: "ended", outcome: "idle-ended", endedAt: now.toISOString() } : entry;
   }
-  return { ...next, sessions };
+  const children = next.children && Object.entries(next.children).filter(([, child]) => sessions[child.rootSessionId]);
+  return { ...next, sessions, ...(children ? { children: Object.fromEntries(children) } : {}) };
 }
 
 export type Admission =
@@ -88,9 +120,12 @@ export type Admission =
   | { readonly kind: "not-owner" };
 
 export interface Caller {
+  /** The session the turn counts under: a helper's turn counts under its root. */
   readonly sessionId: string;
   readonly cookieId: string;
   readonly address: string;
+  /** The helper's own session, when the turn is a helper's. */
+  readonly helperId?: string;
 }
 
 export class Registry {
@@ -138,15 +173,16 @@ export class Registry {
    * activity time moves to now.
    */
   admit(caller: Caller): Promise<Admission> {
+    const { helperId: _helperId, ...counted } = caller;
     return this.change<Admission>((document, now) => {
       const refused = refusal(document, caller);
-      if (refused) return { document, result: refused };
+      if (refused) return { document: withChild(document, caller), result: refused };
       const existing = document.sessions[caller.sessionId];
       const at = now.toISOString();
       const entry: SessionEntry = existing
         ? { ...existing, lastActivity: at }
         : {
-            ...caller,
+            ...counted,
             repository: null,
             branch: null,
             stage: null,
@@ -158,7 +194,7 @@ export class Registry {
             outcome: null,
             endedAt: null,
           };
-      return { document: withSession(document, entry), result: { kind: "admitted", entry } };
+      return { document: withChild(withSession(document, entry), caller), result: { kind: "admitted", entry } };
     });
   }
 
@@ -170,7 +206,7 @@ export class Registry {
   /** Records where the run's work is: the repository, its branch and the last stage pushed. */
   recordProgress(
     sessionId: string,
-    progress: { repository?: string | null; branch?: string | null; stage?: string | null; pushedSha?: string | null },
+    progress: { repository?: string | null; branch?: string | null; stage?: string | null; pushedSha?: string | null; pushLanded?: boolean },
   ): Promise<SessionEntry | null> {
     return this.update(sessionId, (entry, now) => ({
       ...entry,
@@ -179,13 +215,14 @@ export class Registry {
       stage: progress.stage ?? entry.stage,
       pushedSha: progress.pushedSha ?? entry.pushedSha ?? null,
       lastActivity: now,
+      ...(progress.pushLanded ? { owesPush: false } : {}),
     }));
   }
 
-  /** Ends a session with its outcome; the first outcome recorded stays. */
-  end(sessionId: string, outcome: SessionOutcome): Promise<SessionEntry | null> {
+  /** Ends a session with its outcome and whether its stop owes the branch a push; the first outcome recorded stays. */
+  end(sessionId: string, outcome: SessionOutcome, push = false): Promise<SessionEntry | null> {
     return this.update(sessionId, (entry, now) =>
-      entry.status === "ended" ? entry : { ...entry, status: "ended", outcome, endedAt: now, lastActivity: now },
+      entry.status === "ended" ? entry : { ...entry, status: "ended", outcome, endedAt: now, lastActivity: now, owesPush: push },
     );
   }
 
@@ -222,6 +259,12 @@ export function refusal(document: RegistryDocument, caller: Caller): Exclude<Adm
 
 function withSession(document: RegistryDocument, entry: SessionEntry): RegistryDocument {
   return { ...document, sessions: { ...document.sessions, [entry.sessionId]: entry } };
+}
+
+/** A helper's turn records whose the helper is, when the root it names is that cookie's. */
+function withChild(document: RegistryDocument, caller: Caller): RegistryDocument {
+  if (!caller.helperId || document.sessions[caller.sessionId]?.cookieId !== caller.cookieId) return document;
+  return { ...document, children: { ...document.children, [caller.helperId]: { rootSessionId: caller.sessionId, cookieId: caller.cookieId } } };
 }
 
 /** The local backend: one JSON file, its revision in the file, each write under an exclusive lock. */

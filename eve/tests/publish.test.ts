@@ -23,7 +23,8 @@ registerHooks({
     }
   },
 });
-const { default: publishTool, publish, demoBody, readiness, approvedEarlier, visitorText } = await import("../agent/tools/publish_branch.ts");
+const { continuedBody, restartRecord } = await import("../agent/lib/run-state.ts");
+const { default: publishTool, publish, demoBody, stageList, readiness, approvedEarlier, approvalHolds, visitorText } = await import("../agent/tools/publish_branch.ts");
 const state = await import("../agent/lib/run-state.ts");
 type PublishDeps = Parameters<typeof publish>[0];
 type RunRecord = NonNullable<ReturnType<PublishDeps["store"]["get"]>>;
@@ -560,6 +561,7 @@ describe("crash recovery and resume (AE2, KTD6)", () => {
     assert.equal("checkpoint" in result && result.checkpoint, "finalised");
     assert.equal(second.record()?.lastPushedSha, crashed.pending.sha);
     assert.equal(second.record()?.stage, "execute");
+    assert.ok(second.record()?.stagesPushed?.includes("execute"), "a push that landed before the crash is listed");
     assert.equal(readFileSync(join(replaced, ".agent-blueprint", "run", "pr-body.md"), "utf8"), "Execute body.\n");
   });
 
@@ -655,6 +657,19 @@ describe("pull request (REST from the runtime)", () => {
     assert.ok(!api.pulls[0].body.includes("The visitor's model wrote"));
     assert.equal((api.pulls[0].body.match(/```/g) ?? []).length, 2, "the request cannot close the fence");
     assert.deepEqual(api.pulls[0].labels, ["automated-demo"]);
+  });
+  test("the demo: the body lists the stages this tool pushed, not the decisions or a commit message", async () => {
+    const root = freshClone();
+    commitFile(root, "src/a.ts", "a\n");
+    runFiles(root, "The visitor's model wrote this body.\n");
+    commitFile(root, "src/b.ts", "b\n", "docs: x\n\nAgent-Blueprint-Stage: Verify\nAgent-Blueprint-Stage: [click](https://evil.example)");
+    const { deps, api } = setup(root, { demo: true });
+    for (const stage of ["plan", "continuation", "Execute", "Review", "[click](https://evil.example)"]) {
+      assert.equal((await publish(deps, { mode: "stage", stage, request: REQUEST })).status, "pushed");
+    }
+    const result = await publish(deps, { mode: "pull-request", request: REQUEST });
+    assert.equal(result.status, "done", JSON.stringify(result));
+    assert.ok(api.pulls[0].body.includes("Stages run:\n- Plan\n- Execute\n- Review\n- Ship\n"), api.pulls[0].body);
   });
 
   test("the demo: the visitor's recorded words fill the body when the model leaves request out, capped", async () => {
@@ -835,6 +850,87 @@ describe("the idle sandbox before the window", () => {
 // Ruling 60: every live run asked "Approve Publish branch?" for each pull-request call. An approved
 // call records who approved it for the session and branch; the approval policy lets a later call of
 // the same run go ahead only when that record and Eve's own memory of the person's answer agree.
+describe("a later run on the session's branch (ruling 136)", () => {
+  const BASE = "a".repeat(40);
+  test("its description joins the body between its markers, and a retry replaces only that", () => {
+    const first = continuedBody("Adds a greeting.\n", BASE, "Adds a farewell.\n");
+    assert.equal(first, `Adds a greeting.\n\n<!-- ab-run:${BASE} -->\nAdds a farewell.\n<!-- /ab-run:${BASE} -->\n`);
+    const edited = `A person's note.\n\n${first}\nA later note.\n`;
+    const retried = continuedBody(edited, BASE, "Adds a kinder farewell.\n");
+    assert.ok(retried.startsWith("A person's note.\n\nAdds a greeting."));
+    assert.ok(retried.endsWith("\nA later note.\n"));
+    assert.ok(retried.includes("Adds a kinder farewell."));
+    assert.ok(!retried.includes("Adds a farewell."));
+    const third = continuedBody(retried, "b".repeat(40), "A third change.\n");
+    assert.ok(third.includes("Adds a kinder farewell.") && third.includes("A third change."), "each run keeps its own section");
+    assert.equal(continuedBody("", BASE, "Only this.\n"), `<!-- ab-run:${BASE} -->\nOnly this.\n<!-- /ab-run:${BASE} -->\n`);
+    // A person removes the closing marker and writes below it: two retries keep everything.
+    const unclosed = `${first.replace(`<!-- /ab-run:${BASE} -->`, "")}\nA person's line.\n`;
+    const once = continuedBody(unclosed, BASE, "Retry one.\n");
+    const twice = continuedBody(once, BASE, "Retry two.\n");
+    assert.ok(twice.includes("Adds a greeting.") && twice.includes("Adds a farewell.") && twice.includes("A person's line."), twice);
+    assert.ok(twice.includes("Retry two.") && !twice.includes("Retry one."), twice);
+    assert.equal(twice.split(`<!-- ab-run:${BASE} -->`).length - 1, 1);
+  });
+
+  test("the pull request keeps its number and title and gains the description; a run that continues nothing replaces the body", async () => {
+    const root = freshClone();
+    commitFile(root, "src/a.ts", "a\n");
+    runFiles(root, "Adds search.\n");
+    const { deps, api, record, setRecord } = setup(root);
+    assert.equal((await publish(deps, { mode: "pull-request", request: REQUEST, title: "feat(widgets): add search" })).status, "done");
+    const title = api.pulls[0].title;
+    runFiles(root, "Adds search, revised.\n");
+    await publish(deps, { mode: "pull-request" });
+    assert.equal(api.pulls[0].body, "Adds search, revised.\n", "a run that continues nothing replaces the body");
+    const head = git(["rev-parse", "HEAD"], root);
+    setRecord(restartRecord(record()!, head, "2026-10-29T04:00:00.000Z"));
+    commitFile(root, "src/b.ts", "b\n");
+    runFiles(root, "Adds filters.\n");
+    const second = await publish(deps, { mode: "pull-request", request: "Add filters" });
+    assert.equal(second.status, "done", JSON.stringify(second));
+    assert.equal("pullRequest" in second && second.pullRequest.reused, true);
+    assert.equal(api.pulls.length, 1);
+    assert.equal(api.pulls[0].title, title);
+    assert.ok(api.pulls[0].body.startsWith("Adds search, revised.\n"));
+    assert.ok(api.pulls[0].body.includes(`<!-- ab-run:${head} -->\nAdds filters.`));
+    const retry = await publish(deps, { mode: "pull-request" });
+    assert.equal(retry.status, "done");
+    assert.equal((api.pulls[0].body.match(/Adds filters\./g) ?? []).length, 1);
+  });
+
+  test("a restart clears the approval, and a commit the pull request has not had asks again even without the flag", async () => {
+    const root = freshClone();
+    commitFile(root, "src/a.ts", "a\n");
+    runFiles(root);
+    const { deps, record } = setup(root, { approvedBy: "telegram:1001" });
+    assert.equal((await publish(deps, { mode: "pull-request", request: REQUEST })).status, "done");
+    const head = git(["rev-parse", "HEAD"], root);
+    const saved = record()!;
+    assert.equal(saved.pullRequest?.sha, head);
+    assert.equal(approvalHolds(saved, SESSION, head), true, "a retry on the same commit");
+    assert.equal(approvalHolds(saved, SESSION, "f".repeat(40)), false, "a new commit");
+    assert.equal(approvalHolds({ ...saved, pullRequest: { ...saved.pullRequest!, sha: undefined } }, SESSION, "f".repeat(40)), true, "a record from before the commit was kept");
+    assert.equal(approvalHolds(restartRecord(saved, head, "2026-10-29T04:00:00.000Z"), SESSION, head), false);
+  });
+
+  test("the demo: a refused BACKLOG.md commit stays refused after a restart moves the base", async () => {
+    const root = freshClone();
+    const { deps, record, setRecord } = setup(root, { demo: true });
+    commitFile(root, "BACKLOG.md", "- [ ] Add a --json flag\n", "docs: note a follow-up");
+    const refused = await publish(deps, { mode: "stage", stage: "plan", request: REQUEST });
+    assert.equal(refused.status, "refused");
+    setRecord(restartRecord(record()!, git(["rev-parse", "HEAD"], root), "2026-10-29T04:00:00.000Z"));
+    const again = await publish(deps, { mode: "stage", stage: "plan", request: REQUEST });
+    assert.equal(again.status, "refused", JSON.stringify(again));
+    assert.match(String("reason" in again ? again.reason : ""), /the demo leaves BACKLOG\.md out/);
+    commitFile(root, "src/a.ts", "a\n");
+    const ready = await publish(deps, { mode: "pull-request", request: REQUEST });
+    assert.equal(ready.status, "refused", "the pull-request path reads the first base too");
+    assert.match(String("reason" in ready ? ready.reason : ""), /the demo leaves BACKLOG\.md out/);
+  });
+});
+
 describe("one approval per run (ruling 60)", () => {
   test("an approved pull-request call records who approved it; another session or branch does not match", async () => {
     const root = freshClone();
@@ -958,4 +1054,12 @@ describe("check mode and the reading before the approval (ruling 59)", () => {
     const { deps } = setup(root, { demo: true });
     assert.equal((await publish(deps, { mode: "check", request: REQUEST })).status, "ready");
   });
+});
+
+test("stageList names each stage once, in order, without continuation, and adds Ship when any ran", () => {
+  assert.deepEqual(stageList(["plan", "", "continuation", "Execute", "Review", "review", "verify"]), ["Plan", "Execute", "Review", "Verify", "Ship"]);
+  assert.deepEqual(stageList(["ship"]), [], "a lone ship stage is no stage run");
+  assert.deepEqual(stageList(["![x](https://evil.example/a.png)"]), [], "only a stage's name");
+  assert.deepEqual(stageList(["continuation", "", " "]), []);
+  assert.deepEqual(stageList([]), []);
 });

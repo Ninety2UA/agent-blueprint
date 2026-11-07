@@ -2,4 +2,4 @@
 import type { Versions } from "./run-state";
 
 // The versions a run record carries: Eve's exact pin and the product's version.
-export const VERSIONS: Versions = { eve: "0.86.0", product: "4.2.0" };
+export const VERSIONS: Versions = { eve: "0.86.0", product: "4.2.1" };

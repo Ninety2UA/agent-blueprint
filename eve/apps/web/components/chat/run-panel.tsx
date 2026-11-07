@@ -34,21 +34,26 @@ export function RunStrip({ className, ...props }: RunPanelProps & { readonly cla
   return (
     <details className={cn("group/strip border-b border-border bg-muted", className)} data-run-strip>
       <summary className="flex cursor-pointer list-none items-center gap-2.5 px-4 py-2.5 text-sm focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--focus)] [&::-webkit-details-marker]:hidden">
-        <span aria-hidden="true" className="flex shrink-0 gap-[3px]">
-          {run.stages.map((stage, index) => (
-            <i
-              className={cn(
-                "block h-1 w-3.5",
-                stage.state === "todo" && "bg-hair-strong",
-                stage.state === "done" && (index === run.stages.length - 1 ? "bg-signal" : "bg-foreground"),
-                stage.state === "now" && "bg-signal",
-              )}
-              key={stage.name}
-            />
-          ))}
-        </span>
+        {run.direct ? null : (
+          <span aria-hidden="true" className="flex shrink-0 gap-[3px]">
+            {run.stages.map((stage, index) => (
+              <i
+                className={cn(
+                  "block h-1 w-3.5",
+                  stage.state === "todo" && "bg-hair-strong",
+                  stage.state === "done" && (index === run.stages.length - 1 ? "bg-signal" : "bg-foreground"),
+                  stage.state === "now" && "bg-signal",
+                  stage.state === "stopped" && "bg-[var(--accent-wash)] outline outline-1 -outline-offset-1 outline-signal",
+                )}
+                key={stage.name}
+              />
+            ))}
+          </span>
+        )}
         <span className="min-w-0 flex-1 truncate">
-          {current ? (
+          {run.direct ? (
+            <b className="font-semibold">Straight to a pull request</b>
+          ) : current ? (
             <>
               <b className="font-semibold">{current.label}</b>, {lowerFirst(current.status)}
             </>
@@ -66,7 +71,7 @@ export function RunStrip({ className, ...props }: RunPanelProps & { readonly cla
 }
 
 function RunCells({ compact = false, demo, repository, run, title }: RunPanelProps & { readonly compact?: boolean }) {
-  const branchHref = run.branch ? branchUrl(repository, run.branch) : null;
+  const branchHref = run.branch ? branchUrl(repository ?? run.repository, run.branch) : null;
   return (
     <>
       <Cell compact={compact} label="Sheet">
@@ -96,11 +101,18 @@ function RunCells({ compact = false, demo, repository, run, title }: RunPanelPro
         )}
       </Cell>
       <Cell compact={compact} label="Stages">
-        <ol className="relative m-0 mt-2 list-none p-0">
-          {run.stages.map((stage, index) => (
-            <StageRow key={stage.name} last={index === run.stages.length - 1} stage={stage} />
-          ))}
-        </ol>
+        {run.direct ? (
+          <p className="m-0 mt-1 text-[0.9375rem] leading-[1.4] font-[560]" data-run-direct>
+            Went straight to a pull request
+            <span className="mt-0.5 block text-[0.8125rem] font-normal text-muted-foreground">This run recorded no stages.</span>
+          </p>
+        ) : (
+          <ol className="relative m-0 mt-2 list-none p-0">
+            {run.stages.map((stage, index) => (
+              <StageRow key={stage.name} last={index === run.stages.length - 1} stage={stage} />
+            ))}
+          </ol>
+        )}
       </Cell>
       {demo || run.pullRequest ? (
         <Cell compact={compact} label={demo ? "Pull requests open as" : "Pull request"}>
@@ -137,6 +149,7 @@ function RunCells({ compact = false, demo, repository, run, title }: RunPanelPro
 function StageRow({ last, stage }: { readonly last: boolean; readonly stage: RunStage }) {
   const done = stage.state === "done";
   const now = stage.state === "now";
+  const stopped = stage.state === "stopped";
   return (
     <li
       className={cn(
@@ -153,6 +166,7 @@ function StageRow({ last, stage }: { readonly last: boolean; readonly stage: Run
           "relative mt-1 size-[13px] rounded-full border-[1.25px] border-hair-strong bg-muted",
           done && (last ? "border-signal bg-signal" : "border-foreground bg-foreground"),
           now && "border-signal after:absolute after:inset-0.5 after:rounded-full after:bg-signal after:content-[''] motion-safe:after:animate-[shimmer-text_1.4s_var(--ease-out)_infinite_alternate]",
+          stopped && "rounded-[2px] border-signal bg-[var(--accent-wash)]",
         )}
       />
       <span
@@ -163,9 +177,33 @@ function StageRow({ last, stage }: { readonly last: boolean; readonly stage: Run
         )}
       >
         {stage.label}
-        {stage.status ? <span className="block text-[0.8125rem] font-normal text-muted-foreground">{stage.status}</span> : null}
+        {stage.status ? <span className={cn("block text-[0.8125rem] font-normal", stopped ? "text-ink-2" : "text-muted-foreground")}>{stage.status}</span> : null}
       </span>
     </li>
+  );
+}
+
+/**
+ * The run-end notice after a helper's stop (ruling 139), off the demo: the demo's gate notice says
+ * it there. The words are the ones Linear and Telegram post, with the branch to open.
+ */
+export function RunStopNotice({ repository, run }: { readonly repository: string | null; readonly run: RunView }) {
+  if (!run.stopped) return null;
+  const branchHref = run.branch ? branchUrl(repository ?? run.repository, run.branch) : null;
+  return (
+    <div className="border border-l-2 border-hair-strong border-l-signal bg-card px-4 py-3.5 text-[0.9375rem] leading-normal" data-run-stopped role="status">
+      <p className="m-0 text-foreground">{run.stopped.notice}</p>
+      {branchHref ? (
+        <a
+          className="mt-3 inline-flex min-h-9 items-center rounded-[var(--r)] border border-line-ui px-3 text-sm font-[560] text-foreground no-underline transition-colors duration-[180ms] hover:border-foreground hover:bg-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] max-sheet:min-h-11"
+          href={branchHref}
+          rel="noreferrer"
+          target="_blank"
+        >
+          Open the branch
+        </a>
+      ) : null}
+    </div>
   );
 }
 

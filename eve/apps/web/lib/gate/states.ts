@@ -162,6 +162,9 @@ export function fill(text: string, values: GateValues): string {
 }
 
 /** The pushed branch's page on GitHub. */
+/** The run-end notices' last sentence, after a branch was named. */
+export const CONTINUE_ON_BRANCH = "To pick it up, send a new message asking to continue on branch {branch}.";
+
 export function branchUrl(repository: string | null | undefined, branch: string | null | undefined): string | null {
   if (!repository || !branch || !/^[\w.-]+\/[\w.-]+$/.test(repository)) return null;
   return `https://github.com/${repository}/tree/${branch.split("/").map(encodeURIComponent).join("/")}`;

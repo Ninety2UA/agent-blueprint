@@ -14,25 +14,27 @@ import {
   withGitHubToken,
 } from "../lib/credentials";
 import {
-  type RecordStore,
-  type ResumeResult,
-  type PullRequestApproval,
-  type RunFiles,
-  type RunRecord,
-  RUN_FILE_ROOTS,
-  type Versions,
   addDecision,
+  backlogBase,
   beginCheckpoint,
   branchName,
+  continuedBody,
   currentVersions,
   featureFromBody,
   finaliseCheckpoint,
   newRecord,
   parseTrailers,
+  type PullRequestApproval,
   pullRequestTitle,
+  type RecordStore,
   rederive,
+  type ResumeResult,
+  RUN_FILE_ROOTS,
+  type RunFiles,
+  type RunRecord,
   SESSION_TRAILER,
   stageCommitMessage,
+  type Versions,
 } from "../lib/run-state";
 import { evalGitHubApi, evalRemote, evalRemoteUrl } from "../lib/eval-remote";
 import { GIT_IDENTITY_ENV, readIdentityOwner } from "../lib/git-identity";
@@ -107,6 +109,8 @@ export interface PublishDeps {
   readonly hosts: readonly string[];
   readonly versions: Versions;
   readonly scripts: { readonly outgoing: string; readonly scan: string };
+  /** The turn this call runs in; the ship loop reads it, and a hook's push has none. */
+  readonly turnId?: string;
   /** Mints a token for the repository with these permissions; throws when the App is not there. */
   mint(repository: string, permissions: TokenPermissions): Promise<string>;
   /** The GitHub REST API: fetch and base URL. Tests replace both. */
@@ -142,7 +146,7 @@ async function sh(sandbox: SandboxSession, command: string, env: Readonly<Record
   return sandbox.run({ command, env: { GIT_TERMINAL_PROMPT: "0", ...env } });
 }
 
-async function must(sandbox: SandboxSession, command: string, what: string, env: Readonly<Record<string, string>> = {}): Promise<string> {
+export async function must(sandbox: SandboxSession, command: string, what: string, env: Readonly<Record<string, string>> = {}): Promise<string> {
   const result = await sh(sandbox, command, env);
   if (result.exitCode !== 0) throw new Error(`${what} failed: ${(result.stderr || result.stdout).trim()}`);
   return result.stdout.trim();
@@ -208,6 +212,25 @@ export function demoBody(request: string, stages: readonly string[], followUps: 
   ].join("\n");
 }
 
+/**
+ * The demo body's stage list, from the stage pushes this tool recorded, oldest first: each name
+ * once, capitalised, without the pipeline's internal `continuation` or anything that does not read
+ * as a stage's name, and Ship last when any stage ran, since the list is only written as the pull
+ * request opens. The record, not the branch's commit messages, which the model can write.
+ */
+const STAGE_NAME = /^[A-Za-z][A-Za-z -]{0,31}$/;
+
+export function stageList(stages: readonly string[]): string[] {
+  const named = new Map<string, string>();
+  for (const stage of stages) {
+    const name = stage.trim();
+    const key = name.toLowerCase();
+    if (!STAGE_NAME.test(name) || key === "continuation" || key === "ship" || named.has(key)) continue;
+    named.set(key, name.charAt(0).toUpperCase() + name.slice(1));
+  }
+  return named.size ? [...named.values(), "Ship"] : [];
+}
+
 /** The text of a delivery's parts, as the person typed it; files are left out. */
 export function visitorText(parts: readonly { kind: string; text?: string }[]): string {
   return parts
@@ -248,13 +271,13 @@ async function demoBacklogChanged(sandbox: SandboxSession, base: string): Promis
  * body is a fixed template) a pull request body. Returns the refusal reason, or null when the pull
  * request can go ahead.
  */
-export async function notDone(sandbox: SandboxSession, base: string, demo: boolean): Promise<string | null> {
+export async function notDone(sandbox: SandboxSession, base: string, demo: boolean, backlogBase: string = base): Promise<string | null> {
   const count = Number(await must(sandbox, `git rev-list --count ${quote(base)}..HEAD`, "counting the run's commits"));
   if (!count) return "not done: there are no commits since the run's base.";
   if ((await sh(sandbox, "git status --porcelain --untracked-files=no")).stdout.trim()) {
     return "not done: tracked files still have uncommitted changes.";
   }
-  const backlog = demo ? await demoBacklogChanged(sandbox, base) : null;
+  const backlog = demo ? await demoBacklogChanged(sandbox, backlogBase) : null;
   if (backlog) return `not done: ${backlog}`;
   if (!demo && !((await sh(sandbox, `cat ${quote(PR_BODY)}`)).stdout ?? "").trim()) return `not done: ${PR_BODY} is missing or empty.`;
   return null;
@@ -264,7 +287,7 @@ export async function notDone(sandbox: SandboxSession, base: string, demo: boole
 export async function readiness(sandbox: SandboxSession, record: RunRecord | null, demo: boolean): Promise<string | null> {
   const repository = await originRepository(sandbox);
   if (record && record.repository !== repository) return `This session's run is on ${record.repository}; the clone is ${repository}.`;
-  return notDone(sandbox, record?.base ?? (await runBase(sandbox)), demo);
+  return notDone(sandbox, record?.base ?? (await runBase(sandbox)), demo, record ? backlogBase(record) : undefined);
 }
 
 /**
@@ -333,17 +356,17 @@ export async function publish(deps: PublishDeps, input: PublishInput): Promise<P
       "making the stage commit",
       identity,
     );
-    const backlog = deps.demo ? await demoBacklogChanged(sandbox, record.base) : null;
+    const backlog = deps.demo ? await demoBacklogChanged(sandbox, backlogBase(record)) : null;
     if (backlog) return notPushed("refused", `${backlog} Nothing was pushed.`, branch);
   } else {
-    const reason = await notDone(sandbox, record.base, deps.demo);
+    const reason = await notDone(sandbox, record.base, deps.demo, backlogBase(record));
     if (reason) return notPushed("refused", reason, branch);
   }
   const sha = await must(sandbox, "git rev-parse HEAD", "reading HEAD");
   const body = deps.demo
     ? demoBody(
         deps.visitorRequest?.trim() || input.request || "",
-        [...new Set([...record.decisions.map((decision) => decision.stage), record.stage].filter((stage): stage is string => !!stage))],
+        stageList(record.stagesPushed ?? []),
         input.followUps ?? [],
       )
     : input.mode === "pull-request"
@@ -444,6 +467,13 @@ export function approvedEarlier(record: RunRecord | null, sessionId: string): Pu
   return approval && approval.sessionId === sessionId && approval.sessionId === record.sessionId && approval.branch === record.branch ? approval : null;
 }
 
+/** Whether a pull-request call at this commit goes ahead on that approval: a commit the pull request has not had asks again. */
+export function approvalHolds(record: RunRecord | null, sessionId: string, head: string): boolean {
+  if (!approvedEarlier(record, sessionId)) return false;
+  const published = record?.pullRequest?.sha;
+  return !published || published === head;
+}
+
 /** Check mode: the done rule and the straggler check, with no record written, no token and no push. */
 async function check(deps: PublishDeps, input: PublishInput, repository: string): Promise<PublishResult> {
   const record = deps.store.get();
@@ -452,7 +482,7 @@ async function check(deps: PublishDeps, input: PublishInput, repository: string)
   }
   const base = record?.base ?? (await runBase(deps.sandbox));
   const branch = record?.branch ?? branchName(await featureText(deps.sandbox, input, base), deps.sessionId);
-  const reason = await notDone(deps.sandbox, base, deps.demo);
+  const reason = await notDone(deps.sandbox, base, deps.demo, record ? backlogBase(record) : base);
   if (reason) return notPushed("refused", reason, branch);
   const blocker = await idle(deps);
   if (blocker) return notPushed("needs-human", blocker, branch);
@@ -476,16 +506,17 @@ async function openPullRequest(deps: PublishDeps, start: RunRecord, repository: 
       headers: { accept: "application/vnd.github+json", authorization: `Bearer ${token}`, "x-github-api-version": "2022-11-28", "content-type": "application/json" },
     });
   const done = (number: number, url: string, draft: boolean, reused: boolean): PublishResult => {
-    record = { ...record, pullRequest: { number, url, draft }, updatedAt: deps.now() };
+    record = { ...record, pullRequest: { number, url, draft, sha }, updatedAt: deps.now() };
     deps.store.set(record);
     return { status: "done", branch: record.branch, sha, pullRequest: { number, url, draft, reused } };
   };
 
   const listed = await call(`/pulls?state=open&head=${encodeURIComponent(`${owner}:${record.branch}`)}`);
   if (!listed.ok) return { status: "blocked", reason: `listing the open pull requests failed: HTTP ${listed.status}.`, branch: record.branch };
-  const open = (await listed.json()) as { number: number; html_url: string; draft?: boolean }[];
+  const open = (await listed.json()) as { number: number; html_url: string; draft?: boolean; body?: string | null }[];
   if (open.length) {
-    const patched = await call(`/pulls/${open[0].number}`, { method: "PATCH", body: JSON.stringify({ body }) });
+    const text = record.continued ? continuedBody(open[0].body ?? "", record.base, body) : body;
+    const patched = await call(`/pulls/${open[0].number}`, { method: "PATCH", body: JSON.stringify({ body: text }) });
     if (!patched.ok) return { status: "blocked", reason: `updating pull request #${open[0].number} failed: HTTP ${patched.status}.`, branch: record.branch };
     return done(open[0].number, open[0].html_url, open[0].draft ?? false, true);
   }
@@ -551,7 +582,7 @@ async function restore(deps: PublishDeps, repository: string): Promise<PublishRe
  * to a bare repository inside the sandbox instead of github.com, as in the cap hook, so the eval can
  * see it land.
  */
-export function runtimeDeps(sandbox: SandboxSession, sessionId: string, approvedBy: string | null = null): PublishDeps {
+export function runtimeDeps(sandbox: SandboxSession, sessionId: string, approvedBy: string | null = null, turnId?: string): PublishDeps {
   const mock = evalRemote() !== null;
   const script = (name: string) => {
     const text = shipPipeline.files?.[`scripts/${name}`];
@@ -562,6 +593,7 @@ export function runtimeDeps(sandbox: SandboxSession, sessionId: string, approved
     sandbox,
     store: { get: () => runRecord.get(), set: (record) => runRecord.update(() => record) },
     sessionId,
+    turnId,
     posture: posture.get(),
     demo: process.env.AB_DEMO === "1",
     visitorRequest: visitorRequest.get(),
@@ -615,8 +647,10 @@ export default defineTool({
   approval: async (ctx) => {
     if (ctx.toolInput?.mode !== "pull-request" || posture.get() !== "interactive" || process.env.AB_DEMO === "1") return "not-applicable";
     let reason: string | null;
+    let head = "";
     try {
       reason = await readiness(await ctx.getSandbox(), runRecord.get(), false);
+      head = await must(await ctx.getSandbox(), "git rev-parse HEAD", "reading HEAD");
     } catch (error) {
       reason = `could not read the run before asking: ${error instanceof Error ? error.message : String(error)}`;
     }
@@ -624,7 +658,8 @@ export default defineTool({
       const remembered = await askOnce(ctx);
       if (remembered !== "approved") return remembered;
       const earlier = approvedEarlier(runRecord.get(), ctx.session.id);
-      return earlier ? { type: "approved", reason: `approved earlier in this run by ${earlier.by} for ${earlier.branch}` } : "user-approval";
+      if (!earlier) return "user-approval";
+      return approvalHolds(runRecord.get(), ctx.session.id, head) ? { type: "approved", reason: `approved earlier in this run by ${earlier.by} for ${earlier.branch}` } : "user-approval";
     }
     return { type: "denied", reason: `refused by the tool before publishing, not by the person: ${reason} Nothing was pushed. Fix it, call publish_branch with mode check, then pull-request.` };
   },

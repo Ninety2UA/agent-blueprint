@@ -8,7 +8,7 @@ import { BRANCH, FEATURE, SETUP, outputs, stateLine, writeLine } from "./fixture
 // and no planner copy runs again. The bare repository publish_branch pushes to under AB_EVAL_MOCK=1
 // lives in the sandbox's /tmp, so the loss is made by wiping the workspace's clone state, not by a
 // new sandbox; tests/publish.test.ts restores into a fresh clone.
-const PROVENANCE = JSON.stringify({ skill: "ab-ship-pipeline", version: "4.2.0", started_at: "2026-10-29T10:00:00Z", helper_steps: [] });
+const PROVENANCE = JSON.stringify({ skill: "ab-ship-pipeline", version: "4.2.1", started_at: "2026-10-29T10:00:00Z", helper_steps: [] });
 
 export default defineEval({
   description: "AE2: after the plan stage is pushed and the workspace is lost, restore brings back the run files and the loop continues at execute.",

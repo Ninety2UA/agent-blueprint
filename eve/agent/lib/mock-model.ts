@@ -18,7 +18,8 @@ import { DEMO_REPOSITORY_URL } from "./demo-repository";
 //   guess: <name reversed>      load a skill by a name the message does not contain
 //   ask: <question> | <a> | <b> ask a checkpoint question with ask_question, two or three options
 //   publish: <mode> [stage]     call publish_branch in that mode; the request is the first user message
-//   ship: [ceiling] [| answer]  call ship_pipeline once; the request is the first user message
+//   ship: [ceiling] [| answer]  call ship_pipeline once; the request is the first user message;
+//                               "new" in place of the ceiling also passes newWork
 //   brief: <script>             hand the last ship_pipeline brief to the helper with the role it
 //                               names; the copy's own lines follow the brief, ";;" separating them
 //   spend: <tokens> <command>   run a command and report that many input tokens for the step
@@ -106,7 +107,11 @@ function toolCall(kind: string, arg: string, request: MockModelRequest): MockMod
       return [
         {
           name: "ship_pipeline",
-          input: { request: request_(request), ...(ceiling.trim() ? { ceiling: Number(ceiling) } : {}), ...(answered ? { answer: answered } : {}) },
+          input: {
+            request: request_(request),
+            ...(ceiling.trim() === "new" ? { newWork: true } : ceiling.trim() ? { ceiling: Number(ceiling) } : {}),
+            ...(answered ? { answer: answered } : {}),
+          },
         },
       ];
     }

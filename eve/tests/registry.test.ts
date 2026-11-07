@@ -20,7 +20,7 @@ registerHooks({
     }
   },
 });
-const { Registry, RegistryConflictError, blobBackend, emptyDocument, fileBackend, strongEtag } = await import("../agent/lib/registry.ts");
+const { Registry, RegistryConflictError, blobBackend, emptyDocument, fileBackend, helperStop, owesPush, strongEtag } = await import("../agent/lib/registry.ts");
 const caps = await import("../agent/lib/caps.ts");
 const { postureFor, withPostureDecision } = await import("../agent/lib/posture.ts");
 const { newRecord } = await import("../agent/lib/run-state.ts");
@@ -150,6 +150,128 @@ describe("the caps in the registry", () => {
     assert.equal(caps.classifyFailure({ code: "x", message: "429 Too Many Requests (scripted)" }), "rate-limited");
     assert.equal(caps.classifyFailure({ code: "SandboxError", message: "Failed to create sandbox: quota" }), "sandbox");
     assert.equal(caps.classifyFailure({ code: "x", message: "command exited 1" }), null);
+  });
+});
+
+describe("a helper's child record", () => {
+  const root = { sessionId: "root", cookieId: "c1", address: "a1" };
+
+  test("admitting a helper records whose it is, counts no session, and a stranger writes nothing", async () => {
+    const registry = new Registry(fileBackend(freshFile()));
+    await registry.admit(root);
+    const helper = await registry.admit({ ...root, helperId: "helper1" });
+    assert.equal(helper.kind, "admitted");
+    const document = await registry.snapshot();
+    assert.deepEqual(document.children, { helper1: { rootSessionId: "root", cookieId: "c1" } });
+    assert.deepEqual(Object.keys(document.sessions), ["root"]);
+    assert.equal(("helperId" in document.sessions.root), false);
+    const stranger = await registry.admit({ sessionId: "root", helperId: "helper2", cookieId: "c2", address: "a2" });
+    assert.equal(stranger.kind, "not-owner");
+    assert.equal((await registry.snapshot()).children?.helper2, undefined);
+  });
+
+  test("a helper admitted before its root keeps the entry clean of its own id", async () => {
+    const registry = new Registry(fileBackend(freshFile()));
+    await registry.admit({ ...root, helperId: "helper0" });
+    const document = await registry.snapshot();
+    assert.equal("helperId" in document.sessions.root, false);
+    assert.equal(document.sessions.root.cookieId, "c1");
+    assert.deepEqual(document.children, { helper0: { rootSessionId: "root", cookieId: "c1" } });
+  });
+
+  test("a helper refused because its root ended still has its owner", async () => {
+    const registry = new Registry(fileBackend(freshFile()));
+    await registry.admit(root);
+    await registry.end("root", "done");
+    assert.equal((await registry.admit({ ...root, helperId: "late" })).kind, "ended");
+    assert.equal((await registry.snapshot()).children?.late?.cookieId, "c1");
+  });
+
+  test("a child leaves with its root at the end of retention; a document with no children settles as it was", async () => {
+    let clock = new Date("2026-11-01T10:00:00Z");
+    const registry = new Registry(fileBackend(freshFile()), () => clock);
+    assert.equal((await registry.snapshot()).children, undefined);
+    await registry.admit(root);
+    await registry.admit({ ...root, helperId: "helper1" });
+    await registry.end("root", "done");
+    clock = new Date("2026-11-20T10:00:00Z");
+    const document = await registry.snapshot();
+    assert.equal(document.sessions.root, undefined);
+    assert.deepEqual(document.children, {});
+  });
+});
+
+describe("the push a stop owes", () => {
+  const caller = { sessionId: "s1", cookieId: "c1", address: "a1" };
+  const started = async () => {
+    const registry = new Registry(fileBackend(freshFile()));
+    await registry.admit(caller);
+    return registry;
+  };
+
+  test("a stop that asks for a push owes one, even after an earlier stage push, until a push lands", async () => {
+    const registry = await started();
+    await registry.recordProgress("s1", { pushedSha: "a".repeat(40) });
+    const ended = await registry.end("s1", "blocked", true);
+    assert.equal(owesPush(ended!), true);
+    const failed = await registry.recordProgress("s1", { pushLanded: false });
+    assert.equal(owesPush(failed!), true, "a push that did not land stays owed");
+    const landed = await registry.recordProgress("s1", { pushedSha: "b".repeat(40), pushLanded: true });
+    assert.equal(owesPush(landed!), false);
+  });
+
+  test("a stop that asks for none owes none, and the first stop's answer stays", async () => {
+    const registry = await started();
+    const ended = await registry.end("s1", "blocked", false);
+    assert.equal(owesPush(ended!), false, "a sandbox that could not be created");
+    assert.equal(owesPush((await registry.end("s1", "token-cap", true))!), false);
+  });
+
+  test("a running session owes nothing", async () => {
+    const registry = await started();
+    assert.equal(owesPush((await registry.snapshot()).sessions.s1), false);
+  });
+
+  test("an entry stored before the field keeps the old rule", async () => {
+    const registry = await started();
+    const entry = { ...(await registry.end("s1", "blocked"))! };
+    delete (entry as { owesPush?: boolean }).owesPush;
+    assert.equal(owesPush(entry), true);
+    assert.equal(owesPush({ ...entry, pushedSha: "a".repeat(40) }), false);
+    assert.equal(owesPush({ ...entry, outcome: "done" }), false);
+  });
+});
+
+describe("what a returned helper means for its root", () => {
+  const entry = (fields: object) => ({ sessionId: "s1", cookieId: "c1", address: "a1", repository: null, branch: null, stage: null, pushedSha: null, startedAt: "", lastActivity: "", tokens: 0, status: "running", outcome: null, endedAt: null, ...fields });
+
+  test("a root entry the helper's stop ended: the root takes that outcome and the push it owes", () => {
+    assert.deepEqual(helperStop({ status: "cancelled" }, entry({ status: "ended", outcome: "token-cap", owesPush: true }), null), { outcome: "token-cap", push: true });
+    assert.deepEqual(helperStop({ status: "cancelled" }, entry({ status: "ended", outcome: "blocked", owesPush: false }), null), { outcome: "blocked", push: false });
+    assert.deepEqual(helperStop({ status: "cancelled" }, entry({ status: "ended", outcome: "done", owesPush: false }), null), { outcome: "done", push: false });
+  });
+
+  test("a person's new message interrupted the helper: the run goes on", () => {
+    assert.equal(helperStop({ status: "cancelled", interrupted: true }, undefined, null), null);
+    assert.equal(helperStop({ status: "cancelled", interrupted: true }, entry({}), null), null);
+  });
+
+  test("off the demo a cancelled helper was the cap hook's: the run ends blocked, the branch pushed", () => {
+    assert.deepEqual(helperStop({ status: "cancelled", interrupted: false }, undefined, null), { outcome: "blocked", push: true });
+  });
+
+  test("on the demo with the root still running, a cancelled helper is the visitor's own, unless the demo is resting", () => {
+    assert.equal(helperStop({ status: "cancelled", interrupted: false }, entry({}), null), null);
+    assert.deepEqual(helperStop({ status: "cancelled", interrupted: false }, entry({}), "2026-11-06T10:00:00Z"), { outcome: "resting", push: true });
+  });
+
+  test("a stop the registry holds wins over a steering message that raced it", () => {
+    assert.deepEqual(helperStop({ status: "cancelled", interrupted: true }, entry({ status: "ended", outcome: "token-cap", owesPush: true }), null), { outcome: "token-cap", push: true });
+  });
+
+  test("a helper that completed or failed makes no stop here", () => {
+    assert.equal(helperStop({ status: "completed" }, undefined, null), null);
+    assert.equal(helperStop({ status: "failed" }, entry({}), null), null);
   });
 });
 

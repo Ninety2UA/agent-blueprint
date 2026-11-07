@@ -6,8 +6,8 @@ import { capReached, classifyFailure, newInputTokens } from "../lib/caps";
 import { gitHubAppFromEnv, mintInstallationToken } from "../lib/credentials";
 import { evalRemote, evalRemoteUrl } from "../lib/eval-remote";
 import { postureFor, withPostureDecision } from "../lib/posture";
-import { type Caller, defaultRegistry, type Registry, type SessionOutcome } from "../lib/registry";
-import { type PushReport, runEnd, runEndKey } from "../lib/run-end";
+import { type Caller, defaultRegistry, helperStop, owesPush, type Registry, type SessionOutcome } from "../lib/registry";
+import { byCapGuard, helperResult, helperStoppedIn, type PushReport, runEnd, runEndKey } from "../lib/run-end";
 import { currentVersions } from "../lib/run-state";
 import { listStragglers } from "../lib/sandbox-processes";
 import { allowedHosts, provider } from "../sandbox/sandbox";
@@ -17,14 +17,16 @@ import { type PublishResult, posture, publish, runRecord, visitorRequest, visito
 // The root hook for the run states this unit owns (R11, R16, KTD13):
 //   every copy   the posture from the calling channel at each turn, copied into the run's
 //                decisions once the run has a record; a 429 from the model provider or a sandbox
-//                that could not be created ends the run blocked, the branch pushed, the stage named
+//                that could not be created ends the run blocked, the branch pushed, the stage named;
+//                a helper's stop reaches its root when the helper's call settles, and the root stops
 //   the demo     (AB_DEMO=1) the registry admits each turn: resting after the day's 402, busy
 //                past one running session per cookie or two per address, a session already ended
 //                stays ended; the token cap cancels the turn as the usage that reaches it is
 //                recorded, and any later turn before its model call, so Eve never opens its
 //                continue prompt; the branch is pushed through publish_branch's stage mode as
 //                soon as the cancelled turn has settled; the session's first message is recorded
-//                as the visitor's request, which the demo pull request quotes
+//                as the visitor's request, which the demo pull request quotes; a helper counts as
+//                its root session, never as another visitor's session (countedSession)
 // A turn this hook cancels settles "cancelled" with cause { hook: "cap-guard" }; the web chat
 // reads the registry for which state it was and shows that state's message from the gate table.
 // Linear and Telegram post their run-end notice once this hook's turn.settled push has finished:
@@ -35,6 +37,13 @@ const demo = () => process.env.AB_DEMO === "1";
 const pendingPush = defineState<SessionOutcome | null>("agent-blueprint.cap-guard.pending-push", () => null);
 let shared: Registry | undefined;
 const registry = () => (shared ??= defaultRegistry());
+
+/**
+ * The session a turn counts under in the registry. A helper is its own Eve session under the
+ * visitor's cookie, but it is part of that visitor's run, so it counts as its root session: it is
+ * never a second session for the busy limits, and the root's owner, end and resting state rule it.
+ */
+const countedSession = (ctx: HookContext) => ctx.session.parent?.rootSessionId ?? ctx.session.id;
 
 /**
  * The visitor behind a turn: the chat cookie's id and address, which agent/channels/eve.ts puts on
@@ -49,7 +58,7 @@ function callerOf(ctx: HookContext): Caller | null {
   };
   const cookieId = attribute("cookieId");
   if (!cookieId) return null;
-  return { sessionId: ctx.session.id, cookieId, address: attribute("address") ?? "unknown" };
+  return { sessionId: countedSession(ctx), cookieId, address: attribute("address") ?? "unknown", ...(ctx.session.parent ? { helperId: ctx.session.id } : {}) };
 }
 
 function principalOf(ctx: HookContext): SessionAuthContext | null {
@@ -79,15 +88,16 @@ async function pushBranch(
   // failure ends the turn at once); a command resumes it, a file write does not, so a push that
   // met a stopped sandbox is tried again on a fresh handle.
   for (let attempt = 0; attempt < 3 && !result; attempt += 1) {
-    const sandbox: SandboxSession = await ctx.getSandbox();
+    let sandbox: SandboxSession | undefined;
     try {
+      sandbox = await ctx.getSandbox();
       await sandbox.run({ command: "true" });
       result = await publish(publishDeps(ctx, throughCommands(sandbox)), { mode: "stage", stage: stage ?? "partial" });
     } catch (error) {
       failure = (error as Error).message;
       if (!/not running|no such container|is stopped/i.test(failure)) break;
       // Stopping the stale handle makes Eve forget its connection, so the next one opens afresh.
-      await (sandbox as { stop?: () => Promise<void> }).stop?.().catch(() => {});
+      await (sandbox as { stop?: () => Promise<void> } | undefined)?.stop?.().catch(() => {});
     }
   }
   if (!result) {
@@ -112,32 +122,47 @@ async function pushBranch(
  * running beside it; between turns nothing else holds the sandbox.
  */
 async function stop(ctx: HookContext, outcome: SessionOutcome, push: boolean) {
-  if (demo()) await registry().end(ctx.session.id, outcome);
-  if (push && !pendingPush.get()) pendingPush.update(() => outcome);
+  if (demo()) await registry().end(countedSession(ctx), outcome, push);
+  // A helper leaves the branch to the root session, which holds the run's record: a push from here
+  // would open a second branch named after the helper.
+  if (push && !ctx.session.parent && !pendingPush.get()) pendingPush.update(() => outcome);
   console.info("[cap-guard] cancelled", { sessionId: ctx.session.id, outcome });
   ctx.cancel(`cap-guard: ${outcome}`);
 }
 
 const attempted = new Set<string>();
-const PUSHED_OUTCOMES: readonly SessionOutcome[] = ["token-cap", "blocked", "resting"];
+
+interface Settled {
+  readonly turnId: string;
+  readonly outcome: string;
+  readonly cause?: unknown;
+}
+
+/** Whether this hook cancelled the root turn that just settled. */
+function stoppedHere(ctx: HookContext, settled: Settled): boolean {
+  if (ctx.session.parent || settled.outcome !== "cancelled") return false;
+  return byCapGuard(settled.cause) || helperStoppedIn(ctx.view, settled.turnId);
+}
 
 /**
  * The push a stop asked for, made when its turn has settled. A cancelled step's state writes do
- * not survive the cancel, so on the demo the registry also says which ended sessions still owe a
- * push: an outcome that pushes, with no commit recorded yet.
+ * not survive the cancel, so a stop's push is also read from what outlives it: on the demo the
+ * registry says which ended sessions still owe one, the only record when the stop was a helper's;
+ * off the demo only a failure cancels a turn here, so a turn this hook cancelled is a blocked run.
  */
-async function pushPending(ctx: HookContext): Promise<PushReport | null> {
+async function pushPending(ctx: HookContext, settled: Settled): Promise<PushReport | null> {
   let outcome = pendingPush.get();
   if (!outcome && demo() && !attempted.has(ctx.session.id)) {
     const entry = (await registry().snapshot()).sessions[ctx.session.id];
-    if (entry?.status === "ended" && entry.outcome && PUSHED_OUTCOMES.includes(entry.outcome) && !entry.pushedSha) outcome = entry.outcome;
+    if (entry && owesPush(entry)) outcome = entry.outcome;
   }
+  if (!outcome && !demo() && stoppedHere(ctx, settled)) outcome = "blocked";
   if (!outcome) return null;
   attempted.add(ctx.session.id);
   if (pendingPush.get()) pendingPush.update(() => null);
   const pushed = await pushBranch(ctx);
   console.info("[cap-guard] branch", { sessionId: ctx.session.id, outcome, pushed: pushed.pushed, branch: pushed.branch, stage: pushed.stage, reason: pushed.reason });
-  if (demo()) await registry().recordProgress(ctx.session.id, pushed);
+  if (demo()) await registry().recordProgress(ctx.session.id, { ...pushed, pushLanded: pushed.pushed });
   return { pushed: pushed.pushed, branch: pushed.branch, stage: pushed.stage };
 }
 
@@ -153,7 +178,7 @@ async function stopOnce(ctx: HookContext, outcome: SessionOutcome, push: boolean
 async function checkTokens(ctx: HookContext) {
   if (!demo()) return;
   const tokens = newInputTokens(usage(ctx.view).total);
-  await registry().recordTokens(ctx.session.id, tokens);
+  await registry().recordTokens(countedSession(ctx), tokens);
   if (capReached(tokens)) await stopOnce(ctx, "token-cap", true);
 }
 
@@ -165,6 +190,15 @@ async function checkFailure(ctx: HookContext, error: { code?: string; message?: 
     await registry().markResting();
     return stopOnce(ctx, "resting", true);
   }
+}
+
+/** A root's helper call has returned: a helper's stop, or its failure, becomes the root's. */
+async function checkHelper(ctx: HookContext, output: unknown) {
+  const result = helperResult(output);
+  const document = demo() ? await registry().snapshot() : null;
+  const stopFor = helperStop(result, document?.sessions[ctx.session.id], document?.restingSince ?? null);
+  if (stopFor) return stopOnce(ctx, stopFor.outcome, stopFor.push);
+  if (result.status === "failed") await checkFailure(ctx, { message: result.message });
 }
 
 export default defineHook({
@@ -186,7 +220,7 @@ export default defineHook({
       const admission = await registry().admit(caller);
       switch (admission.kind) {
         case "admitted":
-          if (capReached(admission.entry.tokens)) await stopOnce(ctx, "token-cap", false);
+          if (capReached(admission.entry.tokens)) await stopOnce(ctx, "token-cap", true);
           return;
         case "ended":
           ctx.cancel(`cap-guard: ${admission.entry.outcome ?? "ended"}`);
@@ -218,6 +252,7 @@ export default defineHook({
         }
         if (demo() && record?.pullRequest) await registry().end(ctx.session.id, "done");
       }
+      if (observed?.name === "helper" && event.data.outcome === "completed") await checkHelper(ctx, event.data.output ?? observed.output);
       if (event.data.outcome === "failed") await checkFailure(ctx, event.data.error);
     },
     async "turn.settled"(event, ctx) {
@@ -225,7 +260,10 @@ export default defineHook({
       // even when the push throws, so a notice never waits forever.
       let report: PushReport | null = null;
       try {
-        report = await pushPending(ctx);
+        report = await pushPending(ctx, event.data);
+        // state.json still says running after this stop, so the next request's newWork reads this.
+        const record = runRecord.get();
+        if (record && stoppedHere(ctx, event.data)) runRecord.update(() => ({ ...record, runEnded: true }));
       } finally {
         await runEnd.settle(runEndKey(ctx.session.id, event.data.turnId), report);
       }

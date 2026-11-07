@@ -6,7 +6,7 @@ import { defineEval } from "eve/evals";
 import { equals, includes } from "eve/evals/expect";
 import { configuredSecret, COOKIE_NAME, issueCookie } from "../apps/web/lib/gate/code";
 import type { RegistryDocument } from "../agent/lib/registry";
-import { readyFor } from "./fixture/ship-loop";
+import { BODY_LINE, COMMIT_LINE, FEATURE, outputs, readyFor, remoteFor, setupFor, stateLine } from "./fixture/ship-loop";
 
 // The channels, caps, registry and posture (U8: R11, R12, R16, AE6). Two passes:
 //   AB_DEMO=1 AB_TRUST_PROXY=1 EVE_CHAT_PASSWORD=<code>   the demo's cells: the token cap, busy per
@@ -31,6 +31,16 @@ async function endedEntry(cookieId: string, pushed = false, timeoutMs = 45_000) 
   for (;;) {
     const entry = Object.values(registry().sessions).find((candidate) => candidate.cookieId === cookieId);
     if ((entry?.status === "ended" && entry.outcome && (!pushed || entry.pushedSha)) || Date.now() > deadline) return entry;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+}
+
+/** The entry once a stop's push has landed, for a session that had pushed before its stop. */
+async function pushLanded(cookieId: string, timeoutMs = 45_000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const entry = Object.values(registry().sessions).find((candidate) => candidate.cookieId === cookieId);
+    if ((entry?.status === "ended" && entry.owesPush === false) || Date.now() > deadline) return entry;
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
 }
@@ -118,6 +128,109 @@ const demo = demoCell("The demo's caps: token cap, busy per cookie and address, 
   const running = Object.values(registry().sessions).filter((entry) => entry.address === "203.0.113.50" && entry.status === "running");
   t.check(running.length, equals(2));
 
+  // A helper is part of its visitor's run, not a second visitor: it runs, the registry counts one
+  // session, and that visitor's second chat is still refused.
+  const lead = visitor();
+  const leadSession = await t.session({ headers: lead.headers });
+  const helped = await leadSession.send("helper: reviewer bash: echo reviewed-by-helper", { headers: lead.headers });
+  helped.expectOk();
+  helped.calledTool("helper", { input: { role: "reviewer" }, output: { status: "completed" } });
+  t.check(helped.reply ?? "", includes("reviewed-by-helper")).label("a visitor's helper runs");
+  t.check(Object.values(registry().sessions).filter((entry) => entry.cookieId === lead.cookieId).length, equals(1)).label("a helper is not counted as a session");
+  const secondTab = await (await t.session({ headers: lead.headers })).send("bash: echo second-tab", { headers: lead.headers });
+  secondTab.event("turn.settled", { count: 1, data: { outcome: "cancelled" } });
+  secondTab.event("model.requested", { count: 0 });
+
+  // A visitor's whole ship loop: every helper runs under the cookie, each stage is pushed, and the
+  // run reaches its pull request as one session.
+  const looper = visitor();
+  const loopTurn = await (await t.session({ headers: looper.headers })).send(
+    [
+      FEATURE,
+      setupFor("visitor-loop"),
+      "ship:",
+      `brief: ${stateLine({ status: "running", stage: "execute" })}`,
+      "publish: stage plan",
+      "ship:",
+      `brief: ${COMMIT_LINE};;${BODY_LINE};;${stateLine({ status: "done", stage: "ship" })}`,
+      "publish: stage Execute",
+      "ship:",
+      "publish: pull-request",
+      "helper: reviewer bash: echo after-the-pull-request",
+      "bash: echo never-runs",
+    ].join("\n"),
+    { headers: looper.headers },
+  );
+  // A helper started after the run ended is refused as its root's session, and the root stops with it.
+  loopTurn.event("turn.settled", { count: 1, data: { outcome: "cancelled" } });
+  t.check(loopTurn.toolCalls.some((call) => JSON.stringify(call).includes("echo never-runs")), equals(false)).label("the root stops after a helper refused as ended");
+  t.check(outputs(loopTurn, "helper").map((helper) => helper.status), equals(["completed", "completed", "cancelled"])).label("every helper of the loop ran, and the late one was refused");
+  loopTurn.calledTool("publish_branch", { input: { mode: "stage", stage: "plan" }, output: { status: "pushed" } });
+  loopTurn.calledTool("publish_branch", { input: { mode: "stage", stage: "Execute" }, output: { status: "pushed" } });
+  loopTurn.calledTool("ship_pipeline", { output: { outcome: "done" } });
+  loopTurn.calledTool("publish_branch", { input: { mode: "pull-request" }, output: { status: "done" } });
+  const loopEntry = await endedEntry(looper.cookieId);
+  t.check(loopEntry?.outcome, equals("done"));
+  t.check(loopEntry?.branch ?? "", includes(/^ab\/add-a-greeting-script/));
+  t.check(loopEntry?.pushedSha ?? "", includes(outputs(loopTurn, "publish_branch").at(-1)?.sha as string)).label("nothing was pushed after the pull request");
+  t.check(Object.values(registry().sessions).filter((entry) => entry.cookieId === looper.cookieId).length, equals(1)).label("one session for the whole run");
+
+  // A helper's use counts toward its visitor's token cap once the helper finishes: the run ends
+  // there, the root runs nothing further, and the branch is pushed.
+  const heavy = visitor();
+  const heavySession = await t.session({ headers: heavy.headers });
+  const heavyTurn = await heavySession.send(
+    [`clone: ${REPO}`, BARE_REMOTE, `bash: ${GIT_ENV} git commit -q --allow-empty -m 'feat(demo): before the helper' && echo committed`, "helper: reviewer spend: 40000001 echo after-the-cap", "bash: echo never-runs"].join("\n"),
+    { headers: heavy.headers },
+  );
+  heavyTurn.event("turn.settled", { count: 1, data: { outcome: "cancelled" } });
+  t.check(heavyTurn.toolCalls.some((call) => JSON.stringify(call).includes("echo never-runs")), equals(false)).label("the root runs nothing after a capped helper");
+  const heavyEntry = await endedEntry(heavy.cookieId, true);
+  t.check(heavyEntry?.outcome, equals("token-cap"));
+  t.check((heavyEntry?.tokens ?? 0) >= 40_000_001, equals(true)).label("the helper's use is on its visitor's session");
+  t.check(heavyEntry?.pushedSha ?? "", includes(/^[0-9a-f]{40}$/));
+  const afterHeavy = await heavySession.send("bash: echo still-capped", { headers: heavy.headers });
+  afterHeavy.event("turn.settled", { count: 1, data: { outcome: "cancelled" } });
+  afterHeavy.event("model.requested", { count: 0 });
+
+  // A 429 on a helper's model call ends its visitor's run blocked too: the root makes no further
+  // call, and the root session, which holds the run's record, pushes as it settles.
+  const refusedHelper = visitor();
+  const refusedSession = await t.session({ headers: refusedHelper.headers });
+  const refusedTurn = await refusedSession.send(
+    [FEATURE, setupFor("refused-helper"), COMMIT_LINE, "helper: reviewer fail: 429", "bash: echo never-runs"].join("\n"),
+    { headers: refusedHelper.headers },
+  );
+  refusedTurn.event("turn.settled", { count: 1, data: { outcome: "cancelled" } });
+  t.check(refusedTurn.toolCalls.some((call) => JSON.stringify(call).includes("echo never-runs")), equals(false)).label("the root stops when its helper is refused");
+  const refusedEntry = await endedEntry(refusedHelper.cookieId, true);
+  t.check(refusedEntry?.outcome, equals("blocked"));
+  t.check(refusedEntry?.branch ?? "", includes(/^ab\/.+/));
+  t.check(refusedEntry?.pushedSha ?? "", includes(/^[0-9a-f]{40}$/));
+  const refusedAfter = await refusedSession.send("bash: echo still-blocked", { headers: refusedHelper.headers });
+  refusedAfter.event("model.requested", { count: 0 });
+
+  // The same stop after a stage push: the commits made since it still reach the branch.
+  const staged = visitor();
+  const stagedTurn = await (await t.session({ headers: staged.headers })).send(
+    [
+      FEATURE,
+      setupFor("stage-then-429"),
+      "ship:",
+      `brief: ${stateLine({ status: "running", stage: "execute" })}`,
+      "publish: stage plan",
+      COMMIT_LINE,
+      "helper: reviewer fail: 429",
+    ].join("\n"),
+    { headers: staged.headers },
+  );
+  const stagePush = outputs(stagedTurn, "publish_branch")[0]?.sha as string;
+  t.check(stagePush ?? "", includes(/^[0-9a-f]{40}$/));
+  const stagedEntry = await pushLanded(staged.cookieId);
+  t.check(stagedEntry?.outcome, equals("blocked"));
+  t.check(stagedEntry?.owesPush, equals(false)).label("the stop's push landed");
+  t.check(stagedEntry?.pushedSha === stagePush, equals(false)).label("the stop pushes past the stage push");
+
   // A mocked 429 on a model call ends the run blocked with the branch pushed.
   const limited = visitor();
   const limitedTurn = await (await t.session({ headers: limited.headers })).send(
@@ -179,6 +292,22 @@ const posture = deployerCell("Posture from the caller: a service bearer runs una
   const interactive = await person.send([...readyFor("posture-gate"), "publish: pull-request"].join("\n"));
   interactive.event("interaction.opened", { count: 1 });
   person.requireInteraction({ toolName: "publish_branch" });
+});
+
+// A deployer's copy has no registry: a helper's 429 reaches the root through the helper's result.
+// The turn ends there, the branch is pushed from the root's record, and it is the only branch.
+const helperLimit = deployerCell("A helper's 429 on a deployer's copy ends the run blocked with the root's branch pushed.", async (t) => {
+  const session = await t.session();
+  const turn = await session.send([FEATURE, setupFor("deployer-429"), COMMIT_LINE, "helper: reviewer fail: 429", "bash: echo never-runs"].join("\n"));
+  turn.event("turn.settled", { count: 1, data: { outcome: "cancelled" } });
+  t.check(turn.toolCalls.some((call) => JSON.stringify(call).includes("echo never-runs")), equals(false)).label("the root stops when its helper is refused");
+  // The push follows the settled turn, so the count waits for it.
+  const count = `git -C ${remoteFor("deployer-429")} for-each-ref refs/heads/ab | wc -l | tr -d ' '`;
+  const branches = await session.send(`bash: for i in $(seq 40); do [ "$(${count})" != 0 ] && break; sleep 0.5; done; echo branches=$(${count})`);
+  t.check(branches.reply ?? "", includes("branches=1")).label("the root's branch is pushed, and no helper's");
+  // state.json never heard of this stop, but the record did: the next request starts a new run.
+  const next = await session.send("ship: new");
+  next.calledTool("ship_pipeline", { output: { outcome: "iterate", iteration: 1, restarted: true } });
 });
 
 // Slack: a signed app_mention reaches the root agent, and its checkpoint renders as a Slack card
@@ -253,4 +382,4 @@ const slack = deployerCell("A Slack mention starts a run on the root agent and a
   }
 });
 
-export default [demo, posture, slack];
+export default [demo, posture, helperLimit, slack];

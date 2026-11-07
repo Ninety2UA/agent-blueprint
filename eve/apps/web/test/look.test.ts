@@ -345,6 +345,60 @@ describe("the chat: the new session's start, the composer and the run panel", ()
     assert.doesNotMatch(deployer, /Repository|agent-blueprint-demo/);
   });
 
+  test("the run panel with no stage recorded: one plain line in the Stages cell, no stage list", async () => {
+    const { EMPTY_RUN } = await import("../lib/chat/run.ts");
+    const html = await panel({ ...EMPTY_RUN, direct: true });
+    assert.match(html, /Stages<\/span><p [^>]*data-run-direct[^>]*>Went straight to a pull request<span[^>]*>This run recorded no stages\.<\/span><\/p>/);
+    assert.doesNotMatch(html, /data-stage=/);
+  });
+
+  test("the phone strip: words instead of bars when no stage was recorded, five bars otherwise", async () => {
+    const { createElement } = await import("react");
+    const { EMPTY_RUN } = await import("../lib/chat/run.ts");
+    const { RunStrip } = await import("../components/chat/run-panel.tsx");
+    const strip = (run: typeof EMPTY_RUN) =>
+      markup(createElement(RunStrip, { demo: true, repository: "Ninety2UA/agent-blueprint-sample", run, title: "New session" } as never));
+    const direct = await strip({ ...EMPTY_RUN, direct: true });
+    assert.match(direct, /<b class="font-semibold">Straight to a pull request<\/b>/);
+    assert.doesNotMatch(direct, /block h-1 w-3\.5/);
+    const usual = await strip(EMPTY_RUN);
+    assert.equal(usual.match(/block h-1 w-3\.5/g)?.length, 5);
+    assert.doesNotMatch(usual, /Straight to a pull request/);
+  });
+
+  test("a helper's stop (ruling 139): the stage reads stopped with its own mark, and the notice links the branch", async () => {
+    const { createElement } = await import("react");
+    const { EMPTY_RUN } = await import("../lib/chat/run.ts");
+    const { RunStopNotice, RunStrip } = await import("../components/chat/run-panel.tsx");
+    const stages = EMPTY_RUN.stages.map((stage) =>
+      stage.name === "plan"
+        ? { ...stage, state: "done" as const, status: "Pushed to the branch" }
+        : stage.name === "execute"
+          ? { ...stage, state: "stopped" as const, status: "Stopped: a service it needs is busy" }
+          : stage,
+    );
+    const stopped = {
+      ...EMPTY_RUN,
+      stages,
+      current: stages[1],
+      branch: "ab/add-a-json-flag-k2m9xq4c",
+      repository: "acme/widgets",
+      stopped: { notice: "The run stopped after the plan stage because a service it needs is busy." },
+    };
+    const html = await panel(stopped, false);
+    assert.match(html, /data-stage="execute" data-stage-state="stopped"/);
+    assert.match(html, /rounded-\[2px\] border-signal/, "a square mark, not the running dot");
+    assert.match(html, /Stopped: a service it needs is busy/);
+    assert.match(html, /href="https:\/\/github\.com\/acme\/widgets\/tree\/ab\/add-a-json-flag-k2m9xq4c"/, "off the demo the branch links through the run's repository");
+    const notice = await markup(createElement(RunStopNotice, { repository: null, run: stopped } as never));
+    assert.match(notice, /role="status"/);
+    assert.match(notice, /The run stopped after the plan stage because a service it needs is busy\./);
+    assert.match(notice, /<a [^>]*href="https:\/\/github\.com\/acme\/widgets\/tree\/ab\/add-a-json-flag-k2m9xq4c"[^>]*>Open the branch<\/a>/);
+    assert.equal(await markup(createElement(RunStopNotice, { repository: null, run: EMPTY_RUN } as never)), "", "nothing when the run did not stop");
+    const strip = await markup(createElement(RunStrip, { demo: false, repository: null, run: stopped, title: "New session" } as never));
+    assert.match(strip, /<b class="font-semibold">Execute<\/b>, stopped: a service it needs is busy/);
+  });
+
   test("no template footer anywhere in the app", () => {
     const sources = (dir: string): string[] =>
       readdirSync(join(web, dir), { recursive: true, withFileTypes: true })

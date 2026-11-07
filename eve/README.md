@@ -76,7 +76,7 @@ This table is the one list of the variables a copy reads. The configurator build
 | `AB_MCP_TOKEN` | The bearer token an MCP client such as Claude Code sends. Make it with openssl rand -hex 32; a value under 32 characters counts as unset. During a rotation, set the old and new values separated by a comma. | [after the deploy](#after-the-deploy) | `channel=mcp` | yes | none |
 | `AB_MCP_OAUTH_ISSUER` | The issuer URL of the identity provider that signs people in from Claude.ai and ChatGPT, such as your WorkOS AuthKit domain. It must be an https URL. Set it for the build and at run time; a change needs a new build. | [web chat and channels](#web-chat-and-channels) | `never` | no | none |
 | `AB_MCP_OAUTH_SUBJECTS` | The user ids (the provider's sub claim) allowed to use the agent over MCP, separated by commas; a single * admits everyone the provider signs in. Set it for the build and at run time; a change needs a new build. | [web chat and channels](#web-chat-and-channels) | `never` | no | none |
-| `AB_MCP_OAUTH_RESOURCE` | The MCP address people type into their client, such as `https://agent.example.com/eve/v1/mcp`. Unset on Vercel, it is the production address followed by /eve/v1/mcp. Set it for the build and at run time; a change needs a new build. | [web chat and channels](#web-chat-and-channels) | `never` | no | none |
+| `AB_MCP_OAUTH_RESOURCE` | The MCP address people type into their client, such as https://agent.example.com/eve/v1/mcp. Unset on Vercel, it is the production address followed by /eve/v1/mcp. Set it for the build and at run time; a change needs a new build. | [web chat and channels](#web-chat-and-channels) | `never` | no | none |
 
 ## Roster
 
@@ -134,6 +134,8 @@ Three routes run the same code at the same Eve version: `eve` is pinned exactly 
 | Your own server | Docker or Daytona | Docker: none. Daytona: as on Railway | A server that stays up for the run |
 
 The pipeline pushes its branch at every stage change, so a sandbox that stops at its limit loses no finished stage.
+
+Every request to change a repository's code or documentation runs the five stages, however small the change, unless the person names another skill; a bug report finds its cause first. Budget for that: the release's ship check, a small feature with a test on the sample repository, took about 9 minutes and cost about 7.31 USD on the demo. On a deployer's copy a new request in the same chat continues on that chat's branch and open pull request, and a new chat gets its own: the new run's stage pushes update that pull request without asking, and its pull-request call and description are approved again. The demo ends a chat at its pull request, one pull request per session.
 
 ### Vercel
 
@@ -322,7 +324,7 @@ curl -X POST "https://<your-deployment>/eve/v1/session" \
 
 The posture comes from the caller, never from the message: a person in the web chat, Slack, Linear, Telegram or an MCP client, or the eve CLI against a deployment, is interactive, so the agent asks at checkpoints and asks before it opens a pull request; a token that names a service, such as the project's own OIDC token or a schedule, is unattended, so the agent takes each skill's documented default and opens the pull request without asking. The posture is recorded in the run's decisions.
 
-When a hook stops a run, the run fails, or its session ends, the Linear session or the Telegram chat says so and names the pushed branch when there is one, so the person can continue from it. An MCP client reads the end of a run with `agent_get`. On Dominik's demo (`AB_DEMO=1`) the Linear, Telegram and MCP routes start nothing, because the demo's caps count web-chat visitors only.
+When a hook stops a run, the run fails, or its session ends, the Linear session or the Telegram chat says so and names the pushed branch when there is one, so the person can continue from it. A hook's push reaches GitHub on Vercel Sandbox only; on Docker and Daytona it cannot hand git a token, so a stop there ends unpushed with the reason logged and the branch stays at the last stage the agent pushed. An MCP client reads the end of a run with `agent_get`. On Dominik's demo (`AB_DEMO=1`) the Linear, Telegram and MCP routes start nothing, because the demo's caps count web-chat visitors only.
 
 Limits of the Linear, Telegram and MCP channels:
 
@@ -356,10 +358,10 @@ node -e 'const c=require("crypto"),s=c.randomBytes(16);console.log("scrypt$"+s.t
 
 The caps on the demo, kept in an app-wide registry (`agent/lib/registry.ts`) because Eve's state belongs to one session: a private Vercel Blob document written with compare-and-set on its ETag, or a file under `.workflow-data/` off Vercel. Connect a Blob store to the demo project; Vercel sets `BLOB_READ_WRITE_TOKEN` for it.
 
-- Tokens per session: the roster preset's budget. `agent/hooks/cap-guard.ts` cancels the turn once the session's recorded use reaches it, after pushing the branch, so the visitor never sees an offer to continue.
+- Tokens per session: the roster preset's budget. `agent/hooks/cap-guard.ts` cancels the turn once the session's recorded use reaches it, after pushing the branch, so the visitor never sees an offer to continue. A helper's use counts toward its visitor's session once the helper finishes, so a run can pass the budget while a helper is still working, by up to one budget per helper running at that moment, and the dollar budget below still applies.
 - Dollars per day: the AI Gateway key's daily budget. Its first 402 of the UTC day is recorded, and from then on the gate shows the resting state before any model call, until 00:00 UTC.
-- Sessions: one running session per cookie and two per address. A session with no activity for 30 minutes ends.
-- Session links: a session answers only the cookie that started it. The registry stores that cookie's id, and every agent route that names the session (a message, an answer, the stream, cancel, clear, compact, reset) refuses any other cookie with 403 and the message "This chat belongs to another visitor, so start a new chat to run your own." Signing in again issues a new cookie, so earlier chats stay with the old one. A deployer's copy has no registry and no such check, because one password is one user there.
+- Sessions: one running session per cookie and two per address. A helper is part of its visitor's session, so it is not counted as another one, and its activity keeps that session alive. A session with no activity for 30 minutes ends.
+- Session links: a session answers only the cookie that started it. The registry stores that cookie's id, and every agent route that names the session (a message, an answer, the stream, cancel, clear, compact, reset) refuses any other cookie with 403 and the message "This chat belongs to another visitor, so start a new chat to run your own." Signing in again issues a new cookie, so earlier chats stay with the old one. A deployer's copy has no registry and no such check, because one password is one user there. A helper's routes answer the same cookie as its root.
 - A 429 from the model provider or a sandbox that could not be created ends the run blocked, with the branch pushed and the stage named, on every copy.
 - Memory (`agent/memory/ops.ts`) holds operational facts only and, on the demo, is scoped to one session, so a visitor never recalls another visitor's run.
 - The chat opens with three suggested requests, each sized to reach a pull request within one session's cap; typing your own stays allowed.

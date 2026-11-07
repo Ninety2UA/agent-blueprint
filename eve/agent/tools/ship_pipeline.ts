@@ -3,8 +3,8 @@ import { defineTool } from "eve/tools";
 import { z } from "zod";
 import { quote } from "../lib/credentials";
 import type { Role } from "../lib/roster";
-import { addDecision, countIteration, type Decision, type RunRecord } from "../lib/run-state";
-import { type Posture, type PublishDeps, type PublishResult, ensureRecord, originRepository, publish, runtimeDeps } from "./publish_branch";
+import { addDecision, countIteration, type Decision, restartRecord, type RunRecord } from "../lib/run-state";
+import { type Posture, type PublishDeps, type PublishResult, ensureRecord, must, originRepository, publish, runtimeDeps } from "./publish_branch";
 
 // The ship loop (KTD3 as ruled on 2026-10-29, option b): one call is one iteration, and the root
 // agent calls again. Every record write runs here, in an ordinary tool, because a workflow step
@@ -47,6 +47,13 @@ export interface ShipInput {
   readonly ceiling?: number;
   /** The person's answer to the question a needs-human stop asked. */
   readonly answer?: string;
+  /**
+   * Marks a new request whose wording is close to the run's own. A request in other words already
+   * starts a new run when the earlier one ended (done, blocked, ceiling or the cap hook), or drops an
+   * open question it does not answer, in a later turn; the new run continues on the session's branch
+   * and open pull request. Honoured only when the run really ended.
+   */
+  readonly newWork?: boolean;
 }
 
 export interface ShipResult {
@@ -61,11 +68,15 @@ export interface ShipResult {
   readonly brief: string | null;
   readonly reason: string;
   readonly branch: string;
+  /** owner/name on github.com, so the chat can link the branch. */
+  readonly repository: string;
   readonly posture: Posture;
   /** Defaults the skill took since the last call, now in the run's decisions. */
   readonly defaults: readonly Decision[];
   /** The branch push a stop made, when it made one. */
   readonly push?: PublishResult | { status: "failed"; reason: string };
+  /** This call honoured newWork: a new run starts on the session's branch. */
+  readonly restarted?: true;
 }
 
 interface RunState {
@@ -166,7 +177,9 @@ export function iterationBrief(fields: {
 }): string {
   const at = fields.stage ? `the ${fields.stage} stage` : "Stage 0";
   return [
-    `Use the ${SKILL} skill for this feature: ${fields.request.replace(/\s+/g, " ").trim()} --external`,
+    `Use the ${SKILL} skill for this feature, whatever its size: ${fields.request.replace(/\s+/g, " ").trim()} --external`,
+    "",
+    "This is the hosted agent's ship loop: run the skill on this request and never hand over to another skill such as ab-quick-fix or ab-build-pipeline. A docs-only change, a one-file change and a bug whose cause the request names all count as a feature here.",
     "",
     `Ship loop iteration ${fields.iteration} of at most ${fields.ceiling}. You work as the ${fields.role} role, from ${at}. ` +
       `The run state file is ${STATE_FILE}: if it exists, read it first and continue from the stage it names; otherwise start at Stage 0. ` +
@@ -184,21 +197,66 @@ export function iterationBrief(fields: {
 
 const sameDecision = (a: Decision, b: Decision) => a.stage === b.stage && a.question === b.question && a.choice === b.choice;
 
+/** A request as the loop compares it: its words, lower case, without spacing or punctuation. */
+const sameWords = (request: string) => request.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+
 /** One iteration of the loop. */
 export async function shipIteration(deps: PublishDeps, input: ShipInput): Promise<ShipResult> {
   const ceiling = Math.min(Math.max(Math.trunc(input.ceiling ?? DEFAULT_CEILING), 1), MAX_CEILING);
   const repository = await originRepository(deps.sandbox);
-  let record: RunRecord = countIteration(await ensureRecord(deps, { request: input.request }, repository), deps.now());
+  const existing = await ensureRecord(deps, { request: input.request }, repository);
+  const asked = sameWords(input.request);
+  const answered = Boolean(input.answer?.trim());
+  // A record from before the run's request was kept has nothing to compare, so only the flag starts
+  // anew there, and it keeps no request until a run starts, or an unrun request would become its own.
+  // An answer always carries the run on, whatever its wording.
+  const legacy = existing.request === undefined && existing.iteration > 0;
+  const otherRequest = !legacy && existing.request !== undefined && asked !== existing.request && !answered;
+  const newRequest = (input.newWork === true && !answered) || otherRequest;
+  // A call that carries the run on clears the hook's or the ceiling's mark.
+  let record: RunRecord = countIteration(
+    { ...existing, lastTurn: deps.turnId, ...(legacy ? {} : { request: existing.request ?? asked }), ...(newRequest ? {} : { runEnded: false }) },
+    deps.now(),
+  );
   deps.store.set(record);
-  const { iteration, branch } = record;
 
-  const state = await readState(deps.sandbox, deps.versions.product);
+  let state = await readState(deps.sandbox, deps.versions.product);
+  const earlier = state && !("error" in state) ? state : null;
+  // A new request is a new message, so a new turn: a loop inside one turn can never reset its count,
+  // whatever the state file says or the ceiling it asks for. A run still going keeps its state; a
+  // question goes only to a request in other words that does not answer it.
+  const laterTurn = deps.turnId !== undefined && deps.turnId !== existing.lastTurn;
+  const ended = existing.runEnded === true || earlier?.status === "done" || earlier?.status === "blocked";
+  const dropsQuestion = earlier?.status === "needs-human" && otherRequest;
+  const restarted = laterTurn && newRequest && (ended || dropsQuestion);
+  if (restarted) {
+    // The finished run's state.json and pull request body would answer done before any work ran.
+    await deps.sandbox.run({ command: `rm -f ${quote(STATE_FILE)} ${quote(PR_BODY)}` });
+    const head = await must(deps.sandbox, "git rev-parse HEAD", "reading HEAD");
+    record = countIteration(restartRecord(record, head, deps.now(), asked), deps.now());
+    if (dropsQuestion && earlier) {
+      const question = (earlier.reason || "the open question").slice(0, 300);
+      record = addDecision(record, { stage: earlier.stage, question, choice: "dropped by the person: a new request took over", reason: "a new request took over" }, deps.now());
+    }
+    deps.store.set(record);
+    state = null;
+  }
+  const { iteration, branch } = record;
+  const ignored =
+    newRequest && !restarted && existing.iteration > 0
+      ? " This call did not start a new request: the earlier run has not ended, or this turn already ran the loop, so it carries that run on."
+      : legacy && ended && laterTurn && !newRequest
+        ? " This session's run predates request matching, so it carries on; a new request here needs newWork."
+        : existing.runEnded === true && !newRequest
+          ? " The earlier run had ended, and this call carries it on from its last stage, since its request is the run's own; a new request in other words starts anew in a later turn."
+          : "";
+
   const valid = state && !("error" in state) ? state : null;
   const defaults = (valid?.decisions ?? []).filter((decision) => !record.decisions.some((known) => sameDecision(known, decision)));
   for (const decision of defaults) record = addDecision(record, decision, deps.now());
   if (defaults.length) deps.store.set(record);
   const stage = valid?.stage ?? null;
-  const base = { iteration, ceiling, stage, branch, posture: deps.posture, defaults };
+  const base = { iteration, ceiling, stage, branch, repository, posture: deps.posture, defaults, ...(restarted ? { restarted: true as const } : {}) };
 
   const stop = async (outcome: Exclude<Outcome, "iterate" | "done">, reason: string): Promise<ShipResult> => {
     let push: ShipResult["push"];
@@ -208,7 +266,7 @@ export async function shipIteration(deps: PublishDeps, input: ShipInput): Promis
       push = { status: "failed", reason: error instanceof Error ? error.message : String(error) };
     }
     const pushed = push.status === "pushed" ? ` ${branch} is pushed at ${push.sha.slice(0, 12)}.` : ` The branch push did not land: ${"reason" in push ? push.reason : push.status}.`;
-    return { ...base, outcome, role: null, brief: null, reason: `${reason}${pushed}`, push };
+    return { ...base, outcome, role: null, brief: null, reason: `${reason}${pushed}${ignored}`, push };
   };
 
   let answer: { question: string; text: string } | undefined;
@@ -216,7 +274,7 @@ export async function shipIteration(deps: PublishDeps, input: ShipInput): Promis
   if (valid?.status === "done") {
     const check = await notDone(deps.sandbox, record.base);
     if (!check) {
-      return { ...base, outcome: "done", role: null, brief: null, reason: "state.json says done and the done rule holds: call publish_branch with mode pull-request." };
+      return { ...base, outcome: "done", role: null, brief: null, reason: `state.json says done and the done rule holds: call publish_branch with mode pull-request.${ignored}` };
     }
     if (check.link) return stop("needs-human", `state.json says done, but ${check.why}.`);
     notDoneWhy = check.why;
@@ -231,6 +289,8 @@ export async function shipIteration(deps: PublishDeps, input: ShipInput): Promis
   }
 
   if (iteration > ceiling) {
+    record = { ...record, runEnded: true };
+    deps.store.set(record);
     return stop("ceiling", `the run reached its ceiling of ${ceiling} iterations without finishing, at the ${stage ?? "first"} stage.`);
   }
   const role = STAGE_ROLES[stage ?? "continuation"];
@@ -249,7 +309,7 @@ export async function shipIteration(deps: PublishDeps, input: ShipInput): Promis
     : state && "error" in state
       ? `the last iteration left no valid state file: ${state.error}.`
       : `iteration ${iteration} of at most ${ceiling}.`;
-  return { ...base, outcome: "iterate", role, brief, reason };
+  return { ...base, outcome: "iterate", role, brief, reason: `${reason}${ignored}` };
 }
 
 export default defineTool({
@@ -257,14 +317,16 @@ export default defineTool({
     "Run the ship loop one iteration at a time: call it with the user's feature request; it counts the iteration, reads the run's state file and returns an outcome. " +
     "On iterate, hand the brief unchanged to the helper tool with the role it names; when the helper says its stage finished, call publish_branch with mode stage and that stage; then call this tool again. " +
     "Stop on any other outcome: done (call publish_branch with mode pull-request), blocked, needs-human or ceiling (the branch is pushed and the stage named). " +
-    "After a needs-human stop on an interactive channel, ask the person and call again with their answer.",
+    "After a needs-human stop on an interactive channel, ask the person and call again with their answer. " +
+    "A new request in other words, after a run ended or instead of answering its question, starts a new run on the session's branch and open pull request; newWork marks one whose wording is close to the old.",
   inputSchema: z.object({
-    request: z.string().min(1).max(4_000).describe("The user's feature request."),
+    request: z.string().min(1).max(4_000).describe("The user's feature request. Pass the same text on every call of a run; a request in other words starts a new run once the earlier one ended."),
     ceiling: z.number().int().min(1).max(MAX_CEILING).optional().describe(`Iterations before the loop stops; default ${DEFAULT_CEILING}.`),
     answer: z.string().max(2_000).optional().describe("The person's answer after a needs-human stop."),
+    newWork: z.boolean().optional().describe("Optional: marks a new request whose wording is close to the run's own. A request in other words already starts a new run in a later turn once the earlier one ended, and drops an open question it does not answer. Never with an answer or on a retry."),
   }),
   availableInSubagents: false,
   async execute(input, ctx) {
-    return shipIteration(runtimeDeps(await ctx.getSandbox(), ctx.session.id), input);
+    return shipIteration(runtimeDeps(await ctx.getSandbox(), ctx.session.id, null, ctx.session.turn.id), input);
   },
 });

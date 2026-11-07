@@ -325,11 +325,26 @@ describe("the run-end notice's timing (U6, KTD12)", async () => {
   const runEnd = await import("../agent/lib/run-end.ts");
   const record = { branch: "ab/x-sess0123", lastPushedSha: "a".repeat(40), stage: "plan" };
 
+  test("a helper's stop ends the turn, read from the turn's helper calls", () => {
+    const helper = (output: object, outcome = "completed") => ({ outcome, output });
+    assert.equal(runEnd.helperStoppedTurn([]), false, "no helper in the turn");
+    assert.equal(runEnd.helperStoppedTurn([helper({ status: "completed" })]), false);
+    assert.equal(runEnd.helperStoppedTurn([helper({ status: "cancelled", interrupted: false })]), true);
+    assert.equal(runEnd.helperStoppedTurn([helper({ status: "cancelled", interrupted: true })]), false, "the person's new message");
+    assert.equal(runEnd.helperStoppedTurn([helper({ status: "failed", error: "Failed after 3 attempts: 429 Too Many Requests" })]), true);
+    assert.equal(runEnd.helperStoppedTurn([helper({ status: "failed", error: "the test command crashed" })]), false);
+    assert.equal(runEnd.helperStoppedTurn([helper({ status: "cancelled" }), helper({ status: "cancelled" }, "interrupted")]), true, "a parallel helper the stop interrupted hides nothing");
+    assert.equal(runEnd.helperStoppedTurn([helper({ status: "failed", error: "429 Too Many Requests" }), helper({ status: "completed" })]), true, "whichever order they settled in");
+    assert.equal(runEnd.helperStoppedTurn([helper({ status: "failed", error: "402 Payment Required" })]), false, "off the demo a 402 stops nothing, so a later cancel was the person's");
+    assert.equal(runEnd.helperStoppedTurn([helper({ status: "cancelled" }, "interrupted")]), false, "a person's Stop of the root");
+  });
+
   test("only a turn cap-guard cancelled, or one that failed, gets a notice", () => {
     assert.equal(runEnd.turnNoticeOutcome({ outcome: "completed" }), null);
     assert.equal(runEnd.turnNoticeOutcome({ outcome: "cancelled" }), null, "a person's Stop or a session that failed");
     assert.equal(runEnd.turnNoticeOutcome({ outcome: "cancelled", cause: { deliveryId: "d1" } }), null);
     assert.equal(runEnd.turnNoticeOutcome({ outcome: "cancelled", cause: { hook: "cap-guard" } }), "blocked");
+    assert.equal(runEnd.turnNoticeOutcome({ outcome: "cancelled", helperStopped: true }), "blocked");
     assert.equal(runEnd.turnNoticeOutcome({ outcome: "failed", error: { message: "429 Too Many Requests" } }), "blocked");
     assert.equal(runEnd.turnNoticeOutcome({ outcome: "failed", error: { message: "boom" } }), "failed");
   });

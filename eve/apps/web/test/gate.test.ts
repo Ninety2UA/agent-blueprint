@@ -401,6 +401,19 @@ describe("ruling 52: a demo session answers only the cookie that started it", ()
     assert.equal(await ownedByOther(call("/eve/v1/session/wrun_own1"), stranger.cookieId, { env: { ...env, AB_DEMO: "" }, registry }), false);
   });
 
+  test("a helper's session answers its root's cookie once its first turn is admitted", async () => {
+    const owner = signedIn();
+    const stranger = signedIn();
+    const env = { ...DEMO_ENV };
+    await registry.admit({ sessionId: "wrun_root2", cookieId: owner.cookieId, address: "203.0.113.71" });
+    assert.equal(await ownedByOther(call("/eve/v1/session/wrun_helper2/stream"), stranger.cookieId, { env, registry }), false, "before its first turn it has no owner to compare");
+    await registry.admit({ sessionId: "wrun_root2", helperId: "wrun_helper2", cookieId: owner.cookieId, address: "203.0.113.71" });
+    for (const path of ["/eve/v1/session/wrun_helper2/stream", "/eve/v1/session/wrun_helper2/cancel", "/eve/v1/session/wrun_helper2/reset"]) {
+      assert.equal(await ownedByOther(call(path), stranger.cookieId, { env, registry }), true, path);
+      assert.equal(await ownedByOther(call(path), owner.cookieId, { env, registry }), false, path);
+    }
+  });
+
   describe("through the eve channel's route auth walk (agent/channels/eve.ts)", () => {
     // The walk reads process.env and the default registry, the file under .workflow-data/ beside
     // the working folder, so these tests run in a folder of their own with the demo's variables.

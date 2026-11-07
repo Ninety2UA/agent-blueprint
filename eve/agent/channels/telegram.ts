@@ -16,7 +16,7 @@ import {
   telegramWebhookBody,
   withDeliveryKey,
 } from "../lib/channel-gate";
-import { noticeAfterPush, sessionEndedNotice } from "../lib/run-end";
+import { helperStoppedIn, noticeAfterPush, sessionEndedNotice } from "../lib/run-end";
 import { sendFormatted } from "../lib/telegram-format";
 import { runRecord } from "../tools/publish_branch";
 
@@ -73,7 +73,7 @@ const channel = telegramChannel({
     // and topic once cap-guard's push has finished; an ended session gets one too. Eve's defaults
     // post only for a failed turn or session, which these replace.
     async "turn.settled"(event, ctx) {
-      await noticeAfterPush({ sessionId: ctx.session.id, data: event.data, record: () => runRecord.get(), post: (text) => ctx.channel.telegram.sendMessage(text) });
+      await noticeAfterPush({ sessionId: ctx.session.id, data: { ...event.data, helperStopped: event.data.outcome === "cancelled" && helperStoppedIn(ctx.view, event.data.turnId) }, record: () => runRecord.get(), post: (text) => ctx.channel.telegram.sendMessage(text) });
     },
     async "session.ended"(_event, ctx) {
       await reply(ctx.channel, sessionEndedNotice(runRecord.get()));

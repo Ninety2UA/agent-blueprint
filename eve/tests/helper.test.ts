@@ -32,6 +32,46 @@ function context(agent: (name: string, options?: unknown) => unknown) {
   return { agent, abortSignal: new AbortController().signal, session: { id: "sess_helper" } };
 }
 
+describe("a helper the person interrupted", () => {
+  test("a steering message aborts the signal: the result says so, so the root's stop rule leaves it alone", async () => {
+    const steering = new AbortController();
+    const result = await execute(
+      { prompt: "Review the diff.", role: "reviewer" },
+      {
+        agent: () => ({
+          async send() {
+            steering.abort();
+            return { result: async () => ({ status: "cancelled", reply: null }) };
+          },
+        }),
+        abortSignal: steering.signal,
+        session: { id: "sess_helper" },
+      },
+    );
+    assert.equal(result.status, "cancelled");
+    assert.equal(result.interrupted, true);
+  });
+
+  test("a stopped helper's reply stays short enough for the session's view to keep the result, and a finished one's is whole", async () => {
+    const run = (status: string) =>
+      execute(
+        { prompt: "Review the diff.", role: "reviewer" },
+        context(() => ({ send: async () => ({ result: async () => ({ status, reply: "x".repeat(20_000) }) }) })),
+      );
+    assert.equal(String((await run("cancelled")).reply).length, 4_000);
+    assert.equal(String((await run("completed")).reply).length, 20_000);
+  });
+
+  test("a helper cancelled with the signal still open is not interrupted", async () => {
+    const result = await execute(
+      { prompt: "Review the diff.", role: "reviewer" },
+      context(() => ({ send: async () => ({ result: async () => ({ status: "cancelled", reply: null }) }) })),
+    );
+    assert.equal(result.status, "cancelled");
+    assert.equal(result.interrupted, false);
+  });
+});
+
 describe("helper error path", () => {
   test("a model the catalog does not list: failed, the role and AB_MODEL_<ROLE> named, nothing thrown", async () => {
     const opened: unknown[] = [];

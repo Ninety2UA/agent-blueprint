@@ -1,5 +1,9 @@
+import { calls, type SessionView } from "eve/events";
 import { classifyFailure } from "./caps";
 import { type RunEndOutcome, runEndNotice } from "./channel-gate";
+import { helperStopsRun } from "./helper-stop";
+
+export { helperResult } from "./helper-stop";
 
 // How a channel learns cap-guard's push result for a run-end notice (KTD12, U6). In Eve 0.86.0 a
 // commit's channel handlers run before its hooks: publishSessionEvents delivers each event to the
@@ -18,16 +22,35 @@ export interface PushReport {
   readonly stage: string | null;
 }
 
+/**
+ * Whether a helper's stop ended this turn off the demo, from the turn's helper calls. A cancel made
+ * while a helper's call settles leaves no cause on the turn and its state writes do not survive, but
+ * the calls stay in the session's view. Each call is read by the rule that cancelled the root when it
+ * settled, so a person's Stop after a helper that stopped nothing, such as an off-demo 402, is not
+ * taken for one, and a call that settled after the stop, as a parallel helper's does, hides nothing.
+ */
+export function helperStoppedTurn(helpers: readonly { readonly outcome?: string; readonly output?: unknown }[]): boolean {
+  return helpers.some((helper) => helper.outcome === "completed" && helperStopsRun(helper.output));
+}
+
+/** helperStoppedTurn for a turn of the session's view. */
+export const helperStoppedIn = (view: SessionView, turnId: string) => helperStoppedTurn(calls(view, { name: "helper", turnId }));
+
+
+/** Whether a settled turn's cause names this hook. */
+export const byCapGuard = (cause: unknown) => (cause as { hook?: unknown } | undefined)?.hook === "cap-guard";
+
 /** What a turn's settlement means for a notice: null for a turn that gets none. */
 export function turnNoticeOutcome(data: {
   readonly outcome: string;
   readonly cause?: unknown;
   readonly error?: { readonly code?: string; readonly message?: string };
+  readonly helperStopped?: boolean;
 }): RunEndOutcome | null {
-  const byCapGuard = (data.cause as { hook?: unknown } | undefined)?.hook === "cap-guard";
-  if (data.outcome === "cancelled") return byCapGuard ? "blocked" : null;
+  const cappedHere = byCapGuard(data.cause);
+  if (data.outcome === "cancelled") return cappedHere || data.helperStopped ? "blocked" : null;
   if (data.outcome !== "failed") return null;
-  return byCapGuard || classifyFailure(data.error) !== null ? "blocked" : "failed";
+  return cappedHere || classifyFailure(data.error) !== null ? "blocked" : "failed";
 }
 
 type Notice = (report: PushReport | null) => Promise<void>;
