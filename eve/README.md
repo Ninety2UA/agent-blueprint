@@ -76,7 +76,7 @@ This table is the one list of the variables a copy reads. The configurator build
 | `AB_MCP_TOKEN` | The bearer token an MCP client such as Claude Code sends. Make it with openssl rand -hex 32; a value under 32 characters counts as unset. During a rotation, set the old and new values separated by a comma. | [after the deploy](#after-the-deploy) | `channel=mcp` | yes | none |
 | `AB_MCP_OAUTH_ISSUER` | The issuer URL of the identity provider that signs people in from Claude.ai and ChatGPT, such as your WorkOS AuthKit domain. It must be an https URL. Set it for the build and at run time; a change needs a new build. | [web chat and channels](#web-chat-and-channels) | `never` | no | none |
 | `AB_MCP_OAUTH_SUBJECTS` | The user ids (the provider's sub claim) allowed to use the agent over MCP, separated by commas; a single * admits everyone the provider signs in. Set it for the build and at run time; a change needs a new build. | [web chat and channels](#web-chat-and-channels) | `never` | no | none |
-| `AB_MCP_OAUTH_RESOURCE` | The MCP address people type into their client, such as https://agent.example.com/eve/v1/mcp. Unset on Vercel, it is the production address followed by /eve/v1/mcp. Set it for the build and at run time; a change needs a new build. | [web chat and channels](#web-chat-and-channels) | `never` | no | none |
+| `AB_MCP_OAUTH_RESOURCE` | The MCP address people type into their client, such as agent.example.com/eve/v1/mcp. Unset on Vercel, it is the production address followed by /eve/v1/mcp. Set it for the build and at run time; a change needs a new build. | [web chat and channels](#web-chat-and-channels) | `never` | no | none |
 
 ## Roster
 

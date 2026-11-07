@@ -248,7 +248,7 @@ export const VARIABLES: readonly DeployVariable[] = [
   {
     name: "AB_MCP_OAUTH_RESOURCE",
     description:
-      "The MCP address people type into their client, such as https://agent.example.com/eve/v1/mcp. Unset on Vercel, it is the production address followed by /eve/v1/mcp. Set it for the build and at run time; a change needs a new build.",
+      "The MCP address people type into their client, such as agent.example.com/eve/v1/mcp. Unset on Vercel, it is the production address followed by /eve/v1/mcp. Set it for the build and at run time; a change needs a new build.",
     link: "#web-chat-and-channels",
     prompts: ["never"],
     sensitive: false,
