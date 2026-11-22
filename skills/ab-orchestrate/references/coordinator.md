@@ -24,18 +24,7 @@ A change the lead makes lands in files a worker owns, outside any task's checks 
 
 ## Completeness Principle
 
-AI-assisted coding compresses implementation time 10-100x. When evaluating options or making scoping decisions:
-
-- If Option A is the complete implementation (all edge cases, full coverage) and Option B is a shortcut that saves modest effort, prefer A: the delta between 80 lines and 150 lines costs seconds with AI.
-- **Lake vs ocean:** A "lake" is boilable — 100% test coverage for a module, handling all edge cases. An "ocean" is not — rewriting an entire system. Recommend boiling lakes. Flag oceans as out of scope.
-- **When estimating effort**, show both scales, so the user can weigh the AI-assisted cost against the one they know:
-
-| Task type | Human team | AI-assisted | Compression |
-|-----------|-----------|-------------|-------------|
-| Boilerplate / scaffolding | 2 days | 15 min | ~100x |
-| Test writing | 1 day | 15 min | ~50x |
-| Feature implementation | 1 week | 30 min | ~30x |
-| Bug fix + regression test | 4 hours | 15 min | ~20x |
+When a task can be done completely (its edge cases handled, its tests written) or by a shortcut, prefer the complete version as long as it stays inside the task's files, because a shortcut becomes a later task someone has to find. Work that reaches past the task, such as rewriting a system the plan only touches, is out of scope: flag it for the user instead of starting it.
 
 ## Question Format
 
@@ -44,7 +33,7 @@ When you ask the user a question, follow this structure:
 1. **Re-ground:** State the project, branch, and current task (assume user hasn't looked in 20 minutes)
 2. **Simplify:** Explain in plain language a smart 16-year-old could follow — no internal jargon
 3. **Recommend:** State your recommendation and why
-4. **Options:** At most three, with dual effort scales where relevant: `(human: ~X / AI: ~Y)`
+4. **Options:** At most three, each with what it costs where that differs between them
 
 ## Settings
 

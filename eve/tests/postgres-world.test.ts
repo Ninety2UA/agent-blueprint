@@ -2,8 +2,8 @@
 // queues and delivers like @workflow/world-postgres stands in. Every message queued through the world
 // carries a proof made from AB_WORKFLOW_SECRET, the queue name and the message body, never the secret
 // itself, and the queue route refuses a delivery whose proof does not match, the way Eve's local world
-// refuses one without its secret. The world's own start-up recovery, which enqueues past the wrapped
-// queue, is replaced by one through it. On a redeploy the world's server releases its running jobs for
+// refuses one without its secret. A request the world delivers in process, to the handler eve registers,
+// passes without one, because it comes from a job row and never from the network. On a redeploy the world's server releases its running jobs for
 // retry before it exits (ruling 91, fix A), driven here with mocked timers, a fake process and one real one.
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
@@ -45,28 +45,25 @@ interface Queued {
   readonly opts?: { headers?: Headers; idempotencyKey?: string };
 }
 
-/** A world shaped like world-postgres: start() re-enqueues active runs through its own queue function. */
+/** A world shaped like world-postgres: a queue, a route factory, and in-process delivery to a registered handler. */
 function fakeWorld() {
   const queued: Queued[] = [];
   const handled: unknown[] = [];
-  const active = [{ runId: "wrun_1", workflowName: "workflow//eve//workflowEntry", status: "running" }];
-  const rawQueue = async (name: string, message: unknown, opts?: Queued["opts"]) => {
-    queued.push({ name, message, opts });
-    return { messageId: `msg_${queued.length}` };
-  };
+  const direct = new Map<string, (req: Request) => Promise<Response>>();
   const world = {
-    queue: rawQueue,
-    runs: { list: async (_params: unknown) => ({ data: active, cursor: null, hasMore: false }) },
+    queue: async (name: string, message: unknown, opts?: Queued["opts"]) => {
+      queued.push({ name, message, opts });
+      return { messageId: `msg_${queued.length}` };
+    },
     createQueueHandler: (_prefix: string, handler: (message: unknown) => Promise<void>) => async (req: Request) => {
       await handler(await req.json());
       return Response.json({ ok: true });
     },
-    start: async () => {
-      const page = await world.runs.list({ status: ["pending", "running"], resolveData: "none", pagination: {} });
-      for (const run of page.data) await rawQueue(`${PREFIX}${run.workflowName}`, { runId: run.runId });
-    },
+    registerHandler: (prefix: string, handler: (req: Request) => Promise<Response>) => void direct.set(prefix, handler),
   };
-  return { world, queued, handled, record: async (message: unknown) => void handled.push(message) };
+  /** What world-postgres's deliverMessage does for a prefix with a registered handler: a new request, in process. */
+  const deliverInProcess = (request: Request) => direct.get(PREFIX)!(request);
+  return { world, queued, handled, direct, deliverInProcess, record: async (message: unknown) => void handled.push(message) };
 }
 
 /** world-postgres's queue transport: the bytes it stores for a message and later delivers as the body. */
@@ -163,16 +160,53 @@ describe("the queue", () => {
     assert.equal(handled.length, 1);
   });
 
-  test("start-up recovery re-enqueues each active run through the stamped queue, none past it", async () => {
-    const { world, queued, handled, record } = fakeWorld();
-    const guarded = authenticateWorkflowDeliveries(world, SECRET);
-    await guarded.start();
-    assert.equal(queued.length, 1, "one wake per active run");
-    const [wake] = queued;
-    assert.deepEqual(wake.message, { runId: "wrun_1" });
-    const route = guarded.createQueueHandler(PREFIX, record);
-    assert.equal((await route(delivery(wake.opts?.headers, wake.name, storedBody(wake.message)))).status, 200);
+});
+
+describe("in-process delivery", () => {
+  /** The guarded world with eve's route registered for in-process delivery, as eve's server does at start. */
+  function registered() {
+    const fake = fakeWorld();
+    const guarded = authenticateWorkflowDeliveries(fake.world, SECRET);
+    const route = guarded.createQueueHandler(PREFIX, fake.record as never);
+    guarded.registerHandler!(PREFIX, route);
+    return { ...fake, guarded, route };
+  }
+
+  test("a job the world delivers in process passes without a proof, such as world-postgres's startup recovery", async () => {
+    const { deliverInProcess, handled } = registered();
+    const response = await deliverInProcess(delivery({}, QUEUE, storedBody({ runId: "wrun_1" })));
+    assert.equal(response.status, 200);
+    assert.deepEqual(handled, [{ runId: "wrun_1" }]);
+  });
+
+  test("a stamped job delivered in process passes too", async () => {
+    const { guarded, queued, deliverInProcess, handled } = registered();
+    await guarded.queue(QUEUE, { runId: "wrun_1" } as never);
+    assert.equal((await deliverInProcess(delivery(queued[0].opts?.headers))).status, 200);
     assert.equal(handled.length, 1);
+  });
+
+  test("the same unproved request from the network is refused, so only the in-process path admits it", async () => {
+    const { route, handled } = registered();
+    assert.equal((await route(delivery())).status, 401);
+    assert.equal(handled.length, 0);
+  });
+
+  test("the mark is the request object: a copy of an in-process request fails closed", async () => {
+    const { direct, route, handled } = registered();
+    // A registered handler that copies the request before the route sees it, as a wrapper might.
+    direct.set(PREFIX, async (req) => route(new Request(req)));
+    assert.equal((await direct.get(PREFIX)!(delivery())).status, 401);
+    assert.equal(handled.length, 0);
+  });
+
+  test("a world without registerHandler gets none, and its route still needs the proof", async () => {
+    const { world, record, handled } = fakeWorld();
+    const { registerHandler: _omit, ...plain } = world;
+    const guarded = authenticateWorkflowDeliveries(plain, SECRET);
+    assert.equal("registerHandler" in guarded, false);
+    assert.equal((await guarded.createQueueHandler(PREFIX, record as never)(delivery())).status, 401);
+    assert.equal(handled.length, 0);
   });
 });
 
@@ -252,13 +286,22 @@ describe("the world selection agent.ts makes at build", () => {
   });
 });
 
-// The wrapper leans on three things inside @workflow/world-postgres 5.0.5. A version that changes any of
+// The wrapper leans on these things inside @workflow/world-postgres 5.4.1. A version that changes any of
 // them fails here before it reaches a deploy.
 describe("the installed world-postgres", () => {
   const dist = (file: string) => readFileSync(new URL(`../node_modules/@workflow/world-postgres/dist/${file}`, import.meta.url), "utf8");
 
-  test("start() recovers through queue.queue, which the wrapper replaces with a stamped recovery", () => {
-    assert.ok(dist("index.js").includes("reenqueueActiveRuns(storage.runs, queue.queue"));
+  test("start() recovers through its own queue, past the stamped one, so its wakes carry no proof", () => {
+    const index = dist("index.js");
+    assert.ok(index.includes("await reenqueueActiveRuns({\n                ...storage.runs,"), "start() lists runs past world.runs");
+    assert.ok(index.includes("}, (queueName, message, opts) => queue.queue(queueName, message, {"), "and queues past world.queue");
+  });
+
+  test("a prefix with a registered handler is delivered in process, as a new request carrying the stored headers", () => {
+    const queue = dist("queue.js");
+    assert.ok(queue.includes("directHandlers.set(QueuePrefix.parse(prefix), handler);"), "registerHandler keeps the handler");
+    assert.ok(queue.includes("const directHandler = directHandlers.get(prefix);"), "a delivery looks it up by prefix");
+    assert.ok(queue.includes("response = await directHandler(new Request(url(createWorkflowBaseUrl('http://localhost')), {"), "and calls it with a request it builds");
   });
 
   test("a queued message's headers are stored with the job and sent back on every delivery", () => {
@@ -281,8 +324,29 @@ describe("the installed world-postgres", () => {
   });
 });
 
+// eve's side of in-process delivery: on a server with a configured world (not Vercel), the flow route's
+// module registers its POST for eve's queue prefix, and POST hands the request it gets to the route the
+// world's createQueueHandler made, the same object, so the wrapper's mark reaches the check.
+describe("the installed eve's in-process delivery", () => {
+  const read = (file: string) => readFileSync(new URL(`../node_modules/eve/dist/src/${file}`, import.meta.url), "utf8");
+
+  test("the flow route registers POST with the world for eve's queue prefix", () => {
+    assert.ok(read("internal/nitro/host/route-handlers.js").includes("__eveWorkflowWorld.registerHandler(${JSON.stringify(e.direct.queuePrefix)}, POST);"));
+    assert.ok(read("internal/nitro/host/host-routes.js").includes("return e.mode===`development`?!usesParentDevelopmentWorkflowWorld(t):!e.vercel&&t!==void 0}"), "outside Vercel, whenever a world is configured");
+  });
+
+  test("POST passes its request unchanged to the queue route", () => {
+    const runtime = read("compiled/@workflow/core/runtime.js");
+    assert.ok(runtime.includes("s=t=>t.createQueueHandler(o,"), "the route comes from the world's createQueueHandler");
+    assert.ok(runtime.includes("let r=await c.handler(e);"), "and gets the request POST was given");
+    const helpers = readdirSync(new URL("../node_modules/eve/dist/src/compiled/_chunks/node/", import.meta.url)).filter((name) => name.startsWith("helpers-"));
+    const wrapper = helpers.map((name) => read(`compiled/_chunks/node/${name}`)).find((text) => text.includes("searchParams.has(`__health`)"));
+    assert.ok(wrapper?.includes(":await e(n)}}"), "the health-check wrapper around it passes the request through");
+  });
+});
+
 // Releasing the server's running jobs on a redeploy (ruling 91, fix A). Railway stops a container with one
-// SIGTERM, eve's start command passes it to the server once and SIGKILLs the server 20 s later, and
+// SIGTERM, eve's start command passes it to the server once and SIGKILLs the server 25 s later, and
 // graphile-worker 0.16.6 unlocks a running job for retry only on its forceful path, which needs a second
 // termination signal. The handler sends that signal itself once graphile's 5 s switch has passed, exits
 // when graphile signals itself after releasing, and exits by 15 s at the latest.
@@ -406,7 +470,7 @@ describe("the SIGTERM handler", () => {
     assert.deepEqual(fake.log, ["exit 0 @2000"], "no self-signal before graphile's own");
   });
 
-  test("exits with 0 by 15 s when graphile never signals again, below eve's 20 s SIGKILL", async (t) => {
+  test("exits with 0 by 15 s when graphile never signals again, below eve's 25 s SIGKILL", async (t) => {
     const fake = setup(t);
     releaseJobsOnSigterm(fake.proc, globalThis);
     fake.signal();
@@ -561,8 +625,8 @@ describe("the SIGTERM handler's wiring", () => {
   });
 });
 
-// The handler leans on graphile-worker 0.16.6's signal handling, world-postgres 5.0.5 leaving it on, and eve's
-// 20 s SIGKILL. A version that changes any of them fails here before it reaches a deploy.
+// The handler leans on graphile-worker 0.16.6's signal handling, world-postgres 5.4.1 leaving it on, and eve's
+// 25 s SIGKILL. A version that changes any of them fails here before it reaches a deploy.
 describe("the installed packages the SIGTERM handler leans on", () => {
   const read = (path: string) => readFileSync(new URL(`../node_modules/${path}`, import.meta.url), "utf8");
 
@@ -585,8 +649,8 @@ describe("the installed packages the SIGTERM handler leans on", () => {
     assert.ok(queue.includes("...(config.applicationManagedShutdown === true && {\n                noHandleSignals: true,\n            }),"));
   });
 
-  test("eve's start command SIGKILLs the server 20 s after its one SIGTERM", () => {
+  test("eve's start command SIGKILLs the server 25 s after its one SIGTERM", () => {
     const host = read("eve/dist/src/internal/nitro/host/start-production-server.js");
-    assert.ok(host.includes("e.kill(`SIGTERM`),await Promise.race([once(e,`exit`),setTimeout(2e4).then(()=>`timeout`)])===`timeout`&&e.exitCode===null&&(e.kill(`SIGKILL`)"));
+    assert.ok(host.includes("e.kill(`SIGTERM`),await Promise.race([once(e,`exit`),setTimeout(25e3).then(()=>`timeout`)])===`timeout`&&e.exitCode===null&&(e.kill(`SIGKILL`)"));
   });
 });

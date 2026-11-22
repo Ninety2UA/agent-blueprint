@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://agent-blueprint.dbenger.com/">Website</a> ·
-  <a href="#whats-new-in-v430">What's new</a> ·
+  <a href="#whats-new-in-v431">What's new</a> ·
   <a href="#install">Install</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#unattended-runs">Unattended runs</a> ·
@@ -30,9 +30,13 @@ A coding agent starts every session from nothing. It doesn't know how your proje
 
 Agent Blueprint gives the agent one way of working that is the same in every tool. Skills take a feature from design through review to a pull request. Helper prompts handle the analysis that needs a fresh context, such as a security review or a plan check. Project documents under `docs/` carry conventions, decisions and solved problems from one session to the next, so they are there whichever of the eight tools opens the repository next.
 
+## What's new in v4.3.1
+
+The hosted agent runs on eve 1.3.0. Its new `edit_file` tool carries the same guards as `write_file`, Postgres copies run the world's own startup recovery, and a roster role on an Anthropic model can no longer be set to reasoning `none`. `install.sh` stops a host CLI that never answers instead of waiting on it. ab-executing-plans and its decision boundary now agree on what stops a run, and the smoke eval can compare any two builds, or a build against no plugin. Release notes: [`docs/releases/v4.3.1-release-notes.md`](docs/releases/v4.3.1-release-notes.md).
+
 ## What's new in v4.3.0
 
-Reviews and checks fail closed in more places. A reviewer that never reported counts as not reviewed, not as a clean pass, and a review loop cannot converge on it; a review runs only on the commit it names, with no uncommitted edits to the files it reviews; a wave whose verifier lists issues, or whose tests ran none, does not pass; and a plan's check has to fail before its task. Helpers start fresh rather than as a copy of the conversation. The context monitor no longer counts helpers' tool calls against the main session, and a new session hears about a ship run that stopped blocked overnight. Skill-writing guidance drops capitalized absolutes in favor of rules with reasons and adds a rule that every step must hold for any capable model; the model and effort notes cover Fable 5.2, Opus 5.5's medium start and Amp's model selector. Release notes: [`docs/releases/v4.3.0-release-notes.md`](docs/releases/v4.3.0-release-notes.md).
+Reviews and checks fail closed in more places. A reviewer that never reported is listed as not reviewed, and a review loop cannot converge while one is; a review runs only on the commit it names, with no uncommitted edits to the files it reviews; a wave whose verifier lists issues, or whose tests ran none, does not pass; and a plan's check has to fail before its task. Helpers start fresh, with none of the conversation. The context monitor no longer counts helpers' tool calls against the main session, and the next session names a ship run that stopped blocked. Skill-writing guidance drops capitalized absolutes in favor of rules with reasons and adds a rule that every step must hold for any capable model; the model and effort notes cover Fable 5.2, Opus 5.5's medium start and Amp's model selector. Release notes: [`docs/releases/v4.3.0-release-notes.md`](docs/releases/v4.3.0-release-notes.md).
 
 ## What's new in v4.2.1
 
@@ -830,11 +834,12 @@ An evaluation then ran the same fixture tasks on v3.8.0 and v4.0.0 in Claude Cod
 ## Release history
 
 <details>
-<summary>v2.3 to v4.3.0</summary>
+<summary>v2.3 to v4.3.1</summary>
 
 | Version | Date | What changed |
 |---|---|---|
-| v4.3.0 | 2026-11-22 | Reviews, wave checks and plan checks fail closed: a reviewer that never reported is not a clean pass, a review runs on its head with no uncommitted edits to the files it reviews, a wave with listed issues or zero tests run does not pass, and a plan's check must fail before its task. Helpers start fresh, the context monitor counts the main session only, and a blocked ship run is named at the next session start. New gate rules for frontmatter value shapes, positional placeholders and bundled scripts; model and effort notes for Fable 5.2, Opus 5.5 and Amp's model selector. |
+| v4.3.1 | 2026-11-22 | The hosted agent moves to eve 1.3.0: `edit_file` carries the `write_file` guards, Postgres copies run the world's own recovery, and reasoning `none` is refused for Anthropic roster roles. `install.sh` stops a host CLI that never answers, ab-executing-plans' stop list matches its decision boundary, and `tests/smoke/eval.sh --compare` measures one build against another or against no plugin. |
+| v4.3.0 | 2026-11-22 | Reviews, wave checks and plan checks fail closed: a reviewer that never reported is listed as not reviewed, a review runs on its head with no uncommitted edits to the files it reviews, a wave with listed issues or zero tests run does not pass, and a plan's check must fail before its task. Helpers start fresh, the context monitor counts the main session only, and a blocked ship run is named at the next session start. New gate rules for frontmatter value shapes, positional placeholders and bundled scripts; model and effort notes for Fable 5.2, Opus 5.5 and Amp's model selector. |
 | v4.2.1 | 2026-11-07 | The hosted agent runs every code or docs change through its five stages, ends a run cleanly when a helper stops and pushes its branch, keeps one branch and pull request per chat, and shows a waiting or stopped stage in the web chat. The CLIs change only in the version number. |
 | v4.2.0 | 2026-11-05 | Agent Blueprint also runs as a hosted agent on Vercel's Eve framework, which you deploy to your own Vercel account, Railway or server and reach from a web chat, Slack, Linear, Telegram, an MCP client such as Claude Code, or HTTP. The eight coding CLIs install the same skills as in 4.1.1, and `install.sh --only eve` points to the Hosted page instead. |
 | v4.1.1 | 2026-10-13 | `install.sh` no longer removes or replaces Cursor CLI's marketplace, which Cursor shares with every computer on your account. It tells you what to uninstall or switch yourself instead. |

@@ -91,6 +91,14 @@ export function resolveRole(role: Role, env: Env = process.env): RoleSelection {
   if (!(REASONING as readonly string[]).includes(reasoning)) {
     throw new Error(`Roster role "${role}" has reasoning "${reasoning}"; the levels are ${REASONING.join(", ")} (AB_REASONING_${key}).`);
   }
+  // "none" turns thinking off, which Claude Opus 5.5, Claude Sonnet 5.5 and the Fable models refuse with a
+  // 400 on every call; refused here for every Anthropic id, so the role fails at load and not mid-run.
+  if (reasoning === "none" && model.startsWith("anthropic/")) {
+    throw new Error(
+      `Roster role "${role}" runs on "${model}" with reasoning "none", which turns thinking off; current Claude models refuse that with a 400. ` +
+        `Set AB_REASONING_${key} to minimal or low for the least thinking, or unset it to keep the preset's level.`,
+    );
+  }
   return {
     role,
     model,

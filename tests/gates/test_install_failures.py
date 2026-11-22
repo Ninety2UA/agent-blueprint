@@ -322,6 +322,30 @@ class InstallerFailures(InstallerHarness):
                               r"install was left as it was\. ")
         self.assertEqual(self.mutations(), [])
 
+    def test_a_tool_that_never_answers_fails_only_its_route(self):
+        # A host CLI that hangs, even before its first line runs, is stopped after the time limit
+        # with its command named; that route fails and the next tool still installs. The limit is
+        # 300 s; the test sets it to 1 s. The hung tool starts a child that would keep the listing's
+        # output open, so the whole process tree has to go.
+        stopped = Path(self.root, "codex-stopped")
+        codex = Path(self.bin, "codex")
+        codex.write_text("#!/usr/bin/env python3\nimport pathlib, signal, subprocess, sys, time\n"
+                         "signal.signal(signal.SIGTERM, lambda *_: (pathlib.Path(%r).write_text(''), sys.exit(143)))\n"
+                         "subprocess.Popen(['sleep', '60'])\n"
+                         "time.sleep(60)\n" % str(stopped))
+        codex.chmod(0o755)
+        self.fake_tool("grok")
+        started = time.monotonic()
+        code, out = self.run_install("--only", "codex,grok",
+                                     env_extra={"AGENT_BLUEPRINT_TEST_CLI_TIMEOUT": "1"})
+        self.assertLess(time.monotonic() - started, 30, out)
+        self.assertEqual(code, 1, out)
+        self.assertTrue(stopped.exists(), "the hung codex was stopped")
+        self.assertRegex(out, r"(?m)^  ✗ codex did not answer within 1 s, so it was stopped: codex plugin ")
+        self.assertRegex(out, r"(?m)^  ✗ Codex did not finish \(exit 124\)")
+        self.assertIn("grok plugin install " + GITHUB + " --trust", self.calls())
+        self.assertRegex(out, r"(?m)^  ✓ Finished: Grok Build$")
+
     def test_interrupted_route_stops_the_run(self):
         # A tool that catches Ctrl-C and exits 130 (or is stopped with 143) ends the whole run.
         for status in (130, 143):

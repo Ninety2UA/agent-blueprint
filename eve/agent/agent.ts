@@ -15,7 +15,7 @@ const limits = {
     window.inputTokens - window.cacheReadTokens >= sessionInputTokens,
   sessionTimeoutMs: 30 * 24 * 60 * 60 * 1_000,
 };
-const compaction = { thresholdPercent: 0.9 };
+const compaction = { threshold: 0.9 };
 // Eve puts the description in front of agent_start's own for MCP clients (KTD11, A8): relay every
 // checkpoint to the person, and never start a second run after a lost reply without asking.
 const description =

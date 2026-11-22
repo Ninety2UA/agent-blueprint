@@ -1,6 +1,6 @@
 // Releases this server's running workflow jobs when a redeploy stops it (ruling 91, fix A). Railway stops a
 // container with one SIGTERM, and eve's start command passes it to the server once and SIGKILLs the server
-// 20 s later. graphile-worker 0.16.6, which world-postgres runs here with its own signal handlers, waits for
+// 25 s later. graphile-worker 0.16.6, which world-postgres runs here with its own signal handlers, waits for
 // a running job on that first signal and unlocks it for retry only on its forceful path, which it arms 5 s
 // later and which needs another termination signal. None comes, so the job stays locked by a dead worker,
 // and the next container waits out the step's 860 s ownership lease before it runs the step again.
@@ -21,7 +21,7 @@
 
 /** Just past graphile's 5 s switch to its forceful handler. */
 export const FORCE_AFTER_MS = 5_500;
-/** The latest exit, below eve's 20 s SIGKILL. */
+/** The latest exit, below eve's 25 s SIGKILL. */
 export const EXIT_BY_MS = 15_000;
 
 /** The parts of the process the handler uses. */

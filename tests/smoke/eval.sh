@@ -1,15 +1,25 @@
 #!/usr/bin/env bash
-# eval.sh — v3.8.0 against v4 on Claude Code: the same fixture tasks, N times each (U17 step 1).
+# eval.sh — a baseline against this build on Claude Code: the same fixture tasks, N times each.
 #
-# Usage: bash tests/smoke/eval.sh --v3-dir DIR [options]
-#   --v3-dir DIR     A checkout of the main branch at v3.8.0; its plugin root is plugins/claude-code-blueprint
+# Usage: bash tests/smoke/eval.sh (--v3-dir DIR | --compare DIR|none --label NAME) [options]
+#   --v3-dir DIR     Baseline v3.8.0: a checkout of main at v3.8.0; its plugin root is plugins/claude-code-blueprint
+#   --compare DIR    Baseline another v4 plugin root (a variant build, or this build again for the noise floor)
+#   --compare none   Baseline no plugin at all: the prompt names no skill
+#   --label NAME     The baseline's name in the report and the report's file name (with --compare)
 #   --v4-dir DIR     The v4 checkout (default: this one)
+#   --model M, --effort E   Passed to every Claude Code run (both arms)
+#   --clean          Load no user settings (--setting-sources project,local), so plugins and skills
+#                    the machine's user has enabled stay out of both arms
 #   --runs N         Runs per task and version (default 3)
 #   --task t1,t2     Tasks (default: build review debug ship)
 #   --out DIR        Where the report goes (default: docs/releases/)
 #   --timeout S      Seconds per run (default: Claude Code's row in hosts.sh; ship runs get twice that)
 #   --keep           Keep every run's working copy (a failed run's copy is kept either way)
 #   -h, --help
+#
+# With --compare, the report is <out>/v<version>-eval-<label>.md and .json, and each run also records
+# what its transcript shows (transcript-stats.py): helper token share, test runs, repeated test runs
+# with no edit between them, and hedge words in the final message.
 #
 # Every run is a fresh copy of tests/smoke/fixture with the task's seed (the smoke test's scenarios),
 # on Claude Code with --plugin-dir pointing at one plugin root or the other. v3 skills are named as
@@ -43,12 +53,17 @@ COMMAND="bash tests/smoke/eval.sh $*"
 # AB_EVAL_HOST=fake runs the mechanics against tests/smoke/fake-host.sh (selftest.sh); the eval itself is Claude Code only.
 EVAL_HOST="${AB_EVAL_HOST:-claude}"
 
-V3_DIR="" V4_DIR="$SMOKE_REPO" RUNS=3 TASKS="$ALL_TASKS" OUT="$SMOKE_REPO/docs/releases" TIMEOUT_OVERRIDE="" KEEP=false
-usage() { sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'; }
+V3_DIR="" COMPARE="" LABEL="" MODEL="" EFFORT="" CLEAN=false V4_DIR="$SMOKE_REPO" RUNS=3 TASKS="$ALL_TASKS" OUT="$SMOKE_REPO/docs/releases" TIMEOUT_OVERRIDE="" KEEP=false
+usage() { sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; }
 while [ $# -gt 0 ]; do
     case "$1" in
         --v3-dir)   [ $# -ge 2 ] || { usage; exit 1; }; V3_DIR="$2"; shift 2 ;;
         --v3-dir=*) V3_DIR="${1#--v3-dir=}"; shift ;;
+        --compare)  [ $# -ge 2 ] || { usage; exit 1; }; COMPARE="$2"; shift 2 ;;
+        --label)    [ $# -ge 2 ] || { usage; exit 1; }; LABEL="$2"; shift 2 ;;
+        --model)    [ $# -ge 2 ] || { usage; exit 1; }; MODEL="$2"; shift 2 ;;
+        --effort)   [ $# -ge 2 ] || { usage; exit 1; }; EFFORT="$2"; shift 2 ;;
+        --clean)    CLEAN=true; shift ;;
         --v4-dir)   [ $# -ge 2 ] || { usage; exit 1; }; V4_DIR="$2"; shift 2 ;;
         --v4-dir=*) V4_DIR="${1#--v4-dir=}"; shift ;;
         --runs)     [ $# -ge 2 ] || { usage; exit 1; }; RUNS="$2"; shift 2 ;;
@@ -64,17 +79,40 @@ while [ $# -gt 0 ]; do
         *)          error "Unknown option: $1"; usage; exit 1 ;;
     esac
 done
-[ -n "$V3_DIR" ] || { error "--v3-dir is required"; usage; exit 1; }
-V3_DIR="$(cd "$V3_DIR" 2>/dev/null && pwd)" || { error "--v3-dir is not a directory"; exit 1; }
 V4_DIR="$(cd "$V4_DIR" 2>/dev/null && pwd)" || { error "--v4-dir is not a directory"; exit 1; }
-V3_PLUGIN="$V3_DIR/plugins/claude-code-blueprint"
-[ -f "$V3_PLUGIN/.claude-plugin/plugin.json" ] || { error "$V3_PLUGIN has no .claude-plugin/plugin.json: is --v3-dir a checkout of main at v3.8.0?"; exit 1; }
 [ -f "$V4_DIR/.claude-plugin/plugin.json" ] || { error "$V4_DIR has no .claude-plugin/plugin.json"; exit 1; }
+BASE_PLUGIN=""
+if [ -n "$COMPARE" ]; then
+    [ -z "$V3_DIR" ] || { error "--v3-dir and --compare are exclusive"; exit 1; }
+    case "$LABEL" in ''|*[!A-Za-z0-9._-]*) error "--compare needs --label (letters, digits, dot, dash, underscore)"; exit 1 ;; esac
+    if [ "$COMPARE" != none ]; then
+        BASE_PLUGIN="$(cd "$COMPARE" 2>/dev/null && pwd)" || { error "--compare is not a directory"; exit 1; }
+        [ -f "$BASE_PLUGIN/.claude-plugin/plugin.json" ] || { error "$BASE_PLUGIN has no .claude-plugin/plugin.json"; exit 1; }
+    fi
+    BASE_NAME="$LABEL"
+else
+    [ -n "$V3_DIR" ] || { error "--v3-dir or --compare is required"; usage; exit 1; }
+    V3_DIR="$(cd "$V3_DIR" 2>/dev/null && pwd)" || { error "--v3-dir is not a directory"; exit 1; }
+    BASE_PLUGIN="$V3_DIR/plugins/claude-code-blueprint"
+    [ -f "$BASE_PLUGIN/.claude-plugin/plugin.json" ] || { error "$BASE_PLUGIN has no .claude-plugin/plugin.json: is --v3-dir a checkout of main at v3.8.0?"; exit 1; }
+    BASE_NAME="v3"
+fi
+V3_PLUGIN="$BASE_PLUGIN"
+# Extra Claude Code flags for both arms (never for the fake host, which takes none).
+HOST_ARGS=()
+if [ "${AB_EVAL_HOST:-claude}" = claude ]; then
+    [ -n "$MODEL" ] && HOST_ARGS+=(--model "$MODEL")
+    [ -n "$EFFORT" ] && HOST_ARGS+=(--effort "$EFFORT")
+    [ "$CLEAN" = true ] && HOST_ARGS+=(--setting-sources "project,local")
+fi
 case "$RUNS" in ''|*[!0-9]*) error "--runs wants a number"; exit 1 ;; esac
 for t in $TASKS; do case " $ALL_TASKS " in *" $t "*) ;; *) error "Unknown task: $t (one of: $ALL_TASKS)"; exit 1 ;; esac; done
+if [ -n "$COMPARE" ]; then
+    case " $TASKS " in *" ship "*) error "--compare runs build, review and debug; the ship task compares against v3 only"; exit 1 ;; esac
+fi
 mkdir -p "$OUT"; OUT="$(cd "$OUT" && pwd)"
 VERSION=$(plugin_version "$V4_DIR/.claude-plugin/plugin.json")
-V3_VERSION=$(plugin_version "$V3_PLUGIN/.claude-plugin/plugin.json")
+if [ -n "$BASE_PLUGIN" ]; then V3_VERSION=$(plugin_version "$BASE_PLUGIN/.claude-plugin/plugin.json"); else V3_VERSION="none"; fi
 NAME_MAP="$V4_DIR/docs/upgrade/v4-skill-names.tsv"
 [ -f "$NAME_MAP" ] || { error "missing $NAME_MAP"; exit 1; }
 host_known "$EVAL_HOST" || { error "unknown host $EVAL_HOST"; exit 1; }
@@ -117,16 +155,18 @@ fi
 chmod +x "$WRAP_DIR/claude"
 
 echo ""
-echo -e "  ${BOLD}Agent Blueprint eval${NC} v$V3_VERSION against v$VERSION on Claude Code ${DIM}(logs: $(rel_log "$LOG_ROOT"))${NC}"
+echo -e "  ${BOLD}Agent Blueprint eval${NC} $BASE_NAME ($V3_VERSION) against v$VERSION on Claude Code ${DIM}(logs: $(rel_log "$LOG_ROOT"))${NC}"
 info "Tasks: $TASKS · runs per task and version: $RUNS"
-info "v3 plugin: $V3_PLUGIN"
+info "$BASE_NAME plugin: ${BASE_PLUGIN:-none}${HOST_ARGS[*]+ · Claude Code flags: ${HOST_ARGS[*]}}"
 info "v4 plugin: $V4_DIR"
 
 on_signal() { trap - INT TERM; echo ""; warn "Interrupted"; kill_smoke_child; exit 130; }
 trap on_signal INT TERM
 
+STATS=()
 record() {   # TASK VERSION RUN STATE SECONDS REASON LOG
-    record_result "$RESULTS" "$EVAL_HOST" "$1" "$4" "$5" "$TOKENS" "$COST" "$(rel_log "$7")" "$6" "task=$1" "version=$2" "run=$3"
+    record_result "$RESULTS" "$EVAL_HOST" "$1" "$4" "$5" "$TOKENS" "$COST" "$(rel_log "$7")" "$6" "task=$1" "version=$2" "run=$3" \
+        ${STATS[@]+"${STATS[@]}"}
 }
 
 secs_for() { local t; t="${TIMEOUT_OVERRIDE:-$(host_timeout "$EVAL_HOST")}"; [ "$1" = ship ] && t=$((t * 2)); echo "$t"; }
@@ -156,24 +196,41 @@ run_task() {
     if [ "$task" = ship ]; then
         run_ship "$version" "$log" "$secs" || rc=$?
     else
-        if [ "$version" = v3 ]; then
+        local plugin="$V4_DIR"
+        if [ "$version" = v4 ]; then
+            prompt=$(fill_prompt "$scenario" claude "$V4_DIR")
+        elif [ -z "$COMPARE" ]; then
             ref="/claude-code-blueprint:$(v3_name "$skill")"
             prompt=$(fill_prompt_with "$scenario" "$ref")
-            printf '=== %s %s run %s · %s · timeout %ss · work %s ===\n--- prompt ---\n%s\n--- output ---\n' "$task" "$version" "$n" "$(now_utc)" "$secs" "$WORK" "$prompt" >> "$log"
-            run_host_timed "$EVAL_HOST" "$secs" "$log" "$prompt" "$log.last" "$V3_PLUGIN" || rc=$?
+            plugin="$BASE_PLUGIN"
+        elif [ -n "$BASE_PLUGIN" ]; then
+            prompt=$(fill_prompt "$scenario" claude "$BASE_PLUGIN")
+            plugin="$BASE_PLUGIN"
         else
-            prompt=$(fill_prompt "$scenario" claude "$V4_DIR")
-            printf '=== %s %s run %s · %s · timeout %ss · work %s ===\n--- prompt ---\n%s\n--- output ---\n' "$task" "$version" "$n" "$(now_utc)" "$secs" "$WORK" "$prompt" >> "$log"
-            run_host_timed "$EVAL_HOST" "$secs" "$log" "$prompt" "$log.last" "$V4_DIR" || rc=$?
+            # No plugin: the task alone, with the same headless sentence the skill arms get.
+            prompt=$(fill_prompt_with "$scenario" "")
+            prompt="${prompt//\{\{SKILL_REF\}\} /}"
+            prompt="${prompt//\{\{SKILL_REF\}\}/}"
+            prompt="$prompt
+
+$SMOKE_HEADLESS"
+            plugin=""
         fi
+        printf '=== %s %s run %s · %s · timeout %ss · work %s ===\n--- prompt ---\n%s\n--- output ---\n' "$task" "$version" "$n" "$(now_utc)" "$secs" "$WORK" "$prompt" >> "$log"
+        run_host_timed "$EVAL_HOST" "$secs" "$log" "$prompt" "$log.last" "$plugin" ${HOST_ARGS[@]+"${HOST_ARGS[@]}"} || rc=$?
         host_final_message "$EVAL_HOST" "$log" "$log.last" > "$log.final" 2>/dev/null || true
         usage_fields "$EVAL_HOST" "$log"
+        STATS=()
+        if [ -n "$COMPARE" ]; then
+            # shellcheck disable=SC2207 # the stats line is key=value words with no spaces inside
+            STATS=($(python3 "$HERE/transcript-stats.py" "$log" --cwd "$WORK"))
+        fi
         if [ "$rc" -eq 124 ]; then
             verdict timeout "no result after ${secs}s"
         else
             reason=$(bash "$scenario/check.sh" "$WORK" "$BASE" "$log.final" "$log" "$REMOTE" 2>&1) || check_rc=$?
             reason=$(printf '%s' "$reason" | tr '\n' ' ' | cut -c1-400)
-            if [ "$check_rc" -eq 0 ] && [ "$version" = v4 ] && [ "$(helper_summary "$WORK" "$skill" | head -1)" = missing ]; then
+            if [ "$check_rc" -eq 0 ] && [ -n "$plugin" ] && { [ "$version" = v4 ] || [ -n "$COMPARE" ]; } && [ "$(helper_summary "$WORK" "$skill" | head -1)" = missing ]; then
                 check_rc=1; reason="no provenance record for $skill; $reason"
             fi
             [ "$rc" -ne 0 ] && reason="$reason (host exited $rc)"
@@ -221,7 +278,10 @@ for task in $TASKS; do
     done
 done
 
-python3 "$HERE/report.py" eval --version "$VERSION" --json "$OUT/v$VERSION-eval.json" --md "$OUT/v$VERSION-eval.md" \
-    --results "$RESULTS" --command "$COMMAND" --v3-dir "$V3_DIR" --v4-dir "$V4_DIR" --runs "$RUNS" --tasks "$ALL_TASKS"
+STEM="v$VERSION-eval"
+[ -n "$COMPARE" ] && STEM="v$VERSION-eval-$LABEL"
+python3 "$HERE/report.py" eval --version "$VERSION" --json "$OUT/$STEM.json" --md "$OUT/$STEM.md" \
+    --results "$RESULTS" --command "$COMMAND" --v3-dir "${V3_DIR:-$COMPARE}" --v4-dir "$V4_DIR" --runs "$RUNS" --tasks "$ALL_TASKS" \
+    --base-label "$BASE_NAME"
 echo ""
-success "Report: $(rel_log "$OUT/v$VERSION-eval.md") · runs: $(rel_log "$OUT/v$VERSION-eval.json") · logs: $(rel_log "$LOG_ROOT")"
+success "Report: $(rel_log "$OUT/$STEM.md") · runs: $(rel_log "$OUT/$STEM.json") · logs: $(rel_log "$LOG_ROOT")"

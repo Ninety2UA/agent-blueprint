@@ -465,5 +465,35 @@ else
     echo "== eval mechanics skipped (set SMOKE_SELFTEST_V3_DIR to a checkout of main to include them)"
 fi
 
+echo "== eval compare mode against the fake host (no plugin, then this build again)"
+AB_EVAL_HOST=fake bash "$HERE/eval.sh" --compare none --label noplugin --task debug --v4-dir "$REPO" --runs 1 --out "$WORK/cmp" --timeout 60 > "$WORK/cmp.log" 2>&1 || { echo "eval.sh --compare none failed:"; tail -20 "$WORK/cmp.log"; exit 1; }
+C="$WORK/cmp/v$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$REPO/.claude-plugin/plugin.json")-eval-noplugin"
+check "compare recorded a baseline and a build run" [ "$(python3 -c 'import json,sys; print(sorted(r["version"] for r in json.load(open(sys.argv[1]))["runs"]))' "$C.json")" = "['v3', 'v4']" ]
+cmp_log=$(find "$WORK"/logs -path "*/eval-*/debug-v3-1.log" | sort | tail -1)
+check "the no-plugin prompt keeps no placeholder" no_match 'SKILL_REF' "$cmp_log"
+check "the no-plugin prompt names no skill" no_match '/agent-blueprint:' "$cmp_log"
+check "the compare report names its baseline" grep -q '^# Evaluation: noplugin against' "$C.md"
+check "a compare run with the ship task is refused" fails env AB_EVAL_HOST=fake bash "$HERE/eval.sh" --compare none --label x --task ship
+check "a compare run without a label is refused" fails env AB_EVAL_HOST=fake bash "$HERE/eval.sh" --compare none
+
+echo "== transcript-stats: helper share, reruns and hedges from a session transcript"
+tcfg="$WORK/tcfg"; mkdir -p "$tcfg/projects/p/s9/subagents"
+printf '%s\n' '{"type":"result","session_id":"s9","result":"Tests pass. It should work and probably holds."}' > "$WORK/t.log"
+{
+    printf '%s\n' '{"message":{"role":"assistant","id":"m1","usage":{"input_tokens":100,"output_tokens":20},"content":[{"type":"tool_use","name":"Bash","input":{"command":"python3 -m unittest discover"}}]}}'
+    printf '%s\n' '{"message":{"role":"assistant","id":"m1","usage":{"input_tokens":100,"output_tokens":20},"content":[]}}'
+    printf '%s\n' '{"message":{"role":"assistant","id":"m2","usage":{"input_tokens":30},"content":[{"type":"tool_use","name":"Bash","input":{"command":"python3 -m unittest discover"}}]}}'
+    printf '%s\n' '{"message":{"role":"assistant","id":"m3","usage":{"input_tokens":10},"content":[{"type":"tool_use","name":"Edit","input":{}},{"type":"tool_use","name":"Bash","input":{"command":"pytest -q"}}]}}'
+} > "$tcfg/projects/p/s9.jsonl"
+printf '%s\n' '{"message":{"role":"assistant","id":"h1","usage":{"input_tokens":40},"content":[]}}' > "$tcfg/projects/p/s9/subagents/agent-a.jsonl"
+tstats=$(python3 "$HERE/transcript-stats.py" "$WORK/t.log" --config-dir "$tcfg")
+check "a streamed message counts once and helpers are summed" [ "$tstats" = "main_tokens=160 helper_tokens=40 helpers=1 helper_share=0.200 test_runs=3 reruns=1 hedges=2" ]
+check "a log with no session id reads as missing" [ "$(python3 "$HERE/transcript-stats.py" "$WORK/cmp.log" --config-dir "$tcfg")" = "transcript=missing" ]
+# A run the timeout killed has no result line: --cwd finds its transcript by the working folder.
+tkill="$WORK/killed run"; mkdir -p "$tkill"
+tslug=$(python3 -c 'import os,re,sys; print(re.sub(r"[^A-Za-z0-9]", "-", os.path.realpath(sys.argv[1])))' "$tkill")
+mkdir -p "$tcfg/projects/$tslug"; cp "$tcfg/projects/p/s9.jsonl" "$tcfg/projects/$tslug/s10.jsonl"
+check "a killed run's transcript is found by its working folder" [ "$(python3 "$HERE/transcript-stats.py" "$WORK/cmp.log" --config-dir "$tcfg" --cwd "$tkill" | cut -d' ' -f1)" = "main_tokens=160" ]
+
 echo ""
 if [ "$FAILS" -eq 0 ]; then echo "selftest: all checks passed"; else echo "selftest: $FAILS check(s) failed"; exit 1; fi

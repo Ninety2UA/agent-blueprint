@@ -75,5 +75,6 @@ export default defineEval({
     t.check(thrown(() => resolveRole("builder", { AB_MODEL_BUILDER: "opus" })), includes('role "builder"'));
     t.check(thrown(() => resolveRole("builder", { AB_MODEL_BUILDER: "opus" })), includes('"opus"'));
     t.check(thrown(() => resolveRole("analyst", { AB_REASONING_ANALYST: "max" })), includes('role "analyst"'));
+    t.check(thrown(() => resolveRole("lead", { AB_REASONING_LEAD: "none" })), includes("AB_REASONING_LEAD")).label("none is refused on an Anthropic role");
   },
 });

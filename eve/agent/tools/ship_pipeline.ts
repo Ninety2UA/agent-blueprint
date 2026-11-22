@@ -8,7 +8,7 @@ import { type Posture, type PublishDeps, type PublishResult, ensureRecord, must,
 
 // The ship loop (KTD3 as ruled on 2026-10-29, option b): one call is one iteration, and the root
 // agent calls again. Every record write runs here, in an ordinary tool, because a workflow step
-// holds no session state on Eve 0.86.0. Each call:
+// holds no session state on Eve (from 1.0 a step that reads or writes it fails). Each call:
 //   1. counts the iteration in the durable record before anything else, so an iteration that
 //      crashes, the tool's own reads included, still counts once (KTD6)
 //   2. reads .agent-blueprint/run/state.json from the sandbox and records the defaults the

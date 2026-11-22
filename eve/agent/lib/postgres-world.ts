@@ -8,8 +8,18 @@
 // whose proof does not match. The proof is a random nonce and an HMAC of the nonce, the queue name and
 // the message body under the secret. Graphile prints a failed job's headers to the log, so a log reader
 // can learn a proof, but not the secret, and a proof admits only the same message on the same queue.
+//
+// From eve 1.0, eve's server hands the route's handler to the world's registerHandler, and world-postgres
+// then delivers that queue's jobs to it inside the process, without HTTP. Those requests come from a job
+// row in the database, never from the network, so they pass without a proof: a request object the world
+// hands to the registered handler is marked, and only a marked object passes unproved. The mark is an
+// object reference, so nothing a network request carries can forge it, and a request eve copies on the
+// way fails the check closed. This admits the jobs world-postgres queues past the stamped queue, such as
+// the startup recovery its start() runs (keyed per run, leaving out runs parked on a hook or a wait).
+// eve's server starts the world, and so that recovery, just before it registers the handler (both at boot,
+// in the built server's flow route module). A recovery job a worker takes in that moment goes over HTTP
+// and is refused once; Graphile retries it, and the retry is delivered in process.
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import { reenqueueActiveRuns } from "@workflow/world";
 import { createWorld as createPostgresWorld } from "@workflow/world-postgres";
 import { releaseJobsOnSigterm } from "./sigterm-release";
 
@@ -25,8 +35,7 @@ type Headers = Record<string, string>;
 export interface DeliveryWorld {
   queue(name: string, message: never, opts?: { headers?: Headers }): Promise<unknown>;
   createQueueHandler(prefix: string, handler: never): (req: Request) => Promise<Response>;
-  runs: { list(params: never): Promise<{ data: unknown[]; cursor?: string | null; hasMore: boolean }> };
-  start?(): Promise<void>;
+  registerHandler?(prefix: string, handler: (req: Request) => Promise<Response>): void;
 }
 
 /** AB_WORKFLOW_SECRET, or an error naming it when it is missing, under 32 characters, or padded. */
@@ -67,8 +76,14 @@ function validProof(proof: string | null, queueName: string | null, body: Uint8A
   return parts !== null && timingSafeEqual(Buffer.from(parts[2], "hex"), mac(secret, parts[1], queueName, body));
 }
 
-/** Stamps the proof on every queued message and refuses deliveries without a matching one. Mutates and returns `world`. */
+/**
+ * Stamps the proof on every queued message and refuses deliveries without a matching one, except the
+ * requests the world delivers in process to a handler registered through registerHandler. Mutates and
+ * returns `world`.
+ */
 export function authenticateWorkflowDeliveries<W extends DeliveryWorld>(world: W, secret: string): W {
+  const inProcess = new WeakSet<Request>();
+
   const queue = world.queue.bind(world);
   world.queue = (name, message, opts) =>
     queue(name, message, { ...opts, headers: { ...opts?.headers, [DELIVERY_HEADER]: deliveryProof(secret, name, transportBytes(message)) } });
@@ -77,6 +92,7 @@ export function authenticateWorkflowDeliveries<W extends DeliveryWorld>(world: W
   world.createQueueHandler = (prefix, handler) => {
     const route = createQueueHandler(prefix, handler);
     return async (req) => {
+      if (inProcess.has(req)) return await route(req);
       const body = new Uint8Array(await req.clone().arrayBuffer());
       return validProof(req.headers.get(DELIVERY_HEADER), req.headers.get(QUEUE_NAME_HEADER), body, secret)
         ? await route(req)
@@ -84,19 +100,14 @@ export function authenticateWorkflowDeliveries<W extends DeliveryWorld>(world: W
     };
   };
 
-  // world-postgres's start() re-enqueues active runs past the stamped queue, so the route would refuse
-  // those wakes. Its run listing answers empty while it starts, and the recovery runs here instead.
-  const start = world.start?.bind(world);
-  world.start = async () => {
-    const list = world.runs.list;
-    world.runs.list = async () => ({ data: [], cursor: null, hasMore: false });
-    try {
-      await start?.();
-    } finally {
-      world.runs.list = list;
-    }
-    await reenqueueActiveRuns(world.runs as never, world.queue as never, "world-postgres");
-  };
+  const registerHandler = world.registerHandler?.bind(world);
+  if (registerHandler) {
+    world.registerHandler = (prefix, handler) =>
+      registerHandler(prefix, async (req) => {
+        inProcess.add(req);
+        return await handler(req);
+      });
+  }
   return world;
 }
 

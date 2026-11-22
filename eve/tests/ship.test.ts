@@ -28,7 +28,7 @@ type ShipDeps = Parameters<typeof shipIteration>[0];
 type RunRecord = NonNullable<ReturnType<ShipDeps["store"]["get"]>>;
 
 const SESSION = "sess_ship0123456789";
-const VERSIONS = { eve: "0.86.0", product: "4.3.0" };
+const VERSIONS = { eve: "1.3.0", product: "4.3.1" };
 const SCRIPTS = join(import.meta.dirname, "..", "..", "skills", "ab-ship-pipeline", "scripts");
 const REQUEST = "Add a greeting command to the widgets tool";
 
@@ -203,7 +203,7 @@ describe("one iteration per call", () => {
     writeState(root, { status: "done", provenance: { skill: "ab-ship-pipeline", version: "4.1.0" } });
     const result = await shipIteration(deps, { request: REQUEST });
     assert.equal(result.outcome, "iterate");
-    assert.match(result.reason, /provenance names ab-ship-pipeline 4\.1\.0, not ab-ship-pipeline 4\.3\.0/);
+    assert.match(result.reason, /provenance names ab-ship-pipeline 4\.1\.0, not ab-ship-pipeline 4\.3\.1/);
     assert.match(result.brief ?? "", /left no valid state file/);
   });
 });

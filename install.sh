@@ -159,18 +159,79 @@ PI_SOURCE="git:github.com/$GITHUB"
 if [ "$LOCAL" = true ]; then SOURCE="$SOURCE_DIR"; URL_SOURCE="$SOURCE_DIR"; PI_SOURCE="$SOURCE_DIR"; fi
 ROUTES="${XDG_CONFIG_HOME:-$HOME/.config}/agent-blueprint/install-routes.json"
 
+# A host CLI call that never answers fails its route instead of stalling the whole run; a tool can
+# hang before its first line runs, for example while a macOS launch check gets no answer. The limit
+# is 300 s, room for a slow clone; AGENT_BLUEPRINT_TEST_CLI_TIMEOUT sets it in seconds for the tests
+# only.
+CLI_LIMIT=300
+case "${AGENT_BLUEPRINT_TEST_CLI_TIMEOUT:-}" in
+    ''|*[!0-9]*) ;;
+    *) CLI_LIMIT=$AGENT_BLUEPRINT_TEST_CLI_TIMEOUT ;;
+esac
+# stop_tree PID: TERM, then KILL, to PID and every process under it, children first, so nothing
+# left behind holds the output a $(...) is reading.
+stop_tree() {
+    local child
+    if have pgrep; then
+        for child in $(pgrep -P "$1" 2>/dev/null); do stop_tree "$child"; done
+    fi
+    kill "$1" 2>/dev/null || true
+    sleep 0.2
+    kill -9 "$1" 2>/dev/null || true
+}
+# limited CMD...: runs CMD in the foreground, as before (its own input, its own Ctrl-C), with a
+# watchdog beside it. Past CLI_LIMIT seconds the watchdog stops CMD's process tree; limited then
+# names the command and returns 124. Otherwise it returns CMD's own status. Without sleep there is
+# no watchdog and CMD runs with no limit, as before.
+limited() {
+    local mark status=0 watchdog command line
+    if ! have sleep; then "$@"; return; fi
+    mark=$(mktemp "${RUN_STATE:-${TMPDIR:-/tmp}}/agent-blueprint-cli.XXXXXX")
+    (
+        tenths=0
+        while [ ! -s "$mark" ] && [ "$tenths" -lt 50 ]; do sleep 0.1; tenths=$((tenths + 1)); done
+        pid=''; read -r pid < "$mark" || true
+        [ -n "$pid" ] || exit 0
+        tenths=0
+        while kill -0 "$pid" 2>/dev/null; do
+            if [ "$tenths" -ge $((CLI_LIMIT * 10)) ]; then
+                echo stopped >> "$mark"
+                stop_tree "$pid"
+                exit 0
+            fi
+            sleep 0.1
+            tenths=$((tenths + 1))
+        done
+    ) </dev/null >/dev/null 2>&1 &
+    watchdog=$!
+    # This bash writes its own pid to the mark, then becomes CMD, so the watchdog reads CMD's pid.
+    # shellcheck disable=SC2016 # the inner bash expands these, not this one
+    "$BASH" -c 'echo "$$" > "$0"; exec "$@"' "$mark" "$@" || status=$?
+    kill "$watchdog" 2>/dev/null || true
+    wait "$watchdog" 2>/dev/null || true
+    while read -r line; do
+        if [ "$line" = stopped ]; then status=124; fi
+    done < "$mark"
+    if [ "$status" -eq 124 ]; then
+        printf -v command '%q ' "$@"
+        error "$1 did not answer within ${CLI_LIMIT} s, so it was stopped: ${command% }"
+    fi
+    rm -f "$mark"
+    return "$status"
+}
+
 run() {
     if [ "$DRY_RUN" = true ]; then
         local command
         printf -v command '%q ' "$@"
         plan "${command% }"
     else
-        "$@"
+        limited "$@"
     fi
 }
 listing() {
     local output
-    if output=$("$@" 2>/dev/null); then printf '%s\n' "$output"; else
+    if output=$(limited "$@" 2>/dev/null); then printf '%s\n' "$output"; else
         warn "Could not read $*: falling back to install; no unknown registration will be removed." >&2
         printf '%s\n' '@unknown'
     fi

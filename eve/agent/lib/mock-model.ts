@@ -12,6 +12,7 @@ import { DEMO_REPOSITORY_URL } from "./demo-repository";
 //                               ";;" separates the copy's own lines
 //   clone: <url> [branch]       fetch or clone a repository with clone_repository
 //   write_file: <path> <text>   write a file; "\n" in the text is a line break
+//   edit_file: <path> <old>|<new>  replace one text in a file with edit_file; "\n" is a line break
 //   web_fetch: <url>            fetch a URL with web_fetch
 //   plan: <request>             load the offered skill the request names, or else the one whose
 //                               listed description shares the most words with it, as a model would
@@ -31,7 +32,7 @@ import { DEMO_REPOSITORY_URL } from "./demo-repository";
 // When every step has run, the reply is each step's output, one block per step. Under the demo's
 // instruction, a message with no steps (a visitor's bare request) clones the repository it names.
 // A call offered no tools is a compaction's summary request, answered with a fixed summary.
-const STEP = /^(skill|plan|guess|bash|read_file|write_file|web_fetch|helper|clone|ask|publish|ship|brief|spend|fail|remember|recall|tools|say):\s*(.*)$/;
+const STEP = /^(skill|plan|guess|bash|read_file|write_file|edit_file|web_fetch|helper|clone|ask|publish|ship|brief|spend|fail|remember|recall|tools|say):\s*(.*)$/;
 
 function words(text: string): Set<string> {
   return new Set(text.toLowerCase().split(/[^a-z0-9]+/).filter((word) => word.length > 3));
@@ -85,6 +86,11 @@ function toolCall(kind: string, arg: string, request: MockModelRequest): MockMod
     case "write_file": {
       const [filePath, ...text] = arg.split(" ");
       return [{ name: "write_file", input: { filePath, content: text.join(" ").replaceAll("\\n", "\n") } }];
+    }
+    case "edit_file": {
+      const [path, ...rest] = arg.split(" ");
+      const [oldText, newText = ""] = rest.join(" ").replaceAll("\\n", "\n").split("|");
+      return [{ name: "edit_file", input: { path, edits: [{ oldText, newText }] } }];
     }
     case "web_fetch":
       return [{ name: "web_fetch", input: { url: arg } }];

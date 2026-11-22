@@ -43,10 +43,20 @@ async function installTools(sandbox: SandboxSession): Promise<void> {
 
 export const provider = selectProvider();
 
+// eve (from 1.1) stops a session's sandbox once the session has been idle this long; files persist,
+// processes end, and the next turn that uses the sandbox resumes it. A session is idle only with no
+// open turn, no running task and no queued message, and a turn waiting on a question or an approval
+// is still open, so a ship-pipeline run, helper copies and needs-human stops included, is never cut
+// off: the stop comes only after a run's turn has ended. Nothing the agent does needs a process alive
+// between turns (publish_branch stops any process a run left running before it pushes), so eve's
+// 5-minute default is kept, written out here. Vercel and Docker stop on it; the Daytona provider has
+// no onSessionIdle, so Daytona's own 15-minute auto-stop applies there.
+export const IDLE_TIMEOUT_MS = 5 * 60 * 1_000;
+
 // Only the chosen environment is constructed, so a build never prepares another provider.
-const vercel = provider === "vercel" ? VercelSandbox.environment({ prepare: installTools }) : null;
+const vercel = provider === "vercel" ? VercelSandbox.environment({ prepare: installTools, idleTimeoutMs: IDLE_TIMEOUT_MS }) : null;
 const daytona = provider === "daytona" ? DaytonaSandbox.environment({ prepare: installTools }) : null;
-const docker = provider === "docker" ? DockerSandbox.dockerfile() : null;
+const docker = provider === "docker" ? DockerSandbox.dockerfile({ idleTimeoutMs: IDLE_TIMEOUT_MS }) : null;
 
 export const environment = vercel ?? daytona ?? docker!;
 
@@ -61,8 +71,9 @@ export default defineSandbox(() => {
 
 /**
  * Gives a live Vercel Sandbox a full session's time again, called from the steps that use
- * it. eve's session has no way to extend its timeout, so this reaches the sandbox by name
- * through @vercel/sandbox. Vercel caps the total at the plan's maximum (45 minutes on
+ * it. eve extends the timeout only while one of its own sandbox operations runs, and its
+ * session offers no call to extend it, so this reaches the sandbox by name through
+ * @vercel/sandbox. Vercel caps the total at the plan's maximum (45 minutes on
  * Hobby); an extension past it is refused and the sandbox stops at the cap, then resumes
  * with its files at the next step, so a refusal is logged and the step goes on. A sandbox
  * opened moments ago is a few hundred milliseconds short of the full time, and Vercel

@@ -35,7 +35,7 @@ export const VARIABLES: readonly DeployVariable[] = [
   },
   {
     name: "AB_REASONING_<ROLE>",
-    description: "Replaces one role's reasoning level, for example AB_REASONING_TESTER=medium.",
+    description: "Replaces one role's reasoning level, for example AB_REASONING_TESTER=medium. An Anthropic model's role refuses none, which turns thinking off and which current Claude models answer with a 400.",
     link: "#roster",
     prompts: ["never"],
     sensitive: false,

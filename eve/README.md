@@ -50,7 +50,7 @@ This table is the one list of the variables a copy reads. The configurator build
 |---|---|---|---|---|---|
 | `AB_ROSTER` | The roster preset, quality or budget, which sets the model and reasoning level of every role. | [roster](#roster) | `always` | no | `{preset}` |
 | `AB_MODEL_<ROLE>` | Replaces one role's AI Gateway model id, for example AB_MODEL_REVIEWER. Roles: lead, planner, builder, reviewer, tester, analyst, documenter. | [roster](#roster) | `never` | no | none |
-| `AB_REASONING_<ROLE>` | Replaces one role's reasoning level, for example AB_REASONING_TESTER=medium. | [roster](#roster) | `never` | no | none |
+| `AB_REASONING_<ROLE>` | Replaces one role's reasoning level, for example AB_REASONING_TESTER=medium. An Anthropic model's role refuses none, which turns thinking off and which current Claude models answer with a 400. | [roster](#roster) | `never` | no | none |
 | `AI_GATEWAY_API_KEY` | An AI Gateway API key. On Vercel you can leave it out: the project's own OIDC token reaches the Gateway. | [docs](https://vercel.com/docs/ai-gateway/authentication) | `gateway=key` | yes | none |
 | `AB_GITHUB_APP_ID` | The id of the GitHub App you created for this copy. | [pre-flight](#pre-flight) | `always` | yes | none |
 | `AB_GITHUB_APP_PRIVATE_KEY` | The private key of that GitHub App, the whole PEM file. | [pre-flight](#pre-flight) | `always` | yes | none |
@@ -80,7 +80,7 @@ This table is the one list of the variables a copy reads. The configurator build
 
 ## Roster
 
-`AB_ROSTER` picks the preset: `quality`, the default, or `budget`. `AB_MODEL_<ROLE>` and `AB_REASONING_<ROLE>` change one role and leave the rest of the preset as it is; an empty value counts as unset. The roles and their `quality` settings:
+`AB_ROSTER` picks the preset: `quality`, the default, or `budget`. `AB_MODEL_<ROLE>` and `AB_REASONING_<ROLE>` change one role and leave the rest of the preset as it is; an empty value counts as unset. A role on an Anthropic model refuses the reasoning level `none` when the roster loads: it turns thinking off, which Claude Opus 5.5, Claude Sonnet 5.5 and the Fable models answer with a 400 on every call, so use `minimal` or `low` for the least thinking. The roles and their `quality` settings:
 
 | Role | Model | Reasoning |
 |---|---|---|
@@ -108,6 +108,8 @@ The lead is the agent you talk to and is read at build, so a change to its varia
 - **Docker.** The sandbox image is `agent/sandbox/Dockerfile`: eve's default image plus `gh`. eve builds it at `eve build`.
 - **Daytona.** `eve build` creates a Daytona sandbox from eve's default image, installs `git`, `gh` and `python3`, and saves it as a Daytona snapshot; every session then gets its own sandbox from that snapshot, so `DAYTONA_API_KEY` must be set at build as well as at run time. A sandbox that stopped (Daytona stops idle ones after 15 minutes) is started again on the next turn with its files, and the sandbox is deleted when the session ends.
 
+On Vercel Sandbox and Docker, eve stops a session's sandbox once the session has been idle for 5 minutes (`IDLE_TIMEOUT_MS` in `agent/sandbox/sandbox.ts`, eve's default written out). A session is idle only when no turn is open, no task runs and no message waits, and a turn waiting on a checkpoint question or an approval stays open, so a pipeline run is never stopped part way; the stop comes after its turn ends. Files persist, processes in the sandbox end, and the next turn that uses the sandbox resumes it. Daytona keeps its own 15-minute stop.
+
 The network policy is set when a session's sandbox is created. `AB_ALLOWED_HOSTS` adds hosts to `github.com` and `api.github.com`; unset, it is the npm and PyPI registries, and set to an empty value, only the two GitHub hosts remain. Each provider applies it as far as it can, as the matrix below states. Daytona tiers 1 and 2 refuse a per-sandbox allow-list. On those tiers the agent creates the sandbox without one, under your Daytona organisation's network policy, and logs `[daytona] this Daytona tier refuses a per-sandbox allow-list; the sandbox runs under the organisation's network policy`. When the policy blocks all traffic and Daytona refuses that, the session stops with Daytona's error, and no sandbox opens without the block.
 
 The agent clones the repository you name into the sandbox's workspace with its `clone_repository` tool. A public github.com repository is fetched without a credential. When GitHub asks for one, the repository is private: the agent mints a read-only token for that one repository from the GitHub App and fetches through it, and refuses, naming the repository, when the App is not installed there. How the token reaches git depends on the provider (the matrix's token route column). On Vercel Sandbox the token travels as a header the sandbox's network adds to requests to `github.com` while the fetch runs, so no process in the sandbox ever sees it. On Docker and Daytona, each git command reads the token from a file that is removed when the command ends; it never enters the session's environment or the remote URL, but a process in the sandbox could read that file while the command runs, which is why those providers are marked unguarded. Every git command that carries a token ignores the repository's own hooks and credential helpers, and remote URLs are rewritten without credentials before and after.
@@ -131,7 +133,7 @@ Three routes run the same code at the same Eve version: `eve` is pinned exactly 
 | Vercel Hobby | Vercel Sandbox | 45 minutes per sandbox session | Short runs and the discovery check only |
 | Vercel Pro | Vercel Sandbox | Longer than 45 minutes, up to the plan's maximum; the clone tool extends the session each time it runs | Pro, for any run over 45 minutes |
 | Railway | Daytona | No session limit; Daytona stops a sandbox after 15 idle minutes and the next turn starts it again with its files | Daytona credits for the sandbox time |
-| Your own server | Docker or Daytona | Docker: none. Daytona: as on Railway | A server that stays up for the run |
+| Your own server | Docker or Daytona | Docker: none; eve stops a container 5 idle minutes after its session's last turn and starts it again with its files. Daytona: as on Railway | A server that stays up for the run |
 
 The pipeline pushes its branch at every stage change, so a sandbox that stops at its limit loses no finished stage.
 
@@ -149,7 +151,7 @@ Vercel runs the agent, the web chat, the workflow store and the sandboxes; this 
 
 ```bash
 npm ci
-npx eve@0.86.0 link                                 # create or link the Vercel project
+npx eve@1.3.0 link                                 # create or link the Vercel project
 npx vercel@65.3.1 env add AB_GITHUB_APP_ID production  # repeat for each variable your choices need
 npm run deploy                                      # the skill count check, then eve deploy
 curl https://<your-deployment>/eve/v1/health
@@ -161,7 +163,7 @@ Railway runs the agent from `eve/Dockerfile`, with Daytona as the sandbox and Po
 
 **With the button.** The [Railway template](https://railway.com/deploy/agent-blueprint-railway) deploys two services, with the agent built directly from this repository:
 
-- **agent**: built from the repository root (leave the service's root directory empty) with `RAILWAY_DOCKERFILE_PATH=eve/Dockerfile`. The Dockerfile sets `AB_SANDBOX=daytona` before `eve build`, because the build prepares the Daytona snapshot and Railway has no Docker daemon, so `DAYTONA_API_KEY` must be set before the first build. A build without it stops with `DAYTONA_API_KEY is not set; the Daytona sandbox needs it at eve build and at run time.` The template sets `WORKFLOW_TARGET_WORLD=@workflow/world-postgres`, `WORKFLOW_POSTGRES_URL=${{Postgres.DATABASE_URL}}`, `AB_WORKFLOW_SECRET=${{secret(64, "abcdef0123456789")}}` and `AB_TRUST_PROXY=1`. `WORKFLOW_TARGET_WORLD` is read at build time, when `eve build` fixes the workflow store into the output, so a change to it takes effect at the next build; the other three are read at run time. Railway's edge ends TLS and forwards plain HTTP with `X-Forwarded-Proto` and `X-Forwarded-Host`; without `AB_TRUST_PROXY`, MCP answers every request 403 `MCP endpoints require HTTPS except on loopback.` Every message the agent queues in Postgres carries a signature made with `AB_WORKFLOW_SECRET` over the queue's name and the message, never the secret itself, and the queue route `/.well-known/workflow/v1/flow`, which Railway makes public like every path, refuses any request without a valid one. The template also runs `npx --package=@workflow/world-postgres@5.0.5 bootstrap` as the pre-deploy command, checks `/eve/v1/health`, and sets `RAILWAY_DEPLOYMENT_DRAINING_SECONDS` to 60, so a redeploy gives the old container a minute after SIGTERM before Railway stops it.
+- **agent**: built from the repository root (leave the service's root directory empty) with `RAILWAY_DOCKERFILE_PATH=eve/Dockerfile`. The Dockerfile sets `AB_SANDBOX=daytona` before `eve build`, because the build prepares the Daytona snapshot and Railway has no Docker daemon, so `DAYTONA_API_KEY` must be set before the first build. A build without it stops with `DAYTONA_API_KEY is not set; the Daytona sandbox needs it at eve build and at run time.` The template sets `WORKFLOW_TARGET_WORLD=@workflow/world-postgres`, `WORKFLOW_POSTGRES_URL=${{Postgres.DATABASE_URL}}`, `AB_WORKFLOW_SECRET=${{secret(64, "abcdef0123456789")}}` and `AB_TRUST_PROXY=1`. `WORKFLOW_TARGET_WORLD` is read at build time, when `eve build` fixes the workflow store into the output, so a change to it takes effect at the next build; the other three are read at run time. Railway's edge ends TLS and forwards plain HTTP with `X-Forwarded-Proto` and `X-Forwarded-Host`; without `AB_TRUST_PROXY`, MCP answers every request 403 `MCP endpoints require HTTPS except on loopback.` Every message the agent queues in Postgres carries a signature made with `AB_WORKFLOW_SECRET` over the queue's name and the message, never the secret itself, and the queue route `/.well-known/workflow/v1/flow`, which Railway makes public like every path, refuses any request without a valid one. The template also runs `npx --package=@workflow/world-postgres@5.4.1 bootstrap` as the pre-deploy command (the version `eve/package.json` pins, so it runs the copy in the image and applies the migrations a new release brings), checks `/eve/v1/health`, and sets `RAILWAY_DEPLOYMENT_DRAINING_SECONDS` to 60, so a redeploy gives the old container a minute after SIGTERM before Railway stops it.
 - **Postgres**: the database the workflow store keeps its runs in, with credentials the template generates.
 
 Railway builds the agent from this repository until you eject it. To get your own repository, open the service's settings, find **Upstream Repo** under **Source** and press **Eject**, which mirrors it into your GitHub account. Until then Railway tells you when this repository's `main` changes, and you choose when to apply the update.
@@ -180,7 +182,7 @@ A `--build-arg` with no value takes the variable from your shell's environment, 
 
 ### Your own server
 
-Run the agent with Node 24 or later on a server you manage. With a Docker daemon on that server the sandbox is Docker; without one, use Daytona. The workflow store is Eve's local world under `eve/.eve/.workflow-data`, so keep that folder on a persistent disk, run one process, and back the folder up before an upgrade. Operational memory is off outside Vercel; nothing needs configuring for it.
+Run the agent with Node 24 or later on a server you manage. With a Docker daemon on that server the sandbox is Docker; without one, use Daytona. The workflow store is Eve's local world, one SQLite database at `eve/.eve/.workflow-data/world.db` beside the key `eve start` checks every queue delivery against, so keep that folder on a persistent disk, run one process, and back the folder up before an upgrade. Operational memory is off outside Vercel; nothing needs configuring for it.
 
 ```bash
 git clone https://github.com/<you>/<your-copy>.git
@@ -191,7 +193,7 @@ PORT=3000 npm start -- --host 0.0.0.0
 curl http://127.0.0.1:3000/eve/v1/health
 ```
 
-Set the variables in the environment of both `npm run build` and `npm start`. To keep the runs in Postgres instead of the folder, build with `WORKFLOW_TARGET_WORLD=@workflow/world-postgres`, run `npx --package=@workflow/world-postgres@5.0.5 bootstrap` once with `WORKFLOW_POSTGRES_URL` set, and start with `WORKFLOW_POSTGRES_URL` set and `AB_WORKFLOW_SECRET` set to the output of `openssl rand -hex 32` (the agent does not start without it). For Daytona instead of Docker, set `AB_SANDBOX=daytona` and `DAYTONA_API_KEY` before the build, or build the Railway image and run it with the run store on a volume:
+Set the variables in the environment of both `npm run build` and `npm start`. To keep the runs in Postgres instead of the folder, build with `WORKFLOW_TARGET_WORLD=@workflow/world-postgres`, run `npx --package=@workflow/world-postgres@5.4.1 bootstrap` with `WORKFLOW_POSTGRES_URL` set, once and again after every upgrade that changes that version (it applies the database migrations, 0032 among them for eve 1.2.0 and later), and start with `WORKFLOW_POSTGRES_URL` set and `AB_WORKFLOW_SECRET` set to the output of `openssl rand -hex 32` (the agent does not start without it). For Daytona instead of Docker, set `AB_SANDBOX=daytona` and `DAYTONA_API_KEY` before the build, or build the Railway image and run it with the run store on a volume:
 
 ```bash
 docker build -f eve/Dockerfile --build-arg DAYTONA_API_KEY \
@@ -421,9 +423,15 @@ A service the Railway button made builds from this repository, so eject it first
    git merge v<new version>
    ```
 
-   A copy the Vercel button made starts from its own first commit, and a repository Railway's Eject made may too, so git refuses with "refusing to merge unrelated histories". Merge that first time with `git merge --allow-unrelated-histories v<new version>` and resolve each conflict. Compare `"eve"` in `eve/package.json` before and after: a changed version is what strands sessions off Vercel.
+   A copy the Vercel button made starts from its own first commit, and a repository Railway's Eject made may too, so git refuses with "refusing to merge unrelated histories". Merge that first time with `git merge --allow-unrelated-histories v<new version>` and resolve each conflict. Compare `"eve"` in `eve/package.json` before and after: a changed version is what strands sessions off Vercel. Moving from an eve before 1.1.0 to 1.1.0 or later, the local world starts a new SQLite store and reads nothing from the old files, and on Postgres the new release's bootstrap migrates the database; both are why step 4 ends every session first.
 2. **Set the maintenance variable.** Set `AB_MAINTENANCE=1` on the running copy, still at the old release. While it is set, a new chat, an HTTP trigger, a Slack mention or direct message, a Linear delegation or reply, a Telegram message, an MCP `agent_start` or `agent_update`, and an answer to a checkpoint question get "This agent is being upgraded and is not starting new work right now, so try again a little later." and start nothing; the health route, streams, cancel and reset still answer. Linear shows the message as an error activity, Telegram as a reply or, for a button press, an alert that leaves the question open, and an MCP client as a tool error; a Linear **Stop**, `agent_get` and `agent_cancel` still work. On Vercel, `npx vercel@65.3.1 env add AB_MAINTENANCE production`, then `npx vercel@65.3.1 redeploy <current production URL>` so the running release reads it. On Railway, add the variable to the agent service and deploy the change. On your own server, restart the process with the variable set. This agent has no schedules; a schedule you add starts its sessions without the route check, so have it return early while `AB_MAINTENANCE` is set.
 3. **List the open sessions.** On Vercel, open the project's **Observability**, **Agent Runs** and look for runs still running. On your own server, in `eve/`:
+
+   ```bash
+   node -e 'const{DatabaseSync}=require("node:sqlite"),db=new DatabaseSync(".eve/.workflow-data/world.db",{readOnly:true});for(const r of db.prepare("SELECT run_id,doc FROM runs WHERE workflow_name=? AND status=?").all("workflow//eve//workflowEntry","running"))console.log(r.run_id,JSON.parse(r.doc).updatedAt)'
+   ```
+
+   That reads the store of a copy on eve 1.1.0 or later, one SQLite database. A copy on an earlier eve keeps one JSON file per run; list those with:
 
    ```bash
    node -e 'const fs=require("fs"),d=".eve/.workflow-data/runs";for(const f of fs.readdirSync(d)){const r=JSON.parse(fs.readFileSync(d+"/"+f,"utf8"));if(r.workflowName==="workflow//eve//workflowEntry"&&r.status==="running")console.log(r.runId,r.updatedAt)}'
@@ -457,7 +465,7 @@ Each new value takes effect at the next deploy, or the next start on your own se
 
 ### Rotate the workflow secret
 
-`AB_WORKFLOW_SECRET` applies only where the workflow store is Postgres. Make a new value with `openssl rand -hex 32`, set it on every deployment that shares the database, and redeploy each one; until they all have it, they refuse each other's messages. Messages queued before the change carry a signature made with the old value, so the queue route refuses them with 401, and each refusal writes a `Failed task` line to the log. No run is lost. A deployment that starts queues a new wake, signed with the new value, for every run still in progress; each run continues from there and queues its pending waits again, which replaces the refused copies. A refused message nothing replaces is tried again up to 73 times, the later attempts about six hours apart, for about 16 days.
+`AB_WORKFLOW_SECRET` applies only where the workflow store is Postgres. Make a new value with `openssl rand -hex 32`, set it on every deployment that shares the database, and redeploy each one; until they all have it, one refuses a message another signed when it arrives over HTTP. Messages queued before the change carry a signature made with the old value. A deployment delivers the messages of eve's own workflow queue to itself inside the process, where no signature is checked, so those still run; a message that reaches the queue route over HTTP with the old signature is refused with 401, and each refusal writes a `Failed task` line to the log. No run is lost. A deployment that starts queues a wake for every run still in progress that is not waiting on a hook or a timer, and each run continues from there and queues its pending waits again, which replaces the refused copies. A refused message nothing replaces is tried again up to 73 times, the later attempts about six hours apart, for about 16 days.
 
 ### Remove a channel
 
@@ -473,9 +481,9 @@ Node 24 or later. Run these in `eve/`:
 
 ```bash
 npm ci
-npx eve@0.86.0 info                       # what Eve discovered
+npx eve@1.3.0 info                        # what Eve discovered
 npm run build
-AB_EVAL_MOCK=1 npx eve@0.86.0 eval --tag mock   # the mocked evals: no model calls, no key
+AB_EVAL_MOCK=1 npx eve@1.3.0 eval --tag mock    # the mocked evals: no model calls, no key
 npm test                                  # the Daytona provider, credentials, publish tool, ship loop, helper, registry, gate and demo cleanup, with stubs; needs git
 ```
 

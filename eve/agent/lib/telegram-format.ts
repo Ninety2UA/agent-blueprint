@@ -1,4 +1,4 @@
-// The agent's replies on Telegram (ruling 60). Eve 0.86.0's Telegram channel posts a reply as plain
+// The agent's replies on Telegram (ruling 60). Eve's Telegram channel (0.86.0, unchanged at 1.3.0) posts a reply as plain
 // text: its sendMessage forwards the body's fields but sets no parse_mode and has no formatting
 // hook, so the live run showed **Done**, backticks and ``` fences raw. This module turns the
 // model's markdown into Telegram's HTML subset (b, i, s, code, pre, a) with <, > and & escaped,
