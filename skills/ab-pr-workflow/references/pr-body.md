@@ -10,6 +10,7 @@ Title: concise, imperative mood (`Add user authentication`, not `Added user auth
 - **Size by decision cost.** Length follows what the reviewer must decide, not the diff's line count. A low-risk diff gets a short body; a wide or risky one gets every section filled.
 - **Honor a repository template.** If `.github/PULL_REQUEST_TEMPLATE.md` (or the repository's equivalent) exists, keep its section headers and fill them; add `## Plan audit` and the disclosure line inside it rather than replacing it.
 - **Record unapplied findings.** Every self-review or reviewer finding you chose not to apply goes under `## Checklist` as an unticked `Not applied:` line with the reason. The reviewer sees the decision, not a silent omission.
+- **Credit the work you continue.** When the branch carries on someone else's work (their branch, their abandoned pull request, a teammate's commits), keep their commit authorship and any `Co-authored-by:` trailers, name them in the body and link the original pull request. A squash merge carries their trailers into the squash message, with the names and addresses already in the history, never ones you construct. The AI-assistance line below stays as well; it does not stand in for the person's credit.
 - **Disclose AI assistance.** The body ends with the disclosure line; `CONTRIBUTING.md` owns the rule. Report the model identity you can actually report; "not disclosed" is an honest answer, a guessed model name is not.
 
 ## Template

@@ -36,7 +36,7 @@ Extracted debugging framework from a source project's `CLAUDE.md`:
 Framework designed to resist rationalization under pressure:
 
 ### Language Choices
-- "ALWAYS" / "NEVER" (not "should" / "try to")
+- Firm rules stated with their reason ("find the root cause first, because a symptom fix hides the next failure"), not "should" / "try to". This log first used capitalized ALWAYS / NEVER; the current rule is `portable-authoring.md` § Principles with reasons
 - "even if faster" / "even if I seem in a hurry"
 - "STOP and re-analyze" (explicit pause)
 - "Don't skip past" (catches the actual behavior)
@@ -47,10 +47,8 @@ Framework designed to resist rationalization under pressure:
 - **Explicit failure mode** - "IF your first fix doesn't work" with mandatory action
 - **Anti-patterns section** - Shows exactly what shortcuts look like
 
-### Redundancy
-- Root cause mandate in overview + when_to_use + Phase 1 + implementation rules
-- "NEVER fix symptom" appears 4 times in different contexts
-- Each phase has explicit "don't skip" guidance
+### Placement
+- The root-cause rule sits once where each phase needs it, with its reason; repeating it as reinforcement is not needed, because a current model keeps a rule it read once
 
 ## Testing Approach
 

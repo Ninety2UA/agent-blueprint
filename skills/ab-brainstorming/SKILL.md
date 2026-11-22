@@ -2,7 +2,7 @@
 name: ab-brainstorming
 description: "Turns an idea into an approved design, honoring prior design approval, authorization to implement a seen design, or an explicit design waiver: settles what the repository answers, challenges the premise, asks the remaining questions one at a time, compares two or three approaches, presents the design in sections for approval, then saves it and hands off to ab-writing-plans. Use when the user wants to brainstorm or design a change, or when work involves design decisions, several viable approaches or three or more files, including when the user jumps straight to code on such work. Not for a trivial change under three files with one obvious approach (ab-quick-fix), or for recording decisions without exploring alternatives (ab-discuss)."
 metadata:
-  version: "4.2.1"
+  version: "4.3.0"
 ---
 
 # Brainstorming Ideas Into Designs
@@ -13,7 +13,7 @@ The outcome is a design the user approved, saved as `docs/plans/YYYY-MM-DD-<topi
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-brainstorming", "version": "4.2.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-brainstorming.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-brainstorming", "version": "4.3.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-brainstorming.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## Size the ceremony
 
@@ -51,7 +51,7 @@ Options: the approaches, at most three. Default when nobody answers: the recomme
 
 ### 5. Present the design
 
-Present the chosen approach's design in sections (architecture, components, data flow, error handling, testing), each scaled to its complexity: a few sentences, up to 200-300 words when nuanced. Write each section out in full in your reply before you ask about it; the user can approve only what they have read, so a heading or a one-line summary is not a section. After each section ask whether it looks right, and go back to clarify when something does not fit.
+Present the chosen approach's design in sections (architecture, components, data flow, error handling, testing), each scaled to its complexity: a few sentences for a simple part, longer where its trade-offs need the room. Write each section out in full in your reply before you ask about it; the user can approve only what they have read, so a heading or a one-line summary is not a section. After each section ask whether it looks right, and go back to clarify when something does not fit.
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
@@ -59,7 +59,7 @@ Ask for approval only once every section is in the conversation. Options: approv
 
 ### 6. Write and commit the design doc
 
-Write the approved design to `docs/plans/YYYY-MM-DD-<topic>-design.md`, in the section order presented, in plain prose with the assumptions and defaults you took marked as such. Commit it.
+Write the approved design to `docs/plans/YYYY-MM-DD-<topic>-design.md`, in the section order presented, in plain prose with the assumptions and defaults you took marked as such, and end it with **Approaches weighed**: each approach not chosen and why. Commit it.
 
 **No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 

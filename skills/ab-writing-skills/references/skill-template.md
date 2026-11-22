@@ -69,6 +69,8 @@ Concrete results
 - [ ] Description written in third person
 - [ ] Host-dependent steps use the capability snippets, each as its own paragraph
 - [ ] Whole SKILL.md within 8,000 bytes; detail moved to `references/`
+- [ ] Moved text kept its rules: before the move, list the phrases that carry one (a threshold, a named value, a "never" or "only" condition); after it, search the skill folder for each as a fixed string and confirm it is still there
+- [ ] Every step holds for any capable model (`portable-authoring.md` § How a skill reads)
 - [ ] Keywords throughout for search (errors, symptoms, tools)
 - [ ] Clear overview with core principle
 - [ ] Address specific baseline failures identified in RED

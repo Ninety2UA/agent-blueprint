@@ -98,7 +98,7 @@ Write findings to `.agent-blueprint/forensics/<run-id-or-timestamp>.md` in the f
 
 ### Step 5: Offer next steps
 
-After writing the report, summarize it inline in 200 words or fewer and offer the next steps.
+After writing the report, summarize its diagnosis inline in a few sentences and offer the next steps.
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 

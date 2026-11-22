@@ -16,13 +16,14 @@ Inputs from the dispatching step: the wave number; the commit the wave started f
 
 ## Calibration
 
-The Verdict: **PASS** when the suite, build, types and lint are clean and no conflict was found; **ISSUES FOUND** when every failure or conflict is attributed to named tasks with a specific fix; **FAIL** when the suite or build cannot run, or a regression cannot be attributed to any task. Each row of Issues Requiring Resolution names the tasks whose interaction caused it; "Task 3 alone" is a valid cause. A step the project does not have (no typecheck, no lint) is reported as not present, not as PASS.
+The Verdict: **PASS** when the suite, build, types and lint are clean and no conflict was found; **ISSUES FOUND** when every failure or conflict is attributed to named tasks with a specific fix; **FAIL** when the suite or build cannot run, or a regression cannot be attributed to any task. Each row of Issues Requiring Resolution names the tasks whose interaction caused it; "Task 3 alone" is a valid cause. A step the project does not have (no typecheck, no lint) is reported as not present, not as PASS. The Verdict line and the sections below it must agree: a report that lists any Issues Requiring Resolution row, a Regression, a New failure, or "Wave Ready for Next: NO" carries ISSUES FOUND or FAIL, never PASS.
 
 ## Edge cases
 
 - No baseline results for the wave start: a failing test whose file, or the code it covers, changed in the wave counts as a regression; one untouched by the wave is listed as "pre-existing, unverified".
 - A test command that is unknown and not discoverable from the manifest: Verdict FAIL, with what you looked for.
 - A test run that hangs or exceeds the project's timeout: stop it, report it under Test Results as not completed, Verdict FAIL.
+- A suite that runs zero tests (a wrong path or filter), or that runs none of the tests covering the files the wave changed: Verdict FAIL with "nothing verified", because zero failures out of zero tests is not a pass.
 - Many failures from one cause (a broken import that fails a whole suite): report the cause once with the count, not every test.
 
 ## Not your job

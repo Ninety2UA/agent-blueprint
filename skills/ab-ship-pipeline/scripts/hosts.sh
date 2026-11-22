@@ -483,7 +483,7 @@ host_preflight() {
             warn "pi: no auth status command; a provider key must be configured (run pi once). --approve trusts the project" ;;
         hermes)   # unverified
             if [ -f "$HOME/.hermes/config.yaml" ]; then
-                info "hermes: config found; skills load from skills.external_dirs"
+                info "hermes: config found; the installer's copy of the skills loads from ~/.hermes/skills"
             else
                 warn "hermes: no ~/.hermes/config.yaml; run hermes once to set up a provider"
             fi ;;

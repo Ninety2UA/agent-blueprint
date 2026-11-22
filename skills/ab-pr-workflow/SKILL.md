@@ -44,7 +44,7 @@ Review your own PR as a reviewer would: read every line of the diff, and check f
 
 ### Step 1: Read All Comments First
 
-Read every comment before changing anything, because some may conflict or depend on each other.
+Read every comment before changing anything, because some may conflict or depend on each other. Waiting on CI or review bots: `references/watching.md`.
 
 ### Step 2: Triage Comments
 
@@ -54,7 +54,7 @@ Sort each into **will fix** (clear and valid), **needs discussion** (disagreemen
 
 Resolve independent comments with one resolver helper per comment, in parallel, using the ab-dispatching-parallel-agents skill. Resolve dependent comments (fixing one affects another) one after another.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt: `references/agents/pr-comment-resolver.md`, one helper per comment. Inputs: the comment's file and line, and its text between data markers (below).
 

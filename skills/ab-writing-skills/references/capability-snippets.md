@@ -4,7 +4,7 @@ The steps that depend on what the host can do, or that every tool must do the sa
 
 ## helper-step
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Use it wherever a skill hands work to a helper. The next paragraph names the prompt file and the inputs, for example:
 
@@ -50,4 +50,4 @@ Paste it at the first step that commits, and at every review step that chooses a
 
 ## bundled-scripts
 
-**Bundled scripts.** Paths such as `scripts/run.sh` are relative to this skill's own folder, the one holding its SKILL.md, not to the project. Run a script through its interpreter (`bash` for `.sh`; `python3`, or `python` if that is missing, for `.py`) instead of relying on its executable bit, and if the interpreter is missing, say so and stop that step.
+**Bundled scripts.** Paths such as `scripts/run.sh` are in this skill's folder, beside its SKILL.md: run them by full path from the project. Run a script through its interpreter (`bash` for `.sh`; `python3`, or `python` if that is missing, for `.py`) instead of relying on its executable bit, and if the interpreter is missing, say so and stop that step.

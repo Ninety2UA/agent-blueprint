@@ -12,7 +12,7 @@ Keep it to two or three exchanges with the user: learn everything you can from t
 
 ## Step 0: Scaffold
 
-**Bundled scripts.** Paths such as `scripts/run.sh` are relative to this skill's own folder, the one holding its SKILL.md, not to the project. Run a script through its interpreter (`bash` for `.sh`; `python3`, or `python` if that is missing, for `.py`) instead of relying on its executable bit, and if the interpreter is missing, say so and stop that step.
+**Bundled scripts.** Paths such as `scripts/run.sh` are in this skill's folder, beside its SKILL.md: run them by full path from the project. Run a script through its interpreter (`bash` for `.sh`; `python3`, or `python` if that is missing, for `.py`) instead of relying on its executable bit, and if the interpreter is missing, say so and stop that step.
 
 Run `scripts/scaffold.py` through `python3`, with no folder argument; add one only when the user named a folder. Without one, it refuses home and `/`; a non-empty folder outside any git work tree gets a dry run and exit 3 without writes. Repo subfolders report their git top level.
 

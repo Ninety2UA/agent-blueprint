@@ -307,6 +307,7 @@ BEFORE keeping any test:
 
   Mutation check:
     Break the behavior in production (flip a comparison, zero a limit, drop a branch)
+    Confirm the break is in the file (`git diff` shows it) - an edit that silently changed nothing proves nothing
     Run the test - it MUST fail
     Restore the code - it MUST pass
 

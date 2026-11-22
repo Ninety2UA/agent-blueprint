@@ -10,7 +10,7 @@ You run scenarios without the skill (RED - watch agent fail), write skill addres
 
 **Core principle:** If you didn't watch an agent fail without the skill, you don't know if the skill prevents the right failures.
 
-**REQUIRED BACKGROUND:** You MUST understand ab-test-driven-development before using this skill. That skill defines the fundamental RED-GREEN-REFACTOR cycle. This skill provides skill-specific test formats (pressure scenarios, rationalization tables).
+**Background:** this method is the ab-test-driven-development skill's RED-GREEN-REFACTOR cycle applied to skills; read that skill first if the cycle is new to you. This reference adds the skill-specific test formats (pressure scenarios, rationalization tables).
 
 **Complete worked example:** See references/examples/CLAUDE_MD_TESTING.md (from this skill's directory) for a full test campaign testing CLAUDE.md documentation variants.
 
@@ -343,29 +343,31 @@ Write 20 queries — 10 that SHOULD trigger this skill, 10 that should NOT:
 2. "Fix the bug in the payment processing module"
 3. "Add validation to the user registration form"
 4. "Refactor the database query layer"
-5. "Write code to handle file uploads"
+5. "Here's the failing stack trace: `TypeError: total is undefined at cart.ts:42`. Fix it."
 6. "I already wrote the code, now I need tests"
 7. "Let me quickly add this one-line fix"
-8. "The deadline is tight, let's skip tests for now"
+8. "This diff adds a discount field to Order; make it compile:" followed by the pasted diff
 9. "Implement the REST API endpoints for orders"
 10. "I manually tested it and it works"
 
 ### Should NOT trigger (expect: skill stays unloaded)
 1. "Explain what TDD is"
-2. "Review this pull request"
+2. "Review this pull request" → ab-requesting-code-review
 3. "Help me write documentation for the API"
 4. "What's the project structure?"
 5. "Create a deployment script"
-6. "Analyze the git history of this module"
-7. "Help me brainstorm feature ideas"
-8. "What does this error message mean?"
-9. "Summarize the recent changes"
-10. "Set up the CI/CD pipeline"
+6. "Analyze the git history of this module" → ab-forensics
+7. "Help me brainstorm feature ideas" → ab-brainstorming
+8. "What does this error message mean?" → ab-systematic-debugging
+9. "Summarize the recent changes" → ab-changelog-generation
+10. "Set up the CI/CD pipeline" → none
 ```
 
 **Mix includes:**
 - Obvious triggers (1-5) and subtle triggers (6-10, e.g., symptoms of about-to-violate)
 - Obviously unrelated queries (1-5) and near-misses (6-10, e.g., related but different skill)
+- At least two triggers where the code, diff or error is pasted into the message and the answer looks obvious: a model tends to answer those directly instead of loading the skill
+- Each near-miss names the skill that should load instead (or "none"), so a run that loads the wrong neighbour fails the case instead of passing it by accident
 
 ### Test Each Query
 

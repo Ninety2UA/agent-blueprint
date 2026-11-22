@@ -49,7 +49,7 @@ The whole file, frontmatter included, loads each time the skill runs, and Codex 
 
 Watch a baseline fail first. Without seeing what an agent does with no skill, you cannot tell whether the skill teaches anything, so this holds for edits as well as new skills.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 No fixed prompt file here: the prompt is the pressure scenario you write following `references/testing-skills-with-subagents.md` (worked campaigns and scenario prompts in `references/examples/`), its input is whether the skill under test is loaded, and it returns every choice and rationalization word for word. Without a helper the Red run proves nothing (you would test yourself): say so and leave the box unticked.
 

@@ -13,6 +13,8 @@ date: YYYY-MM-DD
 tags: [technology, pattern, domain]
 applies-to: [what part of the codebase or what type of work]
 retire_when: [optional — the condition that makes this obsolete, e.g. "we drop Node 18" or "upstream fixes the bug"]
+status: [optional — "unverified" when a gardening pass could not confirm the doc against the current code]
+unverified_reason: [with status only — what failed to check out, and the date]
 ---
 
 # [Title]
@@ -57,6 +59,7 @@ A good solution document:
 - Includes failed approaches (saves the most time)
 - Is specific enough to be actionable, not so specific it's a one-off
 - Takes 2-5 minutes to write (not a research paper)
+- Points at code by file and name (`src/auth/session.ts`, `refreshToken()`, the `RETRY_LIMIT` setting), not by line number: line numbers move with every unrelated edit, names move only when the code they name does. Keep a line number only in a quoted before-the-fix snippet, and say that it is one
 
 A bad solution document:
 - Just says "fixed the bug by changing X to Y"
@@ -71,6 +74,8 @@ A bad solution document:
 **Documenting too much** — This is not a blog post. 50-100 lines is ideal. If it's longer, you're writing a research doc.
 
 **Missing search terms** — If the document doesn't include the error message or symptom, it won't be found when someone encounters the same problem.
+
+**Writing as prose what a check could hold** — A lesson shaped like a rule ("never call X from a request handler", "every migration needs a down step") stops the next mistake best as a regression test or a lint rule, and second best as a line in `docs/context/CONVENTIONS.md`. Propose that first; the doc then keeps only what the check cannot carry: the root cause and the approaches that failed.
 
 **Skipping failed approaches** — The approaches that didn't work are often more valuable than the one that did. They prevent future time waste.
 

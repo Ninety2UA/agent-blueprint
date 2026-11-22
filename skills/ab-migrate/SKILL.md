@@ -13,7 +13,7 @@ Say at the start: "Checking this project for Agent Blueprint v3 traces."
 
 ## Step 1: Find the traces
 
-**Bundled scripts.** Paths such as `scripts/run.sh` are relative to this skill's own folder, the one holding its SKILL.md, not to the project. Run a script through its interpreter (`bash` for `.sh`; `python3`, or `python` if that is missing, for `.py`) instead of relying on its executable bit, and if the interpreter is missing, say so and stop that step.
+**Bundled scripts.** Paths such as `scripts/run.sh` are in this skill's folder, beside its SKILL.md: run them by full path from the project. Run a script through its interpreter (`bash` for `.sh`; `python3`, or `python` if that is missing, for `.py`) instead of relying on its executable bit, and if the interpreter is missing, say so and stop that step.
 
 Run `scripts/detect-v3.sh <project directory>`. It reports one line per trace and changes nothing:
 

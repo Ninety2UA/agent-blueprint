@@ -108,7 +108,7 @@ Build one task packet per task, as `references/team-ledger.md` § The task packe
 
 Mark the wave's tasks `running` in the ledger, then start one worker per task, all at once. With worktree isolation, each starts in its own worktree.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt: each task's packet, as that worker's whole prompt; no prompt file applies. Inputs: the packet itself.
 
@@ -118,7 +118,7 @@ Wait for all workers in the wave to return, then integrate each one as `referenc
 
 Check the wave's combined output before the next wave starts.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt: `references/agents/integration-verifier.md`. Inputs: the wave number, the commit the wave started from (in no-commit mode, the files the wave's tasks own), and each completed task with its worker's summary.
 
@@ -183,7 +183,7 @@ After all workers complete:
 
 If tests/build/lint fail, identify the failing component and hand the fix to a targeted fix worker (under a native extra, the teammate or agent that owns those files). Re-run verification after the fix.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt: a fix task packet, built like a wave task packet (§ Start the Wave's Workers), naming the failing component, the failing output, and the files the fix may touch; no prompt file applies. Inputs: the packet itself.
 
@@ -240,6 +240,10 @@ Write this report; the skill that sent you here presents it:
 ```markdown
 ## Coordinator Report
 
+- **Not done or skipped:** [each task with what was tried and why, or "none"]
+- **Not verified:** [each check claimed but not run, or "none"]
+- **Changed outside the plan:** [each file or behavior no task named, or "none"]
+
 ### Execution
 - Ledger: [path]
 - Waves: [N] · Workers: [N] · Isolation: [worktree/ownership/inline] · Extra: [none/name]
@@ -278,7 +282,7 @@ Set the ledger's status to `done`, or to `blocked` with the reason when the repo
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-Every task packet you hand a worker (wave worker, fix worker) ends with this output section, so its final response starts with one of these states, carries a compact summary ≤ 2,000 tokens, and ends with any notes for later tasks, which you append to the ledger. A helper that runs from a prompt file, such as the integration verifier, returns that file's Output section instead.
+Every task packet you hand a worker (wave worker, fix worker) ends with this output section, so its final response starts with one of these states, carries a compact summary you can read in one pass, and ends with any notes for later tasks, which you append to the ledger. A helper that runs from a prompt file, such as the integration verifier, returns that file's Output section instead.
 
 | State | Meaning |
 |-------|---------|
@@ -287,7 +291,7 @@ Every task packet you hand a worker (wave worker, fix worker) ends with this out
 | `NEEDS_INPUT` | Mid-task user/operator decision required |
 | `INCONCLUSIVE` | Task ran to completion but result is uncertain (couldn't verify, partial coverage) |
 
-The 2K-token cap is a *commitment*: bounded handoff cost regardless of how long the worker ran. If the worker's substantive output exceeds that, it persists detail to a file (under `.agent-blueprint/team/<id>/` or `.agent-blueprint/review-runs/<id>/`) and references the path in the summary, rather than pasting the full output back into your context, where it would crowd out the coordination.
+The summary stays short however long the worker ran, so the handoff cost stays bounded. Detail that does not fit a short summary goes to a file (under `.agent-blueprint/team/<id>/` or `.agent-blueprint/review-runs/<id>/`), and the summary gives its path, rather than pasting the full output back into your context, where it would crowd out the coordination.
 
 The output section to put at the end of every task packet:
 
@@ -297,7 +301,7 @@ End your response with:
 ## Return State
 <DONE | BLOCKED | NEEDS_INPUT | INCONCLUSIVE>
 
-## Summary (<= 2000 tokens)
+## Summary (short; longer detail goes to a file, named below)
 - What was done / decided
 - Files touched (with paths)
 - Any issues or unknowns

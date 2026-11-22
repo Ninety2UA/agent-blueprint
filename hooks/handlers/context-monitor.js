@@ -3,7 +3,8 @@
  * PostToolUse Hook — Context Monitor & Analysis Paralysis Guard.
  *
  * Tracks tool calls and warns the agent when context is running low or when
- * consecutive read-only operations indicate analysis paralysis.
+ * consecutive read-only operations indicate analysis paralysis. A helper's own
+ * tool calls (hook input with an agent_id) are not counted.
  *
  * License notice: THIRD_PARTY_NOTICES.md.
  *
@@ -78,6 +79,10 @@ function runMonitor() {
     if (input) {
       const data = JSON.parse(input);
       if (detectHost(data) === 'other') return;
+      // A helper's calls carry the lead's session_id plus its own agent_id; counting them would
+      // advance the lead's warnings, and the advice to spawn subagents would reach a helper told
+      // to start none. agent_type alone does not mark a helper: a top-level --agent session sets it.
+      if (typeof data.agent_id === 'string' && data.agent_id !== '') return;
       toolName = data.tool_name || data.toolName || '';
     }
   } catch {

@@ -3,7 +3,7 @@ name: ab-deep-research
 description: "Researches a topic before planning: five helpers run in parallel (past learnings in docs/solutions/ and docs/research/, framework docs for the installed versions, industry best practices, git history, and a map of the code the change touches), and a synthesizer merges them into one brief in docs/research/ with consensus, unique insights, contradictions, gaps and a recommended approach. Use when planning or building in unfamiliar code or technology, before an architectural decision, major refactor or migration, when onboarding to an area of the codebase, or when the user asks to research, investigate or learn best practices before building. Not for a small, well-understood change (ab-quick-fix), debugging a failure (ab-systematic-debugging) or enriching an existing plan (ab-deepen-plan)."
 argument-hint: "<topic or feature to research>"
 metadata:
-  version: "4.2.1"
+  version: "4.3.0"
 ---
 
 # Deep Research — Multi-Agent Parallel Research
@@ -14,7 +14,7 @@ Five research helpers work in parallel, a synthesizer merges what they find, and
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-deep-research", "version": "4.2.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-deep-research.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-deep-research", "version": "4.3.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-deep-research.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## Step 0: Load Project Configuration
 
@@ -34,7 +34,7 @@ Based on the topic, formulate specific research questions for each helper:
 
 Start all the research helpers at once. They do not depend on each other, so the step takes only as long as the slowest one.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt files and inputs:
 - `references/agents/learnings-researcher.md`: Search docs/solutions/ and docs/research/ for past work related to [topic]. Report findings with file references.
@@ -51,7 +51,7 @@ Helper and search limits on Claude Code: `references/host-notes.md` § Session c
 
 When all helpers return, start the research-synthesizer. It keeps the session's effort: weighing the findings against each other is the judgment this run is for.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt: `references/agents/research-synthesizer.md`. Inputs: Synthesize these research outputs into one unified brief: [all helper outputs]. Focus on: consensus findings, unique insights, contradictions, and gaps.
 

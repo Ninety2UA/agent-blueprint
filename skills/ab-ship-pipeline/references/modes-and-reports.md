@@ -50,9 +50,15 @@ The runner decides from state.json whether to start another iteration, stop, or 
 
 ## Completion report
 
+Open with a short paragraph for a reader who saw none of the run: what now works, each decision made without asking that they should check (from `decisions` in the run state), and anything blocked or deferred with its reason. Then come the three lines that put the gaps first, each listing every item or saying "none", and the tables after them.
+
 Report completion in this shape:
 ```markdown
 ## Ship Pipeline Complete
+
+- **Not done or skipped:** [each item with its reason, or "none"]
+- **Not verified:** [each check claimed but not run, each deployment row marked unverified, or "none"]
+- **Changed outside the plan:** [each file or behavior the plan did not name, or "none"]
 
 ### Pipeline Summary
 | Stage | Status | Duration |

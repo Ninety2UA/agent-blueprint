@@ -58,6 +58,8 @@ Every task step that produces a testable result includes a **runnable verificati
 | "Check the endpoint" | `Run: curl -s localhost:3000/api/health \| jq .status` → Expected: `"ok"` |
 | "Make sure it builds" | `Run: npm run build` → Expected: exit 0, no errors |
 
+A task's own check must tell the before and after apart: it fails, or reads differently, at the commit the task starts from. Write what it shows there beside the expected result (`Run: grep -c retry src/client.ts` → now `0`, Expected: `2`). A check that already passes before the task, such as a build that already exits 0, proves nothing about the task; keep it only as a regression guard, marked `(guard)`, next to a check that does change.
+
 If no automated verification exists yet, say so explicitly: `No automated verification available — requires manual browser check at /dashboard`. This honesty prevents executors from inventing fake checks.
 
 ## Boundaries

@@ -37,7 +37,7 @@ In this mode helpers use file ownership, not worktrees, since creating a worktre
 
 Start one implementer per task, all at once, in the ab-subagent-driven-development skill's implementer pattern. Give each its own worktree (an isolated copy of the repository) where the host offers one, so parallel tasks cannot overwrite each other's changes; otherwise each touches only the files its task owns.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt: the task packet below, one per task; no prompt file applies. Inputs: the packet's fields.
 
@@ -56,7 +56,7 @@ When all helpers return, read each summary and note the files each modified. The
 
 ### 4c. Integration check
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt: `references/agents/integration-verifier.md`. Inputs: the wave number, the commit the wave started from, the project's test command, and the tasks completed with their summaries; it runs the full test suite and checks for conflicts between task implementations.
 
@@ -64,7 +64,7 @@ Prompt: `references/agents/integration-verifier.md`. Inputs: the wave number, th
 
 ### 4d. Act on the result
 
-- **PASS:** start the next wave.
+- **PASS** with no issue listed: start the next wave.
 - **ISSUES FOUND:** fix each with a targeted helper as in 4a, the issue as its task packet, commit the fix, then check again.
 - **FAIL:** stop and report to the user with the wave's commits listed; the next wave would build on a broken one, and whether to reset to the wave's starting commit is the user's call.
 
@@ -72,7 +72,7 @@ Prompt: `references/agents/integration-verifier.md`. Inputs: the wave number, th
 
 After the last wave, run the full test suite, the build and the lint, then an overall code review.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt: `references/agents/code-reviewer.md`. Inputs: the plan file and the review range, from the commit before Wave 1 to `HEAD`.
 

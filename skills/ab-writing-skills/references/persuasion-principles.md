@@ -12,9 +12,9 @@ LLMs respond to the same persuasion principles as humans. Understanding this psy
 **What it is:** Deference to expertise, credentials, or official sources.
 
 **How it works in skills:**
-- Imperative language: "YOU MUST", "Never", "Always"
-- Non-negotiable framing: "No exceptions"
-- Eliminates decision fatigue and rationalization
+- A firm rule stated once, in plain words, with its reason: "Write the test first, because a test written after the code passes by construction"
+- A stated scope instead of "no exceptions": name the cases the rule covers and the ones it does not
+- The reason carries the authority. Capitals and "YOU MUST" make a current model over-apply a rule to cases it was never meant for (`portable-authoring.md` § Principles with reasons)
 
 **When to use:**
 - Discipline-enforcing skills (TDD, verification requirements)
@@ -42,7 +42,7 @@ LLMs respond to the same persuasion principles as humans. Understanding this psy
 
 **Example:**
 ```markdown
-✅ When you find a skill, you MUST announce: "I'm using [Skill Name]"
+✅ When you use a skill, say so first: "I'm using [Skill Name]", so the user can redirect you before the work starts.
 ❌ Consider letting your partner know which skill you're using.
 ```
 
@@ -61,7 +61,7 @@ LLMs respond to the same persuasion principles as humans. Understanding this psy
 
 **Example:**
 ```markdown
-✅ After completing a task, IMMEDIATELY request code review before proceeding.
+✅ After completing a task, request code review before starting the next one, because the next task builds on this one.
 ❌ You can review code when convenient.
 ```
 
@@ -135,8 +135,8 @@ LLMs respond to the same persuasion principles as humans. Understanding this psy
 ## Why This Works: The Psychology
 
 **Bright-line rules reduce rationalization:**
-- "YOU MUST" removes decision fatigue
-- Absolute language eliminates "is this an exception?" questions
+- A rule with a stated scope answers the "is this an exception?" question before it is asked
+- A rule with its reason can be applied to cases the author did not foresee
 - Explicit anti-rationalization counters close specific loopholes
 
 **Implementation intentions create automatic behavior:**

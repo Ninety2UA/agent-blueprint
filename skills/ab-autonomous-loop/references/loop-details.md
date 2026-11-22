@@ -55,6 +55,8 @@ Advisory, once before the first task. Scan the plan for irreversible operations 
 | **Sequential** | Must follow previous task | Migration before code that uses new schema |
 | **Parallelizable** | Can run concurrently | Independent module implementations |
 
+**A task without a usable completion check.** Before the first pass, look for tasks whose check is missing or cannot be read as a command or an observable result. When the plan makes the check obvious (the task names a test, an endpoint, a file that must exist), write it into the task and log it as a decision. Otherwise treat the task as an unclear requirement under the ab-executing-plans decision boundary. Either way a passing project suite alone never ticks such a task, because the suite was green before the task too. The final report lists each check the loop wrote itself.
+
 ## Circuit breaker
 
 Besides the per-task retry limit, track the health of the whole loop to detect stalls.

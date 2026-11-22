@@ -2,7 +2,7 @@
 name: ab-subagent-driven-development
 description: "Runs a written plan in this session one task at a time: a fresh helper implements each task from its full text, a spec-compliance reviewer and then a code-quality reviewer check it, fix rounds repeat until both pass, and a final review covers the whole implementation. Use when a plan's tasks are mostly independent and you want clean context per task without leaving this session; usually invoked by another skill. Not for tightly coupled tasks that share state (execute those in order yourself), a separate session with human checkpoints (ab-executing-plans), or parallel team work (ab-orchestrate)."
 metadata:
-  version: "4.2.1"
+  version: "4.3.0"
 ---
 
 # Subagent-Driven Development
@@ -15,7 +15,7 @@ Weighing this against ab-executing-plans: `references/advantages.md`. The loop a
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-subagent-driven-development", "version": "4.2.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-subagent-driven-development.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-subagent-driven-development", "version": "4.3.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-subagent-driven-development.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 Work in an isolated workspace (the ab-using-git-worktrees skill). On main or master, branch first unless the user said to work there, since every task commits.
 
@@ -35,7 +35,7 @@ One task at a time, since two implementers would edit the same files. Record BAS
 
 In that mode, tell the implementer: it reports its commit message instead of committing, and you add the message there. Reviewers get `working tree` as HEAD, and the implementer's list of changed files marks the task's part.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Three helpers, in order, each starting once the one before is done and passing:
 
@@ -49,7 +49,7 @@ When the code-quality reviewer's verdict line says ready, tick the box and take 
 
 ## 4. Final review
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt: `references/agents/code-reviewer.md`. Inputs: the plan path and the range from the commit before the first task to HEAD (in no-commit mode, the working tree, as in step 3).
 
@@ -59,4 +59,4 @@ Fix its findings as in the fix rounds until it approves. Then delete the progres
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-An implementer's question: its options. Default when nobody answers: the conservative one, recorded under the plan's `### Assumptions` and sent back. A blocked task: guidance and retry, skip it and go on with tasks that do not need it, or stop. Default when nobody answers: stop and report the task with its open findings.
+An implementer's question: its options. Default when nobody answers: the conservative one, recorded under the plan's `### Assumptions` and sent back. A blocked task: guidance and retry, skip it and go on with tasks that do not need it, or stop. Default when nobody answers: skip it, go on with the tasks that do not need it, then stop before the final review and report it with its open findings.

@@ -3,7 +3,7 @@ name: ab-systematic-debugging
 description: "Finds a bug's root cause before any fix: classifies the error, reproduces it, traces the bad value to its source, tests one hypothesis at a time against evidence tiers, fixes test-first, and questions the design after three failed fixes. Use when there is a bug, error, test failure, crash, regression, flaky test or unexpected behavior, even when the user wants to jump straight to a fix without knowing why it broke. Not for new features (use ab-brainstorming) or tests for working code (use ab-add-tests)."
 argument-hint: "[describe the issue]"
 metadata:
-  version: "4.2.1"
+  version: "4.3.0"
 ---
 
 # Systematic Debugging
@@ -12,7 +12,7 @@ A finished run names the root cause with evidence, fixes it at the source, and a
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-systematic-debugging", "version": "4.2.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-systematic-debugging.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-systematic-debugging", "version": "4.3.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-systematic-debugging.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## The Iron Law
 
@@ -37,7 +37,7 @@ Signs per class: `references/classification.md` § Classification table.
 4. **Multi-component systems**: log what crosses each boundary and run once to see where it breaks (`references/deep-dive.md` § Multi-component evidence).
 5. **Trace a deep error back** to where the bad value originates and fix there (`references/root-cause-tracing.md`; when a test leaves files or state behind, it runs `scripts/find-polluter.sh` to bisect the suite).
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt: `references/agents/bug-reproduction-validator.md`, for the independent repro check in step 2. Inputs: the bug report, the repro steps, and in Phase 4 the fix.
 

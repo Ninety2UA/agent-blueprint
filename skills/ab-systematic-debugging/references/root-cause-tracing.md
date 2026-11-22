@@ -100,9 +100,9 @@ If something appears during tests but you don't know which test:
 
 Use the bisection script `scripts/find-polluter.sh`.
 
-**Bundled scripts.** Paths such as `scripts/run.sh` are relative to this skill's own folder, the one holding its SKILL.md, not to the project. Run a script through its interpreter (`bash` for `.sh`; `python3`, or `python` if that is missing, for `.py`) instead of relying on its executable bit, and if the interpreter is missing, say so and stop that step.
+**Bundled scripts.** Paths such as `scripts/run.sh` are in this skill's folder, beside its SKILL.md: run them by full path from the project. Run a script through its interpreter (`bash` for `.sh`; `python3`, or `python` if that is missing, for `.py`) instead of relying on its executable bit, and if the interpreter is missing, say so and stop that step.
 
-Run `scripts/find-polluter.sh '<path that appears>' '<test file glob>'` with the project root as the working directory, for example `scripts/find-polluter.sh '.git' 'src/**/*.test.ts'`. It runs the matching test files one at a time and stops at the first one after which the path exists. It calls `npm test <file>` for each; read it and change that line before using it with another test runner.
+Run `bash <this skill's folder>/scripts/find-polluter.sh '<path that appears>' '<test file glob>'` with the project root as the working directory, for example `bash <this skill's folder>/scripts/find-polluter.sh '.git' 'src/**/*.test.ts'`. It runs the matching test files one at a time and stops at the first one after which the path exists. It calls `npm test <file>` for each; with another test runner, copy it into the project and change that line in the copy, never in the installed skill.
 
 ## Real Example: Empty projectDir
 

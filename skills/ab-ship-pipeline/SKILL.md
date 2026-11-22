@@ -3,7 +3,7 @@ name: ab-ship-pipeline
 description: "Ships a feature end to end with no checkpoints: recorded assumptions, a verified and deepened plan, execution through ab-orchestrate, review until it converges, then commits and a PR body, tracked in .agent-blueprint/run/state.json. Use when the user wants a well-defined feature built hands-off, fire and forget, through to a pull request. Not for work the user approves stage by stage (ab-build-pipeline) or a change under three files (ab-quick-fix)."
 argument-hint: "<feature description> [--swarm] [--iterations N] [--convergence fast|deep|perfect] [--deploy] [--external]"
 metadata:
-  version: "4.2.1"
+  version: "4.3.0"
 ---
 
 # Ship Pipeline — Autonomous End-to-End
@@ -14,7 +14,7 @@ Announce at start: "Starting ship pipeline: autonomous, no checkpoints, a PR at 
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-ship-pipeline", "version": "4.2.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-ship-pipeline.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-ship-pipeline", "version": "4.3.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-ship-pipeline.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## Run state
 
@@ -62,7 +62,7 @@ Invoke the ab-orchestrate skill with the plan file, the `--no-review` flag and a
 
 Invoke the ab-iterative-refinement skill (with `--swarm`, alongside browser testing: `references/modes-and-reports.md` § Swarm-mode review), passing `max_iterations` (`--iterations`, default 3), `convergence` (`--convergence`, default `fast`), `scope` (this branch against its merge base with the default branch, or in no-commit mode the working tree) and earlier rounds' Skip and Defer decisions, so declined findings stay declined (ab-iterative-refinement Step 2a).
 
-If it ends without converging (P1 > 0 for `fast`, P1+P2 > 0 for `deep`, any finding for `perfect`), stop as `blocked`: "Review found unresolved critical issues after [N] iterations. Use the ab-build-pipeline skill to address manually." Write no PR body: a PR claims the work is ready.
+If it ends without converging (P1 > 0 for `fast`, P1+P2 > 0 for `deep`, any finding for `perfect`, or a reviewer not reviewed), stop as `blocked`: "Review did not converge after [N] iterations: [what is left]. Finish it with the ab-build-pipeline skill." Write no PR body: a PR claims the work is ready.
 
 ### Stage 6: Compound (Knowledge Capture)
 

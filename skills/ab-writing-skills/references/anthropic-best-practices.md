@@ -135,11 +135,11 @@ Skills act as additions to models, so effectiveness depends on the underlying mo
 
 **Testing considerations by model**:
 
-* **Claude Haiku** (fast, economical): Does the Skill provide enough guidance?
-* **Claude Sonnet** (balanced): Is the Skill clear and efficient?
-* **Claude Opus** (powerful reasoning): Does the Skill avoid over-explaining?
+* **A small, fast model**: Does the Skill provide enough guidance?
+* **A mid-tier model**: Is the Skill clear and efficient?
+* **A frontier model**: Does the Skill avoid over-explaining?
 
-What works perfectly for Opus might need more detail for Haiku. If you plan to use your Skill across multiple models, aim for instructions that work well with all of them.
+What works for a frontier model might need more detail for a small one. Agent Blueprint's skills run in eight tools on whatever model the user picked, often not a Claude model, so test with at least one model from each vendor your users run and aim for instructions that work well with all of them.
 
 ## Skill structure
 
@@ -606,7 +606,7 @@ Provide templates for output format. Match the level of strictness to your needs
 ````markdown  theme={null}
 ## Report structure
 
-ALWAYS use this exact template structure:
+Use this exact template structure:
 
 ```markdown
 # [Analysis Title]
@@ -795,7 +795,7 @@ The same hierarchical pattern continues when improving Skills. You alternate bet
 
 3. **Return to Claude A for improvements**: Share the current SKILL.md and describe what you observed. Ask: "I noticed Claude B forgot to filter test accounts when I asked for a regional report. The Skill mentions filtering, but maybe it's not prominent enough?"
 
-4. **Review Claude A's suggestions**: Claude A might suggest reorganizing to make rules more prominent, using stronger language like "MUST filter" instead of "always filter", or restructuring the workflow section.
+4. **Review Claude A's suggestions**: Claude A might suggest moving the rule to where the agent needs it, adding the reason for it ("filter test accounts, because they inflate regional totals"), or restructuring the workflow section. Prefer a reason or a better position to louder wording: capitals make a model over-apply the rule elsewhere.
 
 5. **Apply and test changes**: Update the Skill with Claude A's refinements, then test again with Claude B on similar requests
 
@@ -1129,7 +1129,7 @@ Before sharing a Skill, verify:
 ### Testing
 
 * [ ] At least three evaluations created
-* [ ] Tested with Haiku, Sonnet, and Opus
+* [ ] Tested with a small and a frontier model, from each vendor your users run
 * [ ] Tested with real usage scenarios
 * [ ] Team feedback incorporated (if applicable)
 

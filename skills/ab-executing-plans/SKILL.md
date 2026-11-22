@@ -2,7 +2,7 @@
 name: ab-executing-plans
 description: "Executes a written plan in this session in batches of three tasks: each task is followed step by step, verified, committed and ticked in a progress file; each batch ends with a report and a checkpoint for the user's feedback; a whole-branch review closes the run. Reads plans that use v3 skill names. Use when the user wants to work through a plan with human review between batches. Not for parallel or team work (ab-orchestrate) or fully autonomous runs (ab-autonomous-loop)."
 metadata:
-  version: "4.2.1"
+  version: "4.3.0"
 ---
 
 # Executing Plans
@@ -15,13 +15,13 @@ Announce at start: "I'm using the ab-executing-plans skill to implement this pla
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-executing-plans", "version": "4.2.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-executing-plans.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-executing-plans", "version": "4.3.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-executing-plans.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 Read the plan and review it critically; raise concerns before starting (§ When to stop and ask). A skill named by its v3 name, with or without a leading slash (such as `executing-plans` or `writing-plans`), is the v4 skill in the second column of `references/v4-skill-names.tsv`.
 
 For three or more new files, map existing patterns first so new code follows the codebase's structure; read the map before each task.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt: `references/agents/pattern-mapper.md`. Inputs: the plan path, the codebase root, and the output path `.agent-blueprint/plans/PATTERNS.md`.
 
@@ -33,7 +33,7 @@ Keep progress in `.agent-blueprint/plans/<plan-basename>.progress.md`; follow `r
 
 ## Step 2: Execute a batch
 
-A batch is the next three tasks. Work in an isolated workspace (ab-using-git-worktrees); on main or master, branch first unless the user said to work there. For each task, from the first unticked box: follow its steps exactly, run its verifications, commit, tick the box (`- [ ]` → `- [x]`), and record interpretive choices (`references/assumption-tracking.md`).
+A batch is the next three tasks. Work in an isolated workspace (ab-using-git-worktrees); on main or master, branch first unless the user said to work there. For each task, from the first unticked box: follow its steps exactly, run its verifications, commit (staging its files by name), tick the box (`- [ ]` → `- [x]`), and record interpretive choices (`references/assumption-tracking.md`).
 
 **No-commit mode.** If the user says not to commit, `AGENT_BLUEPRINT_GIT_WRITABLE` is `0`, or `.git` is read-only, make no commits: leave changes in the working tree and add the intended message to `.agent-blueprint/run/commit-msg.md`. With `AGENT_BLUEPRINT_GIT_WRITABLE=0`, the ship runner commits after the session, so it is not for work the user wants uncommitted. Reviews use the working tree and untracked files against the merge base instead of a commit range.
 

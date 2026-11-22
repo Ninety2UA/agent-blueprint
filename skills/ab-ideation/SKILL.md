@@ -28,7 +28,7 @@ Options: continue from it (read, summarize, update it in place), or start fresh.
 
 Start three helpers in parallel and wait for all of them, because the later phases build on their results.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt files and inputs (each also gets the focus hint):
 - `references/agents/learnings-researcher.md`: known pain points, recurring issues and areas flagged for improvement in docs/solutions/, docs/learnings/ and docs/context/DECISIONS.md.
@@ -43,7 +43,7 @@ Consolidate the results into a grounding summary: **project shape** (language, f
 
 Generate the full candidate list before critiquing any idea, because early critique prunes the list before strong combinations can appear.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompts: the three frames in `references/ideation-frames.md` (friction, inversion, leverage), one per helper; each frame section is that helper's whole prompt. Inputs: the grounding summary, the focus hint and a volume of about 8-10 ideas. Start all three at once, since they are independent. A frame is a starting bias, not a constraint, and helpers return raw candidates only, with no critique.
 

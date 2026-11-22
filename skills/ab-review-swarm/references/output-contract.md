@@ -22,7 +22,7 @@ The agent's normal return value carries only the fields synthesis needs to merge
 |------|--------|---------------|
 | **Merge tier** (always returned) | `title`, `severity`, `file`, `line`, `confidence`, `tier`, `pre_existing`, `suggested_fix` (optional), `requires_verification` | Compact return to orchestrator |
 | **Detail tier** (artifact only) | `why_it_matters`, `evidence` | Written to `.agent-blueprint/review-runs/{run_id}/{reviewer_name}.json` |
-| **Top-level** (always returned) | `reviewer`, `residual_risks`, `testing_gaps` | Compact return to orchestrator |
+| **Top-level** (always returned) | `reviewer`, `reviewed`, `files_read`, `residual_risks`, `testing_gaps` | Compact return to orchestrator |
 
 The synthesizer reads the compact return for routing decisions. Walkthrough/headless surfaces that need the long prose fields read the artifact file on demand by `(file, line_bucket(line, ±3), normalize(title))` matching.
 
@@ -35,6 +35,8 @@ With 6+ reviewers × 5+ findings each × full prose, the orchestrator's context 
 ```json
 {
   "reviewer": "code-reviewer",
+  "reviewed": true,
+  "files_read": 4,
   "findings": [
     {
       "title": "User-supplied ID in account lookup without ownership check",
@@ -68,13 +70,15 @@ These are validation failures; synthesis rejects non-conforming output:
 - `evidence`: an ARRAY of strings with at least one element. A single string value is a validation failure — wrap every quote in `["..."]` even when there is only one.
 - `pre_existing`: boolean, never null.
 - `requires_verification`: boolean, never null.
+- `reviewed`: boolean, never null; `files_read`: a whole number.
 
 ## Reviewer rules
 
 - You are operationally read-only. The one permitted write is the artifact file at `.agent-blueprint/review-runs/{run_id}/{reviewer_name}.json`. Do not edit project files, change branches, commit, push, create PRs, or otherwise mutate the checkout.
 - You are a leaf reviewer inside an already-running ab-review-swarm. Do not invoke other skills or agents. Perform your analysis directly and return findings in the required format only.
 - If the run id is empty or absent, skip the artifact write entirely — the compact return is sufficient.
-- If you find no issues, return an empty `findings` array. Still populate `residual_risks` and `testing_gaps` if applicable.
+- Set `reviewed` to `true` only when you read the diff and checked it against your focus; set `files_read` to the number of changed files you actually read. If you could not see the diff, ran out of time or stopped early, return `reviewed: false` with the reason in `residual_risks`: an empty `findings` array then means "not reviewed", never "clean".
+- If you reviewed and found no issues, return an empty `findings` array with `reviewed: true`. Still populate `residual_risks` and `testing_gaps` if applicable.
 
 ## Variable substitution at dispatch
 

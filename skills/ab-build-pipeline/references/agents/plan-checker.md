@@ -49,6 +49,7 @@ Read the codebase for every dimension: check that each referenced file exists, s
 - Does every new component have imports where it's used?
 - Are error handling paths covered?
 - Are edge cases addressed? Does the plan's Review Focus list pin each spec-implied input or failure mode to a test in its owning task?
+- Does each task's own check change with the task? A check that already holds at the starting commit (a build that already exits 0, a count already at its target) and is not marked `(guard)` is a WARNING, or BLOCKING when it is the task's only check, because it passes whether or not the work happens.
 - A step without a code body is not incomplete when its test, signature, and spec values pin the result. Plans record decisions, not code, so don't ask for implementation bodies the plan leaves out on purpose.
 
 ### 5. Contradiction & Ambiguity Checks

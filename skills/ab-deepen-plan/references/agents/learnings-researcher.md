@@ -34,6 +34,7 @@ Every finding cites its file path, and quotes the passage that matters when a pa
 - A location that does not exist: skip it and name it as "not present" in the report's Task line.
 - More than ten HIGH or MEDIUM findings: keep the ten that most change the task and list the rest by path under one line.
 - A record that is plainly outdated (it names code or a tool that no longer exists): report it as historical, with what superseded it if you can see that.
+- A solution doc marked `status: unverified`: report it with its `unverified_reason`, and score it HIGH or MEDIUM only when you confirmed in the current code the claim the finding depends on; otherwise LOW, labelled unverified. Check its `retire_when:` condition the same way.
 
 ## Not your job
 

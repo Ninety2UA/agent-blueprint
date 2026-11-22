@@ -35,7 +35,7 @@ When searching, dispatch subagent with template...
 [20 lines of repeated instructions]
 
 # ✅ GOOD: Reference other skill
-Always use subagents (50-100x context savings). REQUIRED: Use [other-skill-name] for workflow.
+For the search workflow, use the [other-skill-name] skill.
 ```
 
 **Compress examples:**

@@ -127,6 +127,73 @@ class PortabilityGate(unittest.TestCase):
         self.repo.edit(SKILL, "argument-hint:", "model: opus\nargument-hint:")
         self.assertFails(SKILL, "frontmatter", "'model'")
 
+    def test_compatibility_over_500_characters(self):
+        self.repo.edit(SKILL, "argument-hint:", "compatibility: \"%s\"\nargument-hint:" % ("x" * 501))
+        self.assertFails(SKILL, "frontmatter", "compatibility")
+
+    def test_empty_compatibility_fails_with_or_without_pyyaml(self):
+        self.repo.edit(SKILL, "argument-hint:", "compatibility:\nargument-hint:")
+        self.assertFails(SKILL, "frontmatter", "compatibility")
+        code, out = self.gate(env={"PORTABILITY_FORCE_NO_YAML": "1"})
+        self.assertNotEqual(code, 0, out)
+        self.assertIn("compatibility", out)
+
+    def test_compatibility_and_allowed_tools_strings_pass(self):
+        self.repo.edit(SKILL, "argument-hint:", "compatibility: Needs git\nallowed-tools: Read Grep\nargument-hint:")
+        code, out = self.gate()
+        self.assertEqual(code, 0, out)
+
+    def test_allowed_tools_list(self):
+        self.repo.edit(SKILL, "argument-hint:", "allowed-tools:\n  - Read\n  - Grep\nargument-hint:")
+        self.assertFails(SKILL, "frontmatter", "allowed-tools")
+
+    def test_unquoted_metadata_version(self):
+        self.repo.edit(SKILL, "  owner: gate-tests", "  owner: gate-tests\n  version: 4.3")
+        self.assertFails(SKILL, "frontmatter", "metadata.version")
+
+    def test_nested_metadata_value_is_named_as_a_map(self):
+        self.repo.edit(SKILL, "  owner: gate-tests", "  owner: gate-tests\n  extra:\n    a: b")
+        code, out = self.gate()
+        self.assertNotEqual(code, 0, out)
+        self.assertIn("metadata.extra is a map", out)
+        self.assertNotIn("4.10", out)
+
+    def test_two_digit_placeholder_in_skill_md(self):
+        # Claude Code fills $10 too once a request has eleven words, so a price written that way is caught.
+        self.repo.edit(SKILL, "2. Use the", "A run costs about $10.\n\n2. Use the")
+        self.assertFails(SKILL, "banned-token", "positional")
+
+    def test_digits_followed_by_a_letter_pass(self):
+        self.repo.edit(SKILL, "2. Use the", "A run costs about $10k a year.\n\n2. Use the")
+        code, out = self.gate()
+        self.assertEqual(code, 0, out)
+
+    def test_nested_skill_md_under_references_may_hold_a_placeholder(self):
+        self.repo.write("skills/ab-fixture/references/examples/SKILL.md", "Run `awk '{print $1}' list.txt`.\n")
+        code, out = self.gate()
+        self.assertNotIn("positional", out)
+
+    def test_positional_placeholder_in_skill_md(self):
+        self.repo.edit(SKILL, "2. Use the", "Run `awk '{print $1}' list.txt`.\n\n2. Use the")
+        self.assertFails(SKILL, "banned-token", "positional")
+
+    def test_positional_placeholder_in_a_reference_passes(self):
+        self.repo.write(GUIDE, self.repo.read(GUIDE) + "\nRun `awk '{print $1}' list.txt`.\n")
+        code, out = self.gate()
+        self.assertEqual(code, 0, out)
+
+    def test_bundled_script_without_the_snippet(self):
+        self.repo.write("skills/ab-fixture/scripts/check.sh", "#!/bin/sh\nexit 0\n")
+        self.repo.write(GUIDE, self.repo.read(GUIDE) + "\nRun `bash scripts/check.sh`.\n")
+        self.assertFails(GUIDE, "bundled-scripts", "scripts/check.sh")
+
+    def test_bundled_script_with_the_snippet_passes(self):
+        self.repo.write("skills/ab-fixture/scripts/check.sh", "#!/bin/sh\nexit 0\n")
+        self.repo.write(GUIDE, self.repo.read(GUIDE) + "\nRun `bash scripts/check.sh`.\n\n"
+                        "**Bundled scripts.** Paths such as `scripts/check.sh` are in this skill's folder.\n")
+        code, out = self.gate()
+        self.assertEqual(code, 0, out)
+
     def test_whole_file_over_8000_bytes(self):
         text = self.repo.read(SKILL)
         self.repo.write(SKILL, text + "x" * (8001 - len(text.encode("utf-8")) - 1) + "\n")

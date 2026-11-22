@@ -6,14 +6,24 @@ Every rule below has an id; a violation prints "path: [rule-id] message".
   frontmatter        SKILL.md frontmatter parses, and uses only agentskills keys
                      (name, description, license, compatibility, metadata,
                      allowed-tools) plus argument-hint and disable-model-invocation;
-                     never effort or model (R5, R12). Prompt files carry none.
+                     never effort or model (R5, R12). Values keep the spec's shapes:
+                     compatibility a string of 1-500 characters, allowed-tools a
+                     string, metadata a map of string values (quote a version, or
+                     4.10 reads as 4.1). Prompt files carry none.
   name               name is 1-64 chars of a-z, 0-9 and single hyphens, starts
                      with ab-, and matches its directory (R9).
   description        description is 1-1,024 characters (R6).
   size               the whole SKILL.md, frontmatter included and line endings
                      normalized, is at most 8,000 bytes (R6; Codex truncates there).
   banned-token       no $ARGUMENTS, no host path or session variables such as
-                     ${CLAUDE_PLUGIN_ROOT}, no load-time !`command` pre-resolution (R8).
+                     ${CLAUDE_PLUGIN_ROOT}, no load-time !`command` pre-resolution (R8);
+                     in SKILL.md, no positional $0, $1, $10..., which Claude Code fills with
+                     an argument word when the skill is invoked with arguments.
+  bundled-scripts    a skill whose files name one of its own scripts/ files in
+                     backticks carries the Bundled scripts snippet in one of them,
+                     so the script is run by its path from the project. Narrow on
+                     purpose: it sees `scripts/x.sh` and `bash scripts/x.sh`, not a
+                     nested scripts/ path, an interpreter flag or a fenced block.
   path-escape        no link or path that leaves the skill directory: ../ or
                      another skill's skills/ab-<name>/ path (R8).
   slash-ref          no /name reference to a skill; name skills in prose (KTD4).
@@ -65,6 +75,7 @@ OPENAI_KEYS = {"interface": {"display_name", "short_description"},
                "policy": {"allow_implicit_invocation"}}
 SIZE_CAP = 8000
 DESCRIPTION_CAP = 1024
+COMPATIBILITY_CAP = 500
 NAME_CAP = 64
 INSTRUCTIONS_LINE_CAP = 200
 ALLOWLIST_SECTION = "skills"
@@ -86,6 +97,11 @@ BANNED = [
      "host path/session variable; locate files from the skill's own directory"),
     (re.compile(r"(?:^|[\s(])!`[^`\n]+`"), "load-time !`command` pre-resolution is Claude Code only"),
 ]
+# Claude Code replaces $0, $1, ... $10 and up in a SKILL.md body with argument words (its pattern is \$(\d+)(?!\w),
+# checked in the 2.1.330 binary); references/ files are read from disk as written. $10k is left alone.
+POSITIONAL = re.compile(r"\$[0-9]+(?!\w)")
+BUNDLED_SCRIPT = re.compile(r"`(?:(?:bash|sh|python3?|node)\s+)?(?:\./)?(scripts/[A-Za-z0-9_.-]+)")
+BUNDLED_LABEL = "**Bundled scripts.**"
 # R8: paths out of the skill. Markdown links and backticked paths only: shell
 # examples in fences that cd around a user's project are not skill paths.
 LINK_UP = re.compile(r"\]\((?:\./)?\.\./")
@@ -332,6 +348,27 @@ def check_frontmatter(skill_dir, add):
         add(path, "description", "description is missing or empty")
     elif len(desc) > DESCRIPTION_CAP:
         add(path, "description", "description is %d characters (cap %d)" % (len(desc), DESCRIPTION_CAP))
+    compat = data.get("compatibility")
+    # Present but empty reads as None under PyYAML and "" under the line parser: both fail.
+    if "compatibility" in data and (not isinstance(compat, str) or not compat.strip() or len(compat) > COMPATIBILITY_CAP):
+        add(path, "frontmatter", "compatibility must be a string of 1-%d characters" % COMPATIBILITY_CAP)
+    tools = data.get("allowed-tools")
+    if tools is not None and not isinstance(tools, str):
+        add(path, "frontmatter", "allowed-tools must be one space-separated string, not a list")
+    meta = data.get("metadata")
+    if meta is not None and meta != "":
+        if not isinstance(meta, dict):
+            add(path, "frontmatter", "metadata must be a map of string keys to string values")
+        else:
+            for k in sorted(meta, key=str):
+                v = meta[k]
+                if not isinstance(k, str):
+                    add(path, "frontmatter", "metadata key %r is not a string" % (k,))
+                elif isinstance(v, (dict, list)):
+                    add(path, "frontmatter", "metadata.%s is a %s; metadata values are plain strings"
+                        % (k, "map" if isinstance(v, dict) else "list"))
+                elif not isinstance(v, str):
+                    add(path, "frontmatter", "metadata.%s is not a string; quote it (an unquoted 4.10 reads as 4.1)" % k)
     size = len(text.replace("\r\n", "\n").encode("utf-8"))
     if size > SIZE_CAP:
         add(path, "size", "SKILL.md is %d bytes, frontmatter included (cap %d)" % (size, SIZE_CAP))
@@ -348,6 +385,20 @@ def check_prompt_frontmatter(skill_dir, add):
             add(p, "frontmatter", "prompt files carry no frontmatter (KTD2)")
 
 
+def check_bundled_scripts(skill_dir, add):
+    named, has_label = [], False
+    for path in skill_files(skill_dir, exts=(".md",), include_assets=False):
+        text = read(path)
+        has_label = has_label or BUNDLED_LABEL in text
+        for m in BUNDLED_SCRIPT.finditer(text):
+            if os.path.isfile(os.path.join(skill_dir, m.group(1))):
+                named.append((path, m.group(1)))
+    if named and not has_label:
+        path, script = named[0]
+        add(path, "bundled-scripts", "%s is one of this skill's scripts, but no file of the skill carries the "
+            "Bundled scripts snippet; paste it where the script is first run" % script)
+
+
 def check_text_rules(skill_dir, slash, add):
     own = os.path.basename(skill_dir)
     for path in skill_files(skill_dir, include_assets=False):
@@ -356,6 +407,12 @@ def check_text_rules(skill_dir, slash, add):
             m = pat.search(text)
             if m:
                 add(path, "banned-token", "line %d: %s (%s)" % (line_of(text, m.start()), m.group(0).strip(), why))
+        if path == os.path.join(skill_dir, "SKILL.md"):
+            m = POSITIONAL.search(text)
+            if m:
+                add(path, "banned-token", "line %d: %s is a positional placeholder Claude Code fills with an argument "
+                    "word; write the example without a dollar-digit token, or move it to references/"
+                    % (line_of(text, m.start()), m.group(0)))
         if not path.endswith(".md"):
             continue
         prose = strip_fences(text)
@@ -583,6 +640,7 @@ def collect(repo):
         fm_by_skill[os.path.basename(d)] = check_frontmatter(d, add)
         check_prompt_frontmatter(d, add)
         check_text_rules(d, slash, add)
+        check_bundled_scripts(d, add)
         check_hermes(list(skill_files(d)), add)
     check_hermes(instruction_files(repo), add)
     check_instruction_length(repo, add)
@@ -701,7 +759,8 @@ def main(argv):
         if yaml_required:
             print("\n  FAIL: PyYAML is not installed and REQUIRE_YAML=1 — frontmatter cannot be fully parsed")
         else:
-            print("\n  WARN: PyYAML not installed — frontmatter checked with a line parser (CI uses PyYAML)")
+            print("\n  WARN: PyYAML not installed — frontmatter checked with a line parser, which reads every value as a"
+                  " string, so the compatibility, allowed-tools and metadata shape checks are partial (CI uses PyYAML)")
     print_findings(found, status, base_ref)
     bad = status[0] or status[1] or status[2] or yaml_required
     if not bad:

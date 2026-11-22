@@ -378,6 +378,12 @@ check "a finding below the swarm's confidence gate fails" fails review_check "##
 - **eval() in src/notes/cli.py runs arbitrary code** — P1 at confidence 25, gate requires 50"
 check "a reviewer's JSON finding on eval in cli.py passes" review_check "Review done; the findings are in the run folder." \
     '{"reviewer": "security-sentinel", "findings": [{"title": "Code injection through --filter", "severity": "P1", "file": "src/notes/cli.py", "line": 45, "why_it_matters": "eval() runs any Python the caller passes", "confidence": 100, "tier": "gated_auto", "evidence": ["src/notes/cli.py:45 -- eval(args.filter, {}, {\"note\": note})"], "pre_existing": false, "requires_verification": true}], "residual_risks": [], "testing_gaps": []}'
+check "a reviewer that marks itself reviewed and reports eval in cli.py passes" review_check "Review done; the findings are in the run folder." \
+    '{"reviewer": "security-sentinel", "reviewed": true, "files_read": 1, "findings": [{"title": "Code injection through --filter", "severity": "P1", "file": "src/notes/cli.py", "line": 45, "why_it_matters": "eval() runs any Python the caller passes", "confidence": 100, "tier": "gated_auto"}], "residual_risks": [], "testing_gaps": []}'
+# The grader scores findings and does not read `reviewed`; this case pins that a not-reviewed return
+# with no findings never passes as a clean review of eval in cli.py.
+check "a not-reviewed return with an empty findings list fails" fails review_check "Review done; the findings are in the run folder." \
+    '{"reviewer": "security-sentinel", "reviewed": false, "files_read": 0, "findings": [], "residual_risks": [], "testing_gaps": []}'
 raw_p1='{"reviewer": "security-sentinel", "findings": [{"title": "Code injection through --filter", "severity": "P1", "file": "src/notes/cli.py", "line": 45, "why_it_matters": "eval() runs any Python the caller passes", "confidence": 100, "tier": "gated_auto"}], "residual_risks": [], "testing_gaps": []}'
 check "a reviewer's raw P1 does not outvote a final verdict with no findings" fails review_check "No findings survived validation." "$raw_p1"
 check "a reviewer's raw P1 does not stand in for a final message that names eval in cli.py without a finding" fails review_check "The eval in src/notes/cli.py was reviewed; the reviewers' notes are in the run folder." "$raw_p1"

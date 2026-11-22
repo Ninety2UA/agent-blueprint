@@ -35,7 +35,7 @@ Set up a project: ask in plain words, "use the ab-project-start skill". The READ
 
 ## Model and effort
 
-The Dial: the modes `low`, `medium`, `high` and `ultra` each set the model, the effort, the prompt and the tools, chosen before the first message and fixed for the thread; per-mode pins live in the dial editor. The SDK's `mode` and `effort` "map to CLI flags" per its docs; the flag names are not verified here. Helpers: no per-dispatch model or effort from a prompt (only a plugin's `amp.createAgent` takes them), so a step marked safe at lower effort runs as the mode dictates; whether helpers inherit the thread's mode is not verified. Docs: <https://ampcode.com/docs/markdown/the-dial>.
+The model selector (since 2026-11-12, replacing the Dial and its `low` to `ultra` modes): pick a model and its effort per thread below the prompt box, and change either mid-thread; the next message uses the new model, and its first turn reads the thread uncached. New threads start on the Staff Pick (Opus 5.5 at the time of writing) unless Settings name another default. From the CLI, `--model <provider/name>` and `--effort <level>` set them, in execute mode (`-x`) too, where `--effort` needs `--model`; Amp rejects a level the model does not support. Helpers: the Task subagent runs the thread's model, per the docs; no per-dispatch effort from a prompt, so a step marked safe at lower effort runs at the thread's level. Facts from the docs (model selector page, 2026-11-17), not checked on a build here. Docs: <https://ampcode.com/docs/markdown/model-selector>.
 
 ## What is missing or different
 

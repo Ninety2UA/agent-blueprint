@@ -64,7 +64,7 @@ Most bugs resolve in one session. Some don't — they survive context resets, sp
 2. **Tag every evidence entry with its tier** (1–6 from Phase 3 step 5). Tier 5–6 entries cannot promote a hypothesis to "fix-pending"; they must be promoted to tier 1–4 first.
 3. **One `Current Focus` paragraph at a time.** When focus shifts, append the previous focus to a `## Focus History` section with timestamp.
 4. **Cycle counter:** increment the `Cycles` field each time a new hypothesis enters Active. At 5 or more cycles, escalate to the user, because the architecture probably needs questioning: ask the question in SKILL.md Phase 4 step 5, with its options and its default for a run nobody answers.
-5. **Compact summary on completion:** when status flips to `verified` or `abandoned`, write a ≤2K-token `## Summary` at the top with: root cause (1 line), fix applied (1 line), how many cycles, eliminated branches (bullets), prevention note. Future agents resuming this slug read only the summary unless they need full history.
+5. **Compact summary on completion:** when status flips to `verified` or `abandoned`, write a short `## Summary` at the top (one screen) with: root cause (1 line), fix applied (1 line), how many cycles, eliminated branches (bullets), prevention note. Future agents resuming this slug read only the summary unless they need full history.
 
 **Resuming a session:** if `.agent-blueprint/debug/<slug>.md` already exists, read the Summary first (if present), then Eliminated, then Active. Re-run an eliminated hypothesis only on new evidence that contradicts its elimination reason; otherwise you repeat work the file exists to save.
 

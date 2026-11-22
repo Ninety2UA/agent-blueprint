@@ -10,12 +10,15 @@ How to write a skill that loads and runs in any of the eight tools Agent Bluepri
 
 **Principles with reasons.** Write "Keep the PR under 400 lines, because reviewers stop reading after that" rather than "PRs MUST be under 400 lines". A reason lets the model apply the rule to a case you did not foresee; a bare ALWAYS or NEVER makes it follow the letter or stall. Rules that must hold every time (never commit a secret) belong in a test, a CI gate, a hook or a permission, not only in prose.
 
+**No step that exists for one model.** A step has to hold for any capable model the user might run, because the same skill runs on Claude, GPT, Gemini, Grok and open models across the eight tools. If the only case for a line is that one model, or one model version, misbehaved without it, record the case as an issue or an eval, not as skill text: a workaround a stronger model does not need costs it turns, and outlives the model it was written for. The same goes for lines that tell the model how hard to think: effort is the user's setting, not the skill's.
+
 **No filler instructions.** Drop "think carefully", "be thorough" and similar lines: they cost bytes and change nothing. Keep an example only when it shows something the prose cannot, and keep one per pattern.
 
 **Ask only where the skill must wait.** Every question point uses the Asking the user snippet and names the default a headless run takes. "Ask the user first" with no default stalls a literal-minded model, and hangs an unattended run.
 
 ## Frontmatter
 
+- [frontmatter] Values keep the spec's shapes: `compatibility` a string of at most 500 characters, `allowed-tools` one space-separated string, and `metadata` a map of quoted strings (an unquoted `version: 4.10` reads as the number 4.1).
 - [frontmatter] Keys are the agentskills fields (`name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`) plus `argument-hint` and `disable-model-invocation`. Other tools ignore the two extras; claude.ai uploads and the Skills API reject any unknown key, so the list stays short. No `effort` and no `model`: either would override the model and effort the user chose.
 - [name] `ab-` plus lowercase letters, digits and single hyphens, at most 64 characters, equal to the folder name. The prefix keeps the skills apart from other packs in the shared skill folders most tools scan.
 - [description] 1 to 1,024 characters (Codex truncates the catalog there). Lead with what the skill does and how, then "Use when ..." with the situations that call for it. Tools such as Codex and Amp pick a skill from a short catalog line, so the mechanism has to come first. Keep it distinct from sibling skills; the collision gate fails near-duplicates.
@@ -26,7 +29,8 @@ How to write a skill that loads and runs in any of the eight tools Agent Bluepri
 
 - [size] The whole SKILL.md, frontmatter included, stays within 8,000 bytes. Codex truncates a skill there, silently.
 - [slash-ref] Name other skills in prose, "use the `ab-writing-plans` skill", never with a slash. Hosts invoke skills differently (`/name`, `$name`, `/skill:name`, or only in prose), so a slash form is wrong in most of them.
-- [banned-token] No argument placeholder (the ARGUMENTS token with its leading dollar sign), no host variables for paths or sessions (such as the Claude Code plugin-root variable), and no load-time command expansion. Each works in one host only. The host passes the user's request with the skill; read it from there.
+- [banned-token] No argument placeholder (the ARGUMENTS token with its leading dollar sign), no host variables for paths or sessions (such as the Claude Code plugin-root variable), and no load-time command expansion. Each works in one host only. The host passes the user's request with the skill; read it from there. In SKILL.md, no dollar sign followed by digits (`$0`, `$1`, `$10`) either: Claude Code fills those positional placeholders with words of the user's request when a skill is invoked with arguments, which breaks a shell example such as an awk field. Write the example without one, or move it into `references/`, which hosts read as written.
+- [bundled-scripts] A skill that ships a script under `scripts/` and names it in any of its files carries the Bundled scripts snippet in one of them, so the agent runs the script by its path from the project instead of changing into the skill's folder, where it would act on the plugin's own files.
 - [path-escape] Stay inside the skill's folder: no link that climbs to a parent folder and no path into another skill's folder. Copy installs carry each skill folder on its own, so a path out of it breaks. Text two skills need goes into both, registered as a copy (below).
 - [instructions-write] Never tell the agent to edit the project instructions file by name. Hermes quarantines a skill that says "update AGENTS.md", and session notes belong in `docs/context/STATUS.md` anyway. The one step that records learnings says "the project instructions file" and resolves it as AGENTS.md, then CLAUDE.md.
 - Working folders the skill creates live under `.agent-blueprint/<purpose>/`, never under `.claude/`, which other tools treat as foreign.
@@ -36,6 +40,10 @@ How to write a skill that loads and runs in any of the eight tools Agent Bluepri
 - [html-comment] No HTML comments in instruction, skill or prompt files. Hermes drops a whole context file that has one.
 - [hermes-pattern] No phrasing Hermes reads as prompt injection or as a dangerous skill: phrases that tell the model to set aside its earlier instructions or to hide something from the user, role-hijack or command-and-control wording, invisible Unicode, `curl` or `echo` piped into a shell, reads of secret files, and similar. To describe an attack, paraphrase it; to install something, point at the tool's own installer instead of a pipe into a shell.
 - [instructions-length] The root and template AGENTS.md stay within 200 lines, the length current guidance gives for instruction files that load in every session.
+
+## Where an edited skill lives
+
+Before editing a skill, resolve its real path. A copy a host installed (under `~/.claude/plugins/cache/`, the Codex plugin cache, `~/.gemini/config/plugins/`, `~/.hermes/skills/` and the like) is replaced on the next update, and an edit there is lost without notice. Edit the source checkout instead, or, when there is none and the user approves, copy the whole skill folder into the project's or the user's own skills folder for that host, edit the copy, and say that the copy no longer receives updates. Never push or open a pull request as part of such an edit: a local change the user approved is not a change they asked to publish.
 
 ## Shared text
 

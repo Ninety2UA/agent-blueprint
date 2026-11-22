@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://agent-blueprint.dbenger.com/">Website</a> ·
-  <a href="#whats-new-in-v421">What's new</a> ·
+  <a href="#whats-new-in-v430">What's new</a> ·
   <a href="#install">Install</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#unattended-runs">Unattended runs</a> ·
@@ -29,6 +29,10 @@
 A coding agent starts every session from nothing. It doesn't know how your project works, what was decided last week, or which problems were already solved, and when you switch to another tool, whatever the last one learned stays behind.
 
 Agent Blueprint gives the agent one way of working that is the same in every tool. Skills take a feature from design through review to a pull request. Helper prompts handle the analysis that needs a fresh context, such as a security review or a plan check. Project documents under `docs/` carry conventions, decisions and solved problems from one session to the next, so they are there whichever of the eight tools opens the repository next.
+
+## What's new in v4.3.0
+
+Reviews and checks fail closed in more places. A reviewer that never reported counts as not reviewed, not as a clean pass, and a review loop cannot converge on it; a review runs only on the commit it names, with no uncommitted edits to the files it reviews; a wave whose verifier lists issues, or whose tests ran none, does not pass; and a plan's check has to fail before its task. Helpers start fresh rather than as a copy of the conversation. The context monitor no longer counts helpers' tool calls against the main session, and a new session hears about a ship run that stopped blocked overnight. Skill-writing guidance drops capitalized absolutes in favor of rules with reasons and adds a rule that every step must hold for any capable model; the model and effort notes cover Fable 5.2, Opus 5.5's medium start and Amp's model selector. Release notes: [`docs/releases/v4.3.0-release-notes.md`](docs/releases/v4.3.0-release-notes.md).
 
 ## What's new in v4.2.1
 
@@ -460,24 +464,26 @@ The blueprint never picks a model or an effort level for you, in any tool. No sk
 
 | Tool | Set the model | Set the effort | Do helpers inherit them? |
 |---|---|---|---|
-| Claude Code | `/model` in a session, or `claude --model <model>` | `/effort`, `claude --effort <level>`, or `CLAUDE_CODE_EFFORT_LEVEL`; a level saved in settings applies below those | Yes: a helper without an effort of its own inherits the session level; verified on 2.1.284 |
+| Claude Code | `/model` in a session, or `claude --model <model>` | `/effort`, `claude --effort <level>`, or `CLAUDE_CODE_EFFORT_LEVEL`; a level saved in settings applies below those | Yes, on the session's model: a helper with no effort of its own runs at the session level (verified on 2.1.284), unless you set `CLAUDE_CODE_SUBAGENT_EFFORT` (2.1.316), which gives helpers a level of their own |
 | Codex | `/model` in a session, or `codex -m <model>` | `model_reasoning_effort` in `~/.codex/config.toml` (`low` to `ultra`, by model) | Yes: a subagent inherits the parent's model and effort unless configured otherwise, and `spawn_agent` can set effort per helper |
 | Antigravity | `/model` in a session (saved), or `agy --model <model>`; `agy models` lists them | `agy --effort low\|medium\|high\|xhigh\|max` | Not verified: a subagent definition can set a model tier, and no per-dispatch override is documented |
 | Grok Build | `/model`, `grok -m <model>`, or `[models] default` in `~/.grok/config.toml` | `--effort none\|minimal\|low\|medium\|high\|xhigh\|max` | Not verified: per-dispatch model and effort are not documented |
 | Pi | `/model`, or `pi --model <pattern>[:thinking]` | `/thinking`, or `--thinking off\|minimal\|low\|medium\|high\|xhigh\|max` (clamped to the model) | Only with the `pi-subagents` package, which takes a per-dispatch `model:"provider/id:level"`; inheritance not verified |
 | Cursor CLI | `/model` picker, or `cursor-agent --model 'id[effort=high]'` | Inside the model string: `id[effort=high]`; there is no separate effort flag | Helpers defined in agent files can say `model: inherit`; for the blueprint's helpers, not verified |
 | Hermes | `/model` in a session, or `hermes -m <model> --provider <provider>` | `/reasoning high` in a session, or `agent.reasoning_effort` in `~/.hermes/config.yaml` | No: helpers use the global `delegation.model` and `delegation.reasoning_effort` settings |
-| Amp | The Dial: a mode (`low`, `medium`, `high`, `ultra`) sets model, effort, prompt and tools together, chosen before the first message and fixed for the thread | Part of the mode | Not verified: a prompt cannot pick a model per helper |
+| Amp | The model selector below the prompt box, per thread and changeable mid-thread, or `amp --model <provider/name>` (also in `-x`); new threads start on the Staff Pick | `--effort <level>` with the model (in `-x` it needs `--model`); without it the model's default | Yes for the model: Task helpers run the thread's model, per Amp's docs |
 
 ### Claude Code specifics
 
-Opus 5.5 is the default model on every plan from CLI 2.1.280 and starts sessions at `medium` effort; other current models start at `high`. A level set with `--effort`, `/effort` or the environment variable wins over settings, and settings win over the model default. Some reference points:
+Opus 5.5 is the default model on every plan from CLI 2.1.280. Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5 start sessions at `medium` effort, Opus 4.7 at `xhigh` and other models at `high`. A level set with `--effort`, `/effort` or the environment variable wins over settings, and settings win over the model default. To make these models think less, lower the level: a prompt line asking for less thinking does little on them. Some reference points:
 
 | Session setting | Fits |
 |-----------------|------|
 | Opus 5.5 at `high` | A solid default for pipeline runs |
-| Opus 5.5 at `xhigh`, or Fable 5.1 at `high` | Hard or high-stakes work; slower and costlier |
+| Opus 5.5 at `xhigh`, or Fable 5.2 at `high` | Hard, long or high-stakes work; slower and costlier (Fable 5.2's API price per token is twice Opus 5.5's) |
 | Opus 5.5 at `medium` (its starting level) or lower | Small tasks, quick fixes and questions |
+
+Helpers: a helper runs at the session's level on the session's model. The Agent tool takes a per-helper `effort` since 2.1.292, so a step marked safe at lower effort may start its helper lower there (the Lower effort snippet), and `CLAUDE_CODE_SUBAGENT_EFFORT` sets one level for every helper that names none. A helper on another model would use that model's saved or default level (2.1.317); no skill sets a helper model.
 
 The ship runner passes no model or effort flag of its own, so an unattended run uses the defaults you saved in the tool.
 
@@ -695,7 +701,7 @@ The blueprint uses a tool's native features only as opt-ins: no pipeline depends
 | Claude Code `/goal` | A complement for interactive runs; the ship runner and its state file are the guarantee, because a skill cannot invoke `/goal` and it does not run headless | None; generally available in the CLI |
 | Native `/loop` and ScheduleWakeup (Claude Code) | Adds scheduled reruns, but `/loop` stays in one session and does not reset context, stop on repeated failure or notice a run getting worse, so `ab-autonomous-loop` keeps its own circuit breaker and degradation checks | None |
 | Workflow tool, `/workflows`, ultracode (Claude Code) | Opt-in for very large autonomous fan-outs; wave orchestration stays the portable default | Paid plans, the API and Bedrock, Vertex or Foundry; in `claude -p` only behind a `Workflow` allow rule, auto or bypass mode, or a PreToolUse hook |
-| Fast mode (Claude Code) | Opt-in only | Opus 5.5, Opus 5 and Opus 4.8; research preview, pricing subject to change |
+| Fast mode (Claude Code) | Opt-in only | Fable 5.2 (2.1.321 or later) and Opus 5.5; Opus 5 and Opus 4.8 as a research preview, and Opus 4.8's fast mode ends on 2026-11-30 |
 | Session limits (Claude Code) | Swarms and research stay within the native limits: since CLI 2.1.224 there is no per-session subagent total, only a concurrency cap and a nesting depth; `host-limits.tsv` records the other tools' limits | 20 concurrent subagents by default (`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`), spawn depth 3 (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`), 200 web searches per session |
 | Native injection hardening (Claude Code Agent tool) | Adds to the blueprint's own read and write scanners (Claude Code and Codex hooks) and the data markers helpers wrap around external text, which cover the main-session reads and writes native hardening does not see | None |
 | Bundled `/deep-research` workflow (Claude Code) | Claude Code bundles a web-search workflow of that name; the blueprint's research swarm is `ab-deep-research`, so the two names do not collide | None |
@@ -824,10 +830,11 @@ An evaluation then ran the same fixture tasks on v3.8.0 and v4.0.0 in Claude Cod
 ## Release history
 
 <details>
-<summary>v2.3 to v4.2.1</summary>
+<summary>v2.3 to v4.3.0</summary>
 
 | Version | Date | What changed |
 |---|---|---|
+| v4.3.0 | 2026-11-22 | Reviews, wave checks and plan checks fail closed: a reviewer that never reported is not a clean pass, a review runs on its head with no uncommitted edits to the files it reviews, a wave with listed issues or zero tests run does not pass, and a plan's check must fail before its task. Helpers start fresh, the context monitor counts the main session only, and a blocked ship run is named at the next session start. New gate rules for frontmatter value shapes, positional placeholders and bundled scripts; model and effort notes for Fable 5.2, Opus 5.5 and Amp's model selector. |
 | v4.2.1 | 2026-11-07 | The hosted agent runs every code or docs change through its five stages, ends a run cleanly when a helper stops and pushes its branch, keeps one branch and pull request per chat, and shows a waiting or stopped stage in the web chat. The CLIs change only in the version number. |
 | v4.2.0 | 2026-11-05 | Agent Blueprint also runs as a hosted agent on Vercel's Eve framework, which you deploy to your own Vercel account, Railway or server and reach from a web chat, Slack, Linear, Telegram, an MCP client such as Claude Code, or HTTP. The eight coding CLIs install the same skills as in 4.1.1, and `install.sh --only eve` points to the Hosted page instead. |
 | v4.1.1 | 2026-10-13 | `install.sh` no longer removes or replaces Cursor CLI's marketplace, which Cursor shares with every computer on your account. It tells you what to uninstall or switch yourself instead. |

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Bisection script to find which test creates unwanted files/state
-# Run from the project root; the pattern is relative to it.
+# Run from the project root (exit 3 inside the skill's own folder); the pattern is relative to it.
 # Usage: bash scripts/find-polluter.sh <file_or_dir_to_check> <test_pattern>
 # Example: bash scripts/find-polluter.sh '.git' 'src/**/*.test.ts'
 
@@ -14,6 +14,21 @@ fi
 
 POLLUTION_CHECK="$1"
 TEST_PATTERN="$2"
+
+# Run from the project, never from inside the skill that ships this script:
+# there it would bisect the plugin's own files instead of the project's tests.
+# The guard applies only when this file sits in a skill folder (one with a SKILL.md),
+# so a copy in the project's own scripts/ folder, or a script piped to bash, still runs.
+if [ -f "$0" ]; then
+  SKILL_DIR=$(cd "$(dirname "$0")/.." && pwd -P)
+  if [ -f "$SKILL_DIR/SKILL.md" ]; then
+    case "$(pwd -P)/" in
+      "$SKILL_DIR"/*)
+        echo "Run this from the project root, not from the skill folder ($SKILL_DIR)." >&2
+        exit 3 ;;
+    esac
+  fi
+fi
 
 echo "🔍 Searching for test that creates: $POLLUTION_CHECK"
 echo "Test pattern: $TEST_PATTERN"

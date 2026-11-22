@@ -28,6 +28,8 @@ codex plugin marketplace upgrade agent-blueprint
 codex plugin add agent-blueprint@agent-blueprint
 ```
 
+Codex ties hook trust to the plugin's contents, so after an update that changed a hook script it skips the plugin's hooks until they are reviewed again in `/hooks`; say so in the report.
+
 ### Local marketplace
 
 For a local source, verify that its original path is a git checkout. Apply the Checkout local-change check below to that source before running:

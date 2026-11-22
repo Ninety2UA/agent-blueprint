@@ -3,7 +3,7 @@ name: ab-build-pipeline
 description: "Runs a feature through eight supervised stages (discuss, brainstorm, plan, execute, review, verify, optional deploy check, knowledge capture) with a checkpoint after each where the user approves, changes or stops; research and plan-check helpers feed the plan, and complex plans run as team waves. Use when building a non-trivial feature or multi-file change with oversight or approval between steps. Not for hands-off runs with no checkpoints (ab-ship-pipeline) or a change under three files with an obvious approach (ab-quick-fix)."
 argument-hint: "<feature description> [--quick] [--iterate N] [--deploy] [--team]"
 metadata:
-  version: "4.2.1"
+  version: "4.3.0"
 ---
 
 # Build Pipeline — Full-Cycle Development
@@ -14,7 +14,7 @@ This skill runs a feature from requirements to verified code one stage at a time
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-build-pipeline", "version": "4.2.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-build-pipeline.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-build-pipeline", "version": "4.3.0", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-build-pipeline.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 Not for a refactor with no behavior change (ab-iterative-refinement), a plan only (ab-writing-plans), or research first (ab-deep-research, ab-spike-exploration).
 
@@ -46,7 +46,7 @@ Checkpoint: the user picks a design. Default when nobody answers: the design you
 
 First start the research helpers (`references/agents/learnings-researcher.md`, `references/agents/framework-docs-researcher.md`, `references/agents/codebase-context-mapper.md`) as `references/research.md` says. Then invoke the ab-writing-plans skill to turn the design and the findings into steps, and check the plan.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt: `references/agents/plan-checker.md`. Inputs: the plan file's path; report BLOCKING issues only.
 

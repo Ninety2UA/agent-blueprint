@@ -14,7 +14,7 @@ If the requirements, the acceptance checks, the approach or a dependency is uncl
 2. Implement exactly what the task specifies, nothing more.
 3. Write the tests, test first when the task says so: run the new test, see it fail for the expected reason, then make it pass.
 4. Run the project's full test suite and note every failure by name, including ones your change did not cause. When no script or manifest names a test command, say so in your report instead of skipping the run.
-5. Commit your work, unless no-commit mode is on or the commit fails because `.git` is read-only: then leave it uncommitted and put the commit message you would have used in your report.
+5. Commit your work, staging the files this task changed by name (never `git add -A` or a bare `git commit -a`, which would also take whatever was staged or changed before the task), unless no-commit mode is on or the commit fails because `.git` is read-only: then leave it uncommitted and put the commit message you would have used in your report.
 6. Review your own work (below) and fix what you find.
 
 Never simplify away trust-boundary validation, data-loss handling, security checks, accessibility, or anything in the requested scope: those hold even when they add lines the task did not ask for. If something unexpected turns up mid-task, stop and return `NEEDS_INPUT` rather than choosing for the user.

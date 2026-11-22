@@ -59,6 +59,7 @@ Check for telltale signs of AI-generated UI that no designer at a respected stud
 - **[MEDIUM]** Shadows on every surface instead of reserved for genuine elevation: `box-shadow` (or a shadow utility class) applied to cards, buttons, inputs, and containers alike. Flag if it appears on more than half of the distinct component types touched in the diff.
 - **[MEDIUM]** A default AI blue/purple palette used as the primary or accent color with no rationale recorded in DESIGN.md or a nearby comment — the unexamined default most AI-generated UI reaches for. Flag any `#3b82f6`-`#a855f7`-range hex or an equivalent Tailwind `blue-`/`purple-`/`indigo-` token used as the primary brand color without a stated reason. Distinct from the gradient bullet above: this flags flat, solid uses of the same palette family.
 - **[MEDIUM]** No gradient restraint paired with eyebrow-title-description stuffing: more than one `linear-gradient` (or gradient utility class) per view, or a small uppercase label repeated above 3+ headings each paired with a bold title and a 1-2 line description. Flag either signal on its own; the combination is the strongest tell.
+- **[MEDIUM]** The editorial default: a cream or off-white page background, italic accent words inside headlines, numbered "01 / 02 / 03" section labels, monospace labels, and pill-shaped buttons. Flag when three or more appear together with no rationale in DESIGN.md; any one alone is a design choice.
 
 **Confidence tiers:**
 

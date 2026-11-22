@@ -30,7 +30,7 @@ Check `blueprint.local.md` for configured research helpers. If it names none, us
 
 Start every selected helper at once: they do not depend on each other, so the step takes only as long as the slowest one.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt files and inputs. Each helper also gets the plan content and returns its findings organized by plan section:
 - `references/agents/learnings-researcher.md`: prior work in docs/solutions/ related to [feature], with [plan summary] as context; findings as bullet points.
@@ -57,7 +57,7 @@ When all helpers return, add a `### Research Notes` subsection to each plan sect
 
 After enrichment, run the plan-checker on the updated plan to verify the research notes don't conflict with the plan's approach. It runs at the session's effort, because its judgment is the point of the step.
 
-**Helper step.** Start a helper (subagent) for this step if you can, with the prompt file named below (its absolute path when the helper can read it, else its full text) and the listed inputs; leave its model and effort at the session's. If you cannot start one, follow the prompt file yourself. Either way, return its Output section, and note which path ran in the run's provenance record if there is one.
+**Helper step.** Start a fresh helper (subagent, not a fork of this conversation) for this step if you can, with the prompt file named below (its absolute path if it can read it, else its full text) and the listed inputs; keep the session's model and effort, and wait for it. If you cannot, follow the prompt file yourself. Either way, return its Output section, and note which path ran in any provenance record.
 
 Prompt: `references/agents/plan-checker.md`. Inputs: the enriched plan at [plan file path], to check for conflicts between the research notes and the plan's approach. Act on its BLOCKING issues only; its warnings and suggestions stay in the report.
 

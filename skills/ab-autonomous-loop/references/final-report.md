@@ -4,7 +4,7 @@ Loaded on demand from `SKILL.md` when a step reports: the final report at Step 5
 
 ## Final report
 
-Step 5 reports the final state in this shape: verification results, the run's numbers (tasks done, retries, escalations, blocked tasks with reasons), and the changes made.
+Step 5 reports the final state in this shape: verification results, the run's numbers (tasks done, retries, escalations, blocked tasks with reasons), and the changes made. Open it with a short paragraph for a reader who saw none of the run: what now works, the decisions the loop made on its own (completion checks it wrote into tasks among them), and what is left blocked.
 
 ```markdown
 ## Loop Complete: [total/total] tasks done

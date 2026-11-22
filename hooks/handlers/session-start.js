@@ -48,12 +48,26 @@ readInput((input) => {
     } catch (e) { /* ignore */ }
   }
   if (exists('.agent-blueprint/run/state.json')) {
+    // Every field is untrusted input (run-state.md): take strings only, flatten control characters
+    // and cap the length, as run.sh's clean() does, so a field cannot add lines to the context.
+    const clean = (v, n) => typeof v === 'string' ? Array.from(v.replace(/[\x00-\x1f\x7f]/g, ' ')).slice(0, n).join('') : '';
+    let state;
     try {
-      const state = JSON.parse(fs.readFileSync(path.join(cwd, '.agent-blueprint/run/state.json'), 'utf-8'));
-      if (state.status === 'running') {
-        lines.push('A ship-pipeline run is still running (stage ' + state.stage + '); the ab-ship-pipeline skill resumes it from .agent-blueprint/run/state.json.');
+      state = JSON.parse(fs.readFileSync(path.join(cwd, '.agent-blueprint/run/state.json'), 'utf-8'));
+    } catch (e) { state = undefined; }
+    if (state === null || typeof state !== 'object' || Array.isArray(state)) {
+      lines.push('.agent-blueprint/run/state.json does not parse as a run state, so the last ship-pipeline run cannot be resumed from it; tell the user.');
+    } else {
+      const status = clean(state.status, 64);
+      const stage = clean(state.stage, 64);
+      const reason = clean(state.reason, 300);
+      if (status === 'running') {
+        lines.push('A ship-pipeline run is still running' + (stage ? ' (stage ' + stage + ')' : '') + '; the ab-ship-pipeline skill resumes it from .agent-blueprint/run/state.json.');
+      } else if (status === 'blocked' || status === 'needs-human') {
+        lines.push('A ship-pipeline run stopped ' + status + (stage ? ' at stage ' + stage : '') + (reason ? ': ' + reason : '') +
+          '. Once that is cleared, the ab-ship-pipeline skill resumes it from .agent-blueprint/run/state.json.');
       }
-    } catch (e) { /* ignore */ }
+    }
   }
 
   // A team run that crashed leaves .agent-blueprint/team/active.md at "active: true", and the

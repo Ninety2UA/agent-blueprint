@@ -33,7 +33,7 @@ Answer for yourself:
 3. **What did we try that didn't work?** Failed approaches save the next reader the most time.
 4. **What would we do differently?** The retrospective insight.
 5. **When would this apply again?** The search keywords.
-6. **Do the code and tests already preserve this?** If a regression test fails when someone repeats the mistake, or a comment beside the fix explains it, a solution doc adds nothing. Capture only what a future reader couldn't recover from the code, the tests and the commit message.
+6. **Do the code and tests already preserve this?** If a regression test fails when someone repeats the mistake, or a comment beside the fix explains it, a solution doc adds nothing. Capture only what a future reader couldn't recover from the code, the tests and the commit message. If a regression test or a CONVENTIONS.md line would stop the repeat and none exists, propose it first (a test only counts if it fails with the mistake put back); the doc keeps what it cannot carry. Ask before writing either: a test or a convention changes the project, not only its knowledge base.
 
 If nothing clears the bar (the fix was trivial, or framework docs already cover it), say so, for example "nothing from this session is worth a solution doc", and stop there rather than ending silently. Being invoked doesn't oblige a new file.
 

@@ -1,6 +1,6 @@
 # Agent Blueprint on Claude Code
 
-Binary `claude`; facts checked against Claude Code 2.1.284 on 2026-09-30, and the install against 2.1.296 on 2026-10-12.
+Binary `claude`; facts checked against Claude Code 2.1.284 on 2026-09-30 (model and effort against the 2.1.330 docs and release notes on 2026-11-22), and the install against 2.1.296 on 2026-10-12.
 
 ## Install
 
@@ -27,13 +27,13 @@ Set up a project: `/ab-project-start` in a session (`/agent-blueprint:ab-project
 
 ## Model and effort
 
-Set both in the session: `/model` and `/effort` in the TUI, or `--model` and `--effort` on the command line, or `CLAUDE_CODE_EFFORT_LEVEL` in the environment. No skill or prompt file sets either. Helpers inherit the session's choice: a probe on 2.1.284 recorded `xhigh` in the helper's transcript under `--effort xhigh` and `low` under `--effort low`. The Agent tool takes a per-call model but no per-call effort, so a step marked safe at lower effort runs at the session's level here. Docs: <https://code.claude.com/docs/en/model-config>.
+Set both in the session: `/model` and `/effort` in the TUI, or `--model` and `--effort` on the command line, or `CLAUDE_CODE_EFFORT_LEVEL` in the environment. No skill or prompt file sets either. Helpers inherit the session's choice on the session's model: a probe on 2.1.284 recorded `xhigh` in the helper's transcript under `--effort xhigh` and `low` under `--effort low`. Since 2.1.292 the Agent tool also takes a per-call `effort`, so a step marked safe at lower effort may start its helper lower (the Lower effort snippet, unless you asked for your level everywhere). Two settings change inheritance: `CLAUDE_CODE_SUBAGENT_EFFORT` (2.1.316) gives every helper that names no level that one, and a helper on another model uses that model's saved or default level (2.1.317); no skill names a helper model. Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5 start sessions at `medium`. In `claude -p`, fork subagents are on by default since 2.1.302; the Helper step asks for a fresh helper, not a fork, because a helper should see only its prompt file and inputs. Docs: <https://code.claude.com/docs/en/model-config>.
 
 ## What is missing or different
 
 Nothing is missing; Claude Code is the reference host.
 
-- Hooks: all ten handlers in `hooks/claude-code.json` run: the session-start pointer to `docs/context/STATUS.md`, the injection scanner on writes, the commit-message check, the ship-pipeline Stop guard and the Agent Teams gates (`TaskCompleted`, `TeammateIdle`, active only while `.agent-blueprint/team/active.md` says so), plus the context monitor, the read-injection scanner and the fetch cache.
+- Hooks: all ten handlers in `hooks/claude-code.json` run: the session-start pointer to `docs/context/STATUS.md`, the injection scanner on writes, the commit-message check, the ship-pipeline Stop guard and the Agent Teams gates (`TaskCompleted`, `TeammateIdle`, active only while `.agent-blueprint/team/active.md` says so), plus the context monitor, the read-injection scanner and the fetch cache. A tool hook that fires inside a helper carries the helper's `agent_id` and `agent_type` (hooks reference, checked 2026-11-22 against 2.1.330), and the context monitor skips those calls so it counts the main session's own.
 - Helpers: the Agent tool. A Helper step runs as a subagent with the prompt file's path.
 - Team work: up to 20 helpers per wave, each in its own worktree (`host-limits.tsv`). Agent Teams is an optional extra: it applies only with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in an interactive session, never under `claude -p`.
 - Questions: the blocking question tool (`AskUserQuestion`); a headless run takes the documented default.

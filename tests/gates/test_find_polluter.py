@@ -51,6 +51,33 @@ class FindPolluter(unittest.TestCase):
         self.assertIn("Test: ./src/a/x.test.ts", result.stdout)
         self.assertNotIn("[2/2]", result.stdout, "the bisection stops at the first polluter")
 
+    def test_run_from_inside_the_skill_folder_refuses_with_exit_3(self):
+        skill_dir = os.path.dirname(os.path.dirname(SCRIPT))
+        result = subprocess.run(["bash", SCRIPT, ".git", "src/**/*.test.ts"], cwd=skill_dir, env=self.env,
+                                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+        self.assertEqual(result.returncode, 3, result.stdout + result.stderr)
+        self.assertIn("not from the skill folder", result.stderr)
+        self.assertNotIn("Searching", result.stdout, "it refuses before it looks for tests")
+
+    def test_a_copy_in_the_project_scripts_folder_still_runs(self):
+        # The guard is for the installed skill folder only: a copy in the project's own
+        # scripts/ folder (the documented way to change the test command) must run there.
+        copy = os.path.join(self.project, "scripts", "find-polluter.sh")
+        os.makedirs(os.path.dirname(copy))
+        shutil.copy(SCRIPT, copy)
+        result = subprocess.run(["bash", copy, ".git", "src/**/*.test.ts"], cwd=self.project, env=self.env,
+                                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("Found 2 test files", result.stdout)
+
+    def test_script_piped_to_bash_skips_the_guard(self):
+        with open(SCRIPT, encoding="utf-8") as f:
+            body = f.read()
+        result = subprocess.run(["bash", "-s", ".git", "src/**/*.test.ts"], input=body, cwd=self.project, env=self.env,
+                                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("Found 2 test files", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

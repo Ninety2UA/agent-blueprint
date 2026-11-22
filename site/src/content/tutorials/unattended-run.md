@@ -77,7 +77,7 @@ To https://github.com/Ninety2UA/ab-tutorial-scratch-20261008.git
 branch 'main' set up to track 'origin/main'.
 ```
 
-If you make a throwaway repository to try this, deleting it later needs the `delete_repo` scope, which `gh` does not have by default. In the recorded run `gh repo delete` failed with `HTTP 403: Must have admin rights to Repository.` Run `gh auth refresh -h github.com -s delete_repo` first, then `gh repo delete <owner>/<name> --yes`.
+If you make a throwaway repository to try this, deleting it later needs the `delete_repo` scope, which `gh` does not have by default. In the recorded run `gh repo delete` failed with `HTTP 403: Must have admin rights to Repository.` Run `gh auth refresh -h github.com -s delete_repo` first, then `gh repo delete <owner>/<name> --yes`. A private repository that has forks also needs `--accept-cascading-deletion-of-private-forks` (gh 2.104.0 and later), because deleting it deletes the forks too.
 
 ### Why it matters
 
