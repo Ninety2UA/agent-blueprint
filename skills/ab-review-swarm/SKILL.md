@@ -1,9 +1,9 @@
 ---
 name: ab-review-swarm
-description: "Reviews a change with specialized reviewers in parallel (quality, simplicity and tests always; security, performance, conventions, frontend, architecture, data and schema as the diff calls for), validates the findings and merges them into one prioritized P1/P2/P3 report. Use when a change is large (5+ files, several concerns, crossing modules) or consequential at any size (auth, money, data, a public contract, silent failures), before a production ship or major merge, or when asked for a full or multi-perspective review. Not for a quick single-perspective review of a small change (use ab-requesting-code-review)."
+description: "Reviews a change with specialized reviewers in parallel (quality, simplicity and tests always; security, performance, conventions, frontend, architecture, data and schema as the diff calls for), validates the findings and merges them into one prioritized P1/P2/P3 report. Use when a change is large (200+ changed lines of code or several modules) or risky at any size (auth, money, a schema or migration, rewritten records, a changed public interface, silent failures), before a production ship or major merge, or when asked for a full or multi-perspective review. Not for a quick single-perspective review of a small change (use ab-requesting-code-review)."
 argument-hint: "[optional: files or path to review] [--pr] [--full]"
 metadata:
-  version: "4.3.1"
+  version: "4.3.2"
 ---
 
 # Review Swarm — Multi-Agent Parallel Review
@@ -14,7 +14,7 @@ Start specialized review helpers in parallel on one change, validate their findi
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-review-swarm", "version": "4.3.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-review-swarm.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-review-swarm", "version": "4.3.2", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-review-swarm.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## Step 1: Determine Scope
 
@@ -68,4 +68,4 @@ Present the report with its P1, P2 and P3 counts, then offer to act on the actio
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 
-Five or fewer: fix them now with the ab-resolve-in-parallel skill (independent fixes in parallel), or leave them. More than five: decide each in turn following `references/walkthrough.md` (a bulk list does not fit per-item decisions), or leave them. Default when nobody answers: fix nothing and return the report for the calling pipeline or the user to act on.
+Five or fewer: fix them now with the ab-resolve-in-parallel skill, or leave them. More than five: decide each in turn following `references/walkthrough.md` (a bulk list does not fit per-item decisions), or leave them. Default when nobody answers: fix nothing and return the report for the calling pipeline or the user to act on.

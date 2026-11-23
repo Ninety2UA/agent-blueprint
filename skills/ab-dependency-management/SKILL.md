@@ -52,7 +52,7 @@ Install a library when:
 
 ### Decide
 
-Adding a dependency is usually the user's call (many projects' instructions say so), because the team carries each addition for years. Go ahead without asking only when the user's request names this dependency and no gate showed a red flag; otherwise ask, with the gate results and your recommendation.
+Adding a dependency is usually the user's call (many projects' instructions say so), because the team carries each addition for years. Go ahead without asking when the user's request names this dependency and no Maintenance, License or Security gate shows a red flag. A Necessity or Size flag on a dependency the user named goes in your report with the alternative, not into a stop, because the user already weighed that trade-off when naming it. Otherwise ask, with the gate results and your recommendation.
 
 **Asking the user.** Ask with your question tool if you have one, offering at most three options; otherwise ask in plain text with a numbered list. In a headless or unattended run nobody will answer: take the default named below, say so in your output, and log it in the run state's decisions if there is a run state.
 

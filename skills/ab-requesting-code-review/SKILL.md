@@ -1,8 +1,8 @@
 ---
 name: ab-requesting-code-review
-description: "Runs a fast single-reviewer code review: picks a guarded review range (one task's commit, a whole branch from its merge base, or the working tree in no-commit mode), hands it with the plan to the code-reviewer helper, and acts on the Critical, Important and Suggestion findings it returns. Use when a task or bug fix is finished, before committing or merging, when stuck, or when the user asks to review or check recent changes. Not for a multi-perspective or thorough review, or a change that could fail silently or touches auth, money, data or a public contract (ab-review-swarm)."
+description: "Runs a fast single-reviewer code review: picks a guarded review range (one task's commit, a whole branch from its merge base, or the working tree in no-commit mode), hands it with the plan to the code-reviewer helper, and acts on the Critical, Important and Suggestion findings it returns. Use when a task or bug fix is finished, before committing or merging, when stuck, or when the user asks to review or check recent changes. Not for a multi-perspective or thorough review, or a change with a risk its size rule names (auth, money, a schema or migration, rewritten records, a changed public interface): ab-review-swarm."
 metadata:
-  version: "4.3.1"
+  version: "4.3.2"
 ---
 
 # Requesting Code Review
@@ -11,14 +11,22 @@ The outcome is one well-defined range of changes reviewed by the code-reviewer h
 
 **Working folder.** Blueprint working files live under `.agent-blueprint/` in the project root. Before the first write there, make sure `.agent-blueprint/.gitignore` exists and lists `run/`, `team/`, `review-runs/`, `cache/` and `.gitignore`, so run state and the ignore file itself stay out of commits while plans and notes stay tracked.
 
-**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-requesting-code-review", "version": "4.3.1", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-requesting-code-review.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
+**Provenance record.** Before any other work, run this as written from the project root: `mkdir -p .agent-blueprint/run/provenance && date -u +'{"skill": "ab-requesting-code-review", "version": "4.3.2", "started_at": "%Y-%m-%dT%H:%M:%SZ", "helper_steps": []}' > .agent-blueprint/run/provenance/ab-requesting-code-review.json`. It replaces any older record, and the Working folder step above has already made sure of `.agent-blueprint/.gitignore`. Each Helper step adds `{step, path: helper|inline}` to `helper_steps`. The record tells a run, and the smoke test, which skill ran and how; it is not a security control.
 
 ## When to review
 
 - After each task in subagent-driven development, after a major feature, and before a merge to main: past these points an unnoticed issue starts to compound.
 - Optionally when stuck (a fresh perspective), before refactoring (a baseline check), or after fixing a complex bug.
 
-**Size the review by consequence, not line count.** Ask whether a wrong change would fail loudly at the change site (a type error, a failing test) or silently somewhere else (a wrong total, a leaked record, a caller in another module). A change that fails silently, or touches auth, money, data, or a public contract, goes to the ab-review-swarm skill whatever its size; this single-reviewer pass is for changes that would fail loudly.
+**Size the review by risk and by the code it must read.** The ab-review-swarm skill replaces this single-reviewer pass when the change does one of these:
+
+- touches authentication, permissions or secrets, or moves money;
+- changes a database schema, runs a migration, or deletes or rewrites stored records;
+- changes or removes something other code or people already rely on: a public API, an existing command's flags or output, a file format others read;
+- changes 200 or more lines of code, or code in several modules (tests, documentation and the plans and notes a pipeline writes do not count, since a review's cost follows the code it must read);
+- could be wrong in a way no test or type check in the change would show, far from the change site (a wrong total, a leaked record, a caller in another module).
+
+Adding an option, an output format or an endpoint without changing existing behaviour is none of these, nor is reading stored data. Everything else gets this pass, because each extra reviewer costs a full read of the change and its findings still have to be validated.
 
 ## 1. Choose the range
 

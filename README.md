@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://agent-blueprint.dbenger.com/">Website</a> ·
-  <a href="#whats-new-in-v431">What's new</a> ·
+  <a href="#whats-new-in-v432">What's new</a> ·
   <a href="#install">Install</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#unattended-runs">Unattended runs</a> ·
@@ -29,6 +29,10 @@
 A coding agent starts every session from nothing. It doesn't know how your project works, what was decided last week, or which problems were already solved, and when you switch to another tool, whatever the last one learned stays behind.
 
 Agent Blueprint gives the agent one way of working that is the same in every tool. Skills take a feature from design through review to a pull request. Helper prompts handle the analysis that needs a fresh context, such as a security review or a plan check. Project documents under `docs/` carry conventions, decisions and solved problems from one session to the next, so they are there whichever of the eight tools opens the repository next.
+
+## What's new in v4.3.2
+
+The build and ship pipelines start a research helper only when its question is open, and a review goes to ab-review-swarm only for a change with a named risk (auth or money, a schema or rewritten records, an interface others rely on, 200 or more changed lines of code, or a failure no test would show). A dependency the user asked for is added unless a maintenance, license or security check flags it. Release notes: [`docs/releases/v4.3.2-release-notes.md`](docs/releases/v4.3.2-release-notes.md).
 
 ## What's new in v4.3.1
 
@@ -834,10 +838,11 @@ An evaluation then ran the same fixture tasks on v3.8.0 and v4.0.0 in Claude Cod
 ## Release history
 
 <details>
-<summary>v2.3 to v4.3.1</summary>
+<summary>v2.3 to v4.3.2</summary>
 
 | Version | Date | What changed |
 |---|---|---|
+| v4.3.2 | 2026-11-23 | The build and ship pipelines start research helpers only when a change calls for them, ab-requesting-code-review holds one risk list that sends a change to ab-review-swarm, and a dependency the user named is added unless a maintenance, license or security check flags it. |
 | v4.3.1 | 2026-11-22 | The hosted agent moves to eve 1.3.0: `edit_file` carries the `write_file` guards, Postgres copies run the world's own recovery, and reasoning `none` is refused for Anthropic roster roles. `install.sh` stops a host CLI that never answers, ab-executing-plans' stop list matches its decision boundary, and `tests/smoke/eval.sh --compare` measures one build against another or against no plugin. |
 | v4.3.0 | 2026-11-22 | Reviews, wave checks and plan checks fail closed: a reviewer that never reported is listed as not reviewed, a review runs on its head with no uncommitted edits to the files it reviews, a wave with listed issues or zero tests run does not pass, and a plan's check must fail before its task. Helpers start fresh, the context monitor counts the main session only, and a blocked ship run is named at the next session start. New gate rules for frontmatter value shapes, positional placeholders and bundled scripts; model and effort notes for Fable 5.2, Opus 5.5 and Amp's model selector. |
 | v4.2.1 | 2026-11-07 | The hosted agent runs every code or docs change through its five stages, ends a run cleanly when a helper stops and pushes its branch, keeps one branch and pull request per chat, and shows a waiting or stopped stage in the web chat. The CLIs change only in the version number. |
